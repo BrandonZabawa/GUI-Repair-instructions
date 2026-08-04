@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Tabs/Tabs.js//Tabs",
+            "packages/react/src/components/Tab/Tab.js//Tab"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tabs/Tabs.js//render",
+            "packages/react/src/components/Tab/Tab.js//render"
+        ],
+        "explanation": "The Tab class\u2019s render method is responsible for outputting the <a> element that contains the label and applies the tooltip and CSS class for text-overflow. The Tabs class\u2019s render method is responsible for applying the container modifier class (`${prefix}--tabs--container`) to the root so that any container-specific styles can apply. Because container tabs are missing the truncation rules, we need to update Tab.render (anchorProps/CSS) and potentially adjust the CSS class injection in Tabs.render so that the same ellipsis and 16px padding behavior used by default tabs also applies to container tabs.",
+        "bug_scenario": "When using the \"container\" style tabs, long tab labels do not get truncated with an ellipsis and margin like the default tabs do. In the screenshot you can see \u201cTab label 1 long name\u201d running right up against its neighboring tab, whereas the default\u2010type tabs correctly apply a 16px right padding and text-overflow: ellipsis."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Tabs/Tabs.js//class Tabs",
+            "packages/react/src/components/Tab/Tab.js//class Tab"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tabs/Tabs.js//render",
+            "packages/react/src/components/Tab/Tab.js//render"
+        ],
+        "explanation": "The Tabs class\u2019s render() method is responsible for adding the `bx--tabs--container` modifier when `type=\"container\"`, but no JavaScript logic currently distinguishes container\u2010style links for different truncation rules. The Tab class\u2019s render() method builds the `<a>` node with the `bx--tabs__nav-link` class and sets the title prop for tooltips, but doesn\u2019t apply any special padding or text\u2010overflow styles when its parent is a container. To restore the 16px gutter and ellipsis behavior, we need to adjust either: 1) the Tab.render() output (e.g. pass `type` into Tab and apply an extra container\u2010link class or inline style for the spacing/overflow rules), or 2) the CSS selectors targeting `.bx--tabs--container .bx--tabs__nav-link` so that container tabs receive the proper `padding: 0 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`. Editing these two render functions (or the CSS they reference) is the key to fixing the truncation bug.",
+        "bug_scenario": "The issue is visible in the two screenshots: the first shows a \u201ccontainer\u201d style tab bar where the first tab\u2019s long label (\u201cTab label 1 long name\u201d) is cut off too aggressively \u2013 you end up with \u201cTab label 1 long n\u2026\u201d jammed up against the container\u2019s left border. In contrast, the second screenshot shows the default\u2010style tabs, which correctly apply an ellipsis only when the text hits the 16px inner edge, preserving the proper left/right padding before truncating."
+    }
+}

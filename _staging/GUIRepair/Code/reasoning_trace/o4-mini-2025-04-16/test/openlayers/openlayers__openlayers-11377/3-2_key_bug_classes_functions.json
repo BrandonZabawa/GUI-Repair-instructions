@@ -1,0 +1,36 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/MapBrowserEventHandler.js//MapBrowserEventHandler",
+            "src/ol/interaction/Pointer.js//PointerInteraction",
+            "src/ol/PluggableMap.js//PluggableMap"
+        ],
+        "bug_functions": [
+            "src/ol/MapBrowserEventHandler.js//relayEvent_",
+            "src/ol/MapBrowserEventHandler.js//handlePointerMove_",
+            "src/ol/MapBrowserEventHandler.js//isMoving_",
+            "src/ol/interaction/Pointer.js//handleEvent",
+            "src/ol/interaction/Pointer.js//updateTrackedPointers_"
+        ],
+        "explanation": "The core of the slowdown lies in MapBrowserEventHandler: its constructor wires up a non-passive POINTERMOVE listener that, on every mouse move, calls relayEvent_ to wrap and re-dispatch a new MapBrowserEvent to the map. handlePointerMove_ also tests movement against moveTolerance_ and may dispatch a POINTERDRAG event. Downstream, PointerInteraction.handleEvent and updateTrackedPointers_ run on every pointermove, updating internal state and preventing default behavior, and PluggableMap\u2019s handleBrowserEvent/handleMapBrowserEvent then iterate through all interactions and trigger re-renders. In 6.4.0 this dispatch path was changed/invoked more aggressively, so tiny cursor motions fire the full event\u2013interaction\u2013render pipeline far more frequently, exposing uncached style computation overhead and slowing pointermove performance.",
+        "bug_scenario": "When running OpenLayers 6.4.0 with a viewport containing ~1 000 features styled without caching, pointermove-driven interactions such as panning or cursor hover become noticeably sluggish compared to version 6.3.1. In 6.4.0 every mousemove triggers a full chain of event wrapping and dispatch, which, combined with uncached style recalculation, results in a laggy cursor update."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/MapBrowserEventHandler.js//MapBrowserEventHandler",
+            "src/ol/PluggableMap.js//PluggableMap",
+            "src/ol/interaction/Pointer.js//PointerInteraction"
+        ],
+        "bug_functions": [
+            "src/ol/MapBrowserEventHandler.js//constructor (relay listener setup)",
+            "src/ol/MapBrowserEventHandler.js//relayEvent_",
+            "src/ol/MapBrowserEventHandler.js//handlePointerMove_",
+            "src/ol/MapBrowserEventHandler.js//isMoving_",
+            "src/ol/PluggableMap.js//handleBrowserEvent",
+            "src/ol/PluggableMap.js//handleMapBrowserEvent",
+            "src/ol/interaction/Pointer.js//handleEvent"
+        ],
+        "explanation": "In 6.4.0 a new \"relayedListenerKey_\" is added in MapBrowserEventHandler to replay every native pointermove as a MapBrowserEvent, bypassing the moveTolerance filter and generating an unthrottled stream of events. relayEvent_ now dispatches a MapBrowserEvent for every pixel move, handleBrowserEvent/handleMapBrowserEvent in PluggableMap immediately processes each event and may schedule renders or style calls, and PointerInteraction.handleEvent invokes user move or drag handlers on each dispatch. Together these changes overwhelm feature style functions and the render loop on pointermove, causing the observed slowdown. To fix this, the relayEvent_ logic should respect moveTolerance or introduce throttling, and PluggableMap/PointerInteraction should avoid re-rendering or re-styling on every pixel-level pointermove.",
+        "bug_scenario": "The user\u2019s map contains 1000 vector features with uncached styles. In version 6.3.1, moving the mouse over the features (pointermove) and changing the cursor icon happens instantly. In 6.4.0 the same action is sluggish: pointermove events fire for every pixel movement, dispatch full MapBrowserEvent objects, trigger style recalculations on every feature, and schedule redundant renders. As a result the cursor change (and any hover logic) lags significantly."
+    }
+}

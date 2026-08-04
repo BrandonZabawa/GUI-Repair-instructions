@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu",
+            "packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js//OverflowMenuItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//render",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//handleOverflowMenuItemFocus",
+            "packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js//setTabFocus"
+        ],
+        "explanation": "The OverflowMenu component (in OverflowMenu.js) is responsible for wiring up keyboard navigation by cloning each <OverflowMenuItem> child with props like handleOverflowMenuItemFocus and marking the first item with primaryFocus. Its render method and the internal handleOverflowMenuItemFocus method must attach the correct focus handlers and focus-style flag. The OverflowMenuItem class (in OverflowMenuItem.js) implements setTabFocus to respond to ArrowUp/ArrowDown keys by calling handleOverflowMenuItemFocus on its parent, and applies the data-floating-menu-primary-focus attribute to the item that should draw the focus ring. In the DataTable context these props are not being passed or the primaryFocus flag is never set, so arrow key navigation does nothing and no focus styles are rendered. Fixing OverflowMenu.render to correctly inject handleOverflowMenuItemFocus and primaryFocus into its children (and confirming setTabFocus is invoked) will restore keyboard\u2010accessible styling and navigation.",
+        "bug_scenario": "In a DataTable with inline OverflowMenu actions, opening the OverflowMenu and then using the arrow keys does not move focus through the menu items, nor does any visual focus indicator appear on the items (whereas a standalone OverflowMenu works correctly)."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu",
+            "packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js//OverflowMenuItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//handleOverflowMenuItemFocus",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//render",
+            "packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js//setTabFocus"
+        ],
+        "explanation": "The OverflowMenu component is responsible for cloning its children and wiring up keyboard navigation and focus\u2010management callbacks (e.g. handleOverflowMenuItemFocus). Its render method must inject the index, handleOverflowMenuItemFocus, and the primaryFocus flag onto each OverflowMenuItem so that when you press \u2191/\u2193 the parent can move focus and trigger the CSS \u2018data-floating-menu-primary-focus\u2019 styling. The OverflowMenuItem.setTabFocus method listens for ArrowUp/ArrowDown key events and delegates back to handleOverflowMenuItemFocus, but if OverflowMenu never passed in that callback or never updated primaryFocus on its items (particularly when mounted via the DataTable render prop), the arrow keys do nothing and no visual focus style is applied. Fixing this requires updating OverflowMenu.render (and its getDerivedStateFromProps/open state logic) to correctly track an activeIndex in state, call handleOverflowMenuItemFocus to .focus() the correct child, and set the primaryFocus prop (or a CSS class) on the active OverflowMenuItem.",
+        "bug_scenario": "When you drop an OverflowMenu into a DataTable cell and open it via keyboard, you can\u2019t use the arrow keys to move between the menu options and there is no visible focus style on the items. In a standalone OverflowMenu you get a blue highlight on the active item as you tab or arrow through the list, but inside the table the items never receive the \u201cprimary focus\u201d treatment or any visual indicator when you press \u2191 or \u2193."
+    }
+}

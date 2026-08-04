@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/NumberInput/NumberInput.js//NumberInput"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/NumberInput/NumberInput.js//NumberInput",
+            "packages/react/src/components/NumberInput/__tests__/NumberInput-test.js"
+        ],
+        "explanation": "All of the styling and behavior for the read-only state lives in the NumberInput component. That is where the `readOnly` prop is passed down, where the `--number--readonly` and `--number__readonly-icon` class names are applied, and where the stepper buttons would need to be hidden or disabled. To fully verify the feature, the test suite (__tests__/NumberInput-test.js) also needs new test cases to assert that when `readOnly` is true: 1) the <input> has the readOnly attribute, 2) the component has the `--readonly` class on its root, and 3) the up/down buttons are not interactive (hidden or disabled). Without touching these two files, we cannot correctly implement or validate the new read-only design.",
+        "bug_scenario": "The two design-spec images illustrate the new \u201cread-only\u201d styling for the NumberInput component. The first shows the size and spacing requirements for small, medium, and large variants when the input is read-only (no stepper interaction, greyed-out divider and plus/minus icons). The second shows the color and typography tokens to use for the read-only state\u2014secondary text, transparent background, disabled icon color, and subtle border. In practice our current NumberInput supports a readOnly prop on the <input> but does not yet hide/disable the steppers or apply the new read-only classes and visual tokens."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/NumberInput/NumberInput.js//NumberInput"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/NumberInput/NumberInput.js//handleOnChange",
+            "packages/react/src/components/NumberInput/NumberInput.js//increment control onClick handler",
+            "packages/react/src/components/NumberInput/NumberInput.js//decrement control onClick handler"
+        ],
+        "explanation": "All of the interactive logic for NumberInput lives in the NumberInput component in NumberInput.js. To implement a proper readOnly state:  \n\u2022 handleOnChange currently only early-returns when disabled; it must also return immediately if readOnly is true, so typing and paste are ignored.  \n\u2022 The onClick handlers for the steppers only consider the disabled flag; they must also disable or no-op when readOnly is true.  \n\u2022 The NumberInput component already adds the \u2018--readonly\u2019 CSS modifier when readOnly is passed, but because interactions aren\u2019t gated, users can still change the value. Adjusting these handlers ensures the component truly behaves as read-only and matches the design.  \nOnce the logic is updated, new RTL tests should be added to __tests__/NumberInput-test.js to assert that the input has the readOnly attribute, the \u2018--readonly\u2019 className, and that neither typing nor button clicks fire change handlers.",
+        "bug_scenario": "The design spec images illustrate a \u201cread-only\u201d NumberInput: the input field should render with specific spacing, disabled icon color, no interactive steppers, and the proper \u201creadonly\u201d CSS class applied. In practice, when passing the readOnly prop to <NumberInput>, the input still accepts changes (typing, wheel events) and the up/down buttons remain active. No dedicated story or RTL test exists to verify that readOnly truly locks the component and applies the correct styling."
+    }
+}

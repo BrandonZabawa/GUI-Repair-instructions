@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js//ResponsesAreCompressed",
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//ResponseCompression"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//ResponseCompression.filterUnoptimizedResponses"
+        ],
+        "explanation": "The key bug elements are in the ResponseCompression gatherer and the ResponsesAreCompressed audit. The gatherer's filterUnoptimizedResponses function is responsible for determining whether resources are properly compressed by examining the 'content-encoding' header and other properties, and adding them to the list of unoptimized responses if not. If this logic is flawed (e.g., header case-sensitivity, header parsing, or protocol handling), it may mistakenly report compressed resources as uncompressed. The audit class (ResponsesAreCompressed) processes the results from the gatherer, but the root cause is likely in the gatherer's header detection logic. Therefore, the main bug-related elements are the ResponseCompression class and its filterUnoptimizedResponses function, as well as the ResponsesAreCompressed audit class, which consumes the results.",
+        "bug_scenario": "The bug scenario is that Lighthouse reports 'Enable text compression' as a failed audit, listing /api/blob as uncompressed even though the server response includes a 'Content-Encoding: gzip' header, as confirmed by both Chrome DevTools and a manual curl request. The audit incorrectly claims that compression is missing, likely due to a misdetection in the auditing logic or the gatherer's handling of response headers."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js//ResponsesAreCompressed",
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//ResponseCompression"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//ResponseCompression.filterUnoptimizedResponses",
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//ResponseCompression.afterPass"
+        ],
+        "explanation": "The main classes and functions involved are directly responsible for detecting and reporting on resource compression.\n- 'ResponsesAreCompressed' (lighthouse-core/audits/byte-efficiency/uses-request-compression.js) is the audit class that determines whether resources have proper compression and generates the audit report.\n- 'ResponseCompression' (lighthouse-core/gather/gatherers/dobetterweb/response-compression.js) is the gatherer that inspects network records to check the 'content-encoding' header for compression and calculates the potential GZIP savings.\n- 'ResponseCompression.filterUnoptimizedResponses' filters out resources it thinks are uncompressed, likely leading to false positives if the logic for detecting 'content-encoding' or handling network records is flawed.\n- 'ResponseCompression.afterPass' processes the filtered records, calculates GZIP sizes, and can propagate bugs if input records are already misidentified as uncompressed. \n\nThe root cause is likely in how 'filterUnoptimizedResponses' interprets HTTP headers or resource types, causing Lighthouse to misclassify compressed resources as uncompressed, which results in incorrect audit output.",
+        "bug_scenario": "The bug scenario involves Lighthouse erroneously reporting that text compression (such as gzip) is not enabled for certain resources (e.g., /api/blob), even though both Chrome's Network panel and a manual curl request confirm that gzip compression is enabled. The audit result incorrectly lists these resources as uncompressed, providing 'Original' and 'GZIP Savings' columns and indicating potential savings, which misleads users into thinking compression is missing or not effective."
+    }
+}

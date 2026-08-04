@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-extension/app/src/lighthouse-background.js",
+            "lighthouse-viewer/app/src/lighthouse-report-viewer.js"
+        ],
+        "explanation": "lighthouse-background.js is responsible for launching a Lighthouse run in the extension and packaging up the JSON results \u2013 it must include all metric fields, including the .ts timestamp on computed metrics. If it omits or alters that field, downstream code will break.\n\nlighthouse-report-viewer.js in the viewer app reads the incoming result JSON and renders each metric, expecting a .ts property. When .ts is missing, the code dereferences undefined, triggering the error. Both files participate in passing and rendering the same data object, so they must be updated: the background to preserve the .ts property in the JSON, and/or the viewer to guard against missing .ts before accessing it.",
+        "bug_scenario": "After updating the Chrome extension, generating a Lighthouse report now fails in the extension UI with \u201cCannot read property 'ts' of undefined\u201d (see screenshot). In the browser (non-extension) version it still works, so something in the extension\u2019s data-flow or viewer is stripping or mis-accessing the timestamp property on the First Meaningful Paint metric, causing the UI renderer to dereference an undefined .ts field."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/computed/trace-of-tab.js",
+            "lighthouse-core/gather/computed/speedline.js",
+            "lighthouse-core/audits/first-meaningful-paint.js",
+            "lighthouse-core/gather/connections/extension.js",
+            "lighthouse-extension/app/src/lighthouse-background.js"
+        ],
+        "explanation": "\u2022 trace-of-tab.js is the computed artifact that collects the raw DevTools trace events and should attach a numeric .ts timestamp to each event. If it isn\u2019t returning the right shape when run under the extension, downstream code will see undefined events.  \n\u2022 speedline.js filters and processes those trace events (looking at e.ts) to calculate paint metrics. An undefined event or missing .ts here will throw exactly the reported exception.  \n\u2022 first-meaningful-paint.js is the audit that calls into the speedline computed artifact. It doesn\u2019t guard against missing or malformed trace events, so any undefined event.ts bubbles up as the red error in the UI.  \n\u2022 extension.js is the custom connection adapter that drives the trace collection when you run Lighthouse inside the Chrome extension. A change here could be causing trace-of-tab to receive an incomplete trace model.  \n\u2022 lighthouse-background.js is the extension\u2019s entry point that invokes Lighthouse with the extension connection. If the launch or flags changed in the last update, trace events may not be streamed correctly into the core gatherers, leading to the undefined \u2018ts\u2019. All five files participate in the path from starting a run in the extension to computing and rendering the FMP metric, so they are the right places to look for the regression.",
+        "bug_scenario": "After updating the Chrome extension, every time the user clicks \u201cGenerate report\u201d they see a red error under the \u201cFirst meaningful paint\u201d audit: \u201cCannot read property 'ts' of undefined.\u201d Running Lighthouse in a normal browser session works fine. The screenshot shows the audit framework catching an exception inside the FMP audit and rendering its message in the report UI."
+    }
+}

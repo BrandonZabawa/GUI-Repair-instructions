@@ -1,0 +1,36 @@
+diff --git a/src/languages/typescript.js b/src/languages/typescript.js
+index eea7ad89..d77c77da 100644
+--- a/src/languages/typescript.js
++++ b/src/languages/typescript.js
+@@ -74,11 +74,26 @@ export default function(hljs) {
+   Object.assign(tsLanguage.keywords, KEYWORDS);
+ 
+   tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);
+-  tsLanguage.contains = tsLanguage.contains.concat([
+-    DECORATOR,
+-    NAMESPACE,
+-    INTERFACE,
+-  ]);
++// Add support for TS generic parameters (<T, U extends V>) so
++// they don’t get mis-parsed as HTML/JSX tags.
++tsLanguage.contains = tsLanguage.contains.concat([
++{
++// highlight <T, U extends V>
++className: 'typeparams',
++begin: /</, end: />/,
++contains: [
++{ begin: IDENT_RE,        className: 'type'    },
++{ beginKeywords: 'extends', className: 'keyword' },
++{ begin: /,/,              relevance: 0       }
++],
++// disallow pipes (so we don’t accidentally eat
++// e.g. union types || later on)
++illegal: /\|/
++},
++DECORATOR,
++NAMESPACE,
++INTERFACE,
++]);
+ 
+   // TS gets a simpler shebang rule than JS
+   swapMode(tsLanguage, "shebang", hljs.SHEBANG());

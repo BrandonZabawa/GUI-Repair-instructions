@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js//UpdateModdlePropertiesHandler",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider.prototype.getContextPadEntries",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js//UpdateModdlePropertiesHandler.prototype.execute",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateSemanticParent"
+        ],
+        "explanation": "\u2022 ContextPadProvider.getContextPadEntries: this function generates the toggle entries for multi-instance loops in the context pad. If it doesn\u2019t wire up the correct commands or pass the right moddleElement, the XML update never gets triggered.\n\u2022 UpdateModdlePropertiesHandler.execute: this handler is responsible for setting or unsetting the isSequential property (and adding/removing the loopCharacteristics element) on the moddle model. If its execute method isn\u2019t called or doesn\u2019t include multi-instance loop properties, the XML stays stale.\n\u2022 BpmnUpdater.updateSemanticParent: after the moddle properties change, BpmnUpdater must reflect structural changes in the XML (attach or detach the <multiInstanceLoopCharacteristics> child under the activity). The lack of handling for BPMN MultiInstanceLoopCharacteristics here prevents the XML from being written correctly.",
+        "bug_scenario": "When you add a multi\u2010instance loop to a BPMN task and then use the context pad to toggle between parallel and sequential execution, the XML does not get updated. The visual style of the loop marker toggles correctly, but the underlying BPMN XML never shows <bpmn:multiInstanceLoopCharacteristics /> (for parallel) or <bpmn:multiInstanceLoopCharacteristics isSequential=\"true\" /> (for sequential)."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js//UpdateModdlePropertiesHandler"
+        ],
+        "bug_functions": [
+            "lib/features/context-pad/ContextPadProvider.js//getContextPadEntries",
+            "lib/features/context-pad/ContextPadProvider.js//getMultiElementContextPadEntries",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js//execute"
+        ],
+        "explanation": "\u2022 ContextPadProvider is where the Parallel/Sequential loop toggle actions are registered (in getContextPadEntries and getMultiElementContextPadEntries), but those handlers currently drive the wrong modeling command (or no moddle\u2010level command), so the loop characteristics object on the task never picks up the isSequential flag.\n\u2022 UpdateModdlePropertiesHandler.execute is the one true handler that knows how to write changes into a bpmnl:Moo\u00addleElement so that the XML serializer can pick them up. Since the context pad toggle isn\u2019t invoking it (or isn\u2019t targeting the loopCharacteristics moddle element), the XML never changes. Fixing the bug requires wiring the context pad entries to call modeling.updateModdleProperties (backed by UpdateModdlePropertiesHandler) on the task\u2019s MultiInstanceLoopCharacteristics element so that the isSequential attribute is actually set or removed.",
+        "bug_scenario": "When adding a multi-instance loop to a task and then toggling between its Parallel and Sequential styles via the context pad, the diagram\u2019s underlying BPMN XML never picks up the change.  In other words, no <bpmn:multiInstanceLoopCharacteristics isSequential=\u201ctrue\u201d/> (or its absence) ever appears or updates in the exported XML."
+    }
+}

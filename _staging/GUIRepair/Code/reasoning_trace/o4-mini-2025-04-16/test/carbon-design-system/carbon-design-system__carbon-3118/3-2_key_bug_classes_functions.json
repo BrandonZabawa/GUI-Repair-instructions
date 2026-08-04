@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox",
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//render",
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection"
+        ],
+        "explanation": "ComboBox.render is where the component chooses which child components and CSS classes to render: it renders <ListBox.Selection> for the clear-selection control and wraps the WarningFilled16 invalid icon with list-box classes. ListBoxSelection is the component that actually renders the pill-style clear control (with multi-select tag CSS). Because ComboBox is importing and using the generic ListBox.Selection (the multi-select version) instead of a single-select clear control, it picks up the wrong styles. Similarly, ComboBox hard-codes both `${prefix}--list-box__invalid-icon` and `${prefix}--combo-box__invalid-icon` on the warning icon, but the CSS for positioning lives in the list-box rules only, so the icon is misplaced. Fixing this will require updating ComboBox.render to use a single-select clear control (or create a ComboBox-specific Selection) and adjusting the classNames or CSS for the invalid icon placement.",
+        "bug_scenario": "The screenshots show that the single-select ComboBox is accidentally picking up multi-select styles for its \u201cclear selection\u201d control and the invalid-state icon is sitting in the wrong spot. In the invalid example (outlined in red) the warning icon and error text are misaligned, and in the normal example the clear\u2013selection pill is rendered with the multi-select tag styles (a black box) rather than the single-select \u201cX\u201d button style."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox",
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//render",
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection"
+        ],
+        "explanation": "The ComboBox component\u2019s render method invokes <ListBox.Selection> (from ListBoxSelection.js) to display the clear-selection control. ListBoxSelection is designed for the MultiSelect use case: it applies tag/filter classes (`${prefix}--tag--filter`, `${prefix}--list-box__selection`) and multi-item badge styles, which yield the pill appearance and misalignment when used inside a ComboBox. Additionally, ComboBox.render adds the invalid icon with list-box invalid classes only, so without proper combo-box-specific CSS, the warning icon floats in the wrong position. To correct the styling, the ComboBox.render logic and the ListBoxSelection component must be updated: either introduce a dedicated ComboBoxSelection variant or adjust the class names/structure in ListBoxSelection to detect and render properly within ComboBox.",
+        "bug_scenario": "In a single-select ComboBox (invalid and valid states), the clear-selection control is rendered with the pill/tag styling borrowed from the MultiSelect component, producing a black \u201cx\u201d pill that overlaps the input instead of an inline clear button, and the invalid-state warning icon is positioned incorrectly relative to the input."
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/DataTile.js",
+            "src/DataTile.js"
+        ],
+        "explanation": "Both files implement the DataTileSource and DataTile classes that read and unpack multi\u2013band raster data into interleaved pixel arrays. In src/ol/source/DataTile.js the totalBandsCount (data bands + alpha) is passed to the tile constructor, and in src/DataTile.js the constructor and array indexing logic split the pixel data per band. The bug arises when totalBandsCount is even and \u22656: the code in these two files miscomputes the byte stride for the alpha channel, causing it to be read from the wrong offset. Fixing this requires updating the band\u2010to\u2010array-index calculations in these files to handle even band counts correctly.",
+        "bug_scenario": "When requesting an even number of source bands (for example 5 data bands plus a generated alpha channel = 6 bands) via DataTileSource, the rightmost band (alpha channel) is mis\u2010indexed and the alpha mask renders incorrectly. In other words, with bandsCount \u2265 6 the DataTileSource code computes array offsets wrongly, causing the alpha band to be read from the wrong position and transparency to fail."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/DataTile.js",
+            "src/DataTile.js"
+        ],
+        "explanation": "Both files are where the data\u2010tile is created and laid out in memory before rendering. \n\n\u2022 src/ol/source/DataTile.js is the OpenLayers source implementation that requests a fixed number of bands (totalBandsCount), handles the loader, and instantiates the tile using the DataTile class.  The bug report calls out changing totalBandsCount in this file (row 24) to force an even channel count\u2014and that exposes the misbehavior.  \n\n\u2022 src/DataTile.js (at the root of src/) is the core DataTile class that allocates the typed array for pixel data (bands \u00d7 width \u00d7 height) and wires up the RGBA channels.  It contains the branch that should insert an extra padding element when the number of channels is even.  This logic is where the alpha band is computed or shifted into place, and it currently fails for even totals, causing the alpha mask to be wrong.",
+        "bug_scenario": "When you request an even number of bands (for example 5 spectral bands + 1 alpha band = 6 channels) from a DataTileSource and then use the last band as an alpha mask, the DataTileSource\u2019s internal logic mis-allocates or mis-interprets the pixel array. The alpha channel ends up being wrong (fully opaque or incorrectly filtered) because the code paths that handle even totalBandsCount don\u2019t add the extra padding dimension correctly. In short, asking for 5 bands (plus implicitly generating a 6th alpha band) breaks the alpha channel in the produced tile."
+    }
+}

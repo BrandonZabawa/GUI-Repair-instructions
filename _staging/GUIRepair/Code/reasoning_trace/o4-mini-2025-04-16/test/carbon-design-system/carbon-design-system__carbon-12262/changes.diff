@@ -1,0 +1,87 @@
+diff --git a/packages/react/src/components/DataTable/DataTable.js b/packages/react/src/components/DataTable/DataTable.js
+index 532a95ea..f1027b40 100644
+--- a/packages/react/src/components/DataTable/DataTable.js
++++ b/packages/react/src/components/DataTable/DataTable.js
+@@ -224,11 +224,7 @@ export default class DataTable extends React.Component {
+               sortDirection: nextSortState.sortDirection,
+             })(event);
+         });
+-      },
+-    };
+-  };
+-
+-  /**
++  /** 
+    * Get the props associated with the given expand header.
+    *
+    * @param {object} config
+@@ -237,6 +233,7 @@ export default class DataTable extends React.Component {
+    * @returns {object}
+    */
+   getExpandHeaderProps = ({ onClick, onExpand, ...rest } = {}) => {
++    const id = `${this.getTablePrefix()}__expand`;
+     const { translateWithId: t } = this.props;
+     const { isExpandedAll, rowIds, rowsById } = this.state;
+     const isExpanded =
+@@ -245,11 +242,10 @@ export default class DataTable extends React.Component {
+       ? translationKeys.collapseAll
+       : translationKeys.expandAll;
+     return {
++      id,
+       ...rest,
+       ariaLabel: t(translationKey),
+       isExpanded,
+-      // Compose the event handlers so we don't overwrite a consumer's `onClick`
+-      // handler
+       onExpand: composeEventHandlers([
+         this.handleOnExpandAll,
+         onExpand,
+@@ -261,6 +257,12 @@ export default class DataTable extends React.Component {
+       ]),
+     };
+   };
++              isExpanded,
++            })
++          : null,
++      ]),
++    };
++  };
+ 
+   /**
+    * Decorate consumer's `onClick` event handler with sort parameters
+@@ -283,7 +285,6 @@ export default class DataTable extends React.Component {
+   handleOnExpandHeaderClick = (onClick, expandParams) => {
+     return (e) => onClick(e, expandParams);
+   };
+-
+   /**
+    * Get the props associated with the given row. Mostly used for expansion.
+    *
+@@ -293,15 +294,15 @@ export default class DataTable extends React.Component {
+    * @returns {object}
+    */
+   getRowProps = ({ row, onClick, ...rest }) => {
++    const expandHeader = `${this.getTablePrefix()}__expand`;
+     const { translateWithId: t } = this.props;
+     const translationKey = row.isExpanded
+       ? translationKeys.collapseRow
+       : translationKeys.expandRow;
+     return {
++      expandHeader,
+       ...rest,
+       key: row.id,
+-      // Compose the event handlers so we don't overwrite a consumer's `onClick`
+-      // handler
+       onExpand: composeEventHandlers([this.handleOnExpandRow(row.id), onClick]),
+       isExpanded: row.isExpanded,
+       ariaLabel: t(translationKey),
+@@ -309,6 +310,9 @@ export default class DataTable extends React.Component {
+       disabled: row.disabled,
+     };
+   };
++      disabled: row.disabled,
++    };
++  };
+ 
+   /**
+    * Gets the props associated with selection for a header or a row, where

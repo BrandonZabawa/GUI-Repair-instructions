@@ -1,0 +1,38 @@
+diff --git a/lib/features/grid-snapping/behavior/LayoutConnectionBehavior.js b/lib/features/grid-snapping/behavior/LayoutConnectionBehavior.js
+index 7c357c50..73358007 100644
+--- a/lib/features/grid-snapping/behavior/LayoutConnectionBehavior.js
++++ b/lib/features/grid-snapping/behavior/LayoutConnectionBehavior.js
+@@ -30,7 +30,9 @@ export default function LayoutConnectionBehavior(eventBus, gridSnapping, modelin
+         hints = context.hints || {},
+         waypoints = connection.waypoints;
+ 
+-    if (hints.connectionStart || hints.connectionEnd) {
++    // only skip snapping during an *initial* creation (both ends),
++    // but allow snapping when you reconnect one end (to create loops)
++    if (hints.connectionStart && hints.connectionEnd) {
+       return;
+     }
+ 
+@@ -141,4 +143,4 @@ function snapSegment(gridSnapping, segmentStart, segmentEnd) {
+   }
+ 
+   return [ segmentStart, segmentEnd ];
+-}
+\ No newline at end of file
++}
+diff --git a/lib/features/modeling/BpmnLayouter.js b/lib/features/modeling/BpmnLayouter.js
+index b708e6a9..a48352c8 100644
+--- a/lib/features/modeling/BpmnLayouter.js
++++ b/lib/features/modeling/BpmnLayouter.js
+@@ -80,8 +80,10 @@ BpmnLayouter.prototype.layoutConnection = function(connection, hints) {
+       isCompensationAssociation(source, target)) {
+ 
+     if (source === target) {
++      // when looping back to the same element, preserve existing docking/waypoints
+       manhattanOptions = {
+-        preferredLayouts: [ 'b:l' ]
++        preferredLayouts: [ 'b:l' ],
++        preserveDocking: 'all'
+       };
+     } else
+ 

@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//DrilldownOverlayBehavior",
+            "lib/features/drilldown/SubprocessCompatibility.js//SubprocessCompatibility",
+            "lib/util/DrilldownUtil.js//(plane id utilities)"
+        ],
+        "bug_functions": [
+            "DrilldownOverlayBehavior.prototype.addOverlay",
+            "DrilldownOverlayBehavior.prototype.updateOverlayVisibility",
+            "DrilldownOverlayBehavior.prototype.canDrillDown",
+            "SubprocessCompatibility.prototype.handleImport",
+            "SubprocessCompatibility.prototype.createNewDiagrams"
+        ],
+        "explanation": "The DrilldownOverlayBehavior class is responsible for adding and removing the deep-linking button overlay on collapsed subprocess shapes. Its key methods canDrillDown, addOverlay and updateOverlayVisibility determine when and how that overlay renders. However, those handlers only run on shape collapse/creation/move/delete and on import.done, not when the canvas root is programmatically changed by the multi-diagram plugin\u2019s deep linking, so the overlay never gets re-attached after navigation. SubprocessCompatibility splits collapsed subprocess DI onto separate planes at import time, which further changes element/plane IDs used by apply overlays. The DrilldownUtil functions map between shape IDs and plane IDs and are critical for matching overlays to subprocess planes. Together these files and functions manage the overlay lifecycle and ID logic that must be extended or corrected to support deep linking + multi-diagram navigation without losing the drilldown overlay.",
+        "bug_scenario": "In the provided animation the user is navigating through a BPMN diagram that contains multiple nested subprocesses (using the multi-diagram plugin) and then uses the new deep-linking feature to drill into a collapsed subprocess. Although the drilldown arrow overlay appears correctly at first, once the user navigates through the multi-diagram contexts the deep-linking overlay on the subprocess disappears and is never re-added, causing loss of the drilldown affordance."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//DrilldownOverlayBehavior",
+            "lib/util/DrilldownUtil.js",
+            "lib/features/drilldown/SubprocessCompatibility.js//SubprocessCompatibility"
+        ],
+        "bug_functions": [
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//DrilldownOverlayBehavior.prototype.canDrillDown",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//DrilldownOverlayBehavior.prototype.addOverlay",
+            "lib/util/DrilldownUtil.js//getPlaneIdFromShape",
+            "lib/features/drilldown/SubprocessCompatibility.js//SubprocessCompatibility.prototype.createDiagram"
+        ],
+        "explanation": "The disappearing overlay is caused by a mismatch between the plane IDs expected by the drill-down code and the plane IDs actually created by the multi-diagram compatibility layer. \n\n\u2022 DrilldownOverlayBehavior.canDrillDown uses getPlaneIdFromShape (from DrilldownUtil) to compute a target plane ID (appending '_plane') and then calls canvas.findRoot to see if that plane exists.  If it can\u2019t find the plane, canDrillDown returns false and the overlay is removed.  \n\n\u2022 DrilldownOverlayBehavior.addOverlay attaches the arrow button only when canDrillDown is true.  \n\n\u2022 DrilldownUtil.getPlaneIdFromShape / toPlaneId define how subprocess IDs are suffixed for their diagram planes.  \n\n\u2022 SubprocessCompatibility.createDiagram creates new BPMNPlane elements for collapsed subprocesses but does not assign them IDs matching the '_plane' suffix convention, so canvas.findRoot never locates them under the expected ID.  \n\nFixing the bug requires aligning the plane ID generation in SubprocessCompatibility.createDiagram (and/or assigning explicit IDs) with the suffix logic used by DrilldownUtil.getPlaneIdFromShape so that canDrillDown() continues to detect the plane and the overlay remains visible after navigation.",
+        "bug_scenario": "When using the multi-diagram plugin alongside the new deep-linking support in Camunda Modeler 5.0, collapsed subprocesses lose their drill-down overlay arrow after navigating between diagrams. In the demo GIF, drilling into one subprocess works, but when returning to the parent (or navigating between planes), the little arrow button that should let you reopen the subprocess disappears."
+    }
+}

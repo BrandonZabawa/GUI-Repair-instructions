@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-markdown/printer-markdown.js//printTable",
+            "src/language-markdown/printer-markdown.js//normalizeDoc",
+            "src/language-markdown/printer-markdown.js//clean"
+        ],
+        "explanation": "\u2022 printTable: This function is responsible for rendering markdown tables, including computing column widths and generating the separator row. It currently doesn\u2019t guard against very long cell contents, leading to runaway dash counts.\n\u2022 normalizeDoc: After printing, this function post-processes the document AST to normalize whitespace and line constructs. It likely contains the logic that finalizes separator rows and could enforce the fallback to fixed \u2018:---:\u2019 patterns.\n\u2022 clean: This function strips or adjusts raw markdown artifacts (like trailing spaces and newlines) before final output. Since it already handles special cases for markdown blocks, it\u2019s a natural place to detect and replace an excessively long separator with the default pattern.",
+        "bug_scenario": "The screenshot shows a GitHub editor view of a markdown table whose cells contain long HTML fragments (avatars and links). When Prettier formats this table, it computes column widths based on the full HTML length (~865 characters) and expands the separator row (the line of dashes and pipes) to that width. As a result, the separator line becomes excessively long, breaking the intended three-dash `:---:` pattern. The desired behavior is to detect such overlong columns and fall back to the default three-dash separators."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-markdown/printer-markdown.js//printTable"
+        ],
+        "explanation": "All of the logic that lays out and prints markdown tables lives in the printTable function in printer-markdown.js. It computes each column\u2019s width based on its contents (including very long HTML snippets) and then emits a separator row of matching length. Because it doesn\u2019t guard against runaway cell lengths, the separator can become hundreds of characters long. To fix the bug, printTable needs to detect when a column exceeds a reasonable width threshold (or when any cell is extremely long) and in that case skip its width-based alignment logic, falling back to the simple three-dash (`:---:`) separators instead of stretching the line.",
+        "bug_scenario": "When Prettier formats a markdown table whose cells contain very long content (for example, HTML-rich all-contributors tables), it \u201cnormalizes\u201d the separator row by generating dashes exactly as wide as the widest cell. In the screenshot you can see the second line of the fence-style separators stretches to 865 characters. This makes the output unwieldy and defeats the goal of a minimal `| :---: |` fallback."
+    }
+}

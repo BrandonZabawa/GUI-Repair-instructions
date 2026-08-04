@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/lib/lh-error.js",
+            "lighthouse-cli/run.js"
+        ],
+        "explanation": "1. In lighthouse-core/lib/lh-error.js, the LHError constructor sets this.friendlyMessage to the ICU message instance ID (via createMessageInstanceIdFn) rather than formatting it through i18n.getFormatted.  2. In lighthouse-cli/run.js, printRuntimeErrorAndExit simply logs err.friendlyMessage (the raw ID) instead of passing it through the i18n formatter. Fixing either LHError to store a formatted string or updating the CLI to call getFormatted on friendlyMessage before printing will restore the localized text on fatal errors.",
+        "bug_scenario": "When running the Lighthouse CLI with a URL that omits its protocol (e.g. \u201cnode lighthouse-cli www.example.com --view\u201d), the process fails early with an LHError code of INVALID_URL. At this fatal exit path the CLI prints err.friendlyMessage directly, but because LHError.constructor uses the ICU message-ID generator (createMessageInstanceIdFn) instead of formatting, friendlyMessage is the raw template ID (\u201clighthouse-core/lib/lh-error.js | urlInvalid # 0\u201d) rather than a human-readable translation (\u201cThe URL you have provided appears to be invalid.\u201d)."
+    }
+}

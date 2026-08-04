@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/DataTile.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "explanation": "1. src/ol/source/DataTile.js: This file defines logic for loading and formatting tile data when using DataTile sources. Data handling (row/column sizes, padding, etc.) issues can cause the type of 'insufficient data' WebGL error shown.\n2. src/ol/layer/WebGLTile.js: This file connects tile data (DataTile) to the WebGL renderer and may have code for initializing/preparing tiles for upload to the GPU. Errors in setup or argument passing could cause black tile rendering.\n3. src/ol/renderer/webgl/TileLayer.js: This is the WebGL renderer for tile-based layers and likely handles the upload of tile data to WebGL as textures. Bugs in handling tile dimensions or buffer lengths show up as the WebGL warning seen.\n4. src/ol/webgl/TileTexture.js: Handles the detail of converting tile data into WebGL textures. Mismatches in data size here directly produce errors like 'more data than available'.\n5. src/ol/tilegrid/TileGrid.js: Custom tile grids are handled here\u2014misinterpretations in defining the grid, size, resolutions, or deriving tile extents can lead to the wrong buffer size or tile expected shape for WebGL uploads.\n\nThese files together define tile data creation, grid/size setup, rendering preparation, and uploading to WebGL textures\u2014all key for the bug scenario seen here.",
+        "bug_scenario": "The provided bug scenario is about using `ol.layer.WebGLTile` with a custom `ol.source.DataTile` tile grid. The custom grid configurations include specific extent, sizes, resolutions, and tile sizes. When these are used, the tile layer renders as black tiles, indicating a rendering issue. The console gives a WebGL warning suggesting there is a mismatch between the tile data size and the expected size for upload to a WebGL texture. Specifically: 'Desired upload requires more data than is available: (767 rows plus 770 pixels needed, 767 rows plus 258 pixels available)'. This suggests that the data preparation or upload logic does not align with the defined tile sizes or shapes, causing a failure when passing the tile data to WebGL."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "explanation": "These files are directly related to the process of rendering tile-based data using WebGL in OpenLayers:\n\n- src/ol/layer/WebGLTile.js: This is the main class for WebGL-based tile rendering. It manages how tiles are processed and displayed using WebGL, and is implicated when WebGL-based tile layers malfunction.\n- src/ol/source/DataTile.js: This class provides an interface for the custom non-image data tile sources. Any problems with tile data format, dimension, or custom tile grid support would originate or need handling here.\n- src/ol/renderer/webgl/TileLayer.js: Handles the actual WebGL rendering of tile layers. Issues in transforming tile data to WebGL textures, especially with custom-sized or grid tiles, will likely need changes here.\n- src/ol/webgl/TileTexture.js: Deals with uploading tile data to the GPU as textures, which is specifically where the WebGL warning about insufficient data is being thrown. If the texture upload expects different dimensions than provided, adjustments are needed here.\n- src/ol/tilegrid/TileGrid.js: Manages the tile grid definitions. Since the bug relates to custom tile sizes and extents, verifying how custom grids are handled in this class is critical.\n\nFixing the bug requires making these modules compatible with each other, especially concerning tiles with non-standard shapes, sizes, and data layouts.",
+        "bug_scenario": "The bug scenario involves loading tiled image data in a viewer using OpenLayers with a custom tile grid and DataTile source. Instead of rendering the data tiles, the rendered tiles appear black. The console logs a WebGL warning indicating insufficient data for uploading a texture (texImage: Desired upload requires more data than is available). Debug output in the console shows custom tile grid extents and sizes, confirming that the application is handling non-standard tile dimensions. The issue seems related to the mismatch between expected and actual tile data dimensions between DataTile and WebGLTileLayer, possibly stemming from recent changes in OpenLayers' tile or WebGL data handling, and the integration of those modules."
+    }
+}

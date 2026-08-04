@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/computed/trace-of-tab.js//TraceOfTab"
+        ],
+        "bug_functions": [
+            "lighthouse-core/computed/trace-of-tab.js//TraceOfTab.compute_"
+        ],
+        "explanation": "The TraceOfTab class in trace-of-tab.js is responsible for extracting key paint metrics (including FCP) from the raw trace and errors out with NO_FCP if the event is missing. In a backgrounded tab no FCP event is recorded, so the compute_ method unconditionally throws an LHError.errors.NO_FCP. To fix the extension failure, this is exactly the spot where logic must be updated\u2014either by waiting for FCP in a hidden tab, skipping the FCP requirement, or bringing the tab to the foreground before tracing.",
+        "bug_scenario": "When Lighthouse is run as a Chrome extension against a page that is backgrounded (i.e. the tab is hidden), the tracing session never emits a First Contentful Paint event, so TraceOfTab.compute_ throws a NO_FCP error. In the extension UI you see \u201cNO_FCP\u201d and every performance metric reports Error."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/computed/trace-of-tab.js//TraceOfTab"
+        ],
+        "bug_functions": [
+            "lighthouse-core/computed/trace-of-tab.js//TraceOfTab.compute_"
+        ],
+        "explanation": "The static compute_ method on TraceOfTab is where Lighthouse checks for the presence of a firstContentfulPaint event and throws a NO_FCP LHError when it\u2019s missing. In background tabs, FCP never fires, so this check always fails. To address the issue, this is the location to modify\u2014either by relaxing the FCP requirement for background tabs or by substituting a fallback metric\u2014so that the extension can proceed without throwing NO_FCP.",
+        "bug_scenario": "When the Lighthouse Chrome extension runs against a page that is not in the foreground (background tab), the underlying trace never fires a firstContentfulPaint event. As a result, the extension\u2019s UI surfaces a NO_FCP error and all performance metrics fail."
+    }
+}

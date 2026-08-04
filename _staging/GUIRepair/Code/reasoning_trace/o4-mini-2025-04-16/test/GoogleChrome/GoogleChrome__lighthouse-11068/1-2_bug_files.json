@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/css-usage.js",
+            "lighthouse-core/audits/font-display.js",
+            "lighthouse-core/lib/driver.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/gather/css-usage.js: this gatherer wires up the CSS domain (startRuleUsageTracking, getStyleSheetText, stopRuleUsageTracking) but currently only operates on the main frame session. Stylesheets loaded inside OOPIFs are never fetched, so their @font-face rules (and font-display declarations) are invisible to the audit.\\n\\n\u2022 lighthouse-core/audits/font-display.js: the audit logic reads the CSSUsage artifact to locate all @font-face blocks and checks for a font-display descriptor. Because CSSUsage is missing iframe rules, the audit falls back to warning it \u201cwas unable to automatically check\u201d those font files. The audit itself needs to consume CSSUsage from all frames or skip only cross-origin fonts.\\n\\n\u2022 lighthouse-core/lib/driver.js: the Driver is responsible for managing CDP sessions, including frames. To gather CSS from OOPIFs, driver.js must expose and multiplex CSS domain commands across all child frame sessions, not just the top-level one. Without changes here, css-usage.js cannot retrieve stylesheet text from out-of-process frames.",
+        "bug_scenario": "When running an audit page that includes out-of-process iframes (OOPIFs), Lighthouse\u2019s font-display audit emits warnings that it \u201cwas unable to automatically check the font-display value\u201d for several WOFF2 URLs. The screenshot shows these warnings and the repro steps (serving and auditing oopif.html). Investigation shows that the CSSUsage gatherer never sees any @font-face rules inside cross-origin iframes, so the font-display audit has no stylesheet AST to inspect and logs the errors."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/css-usage.js",
+            "lighthouse-core/gather/iframe-elements.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/audits/font-display.js"
+        ],
+        "explanation": "\u2022 css-usage.js: This gatherer is responsible for tracking which CSS rules (including @font-face declarations) are in use, but currently only registers CSS coverage on the main frame, so any fonts loaded in child iframes are never seen.  \n\u2022 iframe-elements.js: Enumerates iframes on the page but isn\u2019t wired into css-usage.js or the CSS domain to start/stop coverage in those frames.  \n\u2022 gather-runner.js: Orchestrates all gatherers; it needs to be updated to start CSS coverage on out-of-process iframes (OOPIFs) before running css-usage.js.  \n\u2022 font-display.js: The audit that reads the CSSUsage artifact and looks for font-display values\u2014since the artifact lacks rules from iframes, it emits warnings. Fixing css-usage and gather-runner to include OOPIFs will allow font-display.js to see and audit those fonts correctly.",
+        "bug_scenario": "When running Lighthouse against a page that contains out-of-process iframes (e.g. an iframe loading Disqus or Google Fonts), the \u201cAll text remains visible during webfont loads\u201d audit emits a series of \u201cLighthouse was unable to automatically check the font-display value for the following URL\u2026\u201d warnings for every font URL loaded in the iframe. In other words, our CSSUsage gatherer isn\u2019t picking up stylesheets or @font-face rules from OOPIFs, so the font-display audit never sees those fonts and warns erroneously."
+    }
+}

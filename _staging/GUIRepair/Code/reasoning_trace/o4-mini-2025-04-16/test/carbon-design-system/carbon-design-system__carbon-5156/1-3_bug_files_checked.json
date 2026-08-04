@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Tile/Tile.js"
+        ],
+        "explanation": "All of the React-side logic for the SelectableTile variant lives in Tile.js. It sets up the input, the label, and the internal click/keyboard handlers, but it never actually wires the user-provided onChange prop to the underlying <input> (nor does it invoke it when the tile is toggled). To fix the bug you need to update this file so that the <input> element in the SelectableTile branch both receives onChange={props.onChange} and/or so that the internal toggle routines call props.onChange after updating state.",
+        "bug_scenario": "When you render a <SelectableTile> and pass it an onChange callback, clicking on the tile (or toggling it with the keyboard) only triggers the internal handleClick and handleKeyDown handlers\u2014your onChange prop never fires. In the demo you can see console.log(\u201chandleClick\u201d) and console.log(\u201chandleKeyDown\u201d) run, but console.log(\u201conChange\u201d) (your callback) is never called."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Tile/Tile.js",
+            "packages/react/src/components/TileGroup/TileGroup.js"
+        ],
+        "explanation": "Both of these files implement the React wrapper around the low-level carbon tile markup for selectable tiles. Tile.js defines the SelectableTile component and currently only wires up handleClick and handleKeyDown, but never passes the onChange prop into the underlying <input> or invokes it when toggling. TileGroup.js clones child SelectableTile instances to inject shared props (like name, selected, and onChange), but since Tile.js never calls that onChange prop, clicks and key events on children never bubble as a change event. Fixing these two files to forward or invoke onChange on the input change will allow the user\u2019s onChange callback to fire as documented.",
+        "bug_scenario": "When using the React SelectableTile component (either standalone or inside a TileGroup), clicks and keyboard events correctly invoke the internal handleClick and handleKeyDown handlers, but the user-supplied onChange prop callback is never called. According to the docs and Storybook examples, SelectableTile should fire onChange (for multi-select and single-select variants) when the underlying input toggles, but that wiring is missing in the React wrapper."
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-c.js",
+            "components/prism-c.min.js",
+            "components/prism-cpp.js",
+            "components/prism-cpp.min.js"
+        ],
+        "explanation": "Prism\u2019s syntax definition for C (in prism-c.js/.min.js) contains the regex that matches integer and floating-point literals, and C++ (in prism-cpp.js/.min.js) simply extends that definition. Because the number pattern doesn\u2019t include single quotes as valid digit separators, literals with ' break into multiple tokens. Updating these files (the C number regex and/or overriding it properly in the C++ extension) is necessary to add support for C++\u2019s single-quote separators in both integer and floating-point literals.",
+        "bug_scenario": "In C++ code, numeric literals that use single-quote digit separators (e.g. 1'000'000 or 1.602'176'565e-19) are not being recognized as one continuous number token. Instead, the single quotes break the regex for numbers, causing parts of the literal to be tokenized as strings or plain text. The provided screenshots show, on the left, the incorrect highlighting where quotes split the token, and on the right, the desired behaviour where the entire literal\u2014including quotes\u2014is highlighted as a number."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-clike.js",
+            "components/prism-cpp.js",
+            "components/prism-cpp.min.js"
+        ],
+        "explanation": "Prism\u2019s C++ grammar is built on the \u2018clike\u2019 definition. In components/prism-clike.js the number pattern doesn\u2019t allow embedded single quotes, so any literal containing ' is broken into smaller tokens. The C++ file (components/prism-cpp.js and its minified counterpart) simply extends \u2018clike\u2019 and thus inherits the flawed number regex. To fix the highlighting for quoted separators in C++ literals, you must update or override the number pattern in prism-clike.js (or explicitly in prism-cpp.js) to include single quotes among the allowed numeric separators.",
+        "bug_scenario": "The screenshots show that C++ numeric literals using single-quote separators\u2014e.g. 1'048'576, 0x10'0000 or 1.602'176'565e-19\u2014are not being recognized as a single \"number\" token. Instead the highlighter splits them at each apostrophe, treating parts as strings or punctuation. The correct behavior is to treat the entire literal, including all single-quote separators, as one number token."
+    }
+}

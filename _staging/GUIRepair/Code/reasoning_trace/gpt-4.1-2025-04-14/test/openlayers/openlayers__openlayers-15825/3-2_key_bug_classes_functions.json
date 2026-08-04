@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/reproj/Tile.js//ReprojTile",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/tilegrid/TileGrid.js//TileGrid"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//renderTile",
+            "src/ol/renderer/webgl/TileLayer.js//getData",
+            "src/ol/reproj/Tile.js//constructor",
+            "src/ol/reproj/Tile.js//reproject_",
+            "src/ol/reproj/Tile.js//load",
+            "src/ol/source/GeoTIFF.js//configure_",
+            "src/ol/source/GeoTIFF.js//determineProjection"
+        ],
+        "explanation": "The classes and functions selected are directly involved in the tile loading, reprojection, and rendering pipeline that would impact tile visibility near the antimeridian:\n\n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: This is the main WebGL renderer for tile layers and orchestrates tile rendering. Its renderTile method handles the logic for drawing each tile and managing their positions, which is critical for handling edge cases near the antimeridian. The getData method is also involved in mapping screen pixels to tile coordinates, which could be sensitive to reprojection bugs.\n\n- src/ol/reproj/Tile.js//ReprojTile: This class represents a single reprojected tile. Its constructor performs the calculation of source and target extents, resolution, and triangulation, all of which are crucial for correct reprojection near the antimeridian. The reproject_ method does the actual reprojection, and load manages the asynchronous loading of tile data. Bugs in extent handling or triangulation here can directly cause missing or incorrect tiles at projection discontinuities.\n\n- src/ol/source/GeoTIFF.js//GeoTIFFSource: This is the source for GeoTIFF data. The configure_ method sets up the tile grid and related parameters based on the GeoTIFF images, and determineProjection establishes the projection context. Errors here could result in misaligned grids or sources, especially when non-default projections or custom extents are used.\n\n- src/ol/tilegrid/TileGrid.js//TileGrid: This class defines the structure of the tile grid, including calculation of tile extents and coordinates. Errors in tile calculation, especially across the antimeridian, can cause tiles to be omitted or incorrectly placed.\n\nThe functions identified are those that are most likely to contain logic related to tile extent calculations, reprojection, grid setup, and rendering, all of which are directly implicated by the symptom of missing tiles near the antimeridian when using a custom stereographic projection and GeoTIFF source.",
+        "bug_scenario": "The bug scenario involves rendering GeoTIFF tiles with a WebGLTileLayer in a stereographic projection. When tiles are reprojected and displayed near the antimeridian (180 degree longitude), there are missing tiles, resulting in visible black gaps. The bug is particularly evident when a custom stereographic projection is registered and used for the map view, and its severity depends on tile size and zoom level. The image in the report illustrates these missing regions as black gaps along the antimeridian, indicating that tile wrapping or reprojection logic may not be handling the projection discontinuity properly."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/Tile.js//constructor"
+        ],
+        "explanation": "1. 'src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer' is the WebGL renderer for tile layers, which is responsible for rendering tiles, handling their placement and visibility. Any issues with how tiles are selected, positioned, or rendered\u2014especially edge cases like the antimeridian\u2014would manifest here. The rendering pipeline may not be accounting for tile wrapping or edge crossing at the antimeridian, leading to missing tiles.\n\n2. 'src/ol/reproj/Tile.js//ReprojTile' (class and its constructor) is crucial because it manages single reprojected tiles, including calculating the tile's extent and source tiles to pull from, and setting the tile's state (e.g., EMPTY) if it determines the tile falls outside the valid area. The constructor logic includes intersection and extent calculations, and if these calculations don't correctly handle global wrapping or the antimeridian, tiles in these areas may be marked as EMPTY or not requested at all, leading to the observed gaps. Any logic error or incomplete handling of world wrapping or extents in reprojection (especially in 'canWrapX' or extent intersection) would cause missing tiles near the 180\u00b0 longitude line.\n\nThe bug is not likely rooted in the GeoTIFF source class or the tile grid itself, as the problem arises specifically when tiles are reprojected and rendered near the antimeridian. The classes and constructor highlighted are directly responsible for reprojection, extent calculation, and rendering, all of which are implicated in the bug scenario.",
+        "bug_scenario": "The bug report describes a scenario where, after reprojecting GeoTIFF tiles into a stereographic projection using a WebGLTileLayer, tiles near the antimeridian (the 180\u00b0 longitude line) are not rendered, resulting in visible black gaps. The size of these gaps varies based on the source tile size and zoom. The included scenario image would show a map with black (empty) areas along the antimeridian, indicating missing tiles where data should be visible."
+    }
+}

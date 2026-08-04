@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js",
+            "lib/features/modeling/util/LaneUtil.js",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js"
+        ],
+        "explanation": "1. DeleteLaneBehavior.js: This interceptor listens for \u2018shape.delete\u2019 on bpmn:Lane shapes and then compensates sibling lanes by calling spaceTool.calculateAdjustments() and spaceTool.makeSpace(). The deformation on delete indicates that the logic to split siblings into topAffected/bottomAffected or the offset calculation is incorrect and moves the wrong set of lanes by the wrong amount.\n\n2. LaneUtil.js: The helper functions getChildLanes() and getLanesRoot(), as well as computeLanesResize(), underpin how DeleteLaneBehavior identifies which lanes to adjust and by how much. Any mistake in collecting the correct set of remaining lanes or in computing trbl (top/right/bottom/left) values will lead to mis-positioned or mis-sized lanes after deletion.\n\n3. ResizeLaneHandler.js: Although principally invoked on manual resizing, its resizeSpace() method uses the space tool to move and resize affected lanes in the same way as DeleteLaneBehavior. Because deletion ultimately triggers a similar bulk move/resize operation, any bug in the handler\u2019s calculation of offset directions, adjustments, or which shapes to include will manifest when removing lanes as well.",
+        "bug_scenario": "The user\u2019s screenshots show a BPMN diagram with a parent pool containing several horizontally stacked lanes. Before deletion, all child lanes line up neatly under the parent. After deleting one of the middle child lanes, the remaining lanes shift unevenly \u2014 some collapse or overlap, and the overall diagram structure is distorted, preventing further clean editing."
+    }
+}

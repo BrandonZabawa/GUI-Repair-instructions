@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/aggregator/aggregate.js//Aggregate"
+        ],
+        "bug_functions": [
+            "lighthouse-core/aggregator/aggregate.js//Aggregate.compare",
+            "lighthouse-core/aggregator/aggregate.js//Aggregate._convertToWeight",
+            "lighthouse-core/aggregator/aggregate.js//Aggregate._convertBooleanToWeight",
+            "lighthouse-core/aggregator/aggregate.js//Aggregate._getTotalWeight"
+        ],
+        "explanation": "All of the aggregation logic lives in the static methods of the Aggregate class. compare() loops through each expected audit, sums up the weights returned by _convertToWeight() and then divides by the total possible weight from _getTotalWeight(). The boolean conversion happens in _convertBooleanToWeight(). A mistake in how these weights are calculated or how maxScore is determined will cause the division to be incorrect and the overall score to always resolve to 1.0. To fix the bug, you need to adjust the weighting logic in _convertToWeight() (and its boolean helper), ensure _getTotalWeight() returns the correct denominator, and verify that compare() uses them properly when computing overall.",
+        "bug_scenario": "In the Lighthouse Accessibility category UI, the top\u2010level \u201cAccessibility\u201d aggregation shows a green pass (score of 1.0) even though one of its sub\u2010audits (\u201cBackground and foreground colors have a sufficient contrast ratio\u201d) has failed. When you programmatically feed in one passing audit and one failing audit (each with weight 1) into Aggregate.aggregate(), the code should produce a weighted average of 0.5, but it incorrectly reports 1.0."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/aggregator/aggregate.js//Aggregate"
+        ],
+        "bug_functions": [
+            "lighthouse-core/aggregator/aggregate.js//Aggregate.compare",
+            "lighthouse-core/aggregator/aggregate.js//Aggregate._convertToWeight",
+            "lighthouse-core/aggregator/aggregate.js//Aggregate._convertBooleanToWeight",
+            "lighthouse-core/aggregator/aggregate.js//Aggregate.getTotal"
+        ],
+        "explanation": "All of the aggregation logic lives in the static methods of the Aggregate class in aggregate.js. In particular:\n- Aggregate.compare: iterates over each expected audit, sums converted weights, and divides by a total weight. If this logic mis-calculates the divisor (total weight) or numerator (sum of per\u2010audit weights), it will report a full score even when one child audit fails.\n- Aggregate._convertToWeight (and its boolean branch _convertBooleanToWeight): responsible for turning boolean pass/fail into a numeric weight. A bug here could mean a failing audit still returns full weight.\n- Aggregate.getTotal: averages the per\u2010aggregation overall scores into the final total used by the UI. If this isn\u2019t called or computed correctly, the parent category can be marked as passing.\nFixing the bug will involve correcting how the total expected weight is computed in compare (ensuring it doesn\u2019t default to 1) and/or making sure _convertBooleanToWeight returns zero weight for failed audits so that the final aggregate overall score reflects partial failures.",
+        "bug_scenario": "In the Lighthouse UI \u201cAccessibility\u201d category, the top\u2010level aggregation is shown as a full pass (green check) even though one of its sub\u2010audits (\u201cBackground and foreground colors have a sufficient contrast ratio\u201d) has failed. Reproducing with two equal\u2010weight audits (one passing, one failing) yields an overall score of 1.0 instead of the correct weighted average of 0.5."
+    }
+}

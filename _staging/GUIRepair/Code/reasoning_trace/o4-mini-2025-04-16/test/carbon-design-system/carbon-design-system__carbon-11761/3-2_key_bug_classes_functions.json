@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/TableContainer.js//TableContainer",
+            "packages/react/src/components/DataTable/DataTable.js//DataTable"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/DataTable.js//getTableContainerProps"
+        ],
+        "explanation": "The root of the issue is that TableContainer renders the title and description nodes without any id attributes, so when a consumer passes aria-labelledby or aria-describedby on the <Table> and points to the container\u2019s id, assistive technologies cannot find individual ids for the title/description elements to announce. To fix this, TableContainer (and/or the DataTable.getTableContainerProps helper) must generate or accept explicit id props for the title and description elements\u2014e.g. titleId and descriptionId\u2014and attach them to the <h4> and <p> respectively. The DataTable.getTableContainerProps function should supply a base id for the container and derive title- and description-specific ids so that aria-labelledby and aria-describedby on the <Table> can correctly reference the visible label and description.",
+        "bug_scenario": "The user renders a DataTable with a TableContainer supplying a title and description, and attempts to label the underlying <Table> by passing aria-labelledby referencing the TableContainer\u2019s id. Because the <h4> title and <p> description inside TableContainer do not themselves receive id attributes, the screen reader cannot resolve any labelledby references and instead falls back to reading table contents as the label. The provided screenshots show JAWS reading concatenated header and cell text rather than the visible title+description."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/TableContainer.js//TableContainer"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/DataTable.js//getTableContainerProps",
+            "packages/react/src/components/DataTable/DataTable.js//getTableProps"
+        ],
+        "explanation": "TableContainer currently spreads any props (including id) only onto the outer <div> and does not assign IDs to its title and description nodes. The DataTable class\u2019s getTableContainerProps should generate unique IDs for the title and description and pass them through to TableContainer (so that <h4> and <p> get id attributes), and getTableProps should use those IDs to set aria-labelledby and aria-describedby on the <table>. Because neither of those prop getters nor the TableContainer component inject the proper IDs, assistive technology cannot locate the correct label and description elements, leading to the observed screen-reader fallback behavior.",
+        "bug_scenario": "When using the DataTable\u2019s TableContainer to supply a visible title and description, neither the <h4> nor <p> elements inside the container receive their own IDs, so consumers cannot reference them via aria-labelledby or aria-describedby on the <table>. As a result, screen readers fall back to using the entire container div or row contents to label the table (as shown in the JAWS screenshots), rather than the intended title/description."
+    }
+}

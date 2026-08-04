@@ -1,0 +1,79 @@
+diff --git a/packages/react/src/components/ComboBox/ComboBox.js b/packages/react/src/components/ComboBox/ComboBox.js
+index 7d4d82bf..261dd6e2 100644
+--- a/packages/react/src/components/ComboBox/ComboBox.js
++++ b/packages/react/src/components/ComboBox/ComboBox.js
+@@ -300,19 +300,17 @@ export default class ComboBox extends React.Component {
+             isOpen={isOpen}
+             light={light}
+             {...getRootProps({ refKey: 'innerRef' })}>
+-            <ListBox.Field
+-              id={id}
+-              disabled={disabled}
+-              translateWithId={translateWithId}
+-              {...getButtonProps({
+-                disabled,
+-                onClick: this.onToggleClick(isOpen),
+-              })}>
+-              <input
+-                className={`${prefix}--text-input`}
++              <ListBox.Field
++                id={id}
++                disabled={disabled}
++                translateWithId={translateWithId}
+                 aria-label={ariaLabel}
++                {...getButtonProps({
++                  disabled,
++                  onClick: this.onToggleClick(isOpen),
++                })}>
+                 aria-disabled={disabled}
+-                aria-controls={`${id}__menu`}
++                aria-controls={isOpen ? `${id}__menu` : undefined}
+                 aria-autocomplete="list"
+                 ref={this.textInput}
+                 {...rest}
+@@ -322,12 +320,15 @@ export default class ComboBox extends React.Component {
+                   placeholder,
+                   onKeyDown: event => {
+                     event.stopPropagation();
+-
+                     if (match(event, keys.Enter)) {
+                       toggleMenu();
+                     }
+                   },
+                 })}
++              />
++                    }
++                  },
++                })}
+               />
+               {invalid && (
+                 <WarningFilled16
+diff --git a/packages/react/src/components/ListBox/ListBoxField.js b/packages/react/src/components/ListBox/ListBoxField.js
+index cbbe84d6..cae0876a 100644
+--- a/packages/react/src/components/ListBox/ListBoxField.js
++++ b/packages/react/src/components/ListBox/ListBoxField.js
+@@ -31,9 +31,7 @@ const ListBoxField = ({
+   id,
+   disabled,
+   tabIndex,
+-  translateWithId: t,
+-  ...rest
+-}) => (
++const ListBoxField = ({ children, id, disabled, tabIndex, translateWithId: t, ...rest }) => (
+   <div
+     role={rest['aria-expanded'] ? 'combobox' : rest.role || 'combobox'}
+     aria-owns={(rest['aria-expanded'] && `${id}__menu`) || null}
+@@ -41,10 +39,12 @@ const ListBoxField = ({
+     className={`${prefix}--list-box__field`}
+     tabIndex={(!disabled && tabIndex) || -1}
+     {...rest}
+-    aria-label={rest['aria-expanded'] ? t('close.menu') : t('open.menu')}>
++    aria-label={rest['aria-label'] || (rest['aria-expanded'] ? t('close.menu') : t('open.menu'))}>
+     {children}
+   </div>
+ );
++  </div>
++);
+ 
+ ListBoxField.propTypes = {
+   /**

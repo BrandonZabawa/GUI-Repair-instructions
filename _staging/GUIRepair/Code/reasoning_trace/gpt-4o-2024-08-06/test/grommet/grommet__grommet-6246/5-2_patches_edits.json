@@ -1,0 +1,207 @@
+{
+    "1/5": {
+        "src/js/components/DataChart/DataChart.js": [
+            {
+                "SEARCH": [
+                    "return calcBounds(mergedValues, { coarseness, steps });"
+                ],
+                "REPLACE": [
+                    "const bounds = calcBounds(mergedValues, { coarseness, steps });",
+                    "// Ensure bounds include zero for negative values",
+                    "if (bounds[1][0] > 0) bounds[1][0] = 0;",
+                    "return bounds;"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/js/components/DataChart/DataChart.js": [
+            {
+                "SEARCH": [
+                    "return calcBounds(mergedValues, { coarseness, steps });",
+                    "}",
+                    "// if this is a data driven x chart, set coarseness for x",
+                    "return calcBounds(chartValues[index], {"
+                ],
+                "REPLACE": [
+                    "const bounds = calcBounds(mergedValues, { coarseness, steps });",
+                    "// Ensure bounds cover negative values",
+                    "if (bounds[1][0] > 0) bounds[1][0] = 0;",
+                    "return bounds;",
+                    "}",
+                    "// if this is a data driven x chart, set coarseness for x",
+                    "const bounds = calcBounds(chartValues[index], {",
+                    "coarseness: charts[index].property.x ? [5, 5] : coarseness,",
+                    "steps,",
+                    "});",
+                    "if (bounds[1][0] > 0) bounds[1][0] = 0;",
+                    "return bounds;"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/js/components/DataChart/DataChart.js": [
+            {
+                "SEARCH": [
+                    "if (stackedChartType[type]) {",
+                    "// merge values for bars, areas, and lines cases",
+                    "let mergedValues = chartValues[index]?.[0]?.slice(0) || [];",
+                    "chartValues[index]",
+                    ".slice(1) // skip first index as that is the x value",
+                    ".filter((values) => values) // property name isn't valid",
+                    ".forEach((values) => {",
+                    "mergedValues = mergedValues.map((__, i) =>",
+                    "type === 'lines'",
+                    "? [",
+                    "i,",
+                    "Math.min(mergedValues[i][1], values[i][1]),",
+                    "Math.max(mergedValues[i][1], values[i][1]),",
+                    "]",
+                    ": [",
+                    "i,",
+                    "Math.min(mergedValues[i][1], values[i][1]),",
+                    "Math.max(mergedValues[i][2], values[i][2]),",
+                    "],",
+                    ");",
+                    "});",
+                    "return calcBounds(mergedValues, { coarseness, steps });",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (stackedChartType[type]) {",
+                    "// merge values for bars, areas, and lines cases",
+                    "let mergedValues = chartValues[index]?.[0]?.slice(0) || [];",
+                    "chartValues[index]",
+                    ".slice(1) // skip first index as that is the x value",
+                    ".filter((values) => values) // property name isn't valid",
+                    ".forEach((values) => {",
+                    "mergedValues = mergedValues.map((__, i) =>",
+                    "type === 'lines'",
+                    "? [",
+                    "i,",
+                    "Math.min(mergedValues[i][1], values[i][1]),",
+                    "Math.max(mergedValues[i][1], values[i][1]),",
+                    "]",
+                    ": [",
+                    "i,",
+                    "Math.min(0, mergedValues[i][1], values[i][1]),",
+                    "Math.max(mergedValues[i][2], values[i][2]),",
+                    "],",
+                    ");",
+                    "});",
+                    "return calcBounds(mergedValues, { coarseness, steps });",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/js/components/DataChart/DataChart.js": [
+            {
+                "SEARCH": [
+                    "// calculate axis, bounds, and thickness for each chart",
+                    "const chartProps = useMemo(() => {",
+                    "const steps = [];",
+                    "...",
+                    "if (typeof boundsProp === 'object') {",
+                    "if (boundsProp.y)",
+                    "chartBounds = chartBounds.map((b) => [b[0], [...boundsProp.y]]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "// calculate axis, bounds, and thickness for each chart",
+                    "const chartProps = useMemo(() => {",
+                    "const steps = [];",
+                    "const coarseness = [undefined, 5];",
+                    "if (axis && axis.x) {",
+                    "const { granularity = 'coarse' } = axis.x;",
+                    "steps[0] = granularities.x[granularity] - 1;",
+                    "} else steps[0] = data.length - 1;",
+                    "",
+                    "if (axis && axis.y) {",
+                    "const { granularity = 'coarse' } = axis.y;",
+                    "steps[1] = granularities.y[granularity] - 1;",
+                    "} else steps[1] = 1;",
+                    "",
+                    "// Adjusting bounds to include negative values",
+                    "let chartBounds = chartValues.map((_, index) => {",
+                    "const { type } = charts[index];",
+                    "let mergedValues = chartValues[index]?.[0]?.slice(0) || [];",
+                    "chartValues[index]",
+                    ".slice(1) // skip first index as that is the x value",
+                    ".filter((values) => values) // property name isn't valid",
+                    ".forEach((values) => {",
+                    "mergedValues = mergedValues.map((__, i) =>",
+                    "type === 'lines'",
+                    "? [",
+                    "i,",
+                    "Math.min(mergedValues[i][1], values[i][1]),",
+                    "Math.max(mergedValues[i][1], values[i][1]),",
+                    "]",
+                    ": [",
+                    "i,",
+                    "Math.min(mergedValues[i][1], values[i][2]),",
+                    "Math.max(mergedValues[i][2], values[i][2]),",
+                    "],",
+                    ");",
+                    "});",
+                    "return calcBounds(mergedValues, { coarseness, steps });",
+                    "});",
+                    "",
+                    "if (boundsProp === 'align' && chartBounds.length) {",
+                    "const alignedBounds = [...chartBounds[0]];",
+                    "chartBounds.forEach((bounds) => {",
+                    "alignedBounds[0][0] = Math.min(alignedBounds[0][0], bounds[0][0]);",
+                    "alignedBounds[0][1] = Math.max(alignedBounds[0][1], bounds[0][1]);",
+                    "// Ensure lower y-bound is zero or negative minimum value",
+                    "alignedBounds[1][0] = Math.min(alignedBounds[1][0], bounds[1][0], 0);",
+                    "alignedBounds[1][1] = Math.max(alignedBounds[1][1], bounds[1][1]);",
+                    "});",
+                    "chartBounds = chartBounds.map(() => alignedBounds);",
+                    "}",
+                    "",
+                    "if (typeof boundsProp === 'object') {",
+                    "if (boundsProp.y)",
+                    "chartBounds = chartBounds.map((b) => [b[0], [...boundsProp.y]]);",
+                    "}",
+                    "",
+                    "return chartValues.map((values, index) => {",
+                    "const { thickness, type } = charts[index];",
+                    "const calcValues = stackedChartType[type] ? values[0] : values;",
+                    "return calcs(calcValues, {",
+                    "bounds: chartBounds[index],",
+                    "steps,",
+                    "thickness,",
+                    "});",
+                    "});",
+                    "}, [axis, boundsProp, charts, chartValues, data, granularities]);"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/js/components/DataChart/DataChart.js": [
+            {
+                "SEARCH": [
+                    "});",
+                    "// if this is a data driven x chart, set coarseness for x",
+                    "return calcBounds(chartValues[index], {",
+                    "coarseness: charts[index].property.x ? [5, 5] : coarseness,",
+                    "steps,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "});",
+                    "// if this is a data driven x chart, set coarseness for x",
+                    "return calcBounds(chartValues[index], {",
+                    "coarseness: charts[index].property.x ? [5, 5] : coarseness,",
+                    "steps,",
+                    "// ensure negative values are considered",
+                    "min: chartValues[index].reduce((acc, [, min]) => Math.min(acc, min), 0)",
+                    "});"
+                ]
+            }
+        ]
+    }
+}

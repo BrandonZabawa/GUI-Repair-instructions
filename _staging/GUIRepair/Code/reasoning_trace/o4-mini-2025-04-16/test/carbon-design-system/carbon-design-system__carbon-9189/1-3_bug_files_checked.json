@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Breadcrumb/BreadcrumbItem.js",
+            "packages/react/src/components/OverflowMenu/index.js",
+            "packages/react/src/internal/ComponentToggle.js"
+        ],
+        "explanation": "\n\u2022 BreadcrumbItem.js contains the logic that checks children.type.displayName to detect an OverflowMenu. Because createComponentToggle wraps OverflowMenu without preserving its displayName, this condition never matches and the overflow path is never taken.\n\n\u2022 OverflowMenu/index.js is where createComponentToggle is used to wrap the base and next OverflowMenu implementations behind a feature flag, producing the ComponentToggle HOC that BreadcrumbItem must detect.\n\n\u2022 ComponentToggle.js (createComponentToggle) is the HOC factory under src/internal that wraps the target component but does not set or forward the wrapped component\u2019s displayName. Updating this file to copy or compose displayName onto the returned HOC will restore BreadcrumbItem\u2019s ability to detect the overflow menu and apply the correct positioning.",
+        "bug_scenario": "When a Breadcrumb overflows, BreadcrumbItem is supposed to detect an OverflowMenu child (or a feature-toggled OverflowMenu) and render the shark-fin offset icon and menu positioning. BreadcrumbItem does this by inspecting children.type.displayName (expecting \u201cOverflowMenu\u201d or \u201cFeatureToggle(OverflowMenu)\u201d). However, because the OverflowMenu component is wrapped by createComponentToggle (ComponentToggle) in packages/react/src/components/OverflowMenu/index.js, the resulting forwardRef HOC doesn\u2019t have the expected displayName, so BreadcrumbItem doesn\u2019t take the overflow branch. As a result, the shark-fin and menuOffset aren\u2019t applied and the overflow menu renders in the wrong position."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Breadcrumb/BreadcrumbItem.js",
+            "packages/react/src/internal/ComponentToggle.js",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js"
+        ],
+        "explanation": "1. BreadcrumbItem.js: contains the conditional that looks at children.type.displayName to decide whether to render the shark-fin icon and apply the offset. Because the wrapped OverflowMenu has a different or missing displayName, this branch never triggers.\n2. ComponentToggle.js: the createComponentToggle HOC that wraps OverflowMenu doesn\u2019t propagate or set a matching displayName (e.g. \u201cFeatureToggle(OverflowMenu)\u201d), so BreadcrumbItem can\u2019t detect the menu component.\n3. OverflowMenu.js: this file applies the feature-flag toggle, exporting a wrapped version of the base OverflowMenu. It needs to pass through or assign the correct displayName so BreadcrumbItem\u2019s displayName checks succeed.",
+        "bug_scenario": "When a Breadcrumb renders an OverflowMenu in its items (to collapse intermediate pages), the special shark-fin arrow indicator and menu positioning are missing or misaligned. The screenshots show that BreadcrumbItem\u2019s logic that checks children.type.displayName to detect an OverflowMenu never matches (the wrapping HOC from createComponentToggle has no or the wrong displayName), so the horizontalOverflowIcon isn\u2019t rendered and the menuOffset isn\u2019t applied."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/css.js//default",
+            "src/languages/css.js//(url|data-uri)\\(\\.\\.\\) mode"
+        ],
+        "explanation": "The heart of the issue lives in src/languages/css.js in the default export, where the CSS language is defined. Inside its contains array there is a mode that begins with /(url|data-uri)\\(/ and ends at the first /\\)/. That mode treats everything up to the first closing parenthesis as the URL string, not accounting for nested parentheses inside quoted strings. To fix the bug, the default function in css.js needs to be updated so that the url/data-uri mode properly handles or escapes parentheses inside quoted strings, rather than terminating on the first ')'.",
+        "bug_scenario": "When highlighting CSS, strings inside url(...) that contain parentheses (e.g. url('/\u2026/background (01).jpg')) are cut off at the first ')' instead of the matching closing quote. The built-in CSS definition treats the first ')' as the end of the URL mode, so it does not respect quoted strings containing their own parentheses."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/css.js//default"
+        ],
+        "explanation": "The core of the problem lives in the default language definition in src/languages/css.js. Inside the returned contains array there is an anonymous mode that begins with /(url|data-uri)\\(/ and ends at the first /\\)/ it encounters. Because it doesn\u2019t account for quotes or nested parentheses, it closes on the parenthesis in the filename (e.g. \u201c(01)\u201d) rather than the matching url(\u2026) pair. To fix this, that mode\u2019s end rule needs to be adjusted to ignore closing parentheses inside quoted strings or to properly handle balanced parentheses.",
+        "bug_scenario": "In CSS highlighting (using highlight v11.5.0), URLs containing parentheses inside their quoted path are mis-highlighted. For example, in url('/\u2026/background (01).jpg'), the built-in url(...) mode treats the inner \u201c(01)\u201d closing parenthesis as the end of the url block and applies string highlighting only up to that point, breaking the rest of the URL."
+    }
+}

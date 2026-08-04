@@ -1,0 +1,33 @@
+diff --git a/src/ol/render/canvas/Executor.js b/src/ol/render/canvas/Executor.js
+index f7f78e46da..a74555638a 100644
+--- a/src/ol/render/canvas/Executor.js
++++ b/src/ol/render/canvas/Executor.js
+@@ -974,14 +974,20 @@ class Executor {
+             this.widths_[font] = cachedWidths;
+           }
+ 
+-          const pathLength = lineStringLength(pixelCoordinates, begin, end, 2);
+-          const textLength =
+-            Math.abs(textScale[0]) *
+-            measureAndCacheTextWidth(font, text, cachedWidths);
+-          if (overflow || textLength <= pathLength) {
+-            const textAlign = this.textStates[textKey].textAlign;
+-            const startM = (pathLength - textLength) * TEXT_ALIGN[textAlign];
+-            const parts = drawTextOnPath(
++const pathLength = lineStringLength(pixelCoordinates, begin, end, 2);
++const textLength =
++  Math.abs(textScale[0]) *
++  measureAndCacheTextWidth(font, text, cachedWidths);
++if (overflow || textLength <= pathLength) {
++  // map "start"/"end" through horizontalTextAlign to get the correct numeric offset
++  const rawTextAlign = this.textStates[textKey].textAlign || defaultTextAlign;
++  const startM =
++    (pathLength - textLength) *
++    horizontalTextAlign(
++      Array.isArray(text) ? text[0] : text,
++      rawTextAlign
++    );
++  const parts = drawTextOnPath(
+               pixelCoordinates,
+               begin,
+               end,

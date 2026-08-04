@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Tabs/next/Tabs.js//TabList",
+            "packages/react/src/components/Tabs/next/Tabs.js//Tab",
+            "packages/react/src/components/Tabs/Tabs.js//Tabs"
+        ],
+        "bug_functions": [],
+        "explanation": "All rendering of the tabs UI, including icon\u2010only variants, flows through the TabList and Tab components (in the new v11 \u2018next\u2019 implementation) and the Tabs class (in the legacy implementation). These components compute the container dimensions and apply CSS class names but currently do not expose a \u201csize\u201d prop or class modifier for the 40\u2009px vs. 48\u2009px variants. To fix the issue, you would add a size prop (e.g. size=\"default\" | \"large\") to TabList and Tab, update their className generation to include a size modifier (such as `${prefix}--tabs--icon-only--large`), and ensure the legacy Tabs class also handles the new size value in its render method.",
+        "bug_scenario": "The provided screenshot shows the \u201cicon\u2010only\u201d Tabs variant in two different size configurations. In the default state, each tab is a 40\u2009\u00d7\u200940\u2009px container with a 16\u2009px icon; in the \u201clarge\u201d state, each tab is 48\u2009\u00d7\u200948\u2009px with a 20\u2009px icon. The bug is that there is no \u201csize\u201d prop or CSS hook on the icon\u2010only Tabs (and ContainedTabs) in the React implementation, so consumers cannot switch between these two required sizes."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Tabs/Tabs.js//Tabs",
+            "packages/react/src/components/Tabs/next/Tabs.js//Tabs"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tabs/next/Tabs.js//TabList",
+            "packages/react/src/components/Tabs/next/Tabs.js//Tab"
+        ],
+        "explanation": "Both the classic and next versions of the Tabs component (the `Tabs` class in Tabs.js and the functional `Tabs` in next/Tabs.js) orchestrate rendering of TabList and Tab. To add a size prop for icon-only tabs, the TabList function in next/Tabs.js (and its counterpart in the classic Tabs.js) must accept and propagate a new `size` prop, then include corresponding CSS classes (e.g. `--icon-only--large`). The `Tab` component (React.forwardRef) also applies the per-item styling (width/height and font-size) based on that size prop. These are the key code locations where the size API and className logic need to be updated to support both 40px and 48px icon-only variants.",
+        "bug_scenario": "The screenshot shows two rows of icon-only \u201cline\u201d tabs. The top row is the default size: each tab is 40px square with a 16px icon centered. The bottom row is the large size: each tab is 48px square with a 20px icon. The current implementation only supports the 40px default size for icon-only Tabs and does not expose a prop to switch to the 48px variant."
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/Helper.js//WebGLHelper"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//parseStyle",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.createRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.setStyle",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.constructor",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.reset",
+            "src/ol/webgl/Helper.js//WebGLHelper.prepareDraw"
+        ],
+        "explanation": "The bug is about providing a mechanism to set a custom WebGL blend function (specifically gl.ONE, gl.ONE for additive blending) on a per-layer basis for WebGLTile layers. \n\n- src/ol/layer/WebGLTile.js//WebGLTileLayer: This class defines the user-facing API for WebGL tile layers and is where a new style or options flag (e.g., 'blendMode' or 'blendFunc') would be added and passed to the renderer.\n- src/ol/layer/WebGLTile.js//WebGLTileLayer.createRenderer, setStyle, parseStyle: These methods are responsible for instantiating the renderer with style/options and would need to propagate any new blending flag to the renderer.\n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: This is the renderer for WebGL tile layers, where the actual WebGL rendering happens and where the blend function is set (see the constructor and reset functions for initializing GL state and shaders).\n- src/ol/webgl/Helper.js//WebGLHelper: This helper class wraps low-level WebGL commands. The prepareDraw method is responsible for setting up the WebGL context for rendering, including setting the blend function. This is where support for custom blend modes would be implemented based on per-layer options.\n\nTo fix the bug, changes would need to be made in all these locations: adding a flag in the layer options, propagating it through the renderer, and actually setting the appropriate blend function in the WebGLHelper when drawing the layer.",
+        "bug_scenario": "Users need to blend WebGL tile layers with gl.blendFunc(gl.ONE, gl.ONE) (additive blending), but the current OpenLayers API for WebGLTile layers does not provide a flag or mechanism to set this blending mode per layer. This prevents rendering specific tile layers with additive blending, which is required for certain microscopy imaging use cases where overlapping layers should be combined by summing their color values rather than the standard alpha blending."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/Helper.js//WebGLHelper"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.createRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.setStyle",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.constructor",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.reset",
+            "src/ol/webgl/Helper.js//WebGLHelper.prepareDraw",
+            "src/ol/webgl/Helper.js//WebGLHelper.prepareDrawToRenderTarget"
+        ],
+        "explanation": "The bug is about not being able to configure the WebGL blend function for specific WebGLTile layers. The key classes and functions are:\n\n- src/ol/layer/WebGLTile.js//WebGLTileLayer: This is the main layer class where an option for blending mode can be added to the style or options. Its createRenderer and setStyle methods are where the style/options are passed to the renderer.\n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: This is the renderer for WebGL tile layers; it would need to receive and apply the blending option. Its constructor and reset methods are responsible for setting up rendering state from the layer's options and could propagate the blend function/flag.\n- src/ol/webgl/Helper.js//WebGLHelper: This low-level helper manages WebGL context and rendering state. Its prepareDraw and prepareDrawToRenderTarget methods are where the WebGL context's blendFunc is set just before rendering, so these would need to check for and apply the per-layer blend mode as requested by the bug report.\n\nThese are the elements that need to be edited to allow a blend mode flag to be specified on a WebGLTileLayer and honored during rendering.",
+        "bug_scenario": "The bug scenario is that in the OpenLayers-based digital slide microscopy viewer, there is no way to customize the WebGL blending mode (specifically, to use gl.blendFunc(gl.ONE, gl.ONE)) for only a subset of WebGL Tile Layers. The user needs a flag or option for WebGLTile layers to control the blending method, so that certain layers can use additive blending for visualizing microscopy images, which enables correct color blending when stacking several image layers. Currently, the WebGLTile layers do not expose any option in their style or configuration to set or change the WebGL blending mode, which is needed for their application."
+    }
+}

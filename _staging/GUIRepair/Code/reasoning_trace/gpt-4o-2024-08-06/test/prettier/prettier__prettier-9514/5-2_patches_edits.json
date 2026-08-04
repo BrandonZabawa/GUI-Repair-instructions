@@ -1,0 +1,254 @@
+{
+    "1/5": {
+        "src/language-js/parser-babel.js": [
+            {
+                "SEARCH": [
+                    "const babel = { parse, astFormat: \"estree\", hasPragma, locStart, locEnd };",
+                    "const babelFlow = { ...babel, parse: parseFlow };",
+                    "const babelTypeScript = { ...babel, parse: parseTypeScript };",
+                    "const babelExpression = { ...babel, parse: parseExpression };",
+                    "",
+                    "// Export as a plugin so we can reuse the same bundle for UMD loading",
+                    "module.exports = {",
+                    "parsers: {",
+                    "babel,",
+                    "\"babel-flow\": babelFlow,",
+                    "\"babel-ts\": babelTypeScript,",
+                    "json: {",
+                    "...babelExpression,",
+                    "hasPragma() {",
+                    "return true;",
+                    "},",
+                    "},",
+                    "json5: babelExpression,",
+                    "\"json-stringify\": {",
+                    "parse: parseJson,",
+                    "astFormat: \"estree-json\",",
+                    "locStart,",
+                    "locEnd,",
+                    "},",
+                    "/** @internal */",
+                    "__js_expression: babelExpression,",
+                    "/** for vue filter */",
+                    "__vue_expression: babelExpression,",
+                    "/** for vue event binding to handle semicolon */",
+                    "__vue_event_binding: babel,",
+                    "},",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const cherow = require(\"cherow\");",
+                    "",
+                    "function parseCherow(text, parsers, opts) {",
+                    "  try {",
+                    "    return cherow.parse(text, { module: true });",
+                    "  } catch (error) {",
+                    "    throw createError(error.message, {",
+                    "      start: { line: error.lineNumber, column: error.column + 1 },",
+                    "    });",
+                    "  }",
+                    "}",
+                    "",
+                    "const cherowParser = { parse: parseCherow, astFormat: \"estree\", locStart, locEnd };",
+                    "",
+                    "const babel = { parse, astFormat: \"estree\", hasPragma, locStart, locEnd };",
+                    "const babelFlow = { ...babel, parse: parseFlow };",
+                    "const babelTypeScript = { ...babel, parse: parseTypeScript };",
+                    "const babelExpression = { ...babel, parse: parseExpression };",
+                    "",
+                    "// Export as a plugin so we can reuse the same bundle for UMD loading",
+                    "module.exports = {",
+                    "  parsers: {",
+                    "    babel,",
+                    "    \"babel-flow\": babelFlow,",
+                    "    \"babel-ts\": babelTypeScript,",
+                    "    cherow: cherowParser,",
+                    "    json: {",
+                    "      ...babelExpression,",
+                    "      hasPragma() {",
+                    "        return true;",
+                    "      },",
+                    "    },",
+                    "    json5: babelExpression,",
+                    "    \"json-stringify\": {",
+                    "      parse: parseJson,",
+                    "      astFormat: \"estree-json\",",
+                    "      locStart,",
+                    "      locEnd,",
+                    "    },",
+                    "    /** @internal */",
+                    "    __js_expression: babelExpression,",
+                    "    /** for vue filter */",
+                    "    __vue_expression: babelExpression,",
+                    "    /** for vue event binding to handle semicolon */",
+                    "    __vue_event_binding: babel,",
+                    "  },",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/language-js/parser-babel.js": [
+            {
+                "SEARCH": [
+                    "const babel = require(\"@babel/parser\");"
+                ],
+                "REPLACE": [
+                    "const babel = require(\"@babel/parser\");",
+                    "const cherow = require(\"cherow\");"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "ast = tryCombinations(",
+                    "(options) => babel[parseMethod](text, options),",
+                    "combinations.map((extraPlugins) =>",
+                    "babelOptions({ sourceType, extraPlugins })",
+                    ")",
+                    ");"
+                ],
+                "REPLACE": [
+                    "      const isCherowCompatible = !text.includes(\"@flow\");",
+                    "      ",
+                    "      if (opts.parser === \"cherow\" && isCherowCompatible) {",
+                    "        ast = cherow.parse(text, { module: sourceType === \"module\" });",
+                    "      } else {",
+                    "        ast = tryCombinations(",
+                    "          (options) => babel[parseMethod](text, options),",
+                    "          combinations.map((extraPlugins) =>",
+                    "            babelOptions({ sourceType, extraPlugins })",
+                    "          )",
+                    "        );",
+                    "      }"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/language-js/parser-babel.js": [
+            {
+                "SEARCH": [
+                    "const babel = require(\"@babel/parser\");"
+                ],
+                "REPLACE": [
+                    "const cherow = require(\"cherow\");",
+                    "const babel = require(\"@babel/parser\");"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const parse = createParse(\"parse\", [\"jsx\", \"flow\"]);"
+                ],
+                "REPLACE": [
+                    "function createParseCherow() {",
+                    "  return (text, parsers, opts = {}) => {",
+                    "    let ast;",
+                    "    try {",
+                    "      ast = cherow.parse(text, { ",
+                    "        module: opts.__babelSourceType !== \"script\",",
+                    "      });",
+                    "    } catch (error) {",
+                    "      throw createError(error.message, {",
+                    "        start: {",
+                    "          line: 0, // Cherow doesn't provide detailed loc info",
+                    "          column: 0,",
+                    "        },",
+                    "      });",
+                    "    }",
+                    "    return postprocess(ast, { ...opts, originalText: text });",
+                    "  };",
+                    "}",
+                    "",
+                    "const parseCherow = createParseCherow();",
+                    "const parse = (text, parsers, opts = {}) => {",
+                    "  if (opts.parser === \"babel\" && isFlowFile(text, opts)) {",
+                    "    opts.parser = \"babel-flow\";",
+                    "    return parseFlow(text, parsers, opts);",
+                    "  }",
+                    "  ",
+                    "  if (!isFlowFile(text, opts)) {",
+                    "    return parseCherow(text, parsers, opts);",
+                    "  }",
+                    "  ",
+                    "  return createParse(\"parse\", [\"jsx\", \"flow\"])(text, parsers, opts);",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/language-js/parser-babel.js": [
+            {
+                "SEARCH": [
+                    "const { hasPragma } = require(\"./pragma\");",
+                    "const { locStart, locEnd } = require(\"./loc\");",
+                    "const postprocess = require(\"./postprocess\");"
+                ],
+                "REPLACE": [
+                    "const { hasPragma } = require(\"./pragma\");",
+                    "const { locStart, locEnd } = require(\"./loc\");",
+                    "const postprocess = require(\"./postprocess\");",
+                    "const cherow = require(\"cherow\");"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const babel = { parse, astFormat: \"estree\", hasPragma, locStart, locEnd };"
+                ],
+                "REPLACE": [
+                    "const cherowParse = (text) => {",
+                    "  const options = { module: true };",
+                    "  return cherow.parse(text, options);",
+                    "};",
+                    "",
+                    "const babel = { parse, astFormat: \"estree\", hasPragma, locStart, locEnd };",
+                    "const cherowParser = { parse: cherowParse, astFormat: \"estree\", locStart, locEnd };"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "},"
+                ],
+                "REPLACE": [
+                    "    cherow: cherowParser,",
+                    "  },"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/language-js/parser-babel.js": [
+            {
+                "SEARCH": [
+                    "const parse = createParse(\"parse\", [\"jsx\", \"flow\"]);"
+                ],
+                "REPLACE": [
+                    "const cherow = require(\"cherow\");",
+                    "",
+                    "function parseWithCherow(text, options) {",
+                    "  let ast;",
+                    "  try {",
+                    "    ast = cherow.parse(text, {",
+                    "      module: true, // assumes parsing as module",
+                    "      tolerant: true, // allows handling errors",
+                    "    });",
+                    "  } catch (error) {",
+                    "    throw createError(error.message, {",
+                    "      start: { line: 0, column: 0 },",
+                    "    });",
+                    "  }",
+                    "  return postprocess(ast, { ...options, originalText: text });",
+                    "}",
+                    "",
+                    "const parse = (text, parsers, options = {}) => {",
+                    "  if (isFlowFile(text, options)) {",
+                    "    return parseFlow(text, parsers, options);",
+                    "  }",
+                    "  return parseWithCherow(text, options);",
+                    "};"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,61 @@
+diff --git a/src/ol/source/GeoTIFF.js b/src/ol/source/GeoTIFF.js
+index 07ec7e6b91..91e75c223c 100644
+--- a/src/ol/source/GeoTIFF.js
++++ b/src/ol/source/GeoTIFF.js
+@@ -424,9 +424,16 @@ class GeoTIFFSource extends DataTile {
+     this.error_ = null;
+ 
+     /**
+-     * @type {'readRasters' | 'readRGB'}
++     * @private
++     * @type {'readRasters' | 'readRGB' | undefined}
++     */
++    this.readMethod_ = undefined;
++
++    /**
++     * @private
++     * @type {'auto' | boolean | undefined}
+      */
+-    this.readMethod_ = options.convertToRGB ? 'readRGB' : 'readRasters';
++    this.convertToRGB_ = options.convertToRGB;
+ 
+     this.setKey(this.sourceInfo_.map((source) => source.url).join(','));
+ 
+@@ -483,6 +490,37 @@ class GeoTIFFSource extends DataTile {
+     const metadata = new Array(sources.length);
+     let minZoom = 0;
+ 
++    // Determine readMethod_ based on convertToRGB_ option and image properties
++    if (this.readMethod_ === undefined) {
++      const convertToRGB = this.convertToRGB_;
++      if (convertToRGB === 'auto') {
++        // Check if all sources have 3 samples per pixel and photometric interpretation is one of the specified
++        // Use the first image of each source for this check
++        const photometricTypes = ['CMYK', 'YCbCr', 'CIELab', 'ICCLab'];
++        let useReadRGB = true;
++        for (let sourceIndex = 0; sourceIndex < sources.length; ++sourceIndex) {
++          const images = sources[sourceIndex].filter((item) => !isMask(item));
++          if (!images.length) {
++            useReadRGB = false;
++            break;
++          }
++          const image = images[0];
++          if (
++            image.getSamplesPerPixel() !== 3 ||
++            photometricTypes.indexOf(image.getPhotometricInterpretation && image.getPhotometricInterpretation()) === -1
++          ) {
++            useReadRGB = false;
++            break;
++          }
++        }
++        this.readMethod_ = useReadRGB ? 'readRGB' : 'readRasters';
++      } else if (convertToRGB) {
++        this.readMethod_ = 'readRGB';
++      } else {
++        this.readMethod_ = 'readRasters';
++      }
++    }
++
+     const sourceCount = sources.length;
+     for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {
+       const images = [];

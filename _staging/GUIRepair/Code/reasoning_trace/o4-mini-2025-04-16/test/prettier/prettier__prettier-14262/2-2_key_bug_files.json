@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/needs-parens.js",
+            "src/language-js/utils/is-type-cast-comment.js",
+            "src/language-js/printer-estree.js"
+        ],
+        "explanation": "1. src/language-js/needs-parens.js contains the core logic for whether to preserve or drop parentheses around expressions. Currently it doesn\u2019t treat a JSDoc `@satisfies` comment as a reason to keep the wrapping `(\u2026)`, so it unconditionally removes the parens on an object literal.\n2. src/language-js/utils/is-type-cast-comment.js only recognizes `@type` in block comments as a cast that should retain parentheses. It needs to be extended (or a parallel helper added) to detect `@satisfies` so the printer knows this comment means \u201cdon\u2019t drop parens.\u201d\n3. src/language-js/printer-estree.js (in functions like `genericPrint` and `printPathNoParens`) orchestrates how comments and parentheses are applied to AST nodes. Because it assumes type\u2010cast comments are only `@type`, it ends up calling the \u201cno\u2010parens\u201d branch when it sees `@satisfies`, causing the dropped parentheses. Adjusting these branches to honor the extended comment detection will fix the formatting issue.",
+        "bug_scenario": "The user\u2019s screenshot and GIF show that when formatting a JavaScript file containing a JSDoc `@satisfies` annotation on an object literal, Prettier drops the surrounding parentheses. Input code like:\n\n  module.exports = /** @satisfies {Record<string, string>} */ ({ hello: 1337 });\n\ngets reformatted to:\n\n  module.exports = /** @satisfies {Record<string, string>} */ { hello: 1337 };\n\nwhich removes the parentheses and breaks TypeScript intellisense. The bug is that JSDoc type\u2010cast comments other than `@type` aren\u2019t recognized as needing parens, so the printer strips them."
+    }
+}

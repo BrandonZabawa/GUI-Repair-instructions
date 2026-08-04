@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js//CriticalRequestChainRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js//CriticalRequestChainRenderer.createChainNode"
+        ],
+        "explanation": "The bug is related to how the transfer size is displayed for each chain node in the report. By examining the function headers and class structure in 'crc-details-renderer.js', it's clear that 'CriticalRequestChainRenderer' is responsible for rendering the details of each critical request chain node. Specifically, the 'createChainNode' method is where the display values, such as transfer size and duration, are set for each node. The code currently shows the same transfer size (i.e., the total transfer size of the longest chain) for every node, rather than the actual transfer size for each individual resource. This is a display/rendering bug in the renderer, not in the computation of the chains or their sizes themselves, which are handled in the audit and gather layers. Therefore, the key bug class is 'CriticalRequestChainRenderer', and the key bug function is 'createChainNode', where the incorrect value is injected into the report.",
+        "bug_scenario": "The bug scenario is that in the Lighthouse report, under 'Critical Request Chains', all listed resources are shown with the same size (38.18KB), which is incorrect. The actual transfer sizes of the resources are different, as seen in the network panel, but the rendering of the critical request chain incorrectly repeats the same size for every resource. This misleads users into thinking all critical requests have identical sizes, which is not the case."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains",
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains",
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js//CriticalRequestChainRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/critical-request-chains.js//audit",
+            "lighthouse-core/gather/computed/critical-request-chains.js//extractChain",
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js//createChainNode"
+        ],
+        "explanation": "The issue is with the incorrect reporting of the transfer size for each node in the critical request chains. \n\n- 'lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains' and its 'audit' method are involved in assembling the audit details and passing the chain and longest chain info for rendering. If transfer sizes are calculated or aggregated incorrectly here, all downstream reporting would be affected.\n- 'lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains' and its 'extractChain' method are responsible for creating the tree of critical request nodes, including their transfer sizes. If the transfer size is not correctly set on each node here, the renderer will display incorrect values.\n- 'lighthouse-core/report/v2/renderer/crc-details-renderer.js//CriticalRequestChainRenderer' and its 'createChainNode' method are responsible for rendering the tree and displaying the transfer size info for each node. If it always uses the same (possibly aggregate) value or gets incorrect input, all nodes will show the same size.\n\nTherefore, these classes and functions are key to tracking and fixing the bug: the bug is likely due to improper calculation or propagation of transfer size per node in the critical chain tree, resulting in all nodes displaying the same value.",
+        "bug_scenario": "The bug scenario depicted in the images and described in the report is that the 'Critical Request Chain' size information is incorrect. Specifically, all resource entries under the 'Critical Request Chains' are displaying the same size (38.18KB), which does not match their actual sizes as shown in the network waterfall. This misrepresentation makes it hard for users to identify which resources are actually large and potentially problematic for performance."
+    }
+}

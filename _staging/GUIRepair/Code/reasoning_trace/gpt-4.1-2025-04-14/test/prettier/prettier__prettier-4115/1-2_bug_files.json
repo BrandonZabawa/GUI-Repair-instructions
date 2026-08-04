@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-markdown/printer-markdown.js",
+            "src/language-markdown/parser-markdown.js",
+            "src/language-html/printer-htmlparser2.js",
+            "src/language-html/embed.js"
+        ],
+        "explanation": "These files are related to how Prettier parses and prints Markdown and embedded HTML within Markdown:\n\n- src/language-markdown/printer-markdown.js: This is responsible for printing Markdown files, including handling of code blocks or raw HTML (the core of the output formatting problem).\n- src/language-markdown/parser-markdown.js: This is responsible for parsing Markdown files, identifying code blocks, and determining how nested content (like HTML) is represented in the AST.\n- src/language-html/printer-htmlparser2.js: If HTML content inside Markdown is being re-formatted, this printer may be responsible for (re-)indentation logic, especially for embedded HTML.\n- src/language-html/embed.js: This module often manages how embedded languages (like HTML inside Markdown) are processed and how formatting is applied or composed between host (Markdown) and embedded (HTML) syntaxes.\n\nThese files together contribute to the cycle of increased indentation on repeated saves\u2014either through incorrect parsing of nested HTML in Markdown, or improper indentation logic when emitting the final text. Fixing the issue requires reviewing and adjusting their coordination, especially around indentation management for raw blocks/embedded HTML in Markdown.",
+        "bug_scenario": "The bug occurs in Markdown files when using the 'Format on Save' feature with Prettier in VS Code. Specifically, if you have a nested HTML code block (such as a <table>) inside Markdown (e.g., nested within a numbered list), every time you save the file, the formatter increases the indentation of the HTML code block, pushing it further right. This leads to incorrect and increasing indentation each time the file is saved, breaking the expected formatting. The attached image visually demonstrates a Markdown file where a table is being incorrectly indented after repeated saves."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-markdown/printer-markdown.js",
+            "src/language-markdown/parser-markdown.js",
+            "src/language-html/printer-htmlparser2.js",
+            "src/language-html/parser-parse5.js"
+        ],
+        "explanation": "The core of this bug arises when Markdown is parsed and then HTML (inside Markdown) is printed. The Markdown printer (`src/language-markdown/printer-markdown.js`) and parser (`src/language-markdown/parser-markdown.js`) are responsible for handling formatting, spacing, and indentation in Markdown files. Since the bug specifically relates to nesting HTML inside Markdown, the HTML printer (`src/language-html/printer-htmlparser2.js`) and parser (`src/language-html/parser-parse5.js`) are also involved, as they determine how raw HTML blocks are reprinted and integrated into the Markdown output. These files together control how indentation is maintained or compounded across multiple format passes, so they are most likely where the defect lies and where fixes would be needed.",
+        "bug_scenario": "The bug scenario, shown in the image and described in the report, occurs when formatting Markdown files that contain nested raw HTML or code blocks. Every time 'Format on Save' (using Prettier in VS Code) is triggered, the nested HTML is indented further, leading to incorrect and cumulative extra indentation. This breaks the intended formatting and nesting of code/HTML within Markdown, particularly in numbered lists or indented content."
+    }
+}

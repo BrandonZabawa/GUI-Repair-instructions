@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js"
+        ],
+        "explanation": "All of the work that turns byte savings into a performance score lives in byte-efficiency-audit.js. In createAuditProduct it calls computeWasteWithTTIGraph and uses that to set rawValue (wastedMs). Because computeWasteWithTTIGraph only measures delays caused by CPU tasks, a graph with only a network node yields zero wastedMs. To fix this bug, we need to update the logic in byte-efficiency-audit.js (in computeWasteWithTTIGraph or immediately after) to fall back to measuring the difference between the original and optimized end-of-graph times (or onload) whenever there are no long tasks, so that single-request animated-GIF cases show non-zero ms savings and a reduced score.",
+        "bug_scenario": "When you run the \u201cUse a video format for animated content\u201d audit (efficient-animated-content / ByteEfficiencyAudit) on a single large GIF (e.g. https://gif.ski/demo.gif), Lighthouse correctly reports ~4.8 MB of wasted bytes but then shows a perfect 100 score (0 ms savings). Under the hood, ByteEfficiencyAudit.createAuditProduct calls computeWasteWithTTIGraph on a graph containing only one network node and no CPU tasks, so it returns 0 ms wasted \u2014 hence the misleading perfect score despite a 23 s end-of-graph delay."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js",
+            "lighthouse-core/audits/byte-efficiency/efficient-animated-content.js",
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js",
+            "lighthouse-core/lib/dependency-graph/network-node.js"
+        ],
+        "explanation": "\n\u2022 byte-efficiency-audit.js: This is where computeWasteWithTTIGraph is invoked to turn byte savings into ms savings (wastedMs). It currently bails out with zero if no CPU tasks exist, so needs a fallback to measure end-of-graph finish time when only network nodes are present.\n\n\u2022 efficient-animated-content.js: Defines the animated-content audit and supplies only wastedBytes. It delegates the ms calculation to byte-efficiency-audit.js and may need to expose or consume a new ms value.\n\n\u2022 simulator.js: Runs the dependency graph to estimate TTI. It never surfaces a finish time for network-only graphs; it will need to return the time at which the last network node completes so byte-efficiency-audit.js can compute a non-zero ms impact.\n\n\u2022 network-node.js: Models individual network requests in the graph, including start and end times. Its end-time data will be the source for an end-of-graph fallback and may need to expose a public property or method if it\u2019s currently private.",
+        "bug_scenario": "When running Lighthouse\u2019s \u201cUse a video format for animated content\u201d (efficient-animated-content) audit against a single large GIF (e.g. https://gif.ski/demo.gif), the audit correctly reports ~4.8 MB of byte savings, but then hands back a perfect 100 score because the ByteEfficiencyAudit\u2019s computeWasteWithTTIGraph logic returns 0 ms savings when the dependency graph contains only one network node and no CPU tasks. In other words, no long tasks are delayed so the estimated TTI impact is zero, despite the last network request actually finishing ~23 s later than it would if converted to video."
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_files": [
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/format-reveal-theme.ts",
+            "src/format/reveal/format-reveal-title.ts",
+            "src/format/reveal/plugin/markdown/plugin.js",
+            "src/format/reveal/format-reveal-multiplex.ts",
+            "src/format/reveal/metadata.ts",
+            "src/format/html/format-html-shared.ts",
+            "src/format/html/format-html.ts"
+        ],
+        "explanation": "The processing and rendering logic for RevealJS slides is implemented in the src/format/reveal/ directory, including the key file format-reveal.ts, which is highly likely to directly manipulate how Markdown content, such as block images and links, is handled before being translated to RevealJS HTML. Changes in format-reveal.ts or related modules (reveal theme, title, multiplex) could inadvertently strip hyperlinks from images if special case logic for standalone images or links is present. Markdown parsing in Reveal slides may also involve the RevealJS 'markdown' plugin (plugin.js), and the transformation flows from generic HTML formatting logic in format-html-shared.ts and format-html.ts. These files are responsible for transformations between Markdown, Pandoc AST, and final slide HTML, which is where context-specific suppression of anchors might occur, especially for standalone images (block elements). Therefore, these files need to be reviewed for logic that differentiates between block images and inline (linked) images, and modified so that block images can retain their anchor links.",
+        "bug_scenario": "The bug occurs when a Markdown slide in a RevealJS presentation contains only a linked image (i.e., an image embedded within a Markdown link). The link is not rendered in the output slide, so clicking the image does not navigate as expected. Conversely, if the image is not alone (e.g., accompanied by surrounding text), the link works. This suggests that the logic used to process or render standalone (block-level) images in slides is stripping or ignoring the anchor/link element, resulting in the loss of interactivity. There are no issues with images in inline contexts. The attached image is a standalone image similar to those described in the bug but does not itself show the bug; it's a reference of the type of block-level (standalone) image that is problematic in RevealJS slides."
+    },
+    "2": {
+        "bug_files": [
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/format-reveal-theme.ts",
+            "src/format/reveal/format-reveal-plugin.ts",
+            "src/format/reveal/format-reveal-multiplex.ts",
+            "src/format/reveal/constants.ts",
+            "src/format/reveal/metadata.ts",
+            "src/format/reveal/schemas.ts",
+            "src/format/html/format-html.ts"
+        ],
+        "explanation": "These files are suspects because the bug is specific to the rendering logic for RevealJS slides, which resides in the 'src/format/reveal/' directory. 'format-reveal.ts' likely contains the primary RevealJS slide rendering logic, including how standalone images and links are handled. Other files in the same folder, such as theme, plugin, constants, and metadata TS files, could influence how content blocks (e.g., images, links) are parsed and emitted in the output RevealJS HTML, especially with respect to recognizing and retaining anchor links around images when no other content is present. The 'format-html.ts' file is included because RevealJS rendering often shares or reuses HTML rendering code and may have a bug or special case affecting standalone image links. If the standalone-image parsing is 'shared' or derived from core HTML, interactions or bugs there might propagate to RevealJS output. These files are thus the most relevant to review to trace and fix this issue.",
+        "bug_scenario": "The bug scenario described in the report is about images with hyperlinks in RevealJS slides: when an image is the only content on a slide and is embedded via a markdown link (e.g., [![](img.jpg)](https://...)), the link is not rendered in the output presentation for RevealJS, although it works when some additional text content is present. The image attached does not specifically show a bug rendering but is likely a placeholder for a standalone image scenario described in the report, where a single image (such as a fireworks photo) should be clickable (linked), but the output omits the link if there's no other content present."
+    }
+}

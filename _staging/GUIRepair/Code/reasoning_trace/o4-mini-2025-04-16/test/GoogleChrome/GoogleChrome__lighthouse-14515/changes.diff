@@ -1,0 +1,78 @@
+diff --git a/report/renderer/report-renderer.js b/report/renderer/report-renderer.js
+index b50d0ed04..1212b68cc 100644
+--- a/report/renderer/report-renderer.js
++++ b/report/renderer/report-renderer.js
+@@ -127,17 +127,23 @@ export class ReportRenderer {
+       : 'Chromium';
+     const channel = report.configSettings.channel;
+     const benchmarkIndex = report.environment.benchmarkIndex.toFixed(0);
+-    const axeVersion = report.environment.credits?.['axe-core'];
+-
+-    // [CSS icon class, textContent, tooltipText]
+-    const metaItems = [
+-      ['date',
+-        `Captured at ${Util.i18n.formatDateTime(report.fetchTime)}`],
+-      ['devices',
+-        `${envValues.deviceEmulation} with Lighthouse ${report.lighthouseVersion}`,
+-        `${Util.i18n.strings.runtimeSettingsBenchmark}: ${benchmarkIndex}` +
++      // [CSS icon class, textContent, tooltipText]
++      const metaItems = [
++        ['date',
++          `Captured at ${Util.i18n.formatDateTime(report.fetchTime)}`],
++        ['devices',
++          `${envValues.deviceEmulation} with Lighthouse ${report.lighthouseVersion}`,
++          `${Util.i18n.strings.runtimeSettingsBenchmark}: ${benchmarkIndex}` +
+             `\n${Util.i18n.strings.runtimeSettingsCPUThrottling}: ${envValues.cpuThrottling}` +
++            (envValues.screenEmulation
++              ? `\n${Util.i18n.strings.runtimeSettingsScreenEmulationDimensions}: ${envValues.screenEmulation}`
++              : '') +
++            (envValues.deviceScaleFactor !== undefined
++              ? `\n${Util.i18n.strings.runtimeSettingsDeviceScaleFactor}: ${envValues.deviceScaleFactor}`
++              : '') +
+             (axeVersion ? `\n${Util.i18n.strings.runtimeSettingsAxeVersion}: ${axeVersion}` : '')],
++        ...
++      ];
+       ['samples-one',
+         Util.i18n.strings.runtimeSingleLoad,
+         Util.i18n.strings.runtimeSingleLoadTooltip],
+diff --git a/report/renderer/util.js b/report/renderer/util.js
+index 2a9db9218..d503c343a 100644
+--- a/report/renderer/util.js
++++ b/report/renderer/util.js
+@@ -518,11 +518,21 @@ class Util {
+       desktop: Util.i18n.strings.runtimeDesktopEmulation,
+     }[settings.formFactor] || Util.i18n.strings.runtimeNoEmulation;
+ 
++    // Include emulated screen dimensions and deviceScaleFactor (DPR)
++    const {width, height, deviceScaleFactor} = settings.screenEmulation || {};
+     return {
+       deviceEmulation,
+       cpuThrottling,
+       networkThrottling,
+       summary,
++      // width×height if available
++      screenEmulation: (typeof width === 'number' && typeof height === 'number')
++        ? `${width}×${height}`
++        : undefined,
++      // DPR if available
++      deviceScaleFactor: typeof deviceScaleFactor === 'number'
++        ? deviceScaleFactor
++        : undefined,
+     };
+   }
+ 
+@@ -720,9 +730,13 @@ const UIStrings = {
+ 
+   /** Label for button to create an issue against the Lighthouse GitHub project. */
+   footerIssue: 'File an issue',
+-
+   /** Descriptive explanation for emulation setting when no device emulation is set. */
+   runtimeNoEmulation: 'No emulation',
++  /** Label for a row in a table that shows the dimensions of the emulated screen, in pixels */
++  runtimeSettingsScreenEmulationDimensions: 'Screen dimensions',
++  /** Label for a row in a table that shows the device pixel ratio used for emulation */
++  runtimeSettingsDeviceScaleFactor: 'Device scale factor',
++  
+   /** Descriptive explanation for emulation setting when emulating a Moto G4 mobile device. */
+   runtimeMobileEmulation: 'Emulated Moto G4',
+   /** Descriptive explanation for emulation setting when emulating a generic desktop form factor, as opposed to a mobile-device like form factor. */

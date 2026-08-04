@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/Meter/Circle.js//Circle",
+            "src/js/components/Meter/Meter.js//Meter"
+        ],
+        "bug_functions": [
+            "src/js/components/Meter/Meter.js//deriveMax",
+            "src/js/components/Meter/Circle.js//translateEndAngle"
+        ],
+        "explanation": "The Circle component in Circle.js is responsible for computing and rendering each arc segment based on a running startAngle and the total max value. deriveMax in Meter.js changed the way the maximum angle is computed (now summing all values), which interacts unexpectedly with Circle\u2019s startValue + value >= max check, causing every segment except the last to compute negligible angles and be skipped. The helper translateEndAngle in Circle.js then miscalculates endAngle boundaries when the accumulated startValue approaches max. Fixing deriveMax (to match the previous behavior) or adjusting Circle.js logic (especially around startValue, the max cap condition, and translateEndAngle) will restore rendering of all slices.",
+        "bug_scenario": "When rendering a circular meter with multiple values in v2.25.0, only the last segment is drawn instead of the full set of slices. In the provided screenshots, the working version (v2.24.0) shows five colored arcs, but the broken v2.25.0 output only displays the final segment's arc on top of a grey circle."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/Meter/Circle.js//Circle"
+        ],
+        "bug_functions": [
+            "src/js/components/Meter/Circle.js//translateEndAngle"
+        ],
+        "explanation": "The Circle component computes an anglePer value by flooring (360/max * 10000) and dividing by 10000. When max is very large, this floor yields zero, so every segment\u2019s endAngle equals its startAngle and no arcs render. Only the last segment, which triggers the special case (startValue + value >= max) and forces endAngle to 360\u00b0, draws. The translateEndAngle function then simply returns startAngle + anglePer * value, which with anglePer = 0 leaves all but the final path invisible. To fix, the anglePer calculation in Circle.js (or the way translateEndAngle handles tiny anglePer values) must be adjusted to avoid truncating to zero for large sums.",
+        "bug_scenario": "In v2.25.0 the circular Meter only draws the final segment from a multi-value array. In the screenshots the first four data points disappear and only the last (red/brown) arc covering the full circle is rendered. Previously (v2.24.0) all five colored segments showed proportionally around the circle."
+    }
+}

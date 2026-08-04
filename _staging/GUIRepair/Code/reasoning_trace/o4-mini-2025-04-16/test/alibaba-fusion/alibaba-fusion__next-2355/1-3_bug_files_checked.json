@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/table/util.js",
+            "types/table/index.d.ts"
+        ],
+        "explanation": "1. src/table/util.js \u2013 this is where fetchDataByPath lives. It turns dataIndex into a string, splits on dots and only handles a single bracket expression (/(.*)\\[(.*)\\]/). It never parses full array syntax or an actual JS array, so dataIndex=\"['range','start','end']\" falls through and returns undefined. \n2. types/table/index.d.ts \u2013 the Table.Column dataIndex prop is only typed as string; if we want to accept string[] or a literal array, the TypeScript definitions need to be updated accordingly. Together, these two files must be changed so that fetchDataByPath will detect an Array or a JSON array string, iterate each path segment, and return the nested values as intended, and the types will allow passing dataIndex as an array of keys.",
+        "bug_scenario": "In the Table component a column\u2019s dataIndex was written as the literal string \"['range','start','end']\" in order to map two nested values in the record (range.start and range.end). The current fetchDataByPath utility only supports dot-notation (a.b.c) and a single simple bracket lookup (e.g. \"list[0]\"). As a result, when it sees the JSON-like string '[\"range\",\"start\",\"end\"]', it returns undefined, and downstream code throws \u201cCannot read property \u2018startDate,endDate\u2019 of undefined\u201d at render time."
+    },
+    "2": {
+        "bug_files": [
+            "src/table/util.js"
+        ],
+        "explanation": "The root of the problem lives in src/table/util.js in the fetchDataByPath function. That function currently only supports dot-separated paths and a single key[index] pattern, but it never parses a full bracket-notation string as an array of keys. When you pass \"['range','start','end']\" as dataIndex, path.toString() yields \"['range','start','end']\", split('.') yields one entry, field[0] includes the brackets, and the existing regex match only extracts two groups, so you never drill down properly into object.range.start.end. To fix this bug, you must update fetchDataByPath (src/table/util.js) to detect and parse bracket-notation strings (e.g. JSON-parse them into an array of keys, or run a loop over multiple bracket matches) and then iterate through each key in turn.",
+        "bug_scenario": "In the Table component, when you pass a dataIndex value in the form of a bracket\u2010notation string \u2013 for example \"['range','start','end']\" \u2013 the table\u2019s internal fetchDataByPath function doesn\u2019t recognize it. It simply calls path.toString(), splits on '.', and then only handles a single [key] lookup pattern. As a result, fetchDataByPath returns undefined for nested bracket paths, and the cell renderer later does something like undefined.startDate and blows up with a TypeError."
+    }
+}

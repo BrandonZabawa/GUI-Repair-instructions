@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js",
+            "lighthouse-core/report/v2/report-generator.js",
+            "lighthouse-core/report/v2/renderer/dom.js"
+        ],
+        "explanation": "\u2022 report-renderer.js is where the HTML report is assembled. It must be updated to look for the runtimeWarnings array on the results JSON and insert the warning banner in the header under the score gauges.  \n\u2022 report-generator.js orchestrates passing the Lighthouse JSON into the v2 renderer; it must preserve or forward the runtimeWarnings field so the renderer can act on it.  \n\u2022 dom.js provides utilities (createElement, setAttribute, etc.) used by the renderer to build the banner\u2019s DOM. It may need small updates to support the new warning container and styling.",
+        "bug_scenario": "When Lighthouse is run under Headless Chrome (which cannot throttle network), it emits a runtime warning in the JSON. The report-renderer is supposed to detect a non-empty runtimeWarnings array and inject a prominent warning banner immediately under the category score gauges at the top of the HTML report. In the screenshot you can see the 36/98/97/77 gauge row followed by the red warning note: \u201cNote: Your site\u2019s mobile performance may be worse\u2026 because Headless Chrome does not support network throttling. See crbug.com/728451.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js",
+            "lighthouse-core/report/v2/renderer/category-renderer.js",
+            "lighthouse-core/report/v2/report-generator.js"
+        ],
+        "explanation": "All of the runtime-warning banner logic lives in the V2 report-renderer layers.  \n\n\u2022 lighthouse-core/report/v2/renderer/report-renderer.js  \n  \u2013 This is the top-level rendering pipeline for the full HTML report. It needs to be updated (or already was) to pull `runtimeWarnings` out of the JSON and insert the banner immediately after the header gauges instead of deeper within a specific category.  \n\n\u2022 lighthouse-core/report/v2/renderer/category-renderer.js  \n  \u2013 Prior to this fix, performance-related banner insertion lived inside the Performance category renderer. It must be cleaned up to remove the old perf-only insertion point now that warnings are surfaced globally.  \n\n\u2022 lighthouse-core/report/v2/report-generator.js  \n  \u2013 This is the entry point used by both the CLI and standalone scripts (e.g., ReportGeneratorV2) to turn raw Lighthouse JSON (including `runtimeWarnings`) into HTML. It ties together the report-renderer and must ensure that any new banner-injection hooks are invoked.",
+        "bug_scenario": "When Lighthouse is run under Headless Chrome (which doesn\u2019t support network throttling) and the resulting JSON has a non-empty `runtimeWarnings` array, the HTML report inserts a prominent red warning banner (\u201c\u26a0\ufe0f Note: Your site\u2019s mobile performance may be worse\u2026\u201d) immediately beneath the top row of category gauges (36/98/97/77 in the screenshot). The banner spans the full report width and warns users that mobile network throttling couldn\u2019t be applied. This behavior comes from the report-renderer detecting `runtimeWarnings` and injecting the banner UI at render time."
+    }
+}

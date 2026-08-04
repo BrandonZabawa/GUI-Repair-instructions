@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/computed/metrics/first-cpu-idle.js",
+            "lighthouse-core/computed/metrics/timing-summary.js",
+            "lighthouse-core/lib/tracehouse/trace-processor.js"
+        ],
+        "explanation": "The files selected are directly related to computing critical performance metrics such as Time to Interactive, First Contentful Paint, and CPU Idle periods. They are involved in analyzing traces and determining the CPU idle window required for TTI calculations. The bug centers on how idle periods are detected immediately after FCP under certain throttling methods, making these files most likely to contain affected logic. In particular: 'interactive.js' contains the audit for TTI, 'trace-processor.js' handles analysis of CPU tasks and idle periods, and other files compute or summarize related metrics. Adjusting the way idle periods are detected, especially when throttling is provided or FCP is slow, will likely require changes in these files to avoid false NO_TTI_CPU_IDLE_PERIOD errors.",
+        "bug_scenario": "The bug scenario involves Lighthouse erroneously reporting 'NO_TTI_CPU_IDLE_PERIOD' errors in performance audits when run under DevTools/provided throttling, specifically if a page has a slow First Contentful Paint (FCP) but is otherwise idle immediately after FCP. The error results in no performance score being reported, with Time to Interactive (TTI) and Total Blocking Time both failing, even though there shouldn't be an error if the page is actually idle after FCP."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/first-cpu-idle.js",
+            "lighthouse-core/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/computed/metrics/timing-summary.js",
+            "lighthouse-core/lib/tracehouse/trace-processor.js"
+        ],
+        "explanation": "These files are directly related to metrics computation, including Time to Interactive (TTI), First CPU Idle, and how idle periods are detected from trace data. The main symptom is a NO_TTI_CPU_IDLE_PERIOD error, which occurs when Lighthouse cannot compute an idle window after FCP, leading to missing or erroneous TTI and total blocking time calculations. 1) 'lighthouse-core/audits/metrics/interactive.js' implements how the TTI audit produces its result and error handling. 2) 'lighthouse-core/computed/metrics/interactive.js' performs TTI calculation and is likely involved in failing to find or label a CPU idle period in the main thread trace. 3 and 4) 'lighthouse-core/computed/metrics/first-cpu-idle.js' and 'first-contentful-paint.js' are involved in marking the timing of FCP and CPU idle, which are precursors for determining TTI. 5) 'lighthouse-core/computed/metrics/timing-summary.js' aggregates metric findings for the report. 6) 'lighthouse-core/lib/tracehouse/trace-processor.js' is involved in analyzing the trace and extracting period/activity data, so a failure to detect an idle period likely originates here. Fixes might involve correcting the logic for identifying when the CPU is sufficiently idle after FCP, especially under 'provided' throttling, and when idle periods begin and end.",
+        "bug_scenario": "The bug scenario is that when using Lighthouse (especially with 'provided' network throttling, e.g., in Chrome DevTools with Simulated throttling disabled), if a tested page delivers a slow First Contentful Paint (FCP) but is immediately idle after, Lighthouse fails to compute Time to Interactive (TTI). It then reports an error (NO_TTI_CPU_IDLE_PERIOD), showing 'Error!' for TTI and Total Blocking Time in the report. The error appears related to how Lighthouse computes (or fails to compute) the time intervals of main thread activity and idleness in the trace, leading to incorrect no-idle-period detection."
+    }
+}

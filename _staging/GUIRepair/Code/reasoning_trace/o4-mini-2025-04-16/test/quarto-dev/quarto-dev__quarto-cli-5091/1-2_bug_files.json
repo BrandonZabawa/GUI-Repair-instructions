@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "resources/filters/quarto-finalize/mediabag.lua",
+            "src/command/render/resources.ts",
+            "src/core/download.ts"
+        ],
+        "explanation": "\u2022 resources/filters/quarto-finalize/mediabag.lua contains the Lua filter that looks for Image blocks, derives local filenames from their URLs, writes them into badurl_files/mediabag, and rewrites the Markdown/Pandoc AST. Its filename-sanitization logic doesn\u2019t handle nested or percent-encoded proxy URLs correctly.\n\u2022 src/command/render/resources.ts orchestrates the download of external resources when preparing HTML and PDF output, including calling the mediabag filter under the hood. It is responsible for passing the right arguments and paths into Pandoc and the Lua filter.\n\u2022 src/core/download.ts implements the low-level HTTP download routine that actually fetches the remote URL and writes it to disk. It also contributes to how filenames are extracted or defaulted (for example via path.basename) and must be updated to sanitize or normalize nonstandard URLs before saving.",
+        "bug_scenario": "When rendering a Quarto document to PDF that contains an externally hosted image behind a fetch proxy URL (for example, a SubstackCDN URL of the form\n\n  https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fbucketeer..._289x174.jpeg\n\nQuarto\u2019s \u201cmediabag\u201d logic is supposed to download the remote image into a local folder (e.g. badurl_files/mediabag) and rewrite the link in the LaTeX it passes to pandoc. In this case the percent-encoded URL and proxy path confuse the filename-generation code, so the mediabag folder ends up containing an invalid file name (e.g. \u201chttps://bucket.jpeg\u201d), Pandoc can\u2019t find the image, and the PDF compile fails with\n\n  Unable to load picture or PDF file 'badurl_files/mediabag/https://bucket.jpeg'."
+    },
+    "2": {
+        "bug_files": [
+            "resources/filters/quarto-finalize/mediabag.lua",
+            "lua-types/pandoc/mediabag.lua",
+            "src/command/render/pandoc-dependencies-resources.ts",
+            "src/command/render/resources.ts"
+        ],
+        "explanation": "All of these files participate in the workflow that takes image URLs, downloads or references them, assigns them a local name in the Pandoc mediabag, and writes the final .tex with the local file references. \n\n\u2022 resources/filters/quarto-finalize/mediabag.lua: the Lua filter that maps external image URLs to mediabag file names, but currently does not sanitize or slugify the URL path, so colons and slashes end up in the file name.  \n\u2022 lua-types/pandoc/mediabag.lua: the type declaration for mediabag entries in the Pandoc Lua API \u2013 this defines the same keys and will need to match any changes to the naming logic.  \n\u2022 src/command/render/pandoc-dependencies-resources.ts: the TypeScript module that gathers all resource dependencies (including images) and generates the metadata table that tells Pandoc which files to include and how to name them; it currently preserves the raw URL when computing the local path.  \n\u2022 src/command/render/resources.ts: orchestrates copying or downloading of resources before rendering, and similarly needs to apply the same sanitization/sluggification so the downloaded file name is valid on disk.  \n\nFixing this bug requires adding a normalization or slugifier step in these modules so that any non-filesystem-safe characters in the URL are replaced (for example by hex escapes or by a hash) when building the mediabag file name.",
+        "bug_scenario": "When rendering a Quarto document to PDF, images whose URLs contain non-standard path characters (for example, colons, percent-encoding or slashes as in the Substack \u201cfetch\u201d URL) are being copied into the Pandoc mediabag with literally the URL string as the file name (e.g. \u201chttps://bucket.jpeg\u201d). LaTeX then fails with \u201cUnable to load picture or PDF file '.../badurl_files/mediabag/https://bucket.jpeg'\u201d because that isn\u2019t a valid file name."
+    }
+}

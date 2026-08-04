@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/modeling/BpmnFactory.js",
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "explanation": "\u2022 DropOnFlowBehavior.js is the feature that handles dropping an event onto an existing connection: it splits the original sequence flow into two new ones but never copies over the original conditionExpression.\n\u2022 ReplaceConnectionBehavior.js covers the more general case of replacing or inserting elements on a connection and likewise creates new flows without preserving the conditionExpression metadata.\n\u2022 BpmnFactory.js is used by both behaviors to construct the new sequenceFlow elements \u2014 it sets up fresh flows but does not carry over any existing conditionExpression from the source flow.\n\u2022 BpmnUpdater.js applies the semantic updates after splitting/removing the old flow and adding the new ones; it doesn\u2019t merge or propagate the original conditionExpression into the first new flow segment. All together, these pieces orchestrate the split and are where the conditionExpression needs to be transferred when inserting a Timer Intermediate Catch Event.",
+        "bug_scenario": "When you drag a Timer Intermediate Catch Event onto an existing sequence flow that already has a conditionExpression, the diagram splits the flow into two but then drops the original conditionExpression entirely. The GIF shows the model XML before (with <model:conditionExpression> on SequenceFlow_0o4khn9) and after the drop (where both new flows lack any conditionExpression). The expected behavior is to preserve the conditionExpression on the first new sequence flow segment."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "explanation": "DropOnFlowBehavior.js is responsible for handling the \u2018drop on flow\u2019 operation (splitting the flow and inserting the intermediate event). In its current implementation it creates two new sequenceFlow elements without preserving the original conditionExpression. BpmnUpdater.js is then invoked to actually create those new BPMN semantic sequenceFlow elements in the model and likewise doesn\u2019t copy over the old conditionExpression. Both files must be updated so that when splitting a conditional flow the original conditionExpression is carried over to the correct new sequenceFlow.",
+        "bug_scenario": "When you drag a Timer Intermediate Catch Event onto an existing sequence flow that has a conditionExpression, the toolkit splits the original flow, drops in the new event, and then re\u2010wires the two new sequence flows \u2014 but in doing so it wipes out the original conditionExpression on the outgoing flow. The attached GIF shows a conditional flow (with a diamond icon), the user drops a timer event on it, and after drop the XML no longer contains the <conditionExpression> on that sequenceFlow."
+    }
+}

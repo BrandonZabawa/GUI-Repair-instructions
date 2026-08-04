@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-finalize/mediabag.lua",
+            "src/resources/filters/common/url.lua",
+            "src/command/render/latexmk/pdf.ts"
+        ],
+        "explanation": "1. 'src/resources/filters/quarto-finalize/mediabag.lua': This Lua filter is responsible for rerouting mediabag image entries to the filesystem for non-office outputs (like PDF). It uses the image's 'src' directly as a filename, which can break if the 'src' is a non-standard or encoded URL, leading to invalid or unescaped filenames.\n2. 'src/resources/filters/common/url.lua': This Lua file provides a 'urldecode' function, which is likely needed to properly decode percent-encoded URLs before using them as filenames. If the mediabag filter does not decode URLs, the resulting file path will be invalid for the filesystem and for LaTeX.\n3. 'src/command/render/latexmk/pdf.ts': This TypeScript file orchestrates the PDF generation process, including the handling of image files and mediabag entries. If the mediabag filter produces an invalid path, this file will ultimately pass the broken path to XeLaTeX, resulting in the observed error. It may need to be updated to ensure that image paths are valid and properly decoded before being passed to the LaTeX engine.\n\nThese files are key because the bug is rooted in the handling, decoding, and filesystem mapping of non-standard image URLs during the PDF rendering pipeline.",
+        "bug_scenario": "The bug scenario involves rendering a PDF from a Quarto document that includes an image with a non-standard URL (containing encoded characters and a complex path). The rendering process fails with XeLaTeX, producing an error that it is unable to load the image file, as the URL is not properly handled or decoded, resulting in a broken path like 'badurl_files/mediabag/https://bucket.jpeg'. The provided image is a simple, happy cartoon blob, which is likely the intended image that fails to render in the PDF output due to the URL handling issue."
+    }
+}

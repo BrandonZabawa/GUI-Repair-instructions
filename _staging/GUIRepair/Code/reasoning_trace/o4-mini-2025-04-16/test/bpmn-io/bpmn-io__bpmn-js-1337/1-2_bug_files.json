@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js",
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace-preview/BpmnReplacePreview.js"
+        ],
+        "explanation": "1. SubProcessStartEventBehavior.js: This behavior module currently handles start events in subprocesses but does not drop the eventDefinition on move or prevent typed events. It must be extended to strip event definitions when a start event is moved into a non-event subprocess.\n\n2. BpmnRules.js: The central rules engine allows creation, moving and morphing of typed start events inside non-event subprocesses. New rule entries must be added to disallow shape.create, shape.move and element.morph of any StartEvent with an eventDefinition other than 'none' when its parent is a regular subprocess.\n\n3. BpmnReplace.js: This provider defines the set of replace (morph) options. It currently exposes typed start events even in a subprocess context. It needs to filter out typed start event options when the selected event resides in a non-event subprocess.\n\n4. BpmnReplacePreview.js: The replace-preview decorator applies the previewed event definitions. It must be updated so that if a typed start event is being dropped or morphed into a subprocess, its eventDefinition is dropped or reset to \u2018none\u2019 before preview/apply.",
+        "bug_scenario": "When a user drags or morphs a typed start event (e.g. message, timer, signal) into a non-event-based subprocess, the engine currently allows the operation or retains the event definition type. According to BPMN rules (and as highlighted in the gif), start events inside a regular (non-event) subprocess must be untyped (\"none\" start events). The user must not be able to morph a start event into a typed start event inside a subprocess, and any typed start events dropped or moved into a subprocess must have their eventDefinition removed (i.e. become untyped)."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js",
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/popup-menu/ReplaceMenuProvider.js"
+        ],
+        "explanation": "\u2022 SubProcessStartEventBehavior.js: This behavior is responsible for handling Start Events being created or moved into a Sub Process. It needs to drop any eventDefinition (timer, message, signal, etc.) when the target is a non-event Sub Process and enforce untyped creation. \n\n\u2022 BpmnRules.js: All shape creation/move operations are subject to rule checks here. We must add or update rules to disallow creating or dropping a typed Start Event inside a non-event Sub Process (by returning false for create/move of Start Event with a definition in that context).\n\n\u2022 ReplaceOptions.js: This file defines the set of available replace/morph variants for BPMN elements. Inside a non-event Sub Process we must remove typed Start Event options so that only the generic (untyped) Start Event is offered.\n\n\u2022 ReplaceMenuProvider.js: The popup\u2010menu implementation that renders the replace entries. It must be made context-aware so that when the parent is a non-event Sub Process it omits typed Start Events from the replace menu.",
+        "bug_scenario": "When a user drags or morphs a typed Start Event (for example, a Message Start Event) into a non\u2010event based Sub Process, the tool currently allows the event definition to remain (or even switch to a typed start event inside a Sub Process). According to BPMN semantics, Sub Processes that are not event\u2010based must only contain untyped (generic) Start Events. This means: (1) creating or moving a typed Start Event into a non\u2010event Sub Process must either be disallowed or silently stripped of its event type, and (2) the replace/morph menu inside a non\u2010event Sub Process must not offer typed Start Event variants."
+    }
+}

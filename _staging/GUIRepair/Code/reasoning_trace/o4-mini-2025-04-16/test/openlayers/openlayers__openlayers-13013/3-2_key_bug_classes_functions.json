@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "bug_functions": [
+            "src/ol/tilegrid/TileGrid.js//getTileSize",
+            "src/ol/webgl/TileTexture.js//TileTexture.setTile",
+            "src/ol/webgl/TileTexture.js//TileTexture.uploadTile_",
+            "src/ol/webgl/TileTexture.js//uploadDataTexture"
+        ],
+        "explanation": "The core of the problem is that the tile pixel dimensions computed by the tile grid (via getTileSize) do not match the length of the data buffer passed into WebGL::texImage2D. In TileTexture.setTile the code does: this.size = toSize(grid.getTileSize(z)); it then computes pixelCount = size[0] * size[1] and divides the data.byteLength by pixelCount to find the band count. Finally uploadTile_ calls uploadDataTexture which invokes gl.texImage2D(gl.TEXTURE_2D, \u2026, size[0], size[1], \u2026, data). Because getTileSize is returning the wrong dimensions (or the custom grid\u2019s tileSizes aren\u2019t being honored correctly), the texture width/height passed to gl.texImage2D exceeds the actual data length, triggering the WebGL warning and yielding black tiles. Fixing getTileSize (and how TileTexture uses it) so that it matches the actual DataTile data dimensions will resolve the mismatch and display the tiles correctly.",
+        "bug_scenario": "The user is rendering a DataTileSource with a custom tile grid in a WebGLTileLayer. In the screenshot the main view is just a large black area, with only two thin horizontal lines drawn in the small inset frame. In the developer console the tileGrid is logged showing extent [0,\u2009\u201323828,\u200923903,\u20090], resolutions [31\u2026,\u200916\u2026,\u20094\u2026,\u20091\u2026], sizes (tile counts) [[1,1],[7,7],[25,25],[100,100]] and tileSizes [[770,768],[240,240],[240,240],[240,240]]. A WebGL warning reads \u201ctexImage: Desired upload requires more data than is available\u2026\u201d indicating that the width/height passed to texImage2D don\u2019t match the actual data buffer length. The result is black tiles instead of the data imagery."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/tilegrid/TileGrid.js//TileGrid",
+            "src/ol/webgl/TileTexture.js//TileTexture"
+        ],
+        "bug_functions": [
+            "src/ol/tilegrid/TileGrid.js//TileGrid.getTileSize",
+            "src/ol/tilegrid/TileGrid.js//TileGrid.calculateTileRanges_",
+            "src/ol/webgl/TileTexture.js//uploadDataTexture",
+            "src/ol/webgl/TileTexture.js//TileTexture.uploadTile_"
+        ],
+        "explanation": "The mismatch between the custom tileSize ([770\u00d7768]) defined in TileGrid and the actual data length returned by DataTile means that uploadDataTexture is called with a width/height that don\u2019t line up with the number of pixels available. TileGrid.getTileSize (and its internal calculateTileRanges_) determines the width/height that end up in uploadDataTexture, and TileTexture.uploadTile_/uploadDataTexture then try to call gl.texImage2D with too large a dimension, causing the warning and the black tiles. Adjusting the tile\u2010slicing logic in TileGrid or the data\u2010upload logic in uploadDataTexture (or both) is required to ensure the pixel array length matches the declared size.",
+        "bug_scenario": "As shown in the screenshot and console dump, the application is using a WebGLTileLayer that pulls pixel data from an ol.source.DataTile with a custom tile grid. At zoom level 0 the tile grid\u2019s tileSize is [770, 768] (instead of the usual 256\u00d7256), but when the DataTile is sliced and uploaded to WebGL the byte\u2010length of the data does not match 770\u00d7768 pixels. WebGL reports \u201cDesired upload requires more data than is available: (767 rows plus 770 pixels needed, 767 rows plus 258 pixels available)\u201d and the screen is filled with solid black tiles."
+    }
+}

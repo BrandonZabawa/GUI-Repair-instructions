@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/computed/network-records.js"
+        ],
+        "explanation": "\n\u2022 gatherers/iframe-elements.js only collects iframe metadata (src, width/height) but does not instruct Lighthouse to fetch or include iframe network/CPU data in its artifacts.\n\u2022 gather-runner.js orchestrates the gathering of network and trace data but only for the main frame; it never spins up sessions or driver connections for child frames.\n\u2022 driver.js implements the connection to a single DevTools target. Since no new driver targets are created for iframes, no network or trace events from those frames are recorded.\n\u2022 computed/network-records.js processes only the root frame\u2019s network log to build the page\u2019s resource timing summary. It omits any network records from iframe contexts.\n\nTogether, these files are responsible for collecting and aggregating load/trace data. Because they neither open DevTools sessions for iframes nor merge iframe network records into the parent\u2019s metrics, iframe costs are ignored in the final score.",
+        "bug_scenario": "When Lighthouse audits a page containing a slow, large-DOM iframe the parent page\u2019s performance score remains high (\u224871), even though running Lighthouse directly against the iframe URL yields a very poor score (\u224839). In the parent report (left image) the heavy network and rendering cost of the iframe is completely ignored, resulting in a misleadingly good performance metric for the parent."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js",
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/computed/network-records.js",
+            "lighthouse-core/computed/page-dependency-graph.js",
+            "lighthouse-core/computed/network-analysis.js",
+            "lighthouse-core/computed/load-simulator.js",
+            "lighthouse-core/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/computed/metrics/speed-index.js",
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js"
+        ],
+        "explanation": "\n\u2022 gatherers/iframe-elements.js & driver.js  \u2013 these are responsible for discovering and recording frames, but driver only instruments the main frame by default, so iframe navigation and network events never make it into the artifacts.\n\u2022 computed/network-records.js \u2013 builds the list of network requests, but filters or only records for the main frame, omitting all iframe requests completely.\n\u2022 computed/page-dependency-graph.js & computed/network-analysis.js \u2013 assemble network + CPU tasks into a graph for simulation; since the iframe\u2019s requests never made it into the records, none of its cost is included.\n\u2022 computed/load-simulator.js & lib/dependency-graph/simulator/simulator.js \u2013 the throttling/simulation step runs only on the main-frame graph, so all of the iframe\u2019s throttled bytes and CPU work are ignored when estimating metrics.\n\u2022 computed/metrics/first-contentful-paint.js & speed-index.js \u2013 these metric implementations filter trace and graph events by the main frame\u2019s ID, so any FCP or paint in a child frame is never counted.\n\nTogether, these files form the data-collection and metric computation pipeline; because each step currently scopes itself to the main frame, the embedded iframe\u2019s performance impact is completely omitted from the parent page\u2019s report.",
+        "bug_scenario": "When Lighthouse audits a \u201cparent\u201d page that embeds an iframe, it currently only records and simulates the network/CPU work for the main frame. Any child-frame navigation, requests, and rendering cost are completely ignored in the parent\u2019s performance metrics. As a result, a parent page that includes a slow, large-DOM iframe can show a high performance score (~70), while running Lighthouse directly against that iframe shows a much lower score (~40)."
+    }
+}

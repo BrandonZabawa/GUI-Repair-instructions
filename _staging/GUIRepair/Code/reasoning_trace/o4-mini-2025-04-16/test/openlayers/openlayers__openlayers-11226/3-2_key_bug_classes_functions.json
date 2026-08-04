@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/interaction/Modify.js//Modify",
+            "src/ol/interaction/Snap.js//Snap"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Modify.js//writeGeometryCollectionGeometry_",
+            "src/ol/interaction/Snap.js//writeGeometryCollectionGeometry_"
+        ],
+        "explanation": "The core of the modify and snap interactions is building and managing segment data for each geometry type so that vertices can be detected and moved. In Modify.js and Snap.js, the write*Geometry_ functions generate segment entries for all supported geometry types. However, writeGeometryCollectionGeometry_ is empty in both classes, so children of a GeometryCollection never produce segment data. As a result, pointer events over vertices inside a GeometryCollection are ignored. Filling in writeGeometryCollectionGeometry_ (e.g. by iterating over the collection\u2019s geometries and delegating to the appropriate write*Geometry_ method) will allow the Modify and Snap interactions to recognize and update the individual polygon components within the GeometryCollection.",
+        "bug_scenario": "The demo shows two adjacent rectangles stored together in a single GeometryCollection. A shared vertex between the two rectangles cannot be dragged and updated correctly. When you drag the common center vertex, only one rectangle updates (or nothing moves), so modifying geometries inside a GeometryCollection fails."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/interaction/Modify.js//Modify",
+            "src/ol/interaction/Snap.js//Snap"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Modify.js//writeGeometryCollectionGeometry_",
+            "src/ol/interaction/Snap.js//writeGeometryCollectionGeometry_"
+        ],
+        "explanation": "Both Modify and Snap depend on their write*Geometry_* methods to decompose a geometry into individual segments (rings and vertices) so that vertices can be grabbed, moved or snapped. In the compressed skeleton both writeGeometryCollectionGeometry_ methods are empty stubs. As a result, none of the nested geometries in a GeometryCollection ever get registered in the segment-tree (RBush) and the shared vertex isn\u2019t tracked or updated. Implementing writeGeometryCollectionGeometry_ (by iterating over each geometry in the collection and calling the existing writeXGeometry_ routines) will generate the missing segment data and fix the modify/snap bug for GeometryCollection.",
+        "bug_scenario": "In the demo two adjacent polygons have been wrapped in a GeometryCollection and passed to the Modify interaction. When you drag the shared vertex only the first polygon moves \u2013 the second polygon is never updated. In other words, because GeometryCollection isn\u2019t broken down into its constituent rings the interaction never creates segment data for the nested geometries and so only one geometry is editable."
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint",
+            "lighthouse-core/gather/computed/trace-of-tab.js//TraceOfTab"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint.audit",
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint.calculateScore",
+            "lighthouse-core/gather/computed/trace-of-tab.js//TraceOfTab.compute_"
+        ],
+        "explanation": "The error 'Cannot read property 'ts' of undefined' is a classic symptom of code that expects an object with a 'ts' (timestamp) property but instead receives 'undefined'. In the context of the Lighthouse extension, the FirstMeaningfulPaint audit (in first-meaningful-paint.js) relies on trace data artifacts, particularly trace events relating to 'firstMeaningfulPaint', 'firstContentfulPaint', and 'navigationStart'. The audit() method gets these events from artifacts produced by TraceOfTab.compute_ (in trace-of-tab.js). If TraceOfTab.compute_ fails to find or correctly populate these event objects (for example, if the trace data is incomplete or different in the extension context), the subsequent code in FirstMeaningfulPaint.calculateScore (which accesses evt.ts) will throw the error. Thus, the bug is rooted in these classes and functions: TraceOfTab is responsible for extracting events, and FirstMeaningfulPaint.audit/calculateScore for consuming them. The fix likely involves making these functions robust against missing data, providing better fallback handling or clearer error messages.",
+        "bug_scenario": "The image and bug report describe a runtime error occurring in the Chrome extension: 'Cannot read property 'ts' of undefined' when trying to generate a 'First meaningful paint' report. The error results in the FMP audit failing, showing a score of -1 and the message that 'ts' is undefined. This suggests that the audit expects an event object with a 'ts' (timestamp) property, but receives 'undefined', likely due to missing or incomplete trace data when running in the extension context."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint",
+            "lighthouse-core/gather/computed/trace-of-tab.js//TraceOfTab"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint.audit",
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint.calculateScore",
+            "lighthouse-core/gather/computed/trace-of-tab.js//TraceOfTab.compute_"
+        ],
+        "explanation": "The error 'Cannot read property 'ts' of undefined' occurs when code tries to access the 'ts' property on an event object that is unexpectedly undefined. In the compressed files, the FirstMeaningfulPaint audit (lighthouse-core/audits/first-meaningful-paint.js) is responsible for calculating the 'First meaningful paint' metric, and its audit() and calculateScore() methods directly access 'ts' properties on navigation and paint events returned from the trace. These objects are supplied by TraceOfTab.compute_ (lighthouse-core/gather/computed/trace-of-tab.js), which parses raw trace data and returns key events such as navigationStartEvt and firstMeaningfulPaintEvt. If these are not found or are undefined, downstream code will fail when trying to access their properties. The error suggests that TraceOfTab may not be returning the expected structure (perhaps due to differences in Chrome extension vs. browser environments), or that FirstMeaningfulPaint is not checking for undefined events before using them. Thus, these classes and functions are directly related to the bug and are likely locations where a fix (such as more robust checks or improved trace event extraction) should be applied.",
+        "bug_scenario": "The bug scenario occurs when attempting to generate a 'First meaningful paint' report in the Chrome extension. The UI displays an error: 'Cannot read property 'ts' of undefined', indicating that some code is attempting to access the 'ts' (timestamp) property of an undefined object. The error is specific to the Chrome extension context and does not occur when running the application in a standard browser environment. The screenshot shows this error under the 'First meaningful paint' audit, suggesting the failure is related to the trace event processing for this metric."
+    }
+}

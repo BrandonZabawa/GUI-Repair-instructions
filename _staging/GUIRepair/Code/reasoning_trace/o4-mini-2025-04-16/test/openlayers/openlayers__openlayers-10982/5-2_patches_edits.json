@@ -1,0 +1,41 @@
+{
+    "1/1": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const renderMode = layer.getRenderMode();",
+                    "if (renderMode === VectorTileRenderType.IMAGE) {",
+                    "return this.container;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    const renderMode = layer.getRenderMode();",
+                    "    if (renderMode === VectorTileRenderType.IMAGE) {",
+                    "      // Prevent clipped gaps when browser is zoomed by rounding subpixel translations",
+                    "      const ts = this.container.style.transform;",
+                    "      if (ts) {",
+                    "        const m = ts.match(/matrix\\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^\\)]+)\\)/);",
+                    "        if (m) {",
+                    "          const e = Math.round(parseFloat(m[5]));",
+                    "          const f = Math.round(parseFloat(m[6]));",
+                    "          this.container.style.transform =",
+                    "            `matrix(${m[1]},${m[2]},${m[3]},${m[4]},${e},${f})`;",
+                    "        }",
+                    "      }",
+                    "      return this.container;",
+                    "    }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const context = tile.getContext(layer);"
+                ],
+                "REPLACE": [
+                    "    const context = tile.getContext(layer);",
+                    "    // Turn off smoothing to avoid anti-aliased seams between adjacent canvases",
+                    "    context.imageSmoothingEnabled = false;"
+                ]
+            }
+        ]
+    }
+}

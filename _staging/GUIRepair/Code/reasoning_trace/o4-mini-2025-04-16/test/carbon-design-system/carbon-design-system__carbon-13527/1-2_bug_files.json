@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/UIShell/SideNav.js",
+            "packages/react/src/components/UIShell/SideNavMenu.js",
+            "packages/react/src/components/UIShell/SideNavMenuItem.js",
+            "packages/react/src/components/UIShell/_utils.js"
+        ],
+        "explanation": "\n1. SideNav.js controls the rail expand/collapse state (expanded prop) and notifies child menus when rail retracts, so it must hook into submenu open state.\n2. SideNavMenu.js manages the open/closed state of each collapsible menu and renders the floating dropdown overlay; it currently does not listen for parent SideNav's expanded=false to forcibly close any open menu.\n3. SideNavMenuItem.js renders individual menu items in the floating overlay and delegates focus/click handling; it relies on SideNavMenu\u2019s open state so it flutters when the menu remains open after collapse.\n4. _utils.js contains shared logic for attaching and detaching the floating menu (FloatingMenu helpers). The helper does not re-compute or remove the overlay on SideNav collapse, so the overlay remains mounted. This file will need adjustment (e.g. listening to expanded prop) to clean up the overlay when the SideNav rail retracts.",
+        "bug_scenario": "When using the UIShell SideNav in rail mode (isRail=true, expanded toggled by hover), opening a submenu (SideNavMenu) shows its dropdown overlay. However, when you move your mouse off the rail, the SideNav collapses (expanded\u2192false) but the submenu\u2019s dropdown overlay remains visible, floating over the page instead of closing with the rail."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/UIShell/SideNav.js",
+            "packages/react/src/components/UIShell/SideNavMenu.js"
+        ],
+        "explanation": "1. SideNav.js: This is the component that controls the rail behavior (isRail prop), the hover-to-expand logic, and the collapse/expand state. When the rail collapses on mouse leave, it should notify or force-close any open submenus. Because it doesn\u2019t, the dropdown stays open.\n\n2. SideNavMenu.js: This component renders and manages the open/close state of the floating submenu using a FloatingMenu/ClickListener under the hood. It listens almost exclusively to its own click/hover events, and is not aware of the rail\u2019s collapse event. As a result, it never receives a close event when SideNav collapses, so the menu remains open even though the parent nav has retracted.",
+        "bug_scenario": "When using the UIShell SideNav in rail mode (isRail), hovering over the rail expands it and you can open a SideNavMenu drop-down. However, as soon as the mouse leaves the rail area the nav collapses back to its rail state but the previously opened SideNavMenu dropdown remains visible in its expanded position. In other words, collapsing the SideNav does not trigger the SideNavMenu to close, leaving the floating menu orphaned on the screen."
+    }
+}

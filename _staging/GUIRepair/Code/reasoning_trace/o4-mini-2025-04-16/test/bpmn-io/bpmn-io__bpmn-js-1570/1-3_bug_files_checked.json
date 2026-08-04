@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace-preview/BpmnReplacePreview.js",
+            "lib/features/modeling/BpmnLayouter.js",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js",
+            "lib/features/drilldown/DrilldownCentering.js",
+            "lib/features/drilldown/SubprocessCompatibility.js"
+        ],
+        "explanation": "\u2022 BpmnReplace.js: Implements the wrap operation itself. It creates the new subprocess container and moves children in, and may fire commands that trigger a view change.\n\u2022 BpmnReplacePreview.js: Renders the preview of the new subprocess and may hook into the canvas/view before/after replace, inadvertently causing a pan/zoom reset.\n\u2022 BpmnLayouter.js: Computes and resizes the subprocess bounds around its children. Layout changes can lead to canvas invalidation and recalculation of view extents.\n\u2022 UpdateCanvasRootHandler.js: Listens for canvas-root changes and actually applies a new root context; wrapping in a subprocess may fire this and re-set the view to the child plane.\n\u2022 DrilldownOverlayBehavior.js, DrilldownCentering.js & SubprocessCompatibility.js: The drill-down feature automatically wires up new subprocess planes to allow \u201centering\u201d them and centers the viewport on creation. On wrap, these behaviours fire as if the user drilled into the subprocess, triggering the unwanted jump. All three files collaborate to mount the overlay, perform the drill-down, and center the view on the new subprocess plane.",
+        "bug_scenario": "When using the \u201cWrap in Sub-process\u201d (Replace) feature on an existing start\u2192task\u2192end sequence, the library unexpectedly jumps/centers the viewport to the newly created subprocess plane. The user loses their current pan/zoom and is taken out of the outer diagram to view the inner subprocess. The diagram should remain in the same viewport after wrapping."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js",
+            "lib/features/drilldown/DrilldownCentering.js"
+        ],
+        "explanation": "When you wrap elements in a pool, under the hood a new BPMN Participant (pool) is created and the canvas\u2019s \u201croot\u201d is updated to that new element via the UpdateCanvasRootHandler. The UpdateCanvasRootHandler emits a root.changed event that the DrilldownCentering module listens for. DrilldownCentering then recalculates the viewbox (pan/zoom) so the new root is fully visible. Because pools map to top\u2010level diagram roots in BPMN, this combination causes the viewport to snap to the pool immediately on wrap. To fix the bug you need to adjust either the root update logic (in UpdateCanvasRootHandler) so it doesn\u2019t emit a centering event for pool\u2010wrap operations, or change DrilldownCentering so it ignores root changes caused by wrapping elements in a pool.",
+        "bug_scenario": "In the animation the user has a simple model (a start event, a task inside a wrapped subprocess/pool, and an end event) laid out off to the right side of the canvas. As soon as they trigger \u201cwrap in pool\u201d (by selecting elements and choosing \u201cParticipant/Pool\u201d), the canvas immediately recenters and zooms on the newly created pool. In other words, instead of preserving the current pan/zoom, the viewport jumps so that the pool is centered and fully visible."
+    }
+}

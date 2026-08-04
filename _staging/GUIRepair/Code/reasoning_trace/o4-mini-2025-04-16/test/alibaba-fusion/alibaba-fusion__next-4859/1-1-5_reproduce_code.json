@@ -1,0 +1,7 @@
+{
+    "1": {
+        "reproduce_code": "// index.jsx\nimport React, { useState } from 'react';\nimport ReactDOM from 'react-dom';\nimport { CascaderSelect } from '@alifd/next';\nimport '@alifd/next/dist/next.css';\n\n// 构造大数据量的三级级联数据\nconst dataSource = [\n  {\n    label: '省份-测试',\n    value: 'province',\n    children: Array.from({ length: 100 }).map((_, i) => ({\n      label: `城市 ${i}`,\n      value: `city_${i}`,\n      children: Array.from({ length: 50 }).map((_, j) => ({\n        label: `区县 ${i}-${j}`,\n        value: `district_${i}_${j}`,\n        isLeaf: true\n      }))\n    }))\n  }\n];\n\nfunction App() {\n  const [visible, setVisible] = useState(true);\n\n  return (\n    <div style={{ padding: 50 }}>\n      <CascaderSelect\n        dataSource={dataSource}\n        useVirtual\n        defaultVisible={visible}\n        onVisibleChange={v => setVisible(v)}\n        listStyle={{ height: 240, width: 300 }}\n        style={{ width: 200 }}\n        placeholder=\"请选择\"\n      />\n    </div>\n  );\n}\n\nReactDOM.render(<App />, document.getElementById('root'));\n",
+        "explanation": "上述示例在数据层级中构造了 1×100×50 的大数据集，保证滚动容器触发虚拟渲染。通过给 CascaderSelect 传入 useVirtual 并设置 listStyle.height，使其启用虚拟滚动。展开菜单后，可见区域上下的 padding 占位元素被应用了默认行背景色，从而出现灰色块。该代码即能复现背景色错乱的问题。",
+        "bug_scenario": "在 CascaderSelect 中开启虚拟滚动（useVirtual）并指定较高的容器高度后，级联菜单展开时，由于只渲染可视区域的行，其余行以 padding 占位。占位节点上继承了行背景色（原本用于高亮或隔行变色），导致在可视区域上下的空白地方也呈现灰色条纹，看起来像背景色错乱。"
+    }
+}

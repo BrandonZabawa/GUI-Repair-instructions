@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/webgl/Helper.js//WebGLHelper",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/Helper.js//prepareDraw",
+            "src/ol/webgl/Helper.js//prepareDrawToRenderTarget",
+            "src/ol/webgl/Helper.js//finalizeDraw",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/layer/WebGLTile.js//parseStyle"
+        ],
+        "explanation": "The bug is related to the lack of support for custom blending options in WebGL rendering. The relevant classes and functions are involved in the rendering process of WebGL Tile Layers:\n\n1. `WebGLHelper` class in `src/ol/webgl/Helper.js` provides low-level WebGL rendering functionalities. The functions `prepareDraw`, `prepareDrawToRenderTarget`, and `finalizeDraw` are critical as they manage the setup and finalization of draw calls, where blending settings would typically be applied.\n\n2. `WebGLTileLayerRenderer` class in `src/ol/renderer/webgl/TileLayer.js` is responsible for rendering tile layers using WebGL. The `renderFrame` function is involved in rendering the frame and would be a place to integrate custom blend functions.\n\n3. `WebGLTileLayer` class in `src/ol/layer/WebGLTile.js` manages the tile layer settings and renderer. The `parseStyle` function is used to generate shaders and uniforms, potentially including blending settings if exposed through styles.\n\nThese classes and functions need to be edited to allow for setting and using a custom blend function for specific WebGL Tile Layers, thereby fixing the blending issue described in the bug report.",
+        "bug_scenario": "The bug scenario involves a digital slide microscopy images viewer using OpenLayer. The issue is the need to blend images from different WebGL Tile Layers using a specific WebGL blend function (gl.blendFunc(gl.ONE, gl.ONE)). Currently, there's no parameter in the OpenLayer API to set different blending options for WebGL rendering, which is required for the application's use case to color and blend images efficiently."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/webgl/Helper.js//WebGLHelper",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/Helper.js//setUniforms",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame"
+        ],
+        "explanation": "The 'WebGLHelper' class in 'src/ol/webgl/Helper.js' is responsible for low-level WebGL rendering functions, including shader and uniform management, which are relevant for implementing custom blending functions. The 'setUniforms' function deals with uniform definitions, crucial for setting up custom blending.\n\nThe 'WebGLTileLayer' class in 'src/ol/layer/WebGLTile.js' is likely involved because it manages the style and rendering options for WebGL Tile Layers, and it needs to incorporate the new blending settings.\n\nThe 'WebGLTileLayerRenderer' class in 'src/ol/renderer/webgl/TileLayer.js' handles the actual rendering of tile layers using WebGL. Modifications here would be required to apply the new blending options during the rendering process. The 'renderFrame' function is particularly relevant because it deals with rendering operations, where the blending function would be applied.",
+        "bug_scenario": "The bug scenario involves the need to blend using the WebGL blend function gl.blendFunc(gl.ONE, gl.ONE) for a subset of TileLayers in a digital slide microscopy images viewer based on OpenLayers. This viewer is transitioning from offscreen rendering to using WebGL Tile Layers for better performance. However, the new API lacks a parameter for setting different blending options, which is crucial for the application's use case."
+    }
+}

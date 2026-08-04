@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/config-provider/index.jsx//ConfigProvider",
+            "src/config-provider/cache.js//Cache"
+        ],
+        "bug_functions": [
+            "src/config-provider/index.jsx//componentWillUnmount"
+        ],
+        "explanation": "The ConfigProvider class in src/config-provider/index.jsx is the primary component that manages context and cache for configuration in the application. The cache is managed using the Cache class defined in src/config-provider/cache.js. The componentWillUnmount lifecycle method in ConfigProvider is responsible for removing the component's cache from the global cache. However, as noted in the bug report and linked React issue, componentWillUnmount is not called in SSR scenarios, leading to cache not being cleaned up and memory not being released. Thus, the memory leak is rooted in the interaction between ConfigProvider, its cache handling (using the Cache class), and the componentWillUnmount method. Fixing the bug would likely involve providing a manual API to clear the cache, or another mechanism to ensure cache cleanup in SSR environments.",
+        "bug_scenario": "The image shows a memory profiler with a large memory consumption (193.98MB) and multiple retained instances of the ConfigProvider class. The bug report describes a scenario where, under SSR (Server-Side Rendering) load, ConfigProvider's internal cache memory usage grows and is not garbage collected due to the fact that the React lifecycle method componentWillUnmount is not called during SSR. This results in a memory leak."
+    },
+    "2": {
+        "bug_classes": [
+            "src/config-provider/index.jsx//ConfigProvider",
+            "src/config-provider/cache.js//Cache"
+        ],
+        "bug_functions": [
+            "src/config-provider/index.jsx//componentWillUnmount"
+        ],
+        "explanation": "The memory leak is directly related to how ConfigProvider manages and cleans up its cache. The ConfigProvider class (src/config-provider/index.jsx) is the main component using an internal cache (childContextCache, which is an instance of Cache from src/config-provider/cache.js). The cleanup is attempted in the componentWillUnmount method, but this lifecycle method does not execute in SSR, leaving cache entries unremoved and causing memory leaks. The Cache class (src/config-provider/cache.js) contains the logic for storing, adding, and removing cache entries. Problems in properly removing entries or providing a manual cache cleanup API are central to fixing the bug. Therefore, edits are needed in the ConfigProvider class, its componentWillUnmount method, and possibly the Cache class itself to provide manual cache management for SSR scenarios.",
+        "bug_scenario": "The bug scenario is a memory leak caused by the ConfigProvider component in SSR (Server-Side Rendering) environments. According to the bug report, under heavy SSR load, the internal cache of ConfigProvider grows and is not garbage collected, causing memory usage to increase over time. The provided memory snapshot image shows multiple retained instances of ConfigProvider, confirming the memory leak. The issue arises because the cleanup logic normally in componentWillUnmount is not invoked during SSR, as explained in a referenced React issue. Therefore, the cache is never properly cleared in SSR scenarios."
+    }
+}

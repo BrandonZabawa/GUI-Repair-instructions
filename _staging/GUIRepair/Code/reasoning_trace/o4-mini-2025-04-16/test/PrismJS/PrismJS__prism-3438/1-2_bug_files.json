@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-css.js",
+            "components/prism-css.min.js"
+        ],
+        "explanation": "The CSS grammar is defined in components/prism-css.js (and its minified counterpart). In that file Prism defines how functions (including url(\u2026)) and strings are tokenized. The faulty regular expression for matching url('\u2026') causes the parser to split the URL on punctuation marks rather than capturing it as one string. Adjusting the regex in prism-css.js (and regenerating the minified file) will fix the broken URL highlighting.",
+        "bug_scenario": "When highlighting a CSS @import url('\u2026') statement, Prism incorrectly breaks the URL literal into multiple tokens at punctuation (colons, semicolons, question marks, etc.) instead of treating the entire contents of url('...') as a single string. The provided screenshots show that the expected behavior (one string token for the URL) is replaced by many small tokens."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-css.js",
+            "components/prism-css.min.js",
+            "prism.js"
+        ],
+        "explanation": "Prism\u2019s CSS grammar is defined in components/prism-css.js. It contains the regex that matches url(...) and the sub-grammar that highlights the quoted part as a string. The current pattern or its tokenization rules aren\u2019t handling punctuation inside the quoted URL as part of the string, so the URL is split at colons, semicolons and ampersands. To fix this, we must revise the regex or the token definitions in prism-css.js so that the entire quoted URL is matched greedily as one string. After updating that source file, prism.js (the bundled build) and the minified version need to be regenerated/updated, which is why prism-css.min.js and prism.js are also bug-related.",
+        "bug_scenario": "When Prism highlights a CSS @import url(...) statement containing a quoted URL with punctuation (colons, semicolons, ampersands), it splits the URL up into multiple tokens (breaking at :, ;, &), instead of treating the entire content inside the quotes as one string. The first screenshot shows the correct behavior (one continuous string), the second shows the broken behavior where \u2018https\u2019, \u2018Inter\u2019, \u2018@300\u2019 etc. are split into separate tokens."
+    }
+}

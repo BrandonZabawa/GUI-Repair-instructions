@@ -1,0 +1,36 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/offline.js//Offline",
+            "lighthouse-core/gather/gatherers/start-url.js//StartUrl",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/offline.js//beforePass",
+            "lighthouse-core/gather/gatherers/offline.js//afterPass",
+            "lighthouse-core/gather/gatherers/start-url.js//afterPass",
+            "lighthouse-core/gather/gatherers/start-url.js//_attemptStartURLFetch",
+            "lighthouse-core/gather/driver.js//goOffline",
+            "lighthouse-core/gather/driver.js//goOnline"
+        ],
+        "explanation": "The Offline gatherer\u2019s beforePass() calls driver.goOffline(), but the Driver.goOffline() method is a no-op stub (and goOnline likewise). As a result, when StartUrl.afterPass() tries to fetch the start_url offline and listens for Network.responseReceived.fromServiceWorker, the page still loads over the network. Fixing this requires implementing goOffline()/goOnline() to truly emulate offline network conditions so that the SW fallback UI is served and fromServiceWorker=true.",
+        "bug_scenario": "When running the \u201coffline-start-url\u201d audit against a PWA with a service-worker-provided fallback (e.g. https://www.bhphotovideo.com), Lighthouse\u2019s offline pass never actually drops the network. Instead of seeing the SW\u2019s \u201cYou are offline\u201d UI, Lighthouse drives a live navigation to the desktop site. All requests in the offline pass show fromServiceWorker=false and fromDiskCache=false, so the audit incorrectly flags the start URL as not loading offline."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/offline.js//Offline",
+            "lighthouse-core/gather/gatherers/start-url.js//StartUrl",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/offline.js//Offline.beforePass",
+            "lighthouse-core/gather/gatherers/offline.js//Offline.afterPass",
+            "lighthouse-core/gather/gatherers/start-url.js//StartUrl.afterPass",
+            "lighthouse-core/gather/gatherers/start-url.js//StartUrl._attemptStartURLFetch",
+            "lighthouse-core/gather/driver.js//Driver.goOffline",
+            "lighthouse-core/gather/driver.js//Driver.goOnline"
+        ],
+        "explanation": "The Offline gatherer (offline.js) calls driver.goOffline() in beforePass to simulate loss of connectivity and driver.goOnline() in afterPass to restore it, then looks for service-worker-fetched records. The StartUrl gatherer (start-url.js) navigates to the manifest\u2019s start_url while offline and listens for Network.responseReceived events with fromServiceWorker=true. Both rely on the Driver.goOffline() and Driver.goOnline() implementations in driver.js to correctly toggle network emulation. Because goOffline()/goOnline() are not actually disabling the network, no requests ever report fetchedViaServiceWorker or fromServiceWorker, causing Lighthouse to fall back to loading the live site. Fixing these driver methods (and ensuring the gatherers invoke them in the correct phase) is necessary to restore true offline behavior and have the audit detect the offline fallback UI.",
+        "bug_scenario": "The screenshot shows the service worker\u2019s offline-fallback UI (\u201c\u26a0\ufe0f You are offline\u2026 Please check back again when you find a better connection\u201d), but when running Lighthouse\u2019s offline-start-url audit against a PWA site, the offline pass doesn\u2019t actually go offline. Instead of seeing this fallback page, Lighthouse still loads the live desktop site and all network requests report fromServiceWorker=false and fromDiskCache=false."
+    }
+}

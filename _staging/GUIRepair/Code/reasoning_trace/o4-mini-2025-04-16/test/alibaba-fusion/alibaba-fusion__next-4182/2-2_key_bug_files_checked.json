@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/cascader-select/cascader-select.jsx",
+            "src/overlay/index.jsx",
+            "src/overlay/popup-v2.jsx",
+            "src/overlay/overlay-v2.jsx"
+        ],
+        "explanation": "1. src/cascader-select/cascader-select.jsx \u2013 This is the root CascaderSelect component that reads popupProps and instantiates the popup. It calls into Overlay.Popup and also holds refs (e.g. saveSelectRef/saveCascaderRef) expecting getInstance to exist on the popup ref.  \n2. src/overlay/index.jsx \u2013 This file routes between v1 and v2 implementations of Overlay and Popup based on the v2 flag. Mistakes here lead to the wrong component being rendered or refs not being forwarded correctly.  \n3. src/overlay/popup-v2.jsx \u2013 The new functional Popup v2 implementation imports an external Overlay and uses hooks. It does not forward refs or implement getInstance, so the parent reference becomes null and getInstance calls fail.  \n4. src/overlay/overlay-v2.jsx \u2013 Similar to popup-v2, this file wraps the v2 Overlay implementation and must correctly forward refs and instance methods. Its current logic does not provide the legacy getInstance API, causing downstream errors when CascaderSelect tries to call it.",
+        "bug_scenario": "The user is rendering a CascaderSelect with popupProps set to { v2: true } along with showSearch enabled. As soon as the component mounts or the popup tries to open, the console throws an Uncaught TypeError: Cannot read properties of null (reading 'getInstance'). In the screenshot you can see the highlighted <CascaderSelect popupProps={{ v2: true }} showSearch \u2026/> usage on the left and the red error message on the right."
+    }
+}

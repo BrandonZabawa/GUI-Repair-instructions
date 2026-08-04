@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js//UpdateSemanticParentHandler",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//fixConnection",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js//execute",
+            "lib/features/modeling/BpmnUpdater.js//updateParent",
+            "lib/features/modeling/BpmnUpdater.js//updateSemanticParent"
+        ],
+        "explanation": "\n\u2022 ReplaceConnectionBehavior.fixConnection: This is invoked after elements.move to adjust connections. It recognizes SequenceFlow, MessageFlow, and Association types but currently only handles invalid Association removal rather than updating its parent. It\u2019s the place to hook into moved associations to update their container.\n\n\u2022 UpdateSemanticParentHandler.execute: This generic handler is used to update the semantic parent of moved BPMN elements (e.g. DataStore). Associations lack a dedicated handler here, so this execute method is a model to follow for wiring in association parent updates.\n\n\u2022 BpmnUpdater.updateParent and updateSemanticParent: These methods are responsible for updating both the BPMN (semantic) and DI parents of elements after a move. Associations aren\u2019t currently updated here. Fixing the bug requires extending updateParent/updateSemanticParent to detect Association business objects and re-parent them under the new common ancestor of their updated source/target.\n\nTogether, these classes/functions are where connection parents are computed and updated during move operations. To fix the bug, one must intercept moved associations in fixConnection (or through a new command handler), then call into BpmnUpdater.updateParent/updateSemanticParent to reassign the association\u2019s semantic and DI parent to the new container of its connected shapes, preventing accidental deletion when the old container is removed.",
+        "bug_scenario": "When moving both ends of an Association out of its original subprocess, the dashed association line visually follows the shapes but its underlying semantic/DI parent remains the old subprocess. As a result, deleting the subprocess also deletes the association unexpectedly."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js//UpdateSemanticParentHandler",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//fixConnection",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js//execute",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js//revert",
+            "lib/features/modeling/BpmnUpdater.js//updateParent",
+            "lib/features/modeling/BpmnUpdater.js//updateSemanticParent",
+            "lib/features/modeling/BpmnUpdater.js//updateDiParent"
+        ],
+        "explanation": "1. ReplaceConnectionBehavior.fixConnection: this is hooked into the 'elements.move' command and iterates over all moved connections (including associations). It currently only re\u2013validates or replaces flows but never updates the association\u2019s parent to the new BPMN container.  2. UpdateSemanticParentHandler.execute/revert: this handler is invoked when updating the semantic parent of moved BPMN elements, but it only handles DataStore elements. Associations are not covered here, so their businessObject.$parent never changes on move.  3. BpmnUpdater.updateParent, updateSemanticParent, updateDiParent: these are the low\u2010level routines for reparenting BPMN XML (semantic) and DI elements. They are currently stubs or narrowly scoped. They need to be extended to correctly detach an Association from its old subprocess and attach it to the new parent both in the BPMN model (semantic parent) and in the DI (diagram interchange) parent.",
+        "bug_scenario": "When moving the source and/or target of an association out of its original subprocess container, the association\u2019s semantic and DI parent remains the old subprocess. In the provided GIF you drag a task (the association\u2019s source) out of the subprocess \u2014 the dotted\u2010line association visual follows the task on screen, but under the hood it is still a child of the subprocess. As soon as you delete that subprocess, the association is deleted as well, because its model parent was never updated to the new container."
+    }
+}

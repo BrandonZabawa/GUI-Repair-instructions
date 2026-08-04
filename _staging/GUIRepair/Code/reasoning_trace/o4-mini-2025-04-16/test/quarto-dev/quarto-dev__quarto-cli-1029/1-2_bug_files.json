@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/command/render/layout.ts",
+            "resources/filters/layout/layout.lua",
+            "resources/filters/quarto-post/reveal.lua",
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/constants.ts"
+        ],
+        "explanation": "\u2022 src/command/render/layout.ts \u2014 contains the logic that assigns the \u201cr-stretch\u201d class to figures and computes how much vertical space an image can occupy, but it does not subtract the height of the aside region early enough.  \n\u2022 resources/filters/layout/layout.lua \u2014 the Pandoc Lua filter that assembles panels, figures, captions, and asides; it drives the HTML structure for aside+figure layout. The current ordering means the figure height is calculated before the aside is inserted.  \n\u2022 resources/filters/quarto-post/reveal.lua \u2014 a post-processing filter that wraps content into reveal slides and applies reveal-specific classes; it should ensure the aside is considered when sizing elements on a slide.  \n\u2022 src/format/reveal/format-reveal.ts \u2014 generates the Pandoc command and injects CSS/JS for reveal, including flags for r-stretch; adjustments here are needed to include updated CSS or data attributes so the renderer reserves space for asides.  \n\u2022 src/format/reveal/constants.ts \u2014 defines the class names and selectors used by the code and filters (e.g. \u201cr-stretch\u201d and \u201caside\u201d); if these identifiers change or new ones are introduced (e.g. \u201cr-aside\u201d), this file must be updated accordingly.",
+        "bug_scenario": "In revealjs slides that contain a single full\u2010slide figure plus an :::{.aside} block (e.g. slide 1 and slide 2 in the screenshots), we apply the \u201cr-stretch\u201d class to the image so it fills available space. Because the pandoc filter and CSS logic do not reserve vertical space for the aside first, the figure is stretched too far and its bottom overlaps the aside text (and even the figure caption in slide 2). In short, aside content is not given priority when computing the figure height, so the image invades the aside region."
+    },
+    "2": {
+        "bug_files": [
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/format-reveal-theme.ts",
+            "resources/formats/revealjs/reveal/css/theme/source/template/_layout.scss",
+            "resources/formats/revealjs/themes/default.css",
+            "resources/filters/quarto-post/reveal.lua"
+        ],
+        "explanation": "All of these files participate in creating and styling the RevealJS slides and the Quarto-specific \u2018aside\u2019 support:\n\n\u2022 src/format/reveal/format-reveal.ts \u2013 lays out the slide HTML, injects `r-stretch` on figures, and wraps aside blocks; adjustments here can change where and how much the figure is stretched before the aside is applied.\n\n\u2022 src/format/reveal/format-reveal-theme.ts \u2013 generates the theme CSS rules for RevealJS slides, including any overrides for `.aside` or `.r-stretch`; this is where we can introduce rules to ensure the aside container reserves its space and the figure\u2019s CSS max-height respects it.\n\n\u2022 resources/formats/revealjs/reveal/css/theme/source/template/_layout.scss \u2013 the SCSS partial that controls the core slide layout (height calculations, flex/grid settings, etc.); by tweaking the slide container\u2019s bottom padding or max-height variables here, we can prevent images from bleeding under the aside.\n\n\u2022 resources/formats/revealjs/themes/default.css \u2013 Quarto\u2019s default RevealJS theme stylesheet, which may already include basic `.aside { position: absolute; bottom: 0; }` rules; it likely needs enhancement to set a bottom margin on `section.present img.r-stretch` so the image stops above the aside.\n\n\u2022 resources/filters/quarto-post/reveal.lua \u2013 a Pandoc filter that post-processes the RevealJS slide AST in Lua (inserting \u201caside\u201d wrappers and possibly marking figures for stretch); this is where we can detect single-figure slides with an aside and emit a different CSS class or inline style so the TS/CSS changes know to back off the stretch.",
+        "bug_scenario": "On slides that contain only a single figure plus an `aside` block, the image is being stretched to fill the entire slide (via the RevealJS `r-stretch` class) and then the `aside` panel is drawn on top of the bottom of the image (often overlapping captions), rather than reserving space for the aside and stretching the figure only up to the top of the aside. In other words, aside panels should always \u201cwin\u201d the bottom of a slide and the figure should shrink accordingly, but right now the figure ignores the aside height and overlaps."
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/style/IconImageCache.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/Immediate.js"
+        ],
+        "explanation": "These files are related to the bug because:\n\n- src/ol/style/Icon.js: This is the main file for the ol/style/Icon class, where 'displacement' property is set and processed. Any issue with how displacement is factored into icon rendering is likely rooted here.\n- src/ol/style/IconImage.js: Handles the processing and loading of the image assets for the icon. Positioning and bounding logic may be affected by displacement.\n- src/ol/style/IconImageCache.js: Manages caching of icon images; if the issue is with how displaced icon images are cached/clipped, this could be a culprit.\n- src/ol/render/canvas/ImageBuilder.js: Builds and issues rendering instructions for images/icons. Displacement must be computed into canvas drawing instructions. Miscomputations here can easily lead to clipping.\n- src/ol/render/canvas/Immediate.js: Handles immediate rendering functionality for images/icons, which would utilize displacement values.\n\nIf the bug is about how icon style displacement is being incorporated into the render bounds, it is almost certainly addressed in one or a combination of these files, as they encompass both the model (Icon, IconImage) and render (ImageBuilder, Immediate) sides of OpenLayers' rendering pipeline.",
+        "bug_scenario": "The bug concerns OpenLayers icon rendering: when using an ol/style/Icon with a 'displacement' property set, the icon is clipped instead of being completely visible (as happens with the regularshape style). The key scenario is rendering a map feature using ol/style/Icon with a displacement value, leading to the icon's image being drawn partially outside its rendering bounds, so it is visually clipped/cut-off."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/style/IconImageCache.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "1. src/ol/style/Icon.js: This is the main class that defines the icon style, including properties for displacement. It's directly responsible for applying displacement to icons, so any bug in how clipping is managed during displacement likely starts here.\n2. src/ol/style/IconImage.js: Manages the icon image representations and their anchor/displacement properties. Bugs in image size, anchor, offset, or displacement calculations would cause visible clipping.\n3. src/ol/style/IconImageCache.js: Handles caching of icon images. If caching or reuse logic doesn't factor in displacement or bounding-box extensions for displaced icons, it could cause improper clipping.\n4. src/ol/render/canvas/ImageBuilder.js: Handles low-level drawing of images (including icons) onto the canvas. If its draw methods do not correctly adjust the drawing rectangle or canvas context for displacement, icons can be clipped. This is especially involved in actually applying the computed styles during rendering.\n\nThese files form the core of icon style set-up, image asset management, and canvas drawing, all of which can directly influence whether a displaced icon is clipped. Other similarly named style or rendering files (e.g., RegularShape.js) do not need modification unless alignment with regular shapes is sought, but the bug as described is icon-specific.",
+        "bug_scenario": "The bug occurs when an ol/style/Icon with a non-zero displacement is rendered\u2014icons get visually clipped (parts cut-off), whereas regular shapes with similar displacement render correctly without clipping. The user provides a reproducible example with the ol/style/Icon class, specifically changing lines that set the displaced style to an icon style. The expected behavior is that the icon should not be clipped, matching how regular shapes are rendered."
+    }
+}

@@ -1,0 +1,60 @@
+diff --git a/packages/react/src/components/Tooltip/Tooltip.js b/packages/react/src/components/Tooltip/Tooltip.js
+index f49bdc01..f2551bc2 100644
+--- a/packages/react/src/components/Tooltip/Tooltip.js
++++ b/packages/react/src/components/Tooltip/Tooltip.js
+@@ -79,6 +79,8 @@ const getMenuOffset = (menuBody, menuDirection) => {
+ };
+ 
+ class Tooltip extends Component {
++  static openTooltips = new Set();
++
+   constructor(props) {
+     super(props);
+     this.isControlled = props.open !== undefined;
+@@ -88,6 +90,7 @@ class Tooltip extends Component {
+     }
+     const open = useControlledStateWithValue ? props.defaultOpen : props.open;
+     this.state = { open };
++    this._tooltipInstanceId = Math.random().toString(36).substr(2);
+   }
+ 
+   static propTypes = {
+@@ -268,6 +271,7 @@ class Tooltip extends Component {
+   }
+ 
+   componentWillUnmount() {
++    Tooltip.openTooltips.delete(this);
+     if (this._debouncedHandleFocus) {
+       this._debouncedHandleFocus.cancel();
+       this._debouncedHandleFocus = null;
+@@ -295,6 +299,17 @@ class Tooltip extends Component {
+       this.props.onChange(event, { open });
+       return;
+     }
++    // Close all other open tooltips when opening this one
++    if (open) {
++      Tooltip.openTooltips.forEach((instance) => {
++        if (instance !== this) {
++          instance._closeTooltip();
++        }
++      });
++      Tooltip.openTooltips.add(this);
++    } else {
++      Tooltip.openTooltips.delete(this);
++    }
+     // capture tooltip body element before it is removed from the DOM
+     const tooltipBody = this._tooltipEl;
+     this.setState({ open }, () => {
+@@ -320,6 +335,12 @@ class Tooltip extends Component {
+     });
+   };
+ 
++  _closeTooltip = () => {
++    if (!this.isControlled && this.state.open) {
++      this.setState({ open: false });
++    }
++  };
++
+   /**
+    * Handles `focus`/`blur` event.
+    * @param {string} state `over` to show the tooltip, `out` to hide the tooltip.

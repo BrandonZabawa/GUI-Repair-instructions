@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//constructor",
+            "src/ol/source/GeoTIFF.js//loadTile_",
+            "src/ol/source/GeoTIFF.js//composeTile_"
+        ],
+        "explanation": "The GeoTIFFSource class is responsible for configuring how GeoTIFF data is read and composed into tiles. The constructor reads the convertToRGB option and currently only accepts true or false, setting an internal method flag ('readRasters' or 'readRGB'). To support 'auto', the constructor logic must be updated to detect photometric interpretation and sample count and switch the read method accordingly. The loadTile_ and composeTile_ functions actually perform the calls to image.readRasters() or image.readRGB(), so they must also handle the new 'auto' mode and delegate to the correct method when the image color space requires conversion to RGB.",
+        "bug_scenario": "The request is to add support for a new convertToRGB option value of 'auto' when loading GeoTIFF sources. With convertToRGB:'auto', if a GeoTIFF image has three samples per pixel and its photometric interpretation is CMYK, YCbCr, CIELab or ICCLab, the loader should automatically invoke image.readRGB() instead of the default readRasters(). Currently the GeoTIFFSource class only handles boolean convertToRGB and does not detect or switch reading methods based on color space."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.constructor",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.loadTile_",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.composeTile_"
+        ],
+        "explanation": "The GeoTIFFSource class is responsible for reading GeoTIFF image data and applying any color-space conversion based on the convertToRGB setting. The constructor initializes the internal reading strategy (readRasters vs. readRGB) but only handles boolean convertToRGB. The loadTile_ method actually calls image.readRasters or image.readRGB when fetching tiles, and composeTile_ may need to assemble RGB data differently. To support `convertToRGB: 'auto'`, logic must be added in the constructor (or during image discovery in configure_) to inspect each GeoTIFFImage\u2019s photometricInterpretation and sample count, then pick readRGB automatically. The loadTile_ and composeTile_ methods must then respect that auto-chosen strategy when reading and composing tile pixels.",
+        "bug_scenario": "When using GeoTIFFSource with \u201cconvertToRGB: 'auto'\u201d, the source should automatically choose to call image.readRGB() whenever the TIFF images have three samples per pixel and a photometric interpretation of CMYK, YCbCr, CIELab, or ICCLab. Currently the code only supports a boolean convertToRGB option (true or false), so \u201cauto\u201d is ignored and color-space conversion is never applied automatically."
+    }
+}

@@ -1,0 +1,39 @@
+{
+    "1/1": {
+        "lighthouse-core/lib/emulation.js": [
+            {
+                "SEARCH": [
+                    "async function enableNexus5X(driver) {",
+                    "await Promise.all([",
+                    "driver.sendCommand('Emulation.setDeviceMetricsOverride', NEXUS5X_EMULATION_METRICS),",
+                    "// Network.enable must be called for UA overriding to work",
+                    "driver.sendCommand('Network.enable'),",
+                    "driver.sendCommand('Network.setUserAgentOverride', NEXUS5X_USERAGENT),",
+                    "driver.sendCommand('Emulation.setTouchEmulationEnabled', {enabled: true}),",
+                    "]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "async function enableNexus5X(driver) {",
+                    "  await Promise.all([",
+                    "    driver.sendCommand('Emulation.setDeviceMetricsOverride', NEXUS5X_EMULATION_METRICS),",
+                    "    // Network.enable must be called for UA overriding to work",
+                    "    driver.sendCommand('Network.enable'),",
+                    "    driver.sendCommand('Network.setUserAgentOverride', NEXUS5X_USERAGENT),",
+                    "    driver.sendCommand('Emulation.setTouchEmulationEnabled', {enabled: true}),",
+                    "    // Also redefine window.navigator.userAgent so that JS (e.g. runtimeSettings.userAgent)",
+                    "    // matches the network UA override",
+                    "    driver.evaluateScriptOnNewDocument(",
+                    "      `const _lhUA = ${JSON.stringify(NEXUS5X_USERAGENT.userAgent)};",
+                    "       Object.defineProperty(navigator, 'userAgent', {",
+                    "         get: () => _lhUA,",
+                    "         configurable: true,",
+                    "       });`",
+                    "    ),",
+                    "  ]);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

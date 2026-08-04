@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/TileTexture.js//TileTexture"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/TileTexture.js//uploadDataTexture",
+            "src/ol/webgl/TileTexture.js//TileTexture.prototype.uploadTile_"
+        ],
+        "explanation": "The DataTileSource class is responsible for providing the tile data and configuring the tile grid, which is relevant since the bug is triggered by custom tile sizes. WebGLTileLayer and its renderer (WebGLTileLayerRenderer) are responsible for rendering tiles using WebGL, and any mismatch or incorrect handling of tile size or data format here could lead to the observed rendering issues. The TileTexture class, and in particular the uploadDataTexture and uploadTile_ functions, handle the actual uploading of tile data to WebGL textures. The bug report's WebGL warning message and black tiles suggest the issue arises when the data array size doesn't match the expected dimensions for the texture, which is managed in these methods. Thus, fixes are likely needed in these classes/functions to properly handle non-square or non-standard tile sizes and ensure that texture data matches WebGL's requirements.",
+        "bug_scenario": "The image shows a viewer where tile-based image data is supposed to be displayed, but instead, only black tiles are rendered in the main viewing area. The console output reveals a custom tile grid setup, and a warning in the bug report indicates that WebGL is trying to create a texture with more data than is available. This suggests a mismatch between tile size or data packing and what the renderer expects, possibly related to recent code changes or how DataTile and WebGLTileLayer interact with custom grids and tile sizes."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/TileTexture.js//TileTexture"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/TileTexture.js//uploadDataTexture",
+            "src/ol/webgl/TileTexture.js//TileTexture.uploadTile_"
+        ],
+        "explanation": "The bug is related to how custom tile sizes and data are handled and uploaded to the WebGL textures. The black tiles and the WebGL texImage2D warning point to a mismatch in the expected and actual tile data dimensions. The following elements are relevant:\n\n- src/ol/source/DataTile.js//DataTileSource: This manages the data tile source including loader and tile grid logic, and is responsible for supplying tiles of the correct size and format.\n- src/ol/layer/WebGLTile.js//WebGLTileLayer: This is the main layer class that interacts with the renderer and data tile source, and passes tile data to the renderer.\n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: This renderer class takes the tile data from the source and is responsible for passing it to the WebGL texture logic. Any mismatch in tile size or data would surface here.\n- src/ol/webgl/TileTexture.js//TileTexture: This class deals with creating and uploading the actual texture data to WebGL. In particular, the uploadTile_ method and the uploadDataTexture function are responsible for taking the data from a DataTile and uploading it to WebGL. If the data size, band count, or tile size is inconsistent, it leads to the kind of texImage2D error seen (and thus black tiles).\n\nThese classes and functions are central to the data flow from tile source through to WebGL texture upload, and are the most likely places where a tile size/data mismatch could occur and where the bug would need to be fixed.",
+        "bug_scenario": "The bug scenario, as shown in the screenshot, involves a map viewer using OpenLayers where tiles are rendered as black when using a custom tile grid with ol.source.DataTile and ol.layer.WebGLTile. The console shows tile grid extents and sizes, and a WebGL warning indicates a mismatch between the expected and provided texImage2D data size. This suggests a mismatch between the tile data and what the WebGL renderer expects, leading to black tiles being rendered."
+    }
+}

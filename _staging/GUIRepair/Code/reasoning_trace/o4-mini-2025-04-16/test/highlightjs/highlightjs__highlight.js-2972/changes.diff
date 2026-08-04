@@ -1,0 +1,86 @@
+diff --git a/src/languages/python.js b/src/languages/python.js
+index ea2c0937..783da7fc 100644
+--- a/src/languages/python.js
++++ b/src/languages/python.js
+@@ -230,18 +230,29 @@ export default function(hljs) {
+     ]
+   };
+ 
+-  const PARAMS = {
+-    className: 'params',
+-    variants: [
+-      // Exclude params at functions without params
+-      {begin: /\(\s*\)/, skip: true, className: null },
+-      {
+-        begin: /\(/, end: /\)/, excludeBegin: true, excludeEnd: true,
+-        keywords: KEYWORDS,
+-        contains: ['self', PROMPT, NUMBER, STRING, hljs.HASH_COMMENT_MODE],
+-      },
+-    ],
+-  };
++const PARAMS = {
++className: 'params',
++variants: [
++// Exclude params at functions without params
++{begin: /\(\s*\)/, skip: true, className: null },
++{
++begin: /\(/, end: /\)/, excludeBegin: true, excludeEnd: true,
++keywords: KEYWORDS,
++contains: [
++'self',
++PROMPT,
++NUMBER,
++STRING,
++hljs.HASH_COMMENT_MODE,
++// support PEP484-style parameter annotations
++{
++className: 'type',
++begin: /:\s*[A-Za-z_]\w*(?:\.\w+)*(?:\[[^\]]+\])?/
++}
++],
++},
++],
++};
+   SUBST.contains = [STRING, NUMBER, PROMPT];
+ 
+   return {
+@@ -258,22 +269,23 @@ export default function(hljs) {
+       { beginKeywords: "if", relevance: 0 },
+       STRING,
+       hljs.HASH_COMMENT_MODE,
+-      {
+-        variants: [
+-          {className: 'function', beginKeywords: 'def'},
+-          {className: 'class', beginKeywords: 'class'}
+-        ],
+-        end: /:/,
+-        illegal: /[${=;\n,]/,
+-        contains: [
+-          hljs.UNDERSCORE_TITLE_MODE,
+-          PARAMS,
+-          {
+-            begin: /->/, endsWithParent: true,
+-            keywords: 'None'
+-          }
+-        ]
+-      },
++{
++variants: [
++{className: 'function', beginKeywords: 'def'},
++{className: 'class', beginKeywords: 'class'}
++],
++end: /:/,
++illegal: /[\${=;\n,]/,
++contains: [
++hljs.UNDERSCORE_TITLE_MODE,
++PARAMS,
++// support PEP484-style return annotations
++{
++className: 'type',
++begin: /->\s*[A-Za-z_]\w*(?:\.\w+)*(?:\[[^\]]+\])?/
++}
++]
++},
+       {
+         className: 'meta',
+         begin: /^[\t ]*@/, end: /(?=#)|$/,

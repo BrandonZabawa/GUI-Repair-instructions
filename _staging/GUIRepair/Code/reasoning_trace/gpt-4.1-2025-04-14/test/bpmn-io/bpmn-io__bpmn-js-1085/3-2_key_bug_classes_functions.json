@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateConnectionWaypoints"
+        ],
+        "explanation": "The bug is about incorrect serialization of 'waypoints' for sequence flows in the BPMN export. The workflow for serializing and updating BPMN diagram elements is mainly handled in the BpmnUpdater class. Specifically, the method 'BpmnUpdater.prototype.updateConnectionWaypoints' is responsible for updating the waypoints of a connection. If this method stores the waypoints as raw JavaScript objects (i.e., as [{x:...,y:...},...]) instead of transforming them into the appropriate DI (Diagram Interchange) format (e.g., dc:Point elements), then when the diagram is exported, the XML serializer ends up converting them as '[object Object]' strings, causing the observed bug. The bug therefore resides in how waypoints are handled and updated via this method. The other files (BpmnFactory.js, ElementFactory.js, BpmnImporter.js) are related to creation and import, but the actual bug is in the update/serialization logic, as described in the report and visible from the function headers.",
+        "bug_scenario": "The bug scenario is that when a user creates a new BPMN task and connects it to an existing task with a sequence flow (especially with a bend in the connector), the exported BPMN XML contains an illegal 'waypoints' property like waypoints=\"[object Object],[object Object],[object Object],[object Object]\". This means the waypoints are being serialized as plain JavaScript object strings instead of proper XML/array of coordinates, leading to invalid BPMN output. The visual bug scenario (shown in the image and described in the bug report) is that after modeling such a connector, inspecting the exported XML reveals this invalid property instead of a proper set of dc:Point elements."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateConnectionWaypoints",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateConnection"
+        ],
+        "explanation": "The bug is related to how waypoints are serialized in the BPMN export process. The 'BpmnUpdater' class is responsible for updating the BPMN 2.0 XML and DI when diagram changes occur. Its 'updateConnectionWaypoints' and 'updateConnection' methods are likely responsible for handling the waypoints of sequence flows. If these methods do not properly convert waypoints from an array of objects (e.g., {x, y}) to the correct XML format, the output will contain '[object Object],...' instead of the required structure. Thus, these classes and methods are the key locations to inspect and fix this serialization issue.",
+        "bug_scenario": "The bug scenario is that when a sequence flow with a middle segment is created between tasks in a BPMN diagram and then exported as XML, an illegal 'waypoints' property is serialized as waypoints=\"[object Object],[object Object],[object Object],[object Object]\" instead of a proper BPMN DI format. The provided image shows a simple BPMN diagram with a single task, which is the initial step before connecting tasks and producing the faulty export."
+    }
+}

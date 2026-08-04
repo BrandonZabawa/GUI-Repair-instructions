@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/lib/lh-error.js//LighthouseError"
+        ],
+        "bug_functions": [
+            "lighthouse-cli/run.js//printRuntimeErrorAndExit",
+            "lighthouse-cli/run.js//printErrorAndExit",
+            "lighthouse-cli/run.js//runLighthouse"
+        ],
+        "explanation": "The root of this bug is that an LHError with code INVALID_URL is thrown synchronously in Lighthouse core before the i18n machinery has formatted the string, so err.friendlyMessage is just the raw template ID. The class LighthouseError (in lh-error.js) is responsible for creating the localized message via createMessageInstanceIdFn, but it\u2019s never actually applied on this fatal path. In the CLI entrypoint (run.js), printRuntimeErrorAndExit and printErrorAndExit unconditionally log err.friendlyMessage (or fall back to err.message), so they end up displaying the ICU template ID. The runLighthouse function is where the error first bubbles out and is handed to printErrorAndExit. Fixing this requires ensuring that the UIStrings.urlInvalid template is formatted to a human-readable string before it\u2019s printed, or adjusting the printer functions to defer to the i18n formatter on fatal errors.",
+        "bug_scenario": "When invoking the Lighthouse CLI with a URL that omits its protocol (for example:\n\n  node lighthouse-cli www.example.com --view\n\nthe run immediately fails with an INVALID_URL error before any i18n formatting is applied. In the screenshot you see the raw ICU template ID (\u201clighthouse-core/lib/lh-error.js | urlInvalid # 0\u201d) instead of a human-friendly localized message like \u201cThe URL you have provided appears to be invalid.\u201d"
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/lib/lh-error.js//LighthouseError"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/lh-error.js//LighthouseError.constructor",
+            "lighthouse-cli/run.js//printRuntimeErrorAndExit"
+        ],
+        "explanation": "1. In lh-error.js the LighthouseError constructor uses str_ = i18n.createMessageInstanceIdFn(\u2026) to build friendlyMessage. That helper returns only the ICU template identifier rather than formatting the UIStrings into a human-readable message.  2. printRuntimeErrorAndExit in run.js prints err.friendlyMessage (the raw ID) when a fatal error occurs.  Together these cause the untranslated template ID to be shown instead of the actual localized error text. To fix the bug, the error constructor should use the formatting helper (createMessageInstanceFn) so that friendlyMessage contains the human-readable string, and the CLI print path will display the correct message.",
+        "bug_scenario": "In the screenshot you see the Lighthouse CLI being invoked with a URL that lacks a protocol (e.g. \u201cwww.example.com --view\u201d). The runner immediately throws an LHError with code INVALID_URL, but instead of seeing the human-readable text \u201cThe URL you have provided appears to be invalid.\u201d (or a localized equivalent), the CLI prints the raw ICU template ID (\u201clighthouse-core/lib/lh-error.js | urlInvalid # 0\u201d) because the i18n helper used in the error constructor only returns the message ID, not the formatted string."
+    }
+}

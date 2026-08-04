@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/VectorContext.js"
+        ],
+        "explanation": "The core of the problem lies in how the tile-layer renderer exposes and applies the resolution/rotation transform to the CanvasImmediateRenderer, leading to incorrect sin/cos calculations and scaling at near-90\u00b0 angles.  TileLayer.js implements getVectorContext with its own transform logic, while VectorLayer.js uses a different, correct transform.  Both CanvasImmediateRenderer (Immediate.js) and VectorContext.js consume that transform to scale line widths and text; errors in the tile path cause the inconsistent stroke widths, text scaling, and geometry precision seen in the bug.",
+        "bug_scenario": "When using the vector context of a Tile layer under view rotations close to 90\u00b0 or 270\u00b0, strokes render at the wrong width, text scales incorrectly, and geometric precision degrades.  In contrast, using the vector context of a Vector layer under the same rotations works as expected.  This reproduces in the CodeSandbox examples and in the Flight Animation demo (tile-layer vector context) but not in the Marker Animation (vector-layer vector context)."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/render/VectorContext.js",
+            "src/ol/renderer/Map.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "1. src/ol/render/VectorContext.js\n   \u2022 This is where the canvas vector context uses the passed-in pixelTransform to derive a \u201cresolution scale\u201d for strokes, fills and text. It currently pulls only the [0] entry (the X\u2013scale), so when cos(viewRotation)\u21920 at 90\u00b0/270\u00b0, styles blow up.\n\n2. src/ol/renderer/Map.js\n   \u2022 The generic MapRenderer\u2019s createVectorContext method constructs the VectorContext for a Tile layer without passing the explicit view resolution. This means VectorContext must infer resolution from the transform (see above) instead of receiving it directly.\n\n3. src/ol/renderer/canvas/TileLayer.js\n   \u2022 TileLayer\u2019s canvas renderer invokes createVectorContext via the MapRenderer path, but does not supply the resolution parameter. The tile-layer path thus ends up with the incorrect derive-itself logic in VectorContext.\n\n4. src/ol/renderer/canvas/VectorLayer.js\n   \u2022 In contrast, this file shows the correct vector-layer path: here, resolution (and rotation) are explicitly passed into the VectorContext constructor so that strokes and text scale properly at all angles. It serves as the reference implementation to fix the TileLayer path.",
+        "bug_scenario": "When a map is rotated to (or near) 90\u00b0 or 270\u00b0 and you draw into the vector context of a tile layer (for example, animating markers on a Tile layer), the stroke widths, text sizes and geometry precision blow up or collapse. This does not happen when you draw via a Vector layer\u2019s vector context, because in that code path the layer\u2019s resolution is passed in explicitly. In the Tile-layer path, the code derives \"resolution\" from the transform matrix\u2019s X scale component (which goes to zero at 90\u00b0), leading to a division-by-near-zero and wildly incorrect styling and placement."
+    }
+}

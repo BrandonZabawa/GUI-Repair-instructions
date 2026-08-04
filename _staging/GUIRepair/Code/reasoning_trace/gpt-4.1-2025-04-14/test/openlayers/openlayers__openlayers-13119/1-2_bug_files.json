@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/Helper.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js is the main entry point and data model for the WebGLTile layer. Adding a flag for blend function (in style or options) must be supported here so the user can specify and access the new setting on relevant layers.\n2. src/ol/renderer/webgl/TileLayer.js is the renderer for WebGL tile layers. This file controls how each layer is drawn in WebGL and is the natural place where blending logic would be set up for each specific layer, using the flag set in WebGLTile.js.\n3. src/ol/webgl/Helper.js contains abstraction and direct calls to WebGL methods like gl.blendFunc. As referenced in the bug report (and a specific line in the file), this is the utility where blend function logic for rendering is handled and will need to be modified to accept and set blend function states according to the new flag from the layer/style.\n\nThese files are tied together in implementing, propagating, and using a new blending logic property for (some) WebGLTile layers.",
+        "bug_scenario": "The problem is that the current OpenLayer WebGL implementation for Tile Layers does not provide a mechanism (i.e., a flag or API option) to select an alternate WebGL blend function (like gl.blendFunc(gl.ONE, gl.ONE)) for certain tile layers. In existing implementations, blending options are not customizable per tile layer, so you can't set a specific blend mode for just a subset of WebGLTile layers, which is necessary for advanced image blending scenarios (e.g., in digital slide microscopy image viewers). The request is to add such a flag to WebGLTile layer styles and make the rendering logic honor it when drawing layers."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/Helper.js",
+            "src/ol/style/Style.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This is the layer class responsible for WebGL tile rendering. To support user-customizable blend functions, a flag or configuration needs to be introduced at the layer level, likely as part of the layer's options or style.\n\n2. src/ol/renderer/webgl/TileLayer.js: This is the renderer implementation that executes the WebGL drawing for tile layers. Modifications here are required to use the new flag originating from the layer's configuration, so the renderer calls gl.blendFunc() appropriately.\n\n3. src/ol/webgl/Helper.js: This utility (as referenced in the bug report) contains the low-level WebGL logic including setting the blend function (specifically around line 485). To actually support different blending per layer, this file must expose a method or accept parameters for the blend function and propagate changes from the API.\n\n4. src/ol/style/Style.js: If the blend function/flag is part of a layer's 'style', then enhancements to the style configuration or type definitions may be needed to communicate this parameter from user code into the rendering system.\n\nOther files like src/ol/layer/Tile.js, src/ol/layer/BaseTile.js, or config structure are not directly involved unless broader base class changes are required, but the direct candidates are as listed above.",
+        "bug_scenario": "The bug scenario involves the need to blend WebGL tile layers with a custom blend function (gl.blendFunc(gl.ONE, gl.ONE)) for only a subset of tile layers in an OpenLayers-powered application for visualizing digital slide microscopy images. Currently, the API does not expose a flag or interface to specify the blend function per WebGL tile layer, preventing custom blending of different image data from multiple layers for advanced visualization techniques."
+    }
+}

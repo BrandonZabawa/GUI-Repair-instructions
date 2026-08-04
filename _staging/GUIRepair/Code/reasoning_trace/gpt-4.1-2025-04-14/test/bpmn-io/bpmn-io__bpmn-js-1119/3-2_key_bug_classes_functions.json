@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//fixConnection",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//replaceReconnectedConnection"
+        ],
+        "explanation": "The core logic for replacing connections (message flow to sequence flow) is implemented in ReplaceConnectionBehavior.js. The methods fixConnection and replaceReconnectedConnection are responsible for detecting the connection type, checking connection rules, and performing the replacement by using the modeling.connect API. The bug is likely caused by not updating the parent of the new sequence flow properly when the connection is replaced, especially when the source or target is a participant. This results in the sequence flow being parented incorrectly or not at all, leading to the rendering issues and crashes described in the bug report and illustrated in the scenario images. Other files, like BpmnUpdater.js and Modeling.js, provide supporting APIs but do not contain the connection replacement logic that is directly responsible for the erroneous behavior.",
+        "bug_scenario": "The bug scenario is about replacing a message flow with a sequence flow between elements in different participants (pools) in a BPMN diagram. When the user reconnects a message flow so that it starts and ends within the same participant (which should convert it to a sequence flow), the new sequence flow is not placed under the correct parent/participant/process. This results in rendering issues (the participant is highlighted in red as seen in the second image) or even crashes the modeler."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//fixConnection",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//replaceReconnectedConnection",
+            "lib/features/modeling/Modeling.js//Modeling.prototype.connect"
+        ],
+        "explanation": "The key bug-related class is ReplaceConnectionBehavior, which manages the logic when connections (like message flows and sequence flows) are replaced or reconnected. The fixConnection and replaceReconnectedConnection functions in this class are responsible for handling the replacement and reconnection of sequence and message flows. They determine the type of connection and attempt to create new connections and remove old ones. However, they do not ensure that the new sequence flow is parented under the correct participant/process, leading to the bug. Additionally, Modeling.prototype.connect in Modeling.js is directly responsible for creating new connections\u2014including their parent assignment\u2014so any fix must ensure the parent container is set correctly when a connection type changes. Other files like BpmnUpdater.js deal with updates but do not directly handle the parent assignment in this scenario.",
+        "bug_scenario": "The bug scenario involves replacing a message flow between two participants (A and B) with a sequence flow by reconnecting its start to the end of Task B (creating a loop). The expected behavior is that the new sequence flow should be correctly parented under the second participant/process. However, in the current ('master') implementation, the sequence flow is not correctly added to the second participant, causing the modeler to highlight the participant in red (indicating an error) or potentially crash."
+    }
+}

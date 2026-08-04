@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js"
+        ],
+        "explanation": "1. LabelEditingProvider.js\n   \u2022 This provider registers directEditing.cancel/complete only on a fixed set of events (viewbox change, drag.init, commandStack.changed, etc.) but does not listen for canvas root (plane) changes. A listener for the root/plane switch event needs to be added here to cancel direct editing when the user navigates away.\n\n2. UpdateCanvasRootHandler.js\n   \u2022 This command handler performs the actual canvas.setRootElement(newRoot) to switch planes, but it does not interact with directEditing at all. Either it should fire an event or directly invoke directEditing.cancel()/complete() after the root swap to ensure the editing session is torn down.\n\n3. DrilldownOverlayBehavior.js\n   \u2022 This behavior triggers the plane switch via canvas.setRootElement when the drill-down button is clicked, but it does not cancel any active direct editing beforehand. It should invoke or broadcast a cancelation on directEditing to avoid leaving the textbox lingering.",
+        "bug_scenario": "The GIF and screenshot show a user double-clicking a BPMN element (e.g. a Task or TextAnnotation) to open the inline direct\u2010editing textbox. Then, by clicking the drill-down arrow on a collapsed subprocess (or otherwise changing the canvas root/plane), the diagram view switches to the target plane, but the floating editing box remains visible \u2013 even though its target is no longer in view. The expected behavior is that any active direct edit session should be canceled or completed as soon as the canvas root (plane) changes."
+    }
+}

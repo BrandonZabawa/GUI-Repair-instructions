@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/DataTile.js//DataTile"
+        ],
+        "bug_functions": [
+            "src/ol/source/DataTile.js//DataTileSource.constructor",
+            "src/ol/source/DataTile.js//getTile",
+            "src/ol/DataTile.js//DataTile.load"
+        ],
+        "explanation": "The bug stems from the fact that DataTileSource captures the requested bandCount in its constructor but never applies it when creating or reshaping the DataTile buffer. The getTile method builds a new DataTile without accounting for multiple bands, so with an even bandCount (>=6) the final array stride is wrong and the alpha channel is misplaced. Similarly, DataTile.load assumes a flat byte array but does not interpret the length in terms of bandCount, so the loader\u2019s output is mis-indexed. Fixing this requires passing bandCount into DataTile (via its options in getTile) and updating DataTile.load to slice the incoming Data array into the correct number of bands and assign the last band as alpha.",
+        "bug_scenario": "When requesting an even number of bands \u22656 (e.g. 5 data bands + 1 alpha) from DataTileSource, the alpha channel is mis-mapped. In our scenario we ask for 5 bands, get back 6 (5 + alpha), configure DataTileSource.bandCount=6, but the final pixel array is laid out incorrectly and the alpha mask does not work. This can be reproduced by hard-coding totalBandsCount = 6 in DataTileSource and rendering RGBA via a style expression."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/DataTile.js//DataTile"
+        ],
+        "bug_functions": [
+            "src/ol/source/DataTile.js//DataTileSource.constructor",
+            "src/ol/source/DataTile.js//DataTileSource.getTile",
+            "src/ol/DataTile.js//DataTile.load"
+        ],
+        "explanation": "The DataTileSource class is where the user-supplied bandCount is stored (in the constructor) and where tiles are created via getTile. Although bandCount is saved, it is never used when constructing or post-processing the tile data, so the extra (alpha) channel is never applied correctly. The DataTile.load method in DataTile simply hands raw loader data to the tile without slicing or remapping channels. To fix the RGBA mapping for even band counts, the constructor or getTile must pass bandCount into the DataTile (or adjust the loader), and the load path must use that bandCount to split out the last band as alpha.",
+        "bug_scenario": "When requesting more than 4 bands (for example 5 data bands plus an alpha band for RGBA) from a DataTileSource, the last band (the alpha channel) is not being applied correctly. In the live demo the user asks for 5 bands; the backend returns 6 (5 data\u2009+\u20091 alpha), and they pass bandCount\u2009=\u20096 into DataTileSource, but tiles render with incorrect transparency. Visually the RGBA image appears wrong (alpha channel ignored or mis-aligned) when bandCount is an even number \u22656."
+    }
+}

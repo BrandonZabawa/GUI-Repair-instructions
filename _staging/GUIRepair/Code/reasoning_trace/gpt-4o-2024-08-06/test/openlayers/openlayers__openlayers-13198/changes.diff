@@ -1,0 +1,55 @@
+diff --git a/src/ol/layer/MapboxVector.js b/src/ol/layer/MapboxVector.js
+index 73910c2a7b..69a745b1b6 100644
+--- a/src/ol/layer/MapboxVector.js
++++ b/src/ol/layer/MapboxVector.js
+@@ -487,9 +487,9 @@ class MapboxVectorLayer extends VectorTileLayer {
+       targetSource.setTileLoadFunction(source.getTileLoadFunction());
+       targetSource.tileGrid = source.tileGrid;
+     }
+-    if (this.getBackground() === undefined) {
+-      applyBackground(this, style);
+-    }
++if (this.getBackground() === undefined && style.background) {
++this.setBackground(style.background);
++}
+     if (this.setMaxResolutionFromTileGrid_) {
+       const tileGrid = targetSource.getTileGrid();
+       this.setMaxResolution(tileGrid.getResolution(tileGrid.getMinZoom()));
+@@ -509,4 +509,4 @@ class MapboxVectorLayer extends VectorTileLayer {
+   }
+ }
+ 
+-export default MapboxVectorLayer;
++export default MapboxVectorLayer;
+\ No newline at end of file
+diff --git a/src/ol/renderer/canvas/VectorLayer.js b/src/ol/renderer/canvas/VectorLayer.js
+index c83441b5f3..b69764bc47 100644
+--- a/src/ol/renderer/canvas/VectorLayer.js
++++ b/src/ol/renderer/canvas/VectorLayer.js
+@@ -233,12 +233,13 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+ 
+     const canvasTransform = transformToString(this.pixelTransform);
+ 
+-    this.useContainer(
+-      target,
+-      canvasTransform,
+-      layerState.opacity,
+-      this.getBackground(frameState)
+-    );
++const background = this.getBackground(frameState) || layerState.background;
++this.useContainer(
++target,
++canvasTransform,
++layerState.opacity,
++background
++);
+     const context = this.context;
+     const canvas = context.canvas;
+ 
+@@ -771,4 +772,4 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+   }
+ }
+ 
+-export default CanvasVectorLayerRenderer;
++export default CanvasVectorLayerRenderer;
+\ No newline at end of file

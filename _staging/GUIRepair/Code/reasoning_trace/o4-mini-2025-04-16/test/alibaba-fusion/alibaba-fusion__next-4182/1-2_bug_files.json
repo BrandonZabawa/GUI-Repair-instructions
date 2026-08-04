@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/cascader-select/index.jsx",
+            "src/cascader-select/cascader-select.jsx",
+            "src/overlay/popup-v2.jsx"
+        ],
+        "explanation": "\n1. src/cascader-select/index.jsx is the entry point that spreads popupProps (including v2) into the internal CascaderSelect component. If it doesn\u2019t detect v2 and switch to the new popup-v2 codepath correctly, the wrong Popup component gets called.\n2. src/cascader-select/cascader-select.jsx is where the actual <Popup> component is imported and rendered. It needs to read popupProps.v2 and choose between popup.jsx and popup-v2.jsx (or forward refs correctly) \u2013 this file currently always imports the old Popup, so the v2 flag creates a mismatched API.\n3. src/overlay/popup-v2.jsx implements the new popup and should expose a valid getInstance method on its ref\u2014but today it either fails to forward a ref or doesn\u2019t set up getInstance on mount, so when the parent calls instance.getInstance() the instance is null. Fixing ref forwarding or initializing getInstance here cures the null\u2010ref crash.",
+        "bug_scenario": "When you pass popupProps={{ v2: true }} into CascaderSelect, the overlay popup switches into its \u201cv2\u201d implementation but then immediately blows up at runtime with \u201cCannot read properties of null (reading \u2018getInstance\u2019)\u201d. In other words, CascaderSelect is handing your v2 flag down into the wrong Popup component (or into one that hasn\u2019t wired up its instance ref correctly), so by the time the code calls instance.getInstance(), instance is null and the call crashes."
+    },
+    "2": {
+        "bug_files": [
+            "src/cascader-select/cascader-select.jsx",
+            "src/cascader-select/index.jsx",
+            "src/overlay/index.jsx",
+            "src/overlay/popup-v2.jsx",
+            "src/overlay/overlay-v2.jsx"
+        ],
+        "explanation": "\u2022 src/cascader-select/index.jsx & cascader-select.jsx: This component is forwarding popupProps (including v2:true) into the overlay API but isn\u2019t providing the trigger ref shape that v2 expects.  \n\u2022 src/overlay/index.jsx: This entry point picks between the v1 and v2 popup implementations based on popupProps.v2.  \n\u2022 src/overlay/popup-v2.jsx & overlay-v2.jsx: These files implement the new popup engine. They immediately call getInstance() on the trigger ref, which is currently null when used from CascaderSelect.  \nTo fix the error you\u2019ll need to adjust cascader-select so it supplies the correct trigger/ref or update popup-v2 to guard against a missing ref.",
+        "bug_scenario": "In the Demo when you pass popupProps={{ v2: true }} into <CascaderSelect />, opening the dropdown immediately throws \u201cUncaught TypeError: Cannot read properties of null (reading 'getInstance')\u201d. In other words, the new \u201cv2\u201d popup engine is being used but the trigger/ref that overlay-v2/popup-v2 expects is missing or null."
+    }
+}

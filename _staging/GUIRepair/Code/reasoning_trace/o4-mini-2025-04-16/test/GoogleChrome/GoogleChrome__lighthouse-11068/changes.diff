@@ -1,0 +1,56 @@
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index 78135969c..748fa691c 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -305,10 +305,10 @@ class Driver {
+   _handleEventError(error) {
+     log.error('Driver', 'Unhandled event error', error.message);
+   }
+-
+-  /**
+-   * @param {LH.Crdp.Target.AttachedToTargetEvent} event
+-   */
++    this.on('Target.attachedToTarget', event => {
++      this._handleTargetAttached(event).catch(this._handleEventError);
++    });
++…
+   async _handleTargetAttached(event) {
+     // We're only interested in network requests from iframes for now as those are "part of the page".
+     // If it's not an iframe, just resume it and move on.
+@@ -319,8 +319,9 @@ class Driver {
+     }
+ 
+     // Events from subtargets will be stringified and sent back on `Target.receivedMessageFromTarget`.
+-    // We want to receive information about network requests from iframes, so enable the Network domain.
++    // We want to receive information about network requests from iframes, so enable the Network and CSS domains.
+     await this.sendCommandToSession('Network.enable', event.sessionId);
++    await this.sendCommandToSession('CSS.enable', event.sessionId);
+ 
+     // We also want to receive information about subtargets of subtargets, so make sure we autoattach recursively.
+     await this.sendCommandToSession('Target.setAutoAttach', event.sessionId, {
+diff --git a/lighthouse-core/gather/gatherers/css-usage.js b/lighthouse-core/gather/gatherers/css-usage.js
+index 282dbd7a9..d3329ec90 100644
+--- a/lighthouse-core/gather/gatherers/css-usage.js
++++ b/lighthouse-core/gather/gatherers/css-usage.js
+@@ -22,12 +22,21 @@ class CSSUsage extends Gatherer {
+     const stylesheets = [];
+     /** @param {LH.Crdp.CSS.StyleSheetAddedEvent} sheet */
+     const onStylesheetAdded = sheet => stylesheets.push(sheet);
++    // Listen for stylesheet additions in both the main document and any OOPIFs.
+     driver.on('CSS.styleSheetAdded', onStylesheetAdded);
++    driver.on('Target.receivedMessageFromTarget', ({message}) => {
++      if (message.method === 'CSS.styleSheetAdded') {
++        onStylesheetAdded(message.params);
++      }
++    });
+ 
+     await driver.sendCommand('DOM.enable');
+     await driver.sendCommand('CSS.enable');
+     await driver.sendCommand('CSS.startRuleUsageTracking');
+     await driver.evaluateAsync('getComputedStyle(document.body)');
++
++    // Clean up the main listener (we leave the forwarded‐message listener in place
++    // until the end of pass; it won’t fire after CSS.disable).
+     driver.off('CSS.styleSheetAdded', onStylesheetAdded);
+ 
+     // Fetch style sheet content in parallel.

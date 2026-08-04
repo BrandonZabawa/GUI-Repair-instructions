@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-plantuml.js",
+            "components/prism-plantuml.min.js",
+            "components.js",
+            "dependencies.js",
+            "gulpfile/paths.js"
+        ],
+        "explanation": "PrismJS currently ships no PlantUML language definition, so any code blocks labeled plantuml or files with .wsd/.puml/etc. extensions are left unhighlighted. To fix this, we must:\n1. Add a new grammar definition in components/prism-plantuml.js (and its minified counterpart).\n2. Include \"plantuml\" in components.js so it\u2019s recognized by the build and by the show-language plugin.\n3. Declare any dependencies (e.g. if PlantUML embeds UML-like notation, it may depend on the markup or clike grammar) in dependencies.js.\n4. Update gulpfile/paths.js so that the build process picks up the new component files for bundling.",
+        "bug_scenario": "In the VSCode\u2010PlantUML preview (and in any HTML rendering that uses PrismJS in this repo) PlantUML diagrams are shown as plain, unhighlighted text. In the screenshots you can see a .wsd file opened in VSCode containing PlantUML source and the live diagram to its right\u2014but the Prism-powered code view never applies any PlantUML highlighting because Prism has no PlantUML grammar registered in this code base."
+    },
+    "2": {
+        "bug_files": [
+            "components/index.js",
+            "components.js",
+            "dependencies.js",
+            "prism.js"
+        ],
+        "explanation": "1. components/index.js\t\u2013 This file imports and registers each language component. Since Prism doesn\u2019t currently include a prism-plantuml.js import here, PlantUML will never be loaded.  \n2. components.js\t\u2013 This file contains the metadata (title, aliases, require-deps) for all languages. There is no entry defining the PlantUML language (with its extensions .wsd/.puml) so autoloader, toolbar, and CLI builds won\u2019t know about it.  \n3. dependencies.js\t\u2013 Many languages depend on others (for example, dot depends on markup). If PlantUML requires markup for embedding tags or arrow syntax, its dependencies must be declared here so it builds in the correct order.  \n4. prism.js\t\u2013 The core file holds the hook for file-extension detection and the general Grammar runner. To support new extensions (.wsd, .puml), you\u2019ll need to add PlantUML to the internal language-extension map so Prism will apply the grammar when encountering them.  \n\nAdding a new file prism-plantuml.js (and its minified prism-plantuml.min.js) under components/ and updating these four files will enable full syntax highlighting support for PlantUML in Prism.",
+        "bug_scenario": "When editing a PlantUML (.wsd/.puml) file in VSCode using Prism\u2019s embedded highlighter (for example in a documentation site or within the Prism live preview), none of the PlantUML keywords (\"@startuml\", \"actor\", \"participant\", arrows, braces, keywords like include/extend) are being highlighted. The screenshots clearly show the PlantUML snippet on the left with no highlighting applied, and the rendered UML on the right. This indicates that Prism does not ship a PlantUML definition under its components, so the language is unrecognized."
+    }
+}

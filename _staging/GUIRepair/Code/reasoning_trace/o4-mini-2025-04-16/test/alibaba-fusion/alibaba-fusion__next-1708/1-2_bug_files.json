@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/tree-select/tree-select.jsx",
+            "src/tree-select/index.jsx"
+        ],
+        "explanation": "The heart of the duplication lives in the TreeSelect implementation itself.  \n\n\u2022 src/tree-select/tree-select.jsx  \n  \u2013 This is where the component reads `props.value` (or `defaultValue`) and maps each entry to a rendered \u201ctag\u201d inside the input box.  The current logic can push the same item multiple times (especially when disabled items are picked) and it uses the non\u2010unique `value` as the React `key`.  \n\n\u2022 src/tree-select/index.jsx  \n  \u2013 This file wires up the TreeSelect and its static `Node` sub\u2010component.  While it does not contain the tag\u2010rendering logic, any fix in `tree-select.jsx` must be correctly exported through this entry point.  \n\nTo fix the bug you\u2019ll need to:\n1. Dedupe the list of items before you render tags (so each value only produces one tag).  \n2. Use a truly unique key (for example the internally generated `pos` or an explicit `key` prop on each data item) instead of the raw `value` string.  \n\nBoth of those changes happen in `src/tree-select/tree-select.jsx`, and the corrected component is then re\u2010exported via `src/tree-select/index.jsx`.",
+        "bug_scenario": "When you use a controlled TreeSelect in \u201ccheckbox\u2010mode\u201d (treeCheckable) and you pass in a default value array that includes disabled leaf nodes, on mount the component will render each selected label multiple times in the input box and you will see a React key\u2010duplication warning:\n\n\u2022 You set `treeDefaultExpandAll` + `treeCheckable` + `value={['4','6']}` where node \u201c4\u201d is disabled.  \n\u2022 On initial render you get four \u201cInput\u201d tags (instead of one) and a console warning: \u201cEncountered two children with the same key, \u20184\u2019.\u201d  \n\nThis happens because the code that turns your `value` array into tag elements is inadvertently producing duplicate entries (and using the `value` string as the React `key`)."
+    },
+    "2": {
+        "bug_files": [
+            "src/tree-select/index.jsx",
+            "src/tree-select/tree-select.jsx"
+        ],
+        "explanation": "Both of these files control how TreeSelect builds its UI and render the list of selected items (tags) in the input. index.jsx wires up props and exports the component, but the core tag\u2010rendering logic lives in tree-select.jsx. In tree-select.jsx there\u2019s a loop over the selected values that constructs Tag (span) elements, using the node\u2019s value as the key. Because disabled nodes are still present in the internal checked array and the value array, the same value appears twice, so you get duplicate tags and duplicate React keys. Fixing this requires deduplicating values or generating a truly unique key (for example combining value with its tree position) when mapping to tags in tree-select.jsx.",
+        "bug_scenario": "When TreeSelect is used in checkbox\u2010multiple mode (treeCheckable) with a defaultValue that includes disabled leaf nodes, the initial rendering of selected tags in the input duplicates the same label multiple times and triggers a React \u201cduplicate key\u201d warning. In the screenshot you can see \u201cInput \u00d7\u201d rendered four times for a single selected node, and the console warns \u201cEncountered two children with the same key, \u20184\u2019 \u2026\u201d. This happens because TreeSelect maps selected values directly to Tag (span) elements using the node\u2019s value as the React key, and disabled nodes or strict\u2010check logic can end up contributing the same key twice."
+    }
+}

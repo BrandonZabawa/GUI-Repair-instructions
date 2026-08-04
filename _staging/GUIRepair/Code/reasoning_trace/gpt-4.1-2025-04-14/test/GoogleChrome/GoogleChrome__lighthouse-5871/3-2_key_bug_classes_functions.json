@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/report/html/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//getUserAgent",
+            "lighthouse-core/gather/driver.js//beginEmulation",
+            "lighthouse-core/gather/driver.js//setExtraHTTPHeaders",
+            "lighthouse-core/gather/gather-runner.js//getBaseArtifacts",
+            "lighthouse-core/report/html/renderer/report-renderer.js//_renderReportFooter"
+        ],
+        "explanation": "1. 'lighthouse-core/gather/driver.js//Driver': The Driver class orchestrates browser interactions, including user agent manipulation during emulation. Its methods like 'getUserAgent', 'beginEmulation', and 'setExtraHTTPHeaders' are directly involved with setting and retrieving the user agent used during the audit, which is central to the bug.\n2. 'lighthouse-core/gather/driver.js//getUserAgent': This function is responsible for retrieving the user agent string that will be reported in the runtime settings. If it does not account for emulation or overrides, it will report the wrong value.\n3. 'lighthouse-core/gather/driver.js//beginEmulation' and 'setExtraHTTPHeaders': These control the emulated device/environment and may override the user agent for requests, which is not being reflected in the runtime settings.\n4. 'lighthouse-core/gather/gather-runner.js//getBaseArtifacts': This function collects base artifacts, including the user agent that is shown in the report, and thus is a key spot for ensuring the correct (possibly emulated) user agent is exposed.\n5. 'lighthouse-core/report/html/renderer/report-renderer.js//ReportRenderer' and '_renderReportFooter': This class/function is responsible for rendering the runtime settings in the report, including the user agent string. If the wrong artifact is passed here, or if the artifact doesn't reflect the emulated/actual used user agent, the display will be misleading. \n\nTo fix the bug, the artifact collection should capture both the actual network user agent (including any emulated one) and the browser's native user agent, and the report renderer should display both for clarity.",
+        "bug_scenario": "The screenshots show the 'Runtime settings' section in a Lighthouse report, highlighting that the 'User agent' displayed in the report does not match the user agent string actually used in the HTTP requests made by Lighthouse (as seen in the web server access logs). The report's 'User agent' appears to show the browser's native user agent, but the requests use a different (emulated) user agent, causing confusion for users trying to correlate report results with server-side logs. The expectation is that both user agents should be consistent or both should be exposed in the report for clarity."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/report/html/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//getUserAgent",
+            "lighthouse-core/gather/driver.js//beginEmulation",
+            "lighthouse-core/gather/driver.js//setExtraHTTPHeaders",
+            "lighthouse-core/gather/gather-runner.js//getBaseArtifacts",
+            "lighthouse-core/report/html/renderer/report-renderer.js//ReportRenderer._renderReportFooter"
+        ],
+        "explanation": "To address the mismatch between the displayed and actual user agent strings, the following classes and functions are relevant:\n\n- 'Driver' in 'lighthouse-core/gather/driver.js' is responsible for browser automation, setting user agent overrides, and providing the user agent string via 'getUserAgent'. If an emulated device or custom user agent is used, these methods control what is actually sent in HTTP requests and what is reported.\n- 'beginEmulation' and 'setExtraHTTPHeaders' in 'Driver' may alter or override the user agent sent by the browser, which can differ from the browser's default user agent.\n- 'getBaseArtifacts' in 'gather-runner.js' populates the 'UserAgent' field in the artifacts, which is later displayed in the report. If this is not properly synchronized with the actual user agent used for requests, a mismatch occurs.\n- 'ReportRenderer' in 'report-renderer.js' renders the report and specifically, 'ReportRenderer._renderReportFooter' is responsible for displaying the user agent in the runtime settings section. If only one user agent is exposed (and it does not match the request UA), this results in a misleading report.\n\nA fix would likely involve ensuring that both the actual HTTP request user agent (possibly set via emulation or headers) and the browser's user agent are both captured and displayed, or at least that the one shown matches what was used for the HTTP requests, by updating the relevant functions to track and expose both values.",
+        "bug_scenario": "The bug scenario is that the 'User agent' string displayed under 'Runtime settings' in the Lighthouse report does not match the actual user agent(s) used for the test requests made by Lighthouse. The screenshots highlight that the user agent shown in the report is different from the one(s) recorded in the server's access logs. This leads to confusion for users trying to correlate Lighthouse's reported environment with the actual requests seen by their server, especially when device emulation or overrides are involved."
+    }
+}

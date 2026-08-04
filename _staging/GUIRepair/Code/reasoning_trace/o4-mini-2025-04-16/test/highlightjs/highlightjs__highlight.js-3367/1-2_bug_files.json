@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/python.js",
+            "src/languages/python-repl.js"
+        ],
+        "explanation": "Both src/languages/python.js and python-repl.js define the Python grammar (including number and keyword regexes). The Python mode in python.js is where the \u2018number\u2019 pattern is currently too permissive (it\u2019s matching letters after digits), preventing the keyword patterns (which rely on word boundaries) from firing. The REPL wrapper reuses the same number logic. Editing these files to tighten the number regex (so it stops at the end of the digit) and/or adjust keyword boundary assertions will resolve the issue.",
+        "bug_scenario": "When Python code is highlighted with highlight.js, number tokens like \u201c1if\u201d in \u201cprint(1if 0==0else\\\"b\\\")\u201d are being consumed as a single \u201cnumber\u201d token, so the keywords \u201cif\u201d and \u201celse\u201d aren\u2019t recognized. The images show that \u201c1if\u201d and \u201c0else\u201d are all green (number) instead of splitting into a number followed by an \u2018if\u2019 or \u2018else\u2019 keyword. The expected behavior is to tokenize \u201c1\u201d as a number and \u201cif\u201d as a keyword (and similarly for \u201celse\u201d), matching GitHub\u2019s own Python highlighting."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/python.js",
+            "src/languages/python-repl.js",
+            "src/lib/compile_keywords.js"
+        ],
+        "explanation": "\u2022 src/languages/python.js contains the NUMBER and keyword definitions for Python. Its number regex is currently too permissive (it doesn\u2019t enforce a word-boundary after the digits), so it swallows adjacent letters and prevents the \u2018if\u2019/\u2018else\u2019 patterns from ever matching.  \n\u2022 src/languages/python-repl.js reuses the same core Python modes (including the faulty number/keyword logic) in REPL contexts, so it exhibits the same issue and must be patched in parallel.  \n\u2022 src/lib/compile_keywords.js builds the keyword-matching regex for all languages. It doesn\u2019t wrap the generated keyword pattern in the proper look-arounds or word-boundary checks, so keywords can only match if they start on their own token boundary. Tightening these patterns (adding \\b or negative look-arounds around keywords) will prevent number modes from bleeding into our keywords.",
+        "bug_scenario": "In Python highlighting, when a keyword (for example \u201cif\u201d or \u201celse\u201d) immediately follows a number literal without any whitespace (e.g. \u201c1if\u201d or \u201c0else\u201d), the highlighter treats the entire string as one big number token, so the keyword never gets recognized. The screenshots show that \u201c1if\u201d and \u201c0else\u201d are green (number) tokens instead of splitting into a number (1) followed by the keyword (if)."
+    }
+}

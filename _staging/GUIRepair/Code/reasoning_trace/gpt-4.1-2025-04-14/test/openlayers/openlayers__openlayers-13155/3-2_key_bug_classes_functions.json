@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/TileTexture.js//TileTexture"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/TileTexture.js//bindAndConfigure",
+            "src/ol/webgl/TileTexture.js//uploadImageTexture",
+            "src/ol/webgl/TileTexture.js//uploadDataTexture"
+        ],
+        "explanation": "The core of the bug is that WebGLTile renderer does not pass the imageSmoothing setting from the tile source down to the point where the WebGL texture is created and configured. The WebGLTileLayerRenderer class in src/ol/renderer/webgl/TileLayer.js is responsible for rendering tiles using WebGL, and likely needs to propagate the imageSmoothing property from the source to the TileTexture. The TileTexture class in src/ol/webgl/TileTexture.js is responsible for uploading image/data tiles as textures to the GPU. The bindAndConfigure, uploadImageTexture, and uploadDataTexture functions in TileTexture are where the actual WebGL texture parameters (such as gl.TEXTURE_MIN_FILTER and gl.TEXTURE_MAG_FILTER) are set. Currently, they are hard-coded to use gl.LINEAR, which causes smoothing regardless of the source's imageSmoothing setting. To fix the bug, these functions need to support and respect the imageSmoothing setting, using gl.NEAREST when smoothing is disabled. Thus, both the renderer and texture classes/functions are key bug code elements.",
+        "bug_scenario": "The bug scenario involves rendering sea level maps using the WebGLTile renderer, where zooming in causes pixelated or distorted edges along the sea. This is because the renderer does not respect the tile source's imageSmoothing setting. Without honoring imageSmoothing: false, the WebGL renderer uses smoothing (gl.LINEAR), which results in visual artifacts like thin lines of 'sea' appearing along some contours, especially at certain elevations. The bug can be observed more clearly when using exaggerated sea level values or panning the map, where rows of pixels may appear incorrectly above the sea."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/webgl/TileTexture.js//TileTexture",
+            "src/ol/source/TileImage.js//TileImage"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/TileTexture.js//bindAndConfigure",
+            "src/ol/webgl/TileTexture.js//uploadImageTexture",
+            "src/ol/webgl/TileTexture.js//uploadDataTexture",
+            "src/ol/webgl/TileTexture.js//TileTexture.uploadTile_"
+        ],
+        "explanation": "The classes and functions identified are central to the bug because:\n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: This is the main renderer for WebGL tile layers. It is responsible for creating and managing the rendering of tile textures, and must communicate any image smoothing preference to the texture upload process.\n- src/ol/layer/WebGLTile.js//WebGLTileLayer: This is the user-facing layer class. It passes options (including the tile source) down to the renderer. To respect imageSmoothing, it may need to ensure this property is available to the renderer.\n- src/ol/webgl/TileTexture.js//TileTexture: This class manages the creation and configuration of WebGL textures from tile images or data. The bindAndConfigure, uploadImageTexture, and uploadDataTexture functions always use gl.LINEAR for min/mag filter, ignoring the imageSmoothing option. These functions/classes are where the actual WebGL texture parameters (gl.LINEAR vs gl.NEAREST) are set, so they must be modified to switch based on the imageSmoothing setting from the source.\n- src/ol/source/TileImage.js//TileImage: This is the source class that already supports the imageSmoothing option. The fix requires propagating this setting from the source to the renderer, then to the WebGL texture upload.\n\nThe bug is caused by not passing the imageSmoothing property through the layer/renderer/texture pipeline and not using it to set the appropriate WebGL texture filtering mode (gl.NEAREST when imageSmoothing is false). The listed classes and functions are the key locations where this propagation and usage need to be implemented.",
+        "bug_scenario": "The scenario described in the bug report is that when using the WebGLTile renderer for tile layers (such as in the Sea Level example), the 'imageSmoothing' setting from the tile source is not respected. As a result, when imageSmoothing is set to false (to avoid smoothing DEM pixels), the tiles still appear smoothed (interpolated) instead of showing sharp pixel boundaries. This results in visible distortions, such as thin lines or pixelated seams, especially along the edges of the sea in the DEM visualization. The bug can be demonstrated by panning or zooming in the provided CodeSandbox examples, where artifacts appear at tile boundaries due to the incorrect smoothing/filtering mode being used in the WebGL renderer, which always uses gl.LINEAR instead of gl.NEAREST when imageSmoothing is false."
+    }
+}

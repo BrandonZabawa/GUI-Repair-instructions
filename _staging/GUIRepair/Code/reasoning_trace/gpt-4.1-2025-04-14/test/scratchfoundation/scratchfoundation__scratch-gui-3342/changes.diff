@@ -1,0 +1,97 @@
+diff --git a/src/components/blocks/blocks.jsx b/src/components/blocks/blocks.jsx
+index 683da23c1..afacb366e 100644
+--- a/src/components/blocks/blocks.jsx
++++ b/src/components/blocks/blocks.jsx
+@@ -6,6 +6,8 @@ import styles from './blocks.css';
+ const BlocksComponent = props => {
+     const {
+         componentRef,
++        watermarkImage,
++        isRtl,
+         ...componentProps
+     } = props;
+     return (
+@@ -13,10 +15,44 @@ const BlocksComponent = props => {
+             className={styles.blocks}
+             componentRef={componentRef}
+             {...componentProps}
+-        />
++        >
++            {watermarkImage ? (
++                <div
++                    className={styles.watermark}
++                    dir={isRtl ? 'rtl' : 'ltr'}
++                    style={{
++                        position: 'absolute',
++                        top: 20,
++                        [isRtl ? 'left' : 'right']: 20,
++                        width: 48,
++                        height: 48,
++                        opacity: 0.35,
++                        zIndex: 0,
++                        pointerEvents: 'none',
++                        display: 'flex',
++                        alignItems: 'flex-start',
++                        justifyContent: 'flex-end'
++                    }}
++                >
++                    <img
++                        src={watermarkImage}
++                        alt=""
++                        style={{
++                            maxWidth: 48,
++                            maxHeight: 48,
++                            width: 'auto',
++                            height: 'auto',
++                            objectFit: 'contain'
++                        }}
++                    />
++                </div>
++            ) : null}
++        </Box>
+     );
+ };
+ BlocksComponent.propTypes = {
+-    componentRef: PropTypes.func
++    componentRef: PropTypes.func,
++    watermarkImage: PropTypes.string,
++    isRtl: PropTypes.bool
+ };
+ export default BlocksComponent;
+diff --git a/src/containers/blocks.jsx b/src/containers/blocks.jsx
+index 57c91e3c6..d62a54453 100644
+--- a/src/containers/blocks.jsx
++++ b/src/containers/blocks.jsx
+@@ -443,10 +443,32 @@ class Blocks extends React.Component {
+             ...props
+         } = this.props;
+         /* eslint-enable no-unused-vars */
++        // Determine watermark image for selected target (sprite or stage)
++        let watermarkImage = null;
++        if (vm && vm.editingTarget) {
++            const target = vm.editingTarget;
++            // For sprites, use the current costume's thumbnail
++            if (target.sprite && target.sprite.costumes && target.sprite.costumes.length > 0) {
++                const costume = target.sprite.costumes[target.currentCostume];
++                watermarkImage = costume && costume.asset && costume.asset.encodeDataURI
++                    ? costume.asset.encodeDataURI()
++                    : (costume && costume.md5ext ? `${vm.runtime.storage.getAssetURL(costume.md5ext)}` : null);
++            }
++            // For stage, use the current backdrop's thumbnail
++            if (target.isStage && target.sprite && target.sprite.costumes && target.sprite.costumes.length > 0) {
++                const costume = target.sprite.costumes[target.currentCostume];
++                watermarkImage = costume && costume.asset && costume.asset.encodeDataURI
++                    ? costume.asset.encodeDataURI()
++                    : (costume && costume.md5ext ? `${vm.runtime.storage.getAssetURL(costume.md5ext)}` : null);
++            }
++        }
++
+         return (
+             <div>
+                 <BlocksComponent
+                     componentRef={this.setBlocks}
++                    watermarkImage={watermarkImage}
++                    isRtl={this.props.isRtl}
+                     {...props}
+                 />
+                 {this.state.prompt ? (

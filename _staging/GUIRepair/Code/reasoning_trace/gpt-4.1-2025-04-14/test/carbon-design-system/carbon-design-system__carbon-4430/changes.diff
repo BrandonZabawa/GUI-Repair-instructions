@@ -1,0 +1,93 @@
+diff --git a/packages/react/src/components/DataTable/DataTable.js b/packages/react/src/components/DataTable/DataTable.js
+index 69b3dc30..dbc5ee5f 100644
+--- a/packages/react/src/components/DataTable/DataTable.js
++++ b/packages/react/src/components/DataTable/DataTable.js
+@@ -305,8 +305,10 @@ export default class DataTable extends React.Component {
+ 
+     // Otherwise, we're working on `TableSelectAll` which handles toggling the
+     // selection state of all rows.
+-    const rowCount = this.state.rowIds.length;
+-    const selectedRowCount = this.getSelectedRows().length;
++    // Use filteredRowIds if available (from render context)
++    const filteredRowIds = this.filteredRowIds || this.state.rowIds;
++    const rowCount = filteredRowIds.length;
++    const selectedRowCount = filteredRowIds.filter(id => this.state.rowsById[id].isSelected).length;
+     const checked = rowCount > 0 && selectedRowCount === rowCount;
+     const indeterminate =
+       rowCount > 0 && selectedRowCount > 0 && selectedRowCount !== rowCount;
+@@ -321,7 +323,7 @@ export default class DataTable extends React.Component {
+       id: `${this.getTablePrefix()}__select-all`,
+       indeterminate,
+       name: 'select-all',
+-      onSelect: composeEventHandlers([this.handleSelectAll, onClick]),
++      onSelect: composeEventHandlers([() => this.handleSelectAll(filteredRowIds), onClick]),
+     };
+   };
+ 
+@@ -392,19 +394,22 @@ export default class DataTable extends React.Component {
+    * @param {object} initialState
+    * @returns {object} object to put into this.setState (use spread operator)
+    */
+-  setAllSelectedState = (initialState, isSelected) => {
+-    const { rowIds } = initialState;
++  setAllSelectedState = (initialState, isSelected, targetRowIds = null) => {
++    const rowIds = targetRowIds || initialState.rowIds;
+     return {
+-      rowsById: rowIds.reduce(
+-        (acc, id) => ({
+-          ...acc,
+-          [id]: {
+-            ...initialState.rowsById[id],
+-            isSelected: initialState.rowsById[id].disabled ? false : isSelected,
+-          },
+-        }),
+-        {}
+-      ),
++      rowsById: {
++        ...initialState.rowsById,
++        ...rowIds.reduce(
++          (acc, id) => ({
++            ...acc,
++            [id]: {
++              ...initialState.rowsById[id],
++              isSelected: initialState.rowsById[id].disabled ? false : isSelected,
++            },
++          }),
++          {}
++        ),
++      },
+     };
+   };
+ 
+@@ -424,16 +429,18 @@ export default class DataTable extends React.Component {
+   /**
+    * Handler for toggling the selection state of all rows in the database
+    */
+-  handleSelectAll = () => {
++  handleSelectAll = (targetRowIds = null) => {
+     this.setState(state => {
+-      const { rowIds, rowsById } = state;
++      const rowIds = targetRowIds || state.rowIds;
++      const { rowsById } = state;
+       const selectableRows = rowIds.reduce((acc, rowId) => {
+         return (acc += rowsById[rowId].disabled ? 0 : 1);
+       }, 0);
+-      const isSelected = this.getSelectedRows().length !== selectableRows;
++      const selectedRowCount = rowIds.filter(id => rowsById[id].isSelected && !rowsById[id].disabled).length;
++      const isSelected = selectedRowCount !== selectableRows;
+       return {
+         shouldShowBatchActions: isSelected,
+-        ...this.setAllSelectedState(state, isSelected),
++        ...this.setAllSelectedState(state, isSelected, rowIds),
+       };
+     });
+   };
+@@ -571,6 +578,8 @@ export default class DataTable extends React.Component {
+             inputValue: filterInputValue,
+           })
+         : rowIds;
++    // Store filteredRowIds for use in getSelectionProps
++    this.filteredRowIds = filteredRowIds;
+     const renderProps = {
+       // Data derived from state
+       rows: denormalize(filteredRowIds, rowsById, cellsById),

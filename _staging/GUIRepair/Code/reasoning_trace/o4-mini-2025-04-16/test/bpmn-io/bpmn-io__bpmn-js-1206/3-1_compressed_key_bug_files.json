@@ -1,0 +1,9 @@
+{
+    "1": {
+        "bug_file": "lib/features/modeling/behavior/DetachEventBehavior.js",
+        "compressed": "NO",
+        "line_numbers": 75,
+        "compressed_line_numbers": 75,
+        "compressed_bug_file_content": "import inherits from 'inherits';\n\nimport CommandInterceptor from 'diagram-js/lib/command/CommandInterceptor';\n\nimport {\n  getBusinessObject,\n  is\n} from '../../../util/ModelUtil';\n\nimport { isLabel } from '../../../util/LabelUtil';\n\n\n/**\n * BPMN specific detach event behavior\n */\nexport default function DetachEventBehavior(eventBus, bpmnReplace) {\n\n  CommandInterceptor.call(this, eventBus);\n\n  /**\n   * replace boundary event with intermediate event when\n   * detaching from a shape\n   */\n\n  this.preExecute('elements.move', function(context) {\n    var shapes = context.shapes,\n        host = context.newHost,\n        shape,\n        eventDefinition,\n        intermediateEvent,\n        newShape;\n\n    if (shapes.length !== 1) {\n      return;\n    }\n\n    shape = shapes[0];\n\n    if (!isLabel(shape) && !host && is(shape, 'bpmn:BoundaryEvent')) {\n\n      eventDefinition = getEventDefinition(shape);\n\n      if (eventDefinition) {\n        intermediateEvent = {\n          type: 'bpmn:IntermediateCatchEvent',\n          eventDefinitionType: eventDefinition.$type\n        };\n      } else {\n        intermediateEvent = {\n          type: 'bpmn:IntermediateThrowEvent'\n        };\n      }\n\n      newShape = bpmnReplace.replaceElement(shape, intermediateEvent, { layoutConnection: false });\n\n      context.shapes = [ newShape ];\n    }\n  }, true);\n}\n\nDetachEventBehavior.$inject = [\n  'eventBus',\n  'bpmnReplace'\n];\n\ninherits(DetachEventBehavior, CommandInterceptor);\n\n\n\n// helper /////\nfunction getEventDefinition(element) {\n  var bo = getBusinessObject(element);\n\n  return bo && bo.eventDefinitions && bo.eventDefinitions[0];\n}"
+    }
+}

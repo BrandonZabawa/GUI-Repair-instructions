@@ -1,0 +1,68 @@
+diff --git a/src/cascader/cascader.jsx b/src/cascader/cascader.jsx
+index 524f13cbe..c31e3771d 100644
+--- a/src/cascader/cascader.jsx
++++ b/src/cascader/cascader.jsx
+@@ -26,6 +26,10 @@ export default class Cascader extends Component {
+         rtl: PropTypes.bool,
+         pure: PropTypes.bool,
+         className: PropTypes.string,
++        /**
++         * 是否显示每项的 title 属性（鼠标悬浮提示）
++         */
++        showItemTitle: PropTypes.bool,
+         /**
+          * 数据源，结构可参考下方说明
+          */
+@@ -134,6 +138,7 @@ export default class Cascader extends Component {
+         useVirtual: false,
+         checkStrictly: false,
+         itemRender: item => item.label,
++        showItemTitle: true,
+     };
+ 
+     constructor(props, context) {
+@@ -692,6 +697,7 @@ export default class Cascader extends Component {
+             listClassName,
+             listStyle,
+             itemRender,
++            showItemTitle,
+         } = this.props;
+         const { value, expandedValue, focusedValue } = this.state;
+ 
+@@ -726,6 +732,7 @@ export default class Cascader extends Component {
+                             canExpand
+                         ),
+                         onFold: this.handleFold,
++                        showItemTitle, // pass down
+                     };
+ 
+                     if (multiple) {
+diff --git a/src/cascader/item.jsx b/src/cascader/item.jsx
+index 47acfcd8e..ed5206114 100644
+--- a/src/cascader/item.jsx
++++ b/src/cascader/item.jsx
+@@ -29,6 +29,10 @@ export default class CascaderMenuItem extends Component {
+         checkboxDisabled: PropTypes.bool,
+         onCheck: PropTypes.func,
+         children: PropTypes.node,
++        /**
++         * 是否显示 title 属性
++         */
++        showItemTitle: PropTypes.bool,
+     };
+ 
+     constructor(props) {
+@@ -131,6 +135,13 @@ export default class CascaderMenuItem extends Component {
+             role: 'option',
+             ...others,
+         };
++
++        // Remove title attribute if showItemTitle is false
++        if (this.props.showItemTitle === false) {
++            if (itemProps.title) {
++                delete itemProps.title;
++            }
++        }
+         if (!disabled) {
+             if (expandTriggerType === 'hover') {
+                 itemProps.onMouseEnter = this.handleMouseEnter;

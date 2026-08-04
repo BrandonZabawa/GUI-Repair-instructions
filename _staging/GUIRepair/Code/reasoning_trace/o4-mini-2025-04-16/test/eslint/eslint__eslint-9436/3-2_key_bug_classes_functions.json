@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "lib/rules/no-constant-condition.js//reportIfConstant",
+            "lib/rules/no-constant-condition.js//checkConstantConditionLoopInSet"
+        ],
+        "explanation": "In lib/rules/no-constant-condition.js the two functions reportIfConstant and checkConstantConditionLoopInSet are where context.report is invoked for constant conditions. Both report calls pass the entire AST node (e.g. the IfStatement or loop node) to context.report, which causes ESLint to underline the whole node range. To fix the bug, these functions need to report specifically on the test sub-node (the literal or conditional test expression) by providing an explicit location (loc) or passing the test node instead of the full statement node.",
+        "bug_scenario": "The screenshot and report show that ESLint\u2019s no-constant-condition rule underlines and highlights the entire if\u2010statement and the entire call expression containing the ternary operator, instead of just the constant test (the literal \u201ctrue\u201d or the conditional expression\u2019s test). In other words, the reported error ranges are far too broad\u2014highlighting whole statements rather than just the constant sub-expressions."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "lib/rules/no-constant-condition.js//reportIfConstant",
+            "lib/rules/no-constant-condition.js//checkConstantConditionLoopInSet"
+        ],
+        "explanation": "Both reportIfConstant and checkConstantConditionLoopInSet call context.report with the full node, causing ESLint to highlight the entire AST node range. To narrow the error range to just the constant test, these functions need to report on the node.test subnode (or otherwise supply a specific location) rather than the parent node itself.",
+        "bug_scenario": "The ESLint \u201cno-constant-condition\u201d rule is underlining and reporting the entire statement or expression containing a constant condition instead of just the constant part. In the example if-statement \u201cif (true) { \u2026 }\u201d the whole block is highlighted, and in \u201csomething(true ? 1 : 0)\u201d the entire call is underlined, whereas only the literal \u201ctrue\u201d and the conditional expression \u201ctrue ? 1 : 0\u201d should be marked."
+    }
+}

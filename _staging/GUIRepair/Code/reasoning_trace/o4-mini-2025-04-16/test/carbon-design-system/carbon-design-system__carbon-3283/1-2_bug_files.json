@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "react/src/components/Button/Button.js",
+            "react/src/components/Button/Button-test.js",
+            "react/src/components/Button/Button-story.js"
+        ],
+        "explanation": "Button.js is the source of the inline override logic (ghostSmallOverride) that forces a 32px height for small ghost buttons. It currently only checks props (size or small) and ignores direct use of the CSS class. We need to update that logic to also detect the .bx--btn--sm class on className. Button-test.js will need new tests to verify the height adjustment for ghost buttons when size=\"small\" and/or when className=\"bx--btn--sm bx--btn--ghost\". Button-story.js should be updated or extended with a story demonstrating the corrected small ghost height visually in Storybook.",
+        "bug_scenario": "When you render a small \u201cghost\u201d Button (size=\"small\" or small prop) it\u2019s coming out 36px tall (the same height as the default small button) instead of the expected 32px height. In the screenshot you can see a ghost\u2010style button (.bx--btn--ghost.bx--btn--sm) measures 36px tall. The React Button component does include a runtime override for small ghosts but only when you pass size or small props, so if you apply the CSS classes directly the override never runs and you get the wrong height."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Button/Button.js",
+            "packages/react/src/components/Button/Button.test.js",
+            "packages/react/src/components/Button/Button-story.js"
+        ],
+        "explanation": "1. Button.js contains the small-ghost override logic (ghostSmallOverride \u2192 style: {height: '32px'}) so any issue with the override must be fixed here.  \n2. Button.test.js currently has no test asserting the 32px height for ghost + small\u2014inserting a unit test here will prevent regressions and validate that the override is applied.  \n3. Button-story.js still shows the old pattern of adding classes manually instead of using the new size and kind props; updating it to use `<Button kind=\u201cghost\u201d size=\u201csmall\u201d>` will both document the correct API and make the story render at the intended 32px height.",
+        "bug_scenario": "When using the \u201cghost\u201d button in its small variant, it still renders at 36px tall instead of the 32px height agreed upon in PR #3283. In our reproduction, we add the CSS classes \u201cbx--btn--sm bx--btn--ghost\u201d by hand, but the height never shrinks to 32px. The screenshot from the Carbon React Storybook confirms the button is measuring 36px high instead of the intended 32px."
+    }
+}

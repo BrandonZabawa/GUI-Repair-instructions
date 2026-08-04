@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/table/util.js//fetchDataByPath"
+        ],
+        "explanation": "The only piece of code responsible for reading a nested property by a string path is fetchDataByPath in src/table/util.js. It currently only supports dot-notation and simple single bracket notation (e.g. lists[1]), but doesn\u2019t handle an array-style string path like ['range','start','end'] (multiple keys inside one set of brackets). As a result, the regex extraction and object lookup fail and an undefined value is returned. To fix this bug, fetchDataByPath must be enhanced to detect and split bracketed array notation into individual path segments and then iterate through all of them, or otherwise return undefined instead of false for unsupported formats.",
+        "bug_scenario": "In Formily\u2019s JSON schema integration, the table component\u2019s fetchDataByPath utility is used to resolve cell values based on the Column.dataIndex string. When dataIndex is passed as a string in the form ['range','start','end'], fetchDataByPath fails to correctly parse and traverse the nested path, returns false (or undefined) instead of the requested value, and ultimately causes a \"Cannot read property 'startDate,endDate' of undefined\" error. The images show the malformed regex handling in fetchDataByPath and the runtime TypeError."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/table/util.js//fetchDataByPath"
+        ],
+        "explanation": "The function fetchDataByPath in src/table/util.js is responsible for parsing the dataIndex path and fetching the corresponding value from the data object. It currently only handles dotted notation and simple single-level brackets like lists[1].name; it returns false early for unsupported path forms (including bracketed array syntax), so when downstream rendering tries to read nested properties (startDate, endDate), it crashes on undefined. To fix the bug, fetchDataByPath must be extended to detect and correctly parse string paths of the form \"['a','b','c']\" (or \"[a,b]\") and return undefined (instead of false) when no value is found, preserving the correct multi-key resolution logic.",
+        "bug_scenario": "When a Table.Column is declared with a dataIndex string of the form \"['range','start','end']\", the table\u2019s cell\u2010value lookup logic (fetchDataByPath) returns false or undefined internally and then later tries to read properties off undefined, causing a crash. The user expects that dataIndex strings using bracketed array notation should be accepted as a path expression, not rejected."
+    }
+}

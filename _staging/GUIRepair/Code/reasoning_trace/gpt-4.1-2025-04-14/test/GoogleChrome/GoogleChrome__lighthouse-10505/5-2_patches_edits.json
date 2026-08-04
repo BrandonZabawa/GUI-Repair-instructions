@@ -1,0 +1,48 @@
+{
+    "1/1": {
+        "lighthouse-core/computed/metrics/interactive.js": [
+            {
+                "SEARCH": [
+                    "const FcpTsInMs = traceOfTab.timestamps.firstContentfulPaint / 1000;",
+                    "",
+                    "/** @type {function(TimePeriod):boolean} */",
+                    "const isLongEnoughQuietPeriod = period =>",
+                    "period.end > FcpTsInMs + REQUIRED_QUIET_WINDOW &&",
+                    "period.end - period.start >= REQUIRED_QUIET_WINDOW;",
+                    "const networkQuietPeriods = this._findNetworkQuietPeriods(networkRecords, traceOfTab)",
+                    ".filter(isLongEnoughQuietPeriod);",
+                    "const cpuQuietPeriods = this._findCPUQuietPeriods(longTasks, traceOfTab)",
+                    ".filter(isLongEnoughQuietPeriod);"
+                ],
+                "REPLACE": [
+                    "    const FcpTsInMs = traceOfTab.timestamps.firstContentfulPaint / 1000;",
+                    "",
+                    "    /**",
+                    "     * Adjust quiet periods to start no earlier than FCP.",
+                    "     * @param {Array<TimePeriod>} periods",
+                    "     * @return {Array<TimePeriod>}",
+                    "     */",
+                    "    function adjustPeriodsToFCP(periods) {",
+                    "      return periods.map(period => {",
+                    "        if (period.start < FcpTsInMs) {",
+                    "          return {start: FcpTsInMs, end: period.end};",
+                    "        }",
+                    "        return period;",
+                    "      });",
+                    "    }",
+                    "",
+                    "    /** @type {function(TimePeriod):boolean} */",
+                    "    const isLongEnoughQuietPeriod = period =>",
+                    "        period.end > FcpTsInMs + REQUIRED_QUIET_WINDOW &&",
+                    "        period.end - period.start >= REQUIRED_QUIET_WINDOW;",
+                    "    const networkQuietPeriods = adjustPeriodsToFCP(",
+                    "      this._findNetworkQuietPeriods(networkRecords, traceOfTab)",
+                    "    ).filter(isLongEnoughQuietPeriod);",
+                    "    const cpuQuietPeriods = adjustPeriodsToFCP(",
+                    "      this._findCPUQuietPeriods(longTasks, traceOfTab)",
+                    "    ).filter(isLongEnoughQuietPeriod);"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/VectorContext.js//VectorContext"
+        ],
+        "bug_functions": [
+            "src/ol/render/VectorContext.js//drawFeature",
+            "src/ol/render/VectorContext.js//drawCircle",
+            "src/ol/render/VectorContext.js//drawGeometry"
+        ],
+        "explanation": "All of the problematic checks live in VectorContext (the base class for vector rendering). drawFeature applies an extent intersection test before delegating to drawGeometry, causing features to be dropped when the calculated envelope doesn\u2019t intersect the viewport (particularly in wrap-around geographic projections). There is a nearly identical test in drawCircle, which also needs correction (it too rejects circles incorrectly in lon/lat). The later drawGeometry call repeats the same comparison, so you can remove the redundant check in drawFeature or fix its logic; drawCircle must also be patched to compute its extent properly.",
+        "bug_scenario": "When animating a feature (a marker on a moving polyline) in geographic (lon/lat) coordinates, calls to VectorContext.drawFeature() silently drop the rendering once the \u201cNull Island\u201d (0\u00b0 E, 0\u00b0 N) falls outside the current viewport. If you replace drawFeature with setStyle/drawGeometry, the animation remains visible. The root cause is an incorrect extent\u2010intersection check in drawFeature (and similarly in drawCircle), which erroneously rejects geometries in geographic projections unless the world wraps so that [0,0] lies inside the view."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/VectorContext.js//VectorContext"
+        ],
+        "bug_functions": [
+            "src/ol/render/VectorContext.js//VectorContext.drawFeature",
+            "src/ol/render/VectorContext.js//VectorContext.drawGeometry",
+            "src/ol/render/VectorContext.js//VectorContext.drawCircle"
+        ],
+        "explanation": "The extent test inside drawFeature() incorrectly rejects geometries in geographic coordinate mode when the world wraps and Null Island isn\u2019t in view, causing the marker to vanish. drawGeometry() repeats the same test redundantly, whereas drawCircle() has its own extent check that also needs correcting. To restore consistent rendering of features outside the default view, these checks should be fixed or removed.",
+        "bug_scenario": "The user animates a marker along a polyline in geographic coordinates (with longitude/latitude). As long as the map view includes the origin (Null Island at [0,0]) the custom drawFeature() call renders the marker correctly. However, once the map is panned so that Null Island goes out of view, drawFeature() silently stops drawing the marker. Replacing drawFeature() with setStyle() or drawGeometry() continues to render the marker even when Null Island is off\u2010screen, indicating an incorrect extent check in drawFeature()."
+    }
+}

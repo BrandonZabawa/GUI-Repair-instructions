@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-html/embed/angular-interpolation.js",
+            "src/language-html/embed/angular-attributes.js"
+        ],
+        "explanation": "Both of these files implement Prettier\u2019s Angular\u2010template embed logic for interpolation (`{{ \u2026 }}`) and for attribute bindings (`[attr]=\"\u2026\"` or bare attributes) respectively. They parse out the pipe expressions and then build a Doc to print the `|` and `:` tokens. The unwanted spaces around `:` originate in these two plugins when they hard-code or infer a space before and after every colon. To restore the legacy behavior for literal args, you would update the colon-printing logic in these files to skip inserting spaces when the argument node is a string or numeric literal, and only leave in spaces in the other cases per the compromise proposal.",
+        "bug_scenario": "When formatting Angular templates (parser: \"angular\" / the HTML parser with Angular\u2010specific embed plugins), Prettier 2.8.0 now automatically inserts spaces around the colon separators in pipe expressions. For example, it turns\n\n  {{ (user$ | async).credit | currency:'CAD':'symbol-narrow':'4.2-2' }}\n\ninto\n\n  {{ (user$ | async).credit | currency : 'CAD' : 'symbol-narrow' : '4.2-2' }}\n\nand likewise for slice and any other pipe. This violates the official Angular style (no spaces for literal args) and even degrades the appearance in IDEs like WebStorm. The goal is to revert to no spaces around `:` when the arguments are literal strings or numbers (or, by compromise, preserve the old behavior in those cases), while still allowing spaces in other, more complex pipe-argument contexts."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-html/embed/angular-interpolation.js",
+            "src/language-js/parse/angular.js",
+            "src/plugins/angular.js",
+            "src/language-js/print/html-binding.js"
+        ],
+        "explanation": "These four files form the end-to-end pipeline for Angular pipe formatting:\n\n\u2022 src/language-html/embed/angular-interpolation.js\n  \u2013 Detects \u201c{{\u2026}}\u201d interpolation in HTML and hands the inner expression to the Angular\u2010aware parser.\n\n\u2022 src/language-js/parse/angular.js\n  \u2013 The Angular parsing plugin that recognizes pipe expressions and colon separators, building a special AST node for them.\n\n\u2022 src/plugins/angular.js\n  \u2013 Registers the Angular parser plugin with Prettier\u2019s core, so that pipe expressions are routed through the above parser.\n\n\u2022 src/language-js/print/html-binding.js\n  \u2013 The printer for Angular bindings which currently emits spaces around every colon; this is where you would adjust spacing rules (omit spaces when the argument node is a literal string or number, but keep them in other cases).",
+        "bug_scenario": "Prettier v2.8.0\u2019s Angular HTML parser now injects spaces around the colon separators in Angular pipe expressions. For example, it rewrites\n\n  {{ (user$ | async).credit | currency:'CAD':'symbol-narrow':'4.2-2' }}\n\nas\n\n  {{ (user$ | async).credit | currency : 'CAD' : 'symbol-narrow' : '4.2-2' }}\n\n\u2014and likewise for numeric pipe arguments. Users expect no extra space around the colon when the argument is a literal string or number (as shown in the screenshot of WebStorm\u2019s label overlay), but may want spaces in other cases (e.g. a variable name)."
+    }
+}

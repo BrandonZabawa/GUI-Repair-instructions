@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "core/lib/tracehouse/trace-processor.js",
+            "core/lib/lh-trace-processor.js"
+        ],
+        "explanation": "Both of these files perform the core DevTools trace processing and map renderer process IDs to thread IDs. In lib/tracehouse/trace-processor.js the findMainFramePidTids function collects processId from FrameCommittedInBrowser events (but the event only has processPseudoId), causing undefined pids and ultimately the thrown error. lib/lh-trace-processor.js invokes this logic as part of the public trace\u2010processing API. Fixing the mapping (e.g. falling back to processPseudoId or the startingPid when processId is absent) requires editing these files.",
+        "bug_scenario": "When Lighthouse (v10.0.1) is run programmatically against https://treo.sh, the trace\u2010processor\u2019s findMainFramePidTids helper sees a FrameCommittedInBrowser event whose args.data contains only processPseudoId (e.g. \u201c0x1c072e100\u201d) and no processId. Because the code unconditionally maps frameCommittedEvts to their .data.processId, it produces mainFramePids = [undefined]. On the next loop it looks for a CrRendererMain thread for pid undefined, finds none, and throws \u201cUnable to determine tid for renderer process.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "core/lib/tracehouse/trace-processor.js",
+            "core/lib/lh-trace-processor.js",
+            "core/computed/processed-trace.js"
+        ],
+        "explanation": "1) lib/tracehouse/trace-processor.js: This is where findMainFramePidTids lives and where the bug manifests. It only looks at evt.args.data.processId, never checking for processPseudoId. When a trace only supplies processPseudoId, mainFramePids becomes [undefined] and the code throws. \n2) lib/lh-trace-processor.js: This is the public wrapper around tracehouse\u2019s TraceProcessor. Any change to how PIDs are handled in the underlying trace-processor will surface here, so it may require adjustments or re\u2010exporting of the new logic.\n3) core/computed/processed-trace.js: This computed artifact invokes the LHTraceProcessor to produce the processed trace. It propagates the error thrown by findMainFramePidTids, so may need to adapt or catch/fallback when only processPseudoId is present.",
+        "bug_scenario": "When Lighthouse v10 is run programmatically against certain pages (e.g. https://treo.sh), the DevTools trace\u2019s \u201cFrameCommittedInBrowser\u201d event contains only a processPseudoId (no processId). The static function findMainFramePidTids (in trace-processor.js) expects evt.args.data.processId to build the mainFramePids map, so mainFramePids ends up [undefined]. On the next loop it tries to find a CrRendererMain thread whose pid is undefined, fails to find one, and throws \u201cUnable to determine tid for renderer process.\u201d"
+    }
+}

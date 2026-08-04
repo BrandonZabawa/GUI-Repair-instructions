@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/ImageCanvas.js",
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js"
+        ],
+        "explanation": "\u2022 GeoTIFF.js: This is the entry point for COG loading. It reads the pixel\u2010size tags (ModelPixelScaleTag) from the GeoTIFF, but downstream code ignores the Y pixel scale, leading to an incorrect canvas height.\n\n\u2022 ImageCanvas.js: When OL paints a single image source on the map it creates a canvas of width = extentWidth/resolution but uses the same resolution for height, instead of computing height = extentHeight/resolutionY. Non-square pixels therefore compress the image vertically.\n\n\u2022 reproj/common.js: The functions here calculate source\u21c4destination resolution and grid sizes. They assume a single resolution scalar (X resolution) and do not factor in the Y pixel size. That mis\u2010computed grid dims feed into both Image.js and Tile.js reprojection routines.\n\n\u2022 reproj/Image.js: Implements pixel-by-pixel reprojection for single images. It reads the grid dimensions from reproj/common.js and writes into an output canvas. With the wrong height it never writes the bottom half of the image.\n\n\u2022 reproj/Tile.js: Similar logic for tiled reprojection. If the COG were requested as tiles, this code would likewise size the tile grid incorrectly, cutting off vertical pixels.\n\nAll of these modules will need to be updated to carry both X and Y resolutions (pixel scales) from GeoTIFF through the reprojection and canvas sizing logic so that non-square pixels render at the correct aspect ratio.",
+        "bug_scenario": "When loading a COG with non-square pixels (i.e. xResolution \u2260 yResolution), only the upper half of the image ever renders in the sandbox (and tiles cut off vertically). QGIS and geotiff.io honour the differing pixel\u2010height, scaling the canvas at the correct vertical resolution, but OL\u2019s COG demo code always uses a single scalar \u201cresolution\u201d (the horizontal one) to size the tile or image canvas, so the lower part of the image is never drawn."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js"
+        ],
+        "explanation": "All of these files participate in constructing and sizing the reprojected image. common.js provides getResolutions() which returns separate X and Y resolutions, but Image.js and Tile.js use only the X resolution when calculating the output canvas height (they do width = extentWidth/resX and height = extentHeight/resX). As a result, images with non-square pixels (resY != resX) get their height miscomputed and the lower portion is never drawn.",
+        "bug_scenario": "When loading a Cloud-Optimized GeoTIFF (COG) that has non-square pixels (i.e. different resolution in X and Y), only the upper portion of the image is rendered. In reprojection routines the code computes the output canvas width and height using the X resolution for both dimensions, so the lower part of the image is effectively cropped off whenever resY \u2260 resX."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/reproj/DataTile.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/reproj/common.js"
+        ],
+        "explanation": "The bug concerns the raster reprojection process, which is handled in the `src/ol/reproj/` directory. Specifically: \n- `DataTile.js`, `Image.js`, and `Tile.js` in `src/ol/reproj/` handle different types of raster/imagery reprojection in OpenLayers, including the logic for mapping source to destination pixels, their sizes, grid alignment, and pixel aspect ratio. \n- `common.js` contains utility functions and calculations used by those modules, probably including those that determine pixel grid and output geometry.  \n\nThese files will contain logic about how the source pixels are mapped (including whether the destination pixels are forced to be square), and would need to be changed to remove that assumption and correctly map the entire source pixel grid with proper dimensions onto the target projection, possibly allowing for non-square output pixels to match the input pixel aspect ratio after transformation.",
+        "bug_scenario": "The bug is that when reprojecting rasters (e.g., an image) from one projection (Lambert Conformal Conic) to another (Web Mercator), the code assumes that the output (target) raster pixels must be square. This leads to misalignments because each source pixel\u2014which is square in the source projection\u2014does not necessarily project to a square in the target projection. As a result, the destination raster can have columns or rows stretched or compressed incorrectly, and source pixels may be duplicated or misaligned horizontally or vertically. This was demonstrated in the image with a 5x5 source pixel grid projected into a 7x5 grid due to this pixel aspect ratio mismatch."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/reproj/DataTile.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/source/Image.js",
+            "src/ol/source/ImageStatic.js",
+            "src/ol/source/Raster.js"
+        ],
+        "explanation": "The core of raster reprojection happens in the \"reproj\" modules. The files src/ol/reproj/DataTile.js, src/ol/reproj/Image.js, and src/ol/reproj/Tile.js are directly responsible for reprojecting raster data tile, image, and tile-based sources, respectively\u2014they contain the algorithms and logic that determine how source pixels are mapped to target images, including how pixel shapes and counts in the target projection are computed. The files src/ol/source/DataTile.js, src/ol/source/Image.js, src/ol/source/ImageStatic.js, and src/ol/source/Raster.js are the layers/sources that use or can be configured to use reprojection, and frequently define how raster data is fetched, processed, or passed through the reprojection code. These are critical because the bug could require changes either in the source definition (to support/display non-square target pixels) or in the reprojection itself (to change how reprojection grids or pixel mappings are calculated). Editing these files would allow you to (a) change the logic to support non-square projected pixels, (b) properly propagate the native pixel size/shape, and (c) ensure correct rendering downstream.",
+        "bug_scenario": "The bug concerns raster reprojection in OpenLayers, specifically that when reprojecting a raster (such as a source image in Lambert Conformal Conic to Web Mercator), the resulting raster pixels are always rendered as perfect squares in the destination projection. This causes a misalignment, especially when source pixels do not map to perfect squares in the target projection system (for example, source pixels cover 3km by 2km, but are forced to be rendered as squares, leading to stretching or duplication along one axis). The user expects the reprojection to generate a projected raster with the same pixel count as the source, regardless of whether the pixels are square after projection or not."
+    }
+}

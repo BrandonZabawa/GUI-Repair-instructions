@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/Table.js//Table",
+            "packages/react/src/components/DataTable/DataTable.js//DataTable"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/Table.js//Table",
+            "packages/react/src/components/DataTable/DataTable.js//getTableProps"
+        ],
+        "explanation": "1. Table.js (Table component):\n   - This function\u2010component applies CSS classes based on the `size` prop, but it only recognizes 'compact', 'short', 'normal', and 'tall'. It needs to accept a new 'md' (or 'medium') value and map it to a corresponding CSS modifier (e.g. `${prefix}--data-table--md`), and update its PropTypes to include the new size.\n\n2. DataTable.js (DataTable class):\n   - The internal `getTableProps` method is used by consumers to spread props onto the `<Table>` element, but it currently does not forward the `size` prop (nor knows about the 'md' variant). By extending `getTableProps` to include `size: this.props.size` (and default it properly to 'normal'), you enable the new 40px size to cascade through. Additionally, update DataTable\u2019s PropTypes/defaultProps to accept the new 'md' size. These changes together surface a first-class 40px row height option in the DataTable API.",
+        "bug_scenario": "The request is to add a new \u201c40px (md)\u201d row-height option to the DataTable so it matches the rest of the component library\u2019s medium sizing (2.5 rem). The screenshot shows both the header row and body rows set to 40px, but the DataTable currently only supports size variants 'short', 'normal', 'compact', and 'tall', so there is no built-in 'md' (40px) option."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/Table.js//Table",
+            "packages/react/src/components/DataTable/DataTable.js//DataTable"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/DataTable.js//getTableProps"
+        ],
+        "explanation": "1. Table (in Table.js) is the low-level component that maps the size prop to CSS modifier classes (`--data-table--compact`, `--short`, `--normal`, `--tall`). It must be updated to accept a new 'md' value and render the corresponding class (e.g. `--data-table--md`).\n2. DataTable (in DataTable.js) declares and documents the size prop in its PropTypes and defaultProps. It needs to include 'md' in its allowed values so consumers can pass size='md'.\n3. The DataTable.getTableProps function is responsible for forwarding the size prop (and any other configuration) to the Table component. If it doesn\u2019t already pass size through, it must be updated so that the Table sees size='md' and applies the new CSS class automatically rather than requiring a manual style override.",
+        "bug_scenario": "The user wants to introduce a new 40 px (\u201cmd\u201d) row\u2010height option in the Carbon React DataTable. In the screenshot they call out that both the column headers and body rows should be 40 px high, matching other components\u2019 \u201cmd\u201d size. Today the DataTable only supports compact (24 px), short (32 px), normal (48 px) and tall (64 px), so users must resort to inline style overrides like setting --row-height manually."
+    }
+}

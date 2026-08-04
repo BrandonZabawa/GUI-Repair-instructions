@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/TileDebug.js",
+            "src/ol/source/TileImage.js",
+            "src/ol/source/XYZ.js",
+            "src/ol/source/UrlTile.js",
+            "src/ol/tilecoord.js",
+            "src/ol/source/Tile.js"
+        ],
+        "explanation": "These files are likely related to the bug:\n- src/ol/source/TileDebug.js: Implements the TileDebug layer, which is responsible for drawing tile grid coordinates. It needs to be aware of inverted Y-coordinates if the base layer uses '{-y}'.\n- src/ol/source/TileImage.js: The TileImage layer's url function must process URLs with '{-y}' correctly. Coordination with TileDebug is essential so overlays match tiles.\n- src/ol/source/XYZ.js: The XYZ source is commonly behind tile image layers and handles the '{z}/{x}/{y}' and '{-y}' placeholders.\n- src/ol/source/UrlTile.js: Provides shared logic for URL-based tile sources including placeholder processing. The bug involves how '{-y}' and coordinate inversion are handled for tile requests.\n- src/ol/tilecoord.js: Utility for working with tile coordinates, likely includes functions to invert or transform Y-axes.\n- src/ol/source/Tile.js: Provides the generic Tile source and may have base logic for coordinate handling impacting both TileDebug and TileImage.\n\nTo resolve the bug, changes will be needed wherever tile coordinates are generated, displayed, or used for URL formatting, ensuring that TileDebug can mirror the inverted Y-coordinates (i.e., support '{-y}') without custom tilegrids.",
+        "bug_scenario": "The bug concerns a mismatch in the Y-coordinate of tiles between TileDebug layers and TileImage layers when using the inverted '-y' coordinate placeholder in the URL. Specifically, when a tile source uses the inverted '-y' for its tile urls (such as '/{z}/{x}/{-y}.png'), the TileDebug layer does not mirror this logic and thus the Y-coordinates do not match on the map or in the network requests. The attached scenario image shows documentation for the url option emphasizing the need for '{-y}' support."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/TileDebug.js",
+            "src/ol/source/TileImage.js",
+            "src/ol/source/XYZ.js",
+            "src/ol/tilecoord.js",
+            "src/ol/tileurlfunction.js"
+        ],
+        "explanation": "1. 'src/ol/source/TileDebug.js' is responsible for the TileDebug layer's behavior and tile grid/coordinate representation.\n2. 'src/ol/source/TileImage.js' and 'src/ol/source/XYZ.js' are directly related to how image tiles are requested and how {-y} is interpreted in the URL for XYZ layers.\n3. 'src/ol/tilecoord.js' contains utility functions for tile coordinate computations and is likely where any Y to -Y inversion logic should appear.\n4. 'src/ol/tileurlfunction.js' processes URL templates including handling of {-y} notation, thus any handling or mishandling of this logic would originate or be fixed here.\nThese files work together to render and debug tile grids, making them the most relevant for fixes to coordinate inversion mismatches.",
+        "bug_scenario": "The bug scenario concerns an incorrect rendering or mismatch in tile coordinates (specifically the y or -y value) between the 'TileDebug' overlay layer and the 'TileImage' XYZ tile layer when using inverted Y ({-y}) notation. The debug layer does not accurately reflect the actual request which flips the Y axis, causing confusion or incorrect overlays. The URL template expects {x},{y} or {-y}, and {z}, and the implementation must ensure proper conversion or projection to match."
+    }
+}

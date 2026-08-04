@@ -1,0 +1,33 @@
+diff --git a/src/menu/view/item.jsx b/src/menu/view/item.jsx
+index ccdbed71f..41f05dafe 100644
+--- a/src/menu/view/item.jsx
++++ b/src/menu/view/item.jsx
+@@ -213,10 +213,27 @@ export default class Item extends Component {
+             role = 'option';
+         }
+ 
++        // Only set title if children is a pure string (no React elements)
++        let titleProp = undefined;
++        const isPureString = (nodes) => {
++            let pure = true;
++            React.Children.forEach(nodes, child => {
++                if (React.isValidElement(child)) {
++                    pure = false;
++                }
++            });
++            return pure;
++        };
++        if (isPureString(children)) {
++            const titleStr = this.getTitle(children);
++            // Optionally, you could check for truncation here if you have access to DOM
++            titleProp = titleStr;
++        }
++
+         return (
+             <TagName
+                 role={role}
+-                title={this.getTitle(children)}
++                {...(titleProp ? { title: titleProp } : {})}
+                 {...others}
+                 className={newClassName}
+                 onClick={this.handleClick}

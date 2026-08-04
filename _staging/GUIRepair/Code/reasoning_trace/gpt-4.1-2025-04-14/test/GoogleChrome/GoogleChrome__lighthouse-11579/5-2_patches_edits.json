@@ -1,0 +1,73 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "async gotoURL(url, options = {}) {",
+                    "const waitForFcp = options.waitForFcp || false;",
+                    "const waitForNavigated = options.waitForNavigated || false;",
+                    "const waitForLoad = options.waitForLoad || false;",
+                    "const passContext = /** @type {Partial<LH.Gatherer.PassContext>} */ (options.passContext || {});",
+                    "const disableJS = passContext.disableJavaScript || false;",
+                    "",
+                    "if (waitForNavigated && (waitForFcp || waitForLoad)) {",
+                    "throw new Error('Cannot use both waitForNavigated and another event, pick just one');",
+                    "}",
+                    "",
+                    "await this._beginNetworkStatusMonitoring(url);",
+                    "await this._executionContext.clearContextId();",
+                    "",
+                    "// Enable auto-attaching to subtargets so we receive iframe information",
+                    "await this.sendCommand('Target.setAutoAttach', {",
+                    "flatten: true,",
+                    "autoAttach: true,",
+                    "// Pause targets on startup so we don't miss anything",
+                    "waitForDebuggerOnStart: true,",
+                    "});",
+                    "",
+                    "await this.sendCommand('Page.enable');",
+                    "await this.sendCommand('Page.setLifecycleEventsEnabled', {enabled: true});",
+                    "await this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});",
+                    "// No timeout needed for Page.navigate. See https://github.com/GoogleChrome/lighthouse/pull/6413.",
+                    "const waitforPageNavigateCmd = this._innerSendCommand('Page.navigate', undefined, {url});"
+                ],
+                "REPLACE": [
+                    "  async gotoURL(url, options = {}) {",
+                    "    const waitForFcp = options.waitForFcp || false;",
+                    "    const waitForNavigated = options.waitForNavigated || false;",
+                    "    const waitForLoad = options.waitForLoad || false;",
+                    "    const passContext = /** @type {Partial<LH.Gatherer.PassContext>} */ (options.passContext || {});",
+                    "    const disableJS = passContext.disableJavaScript || false;",
+                    "",
+                    "    if (waitForNavigated && (waitForFcp || waitForLoad)) {",
+                    "      throw new Error('Cannot use both waitForNavigated and another event, pick just one');",
+                    "    }",
+                    "",
+                    "    // Bring the tab to the foreground to ensure FCP events will fire.",
+                    "    try {",
+                    "      await this.sendCommand('Page.bringToFront');",
+                    "    } catch (err) {",
+                    "      // Ignore if not supported (e.g., in CLI), only relevant for extension/devtools.",
+                    "    }",
+                    "",
+                    "    await this._beginNetworkStatusMonitoring(url);",
+                    "    await this._executionContext.clearContextId();",
+                    "",
+                    "    // Enable auto-attaching to subtargets so we receive iframe information",
+                    "    await this.sendCommand('Target.setAutoAttach', {",
+                    "      flatten: true,",
+                    "      autoAttach: true,",
+                    "      // Pause targets on startup so we don't miss anything",
+                    "      waitForDebuggerOnStart: true,",
+                    "    });",
+                    "",
+                    "    await this.sendCommand('Page.enable');",
+                    "    await this.sendCommand('Page.setLifecycleEventsEnabled', {enabled: true});",
+                    "    await this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});",
+                    "    // No timeout needed for Page.navigate. See https://github.com/GoogleChrome/lighthouse/pull/6413.",
+                    "    const waitforPageNavigateCmd = this._innerSendCommand('Page.navigate', undefined, {url});"
+                ]
+            }
+        ]
+    }
+}

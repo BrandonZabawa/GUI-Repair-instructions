@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/report-generator.js//generateReportHtml"
+        ],
+        "explanation": "The bug lies in ReportGeneratorV2.generateReportHtml: it uses String.replace with a plain replacement string (`sanitizedJavascript`). When that replacement string contains replacement patterns like `$'`, String.replace will interpret them instead of inserting the raw text. To fix this, the code in generateReportHtml must escape `$` (e.g. turn each `$` into `$$`) or use the function form of replace so that the inlined JS is injected verbatim without interpreting special replacement tokens.",
+        "bug_scenario": "We have an HTML report template with two placeholders (%%LIGHTHOUSE_JSON%% and %%LIGHTHOUSE_JAVASCRIPT%%) inlined into a <script> tag. The code reads in the renderer JS (report-renderer.js) as a string and then does\n\n  REPORT_TEMPLATE\n    .replace(/%%LIGHTHOUSE_JSON%%/, sanitizedJson)\n    .replace(/%%LIGHTHOUSE_JAVASCRIPT%%/, sanitizedJavascript)\n\nSince sanitizedJavascript comes straight from the file, if it contains the sequence `$'`, String.replace treats that as the special token \u201cinsert the portion of the original string after the match,\u201d swallowing the rest of the template and breaking the page. The screenshot shows the closing </script> being consumed, the DOM truncated, and stray script tags escaping the <script> block."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2.generateReportHtml"
+        ],
+        "explanation": "The vulnerability stems from how generateReportHtml in ReportGeneratorV2 inlines the renderer JavaScript: it reads report-renderer.js into a string (REPORT_JAVASCRIPT), then uses String.replace(placeholder, sanitizedJavascript) to inject it into the HTML template. Because String.replace interprets `$` sequences in the replacement string (e.g. `$'`), any injected `$` can break out of the script tag or swallow template content. To fix, generateReportHtml is the correct place to escape `$` (for example by replacing `$` with `$$`) or switch to a function-based replace to avoid special-token interpretation.",
+        "bug_scenario": "The screenshot shows an HTML report page where the injected JavaScript has broken out of its <script> tag. Because the injected code contained the sequence `$'`, the call to String.replace(placeholder, REPORT_JAVASCRIPT) treated `$'` as a special replacement token (meaning \u201cinsert everything after the match\u201d), swallowing the closing </script> tag and mangling the rest of the HTML. The devtools DOM inspector confirms that the script block is truncated and the page layout is corrupted."
+    }
+}

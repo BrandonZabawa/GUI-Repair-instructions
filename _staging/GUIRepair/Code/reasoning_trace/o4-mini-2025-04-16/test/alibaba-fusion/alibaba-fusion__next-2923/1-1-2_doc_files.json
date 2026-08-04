@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "src/config-provider/index.jsx",
+            "config-provider/index.md",
+            "config-provider/index.en-us.md",
+            "config-provider/demo/basic.md",
+            "config-provider/demo/components.md",
+            "config-provider/demo/consumer.md"
+        ],
+        "explanation": "\u2022 src/config-provider/index.jsx \u2013 Contains the implementation of ConfigProvider, its internal cache (Map/table) and the componentWillUnmount hook that tries to remove entries. This is where the leak originates under SSR.  \n\u2022 config-provider/index.md & index.en-us.md \u2013 Show the public API, usage patterns and describe how context and cache are set up. Useful to understand how users consume and configure the provider.  \n\u2022 config-provider/demo/basic.md \u2013 A minimal usage example to reproduce mounting/unmounting behavior.  \n\u2022 config-provider/demo/components.md \u2013 Demonstrates how ConfigProvider wraps child components, which helps simulate nested providers and cache key generation.  \n\u2022 config-provider/demo/consumer.md \u2013 Illustrates how consumers access cached configuration and confirms that unmount should clear cache entries.  \nTogether, these files allow you to reproduce the SSR mount/unmount cycle, inspect and modify the cache behavior, and implement a manual cleanup API if needed.",
+        "bug_scenario": "When running a React SSR service under load, we observe that each request (or each page render) mounts a new ConfigProvider instance, but because React\u2019s componentWillUnmount is never called during SSR, the internal cache never gets cleaned. In the memory\u2010profile snapshot provided, you can see a Map object whose internal \u201ctable\u201d array holds dozens of stale ConfigProvider instances that should have been GC\u2019d. The UI in the screenshot shows total heap size growing (193.98 MB shallow, 150.08 MB retained), and when drilling into the retainers, a Map \u2192 table \u2192 multiple ConfigProvider entries is displayed, proving the leak."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableBatchAction.js",
+            "packages/react/src/components/DataTable/__tests__/TableBatchAction-test.js",
+            "packages/react/src/components/DataTable/__tests__/__snapshots__/TableBatchAction-test.js.snap"
+        ],
+        "explanation": "TableBatchAction.js contains the defaultProps for iconDescription (currently set to 'Add') and the PropTypes clause that governs whether iconDescription is required. Changing defaultProps.iconDescription to '' and adjusting the PropTypes requirement (so it\u2019s only required for icon\u2010only buttons) directly fixes the incorrect announcements. The two test files (the spec and its snapshot) reference that default and will need updating to assert against the new empty\u2010string default rather than 'Add'.",
+        "bug_scenario": "When you use the TableBatchAction component without passing an explicit iconDescription, it currently falls back to the hard-coded default of \u201cAdd,\u201d so screen readers announce \u201cEdit Add Button,\u201d \u201cReset Add Button,\u201d etc., even though the visible label is \u201cEdit\u201d or \u201cReset.\u201d If you explicitly pass iconDescription matching the visible label (for example, iconDescription=\"Edit\"), screen readers then announce \u201cEdit Edit Button\u201d \u2013 a duplicate announcement. In both cases iconDescription is either wrong or redundant. The fix is to only require iconDescription when there is no visible label (i.e. icon\u2010only buttons), and to change the default value of iconDescription in TableBatchAction to an empty string so that visible-label buttons don\u2019t get an incorrect default."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableBatchAction.js",
+            "packages/react/src/components/DataTable/__tests__/TableBatchAction-test.js"
+        ],
+        "explanation": "1. TableBatchAction.js defines defaultProps.iconDescription = 'Add' and uses PropTypes.string.isRequired. This default causes screen readers to announce \u201cAdd\u201d even when the visible label is present. The fix is to change the default to '' and make the prop conditionally required only when no children are provided.\n2. TableBatchAction-test.js contains unit tests asserting the default behavior and PropTypes warnings. These tests must be updated to expect an empty default iconDescription when children exist and to require the prop only when children are missing.",
+        "bug_scenario": "When a TableBatchAction is rendered with both an icon and a visible label (children), the default iconDescription='Add' is still applied, causing screen readers (like JAWS) to read out \u201cEdit Add Button\u201d or \u201cReset Add Button.\u201d Conversely, when no visible label is provided, callers must explicitly pass iconDescription='' to override the bad default of \u201cAdd.\u201d The correct behavior is:\n\u2022 If children (visible text label) exist, iconDescription should default to '' so it isn\u2019t announced redundantly.\n\u2022 If there are no children, iconDescription should be required to describe the icon-only button."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/RadioButton/RadioButton.js//RadioButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/RadioButton/RadioButton.js//render"
+        ],
+        "explanation": "The accessibility issue lives in the RadioButton component\u2019s render method: it renders the <label> with an aria-label attribute set to the labelText, and then also renders the labelText inside a child <span>. According to the accessibility tree rules, using aria-label on an element overrides any child text nodes, and many screen readers will then ignore that child text entirely or fail to assemble the accessible name correctly. Removing the redundant aria-label (or switching to aria-labelledby that points to the inner span) will allow the screen reader to read the labelText as expected. Additionally, the inner <span> does not have the design-system class (bx--radio-button__label-text) applied, but the primary blocker for screen readers is the inappropriate aria-label on the label element.",
+        "bug_scenario": "In the React version of the RadioButton component, VoiceOver and JAWS are unable to read out the individual radio button\u2019s label text\u2014even though the visible label appears correctly\u2014whereas the vanilla HTML version of the same markup is read properly."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/RadioButton/RadioButton.js//RadioButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/RadioButton/RadioButton.js//RadioButton.render"
+        ],
+        "explanation": "The problem originates entirely in the RadioButton component\u2019s render method. In RadioButton.js the <label> element is given aria-label={labelText} and then contains a <span> with the same text. That causes most screen readers to ignore the nested span and not announce the label. To fix this, the render method needs to be adjusted: remove the aria-label on the <label> or apply it correctly to the <input>, or use aria-labelledby pointing to the span, so that the visible text is correctly exposed to the accessibility tree.",
+        "bug_scenario": "When using the React RadioButton component in Carbon, VoiceOver/JAWS fail to announce the user-visible label text. In the vanilla HTML implementation the screen reader correctly reads \u201cRadio button label,\u201d but in the React version it only says \u201cradio button\u201d (and sometimes only \u201cselected\u201d) because the component has moved the visible label into a span but put the aria-label on the <label> element itself, which prevents the assistive technology from reading the nested text."
+    }
+}

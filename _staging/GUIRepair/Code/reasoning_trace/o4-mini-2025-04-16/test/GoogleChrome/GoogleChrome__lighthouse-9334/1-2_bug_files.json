@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/lib/lh-error.js",
+            "lighthouse-core/lib/i18n/i18n.js",
+            "lighthouse-core/index.js",
+            "lighthouse-cli/run.js",
+            "lighthouse-cli/printer.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/lib/lh-error.js is where LHError constructs its `friendlyMessage` and template ID, but it never invokes the i18n formatter when the error is thrown early.\n\u2022 lighthouse-core/lib/i18n/i18n.js (and its companion locales files) define message templates (including `urlInvalid`), but the formatting functions aren\u2019t hooked into LHError at instantiation.\n\u2022 lighthouse-core/index.js is the entrypoint that validates the input URL and throws the raw LHError before any CLI-level locale swap or translation can occur.\n\u2022 lighthouse-cli/run.js sets up flags, loads the core, and invokes Lighthouse, but it catches the error only after it\u2019s already been thrown with an un-formatted template ID.\n\u2022 lighthouse-cli/printer.js receives the caught error and prints `err.friendlyMessage` directly. Because friendlyMessage is still the un-formatted template ID, the CLI output shows the raw ICU key rather than a human-readable string.",
+        "bug_scenario": "When you invoke the Lighthouse CLI with a URL that omits its protocol (e.g. `node lighthouse-cli www.example.com --view`), the tool throws an early, fatal LHError with code `INVALID_URL`. Because the i18n layer hasn\u2019t yet formatted the error\u2019s ICU template, you see the raw template ID (`lighthouse-core/lib/lh-error.js | urlInvalid # 0`) instead of a human-friendly, localized message (e.g. \u201cInvalid URL: protocol is required\u201d)."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/lib/lh-error.js",
+            "lighthouse-core/lib/i18n/i18n.js",
+            "lighthouse-core/index.js",
+            "lighthouse-cli/run.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/lib/lh-error.js\n  This is the class that creates LHError instances. Its constructor records the template ID (urlInvalid) but never invokes the message formatter here, so the friendlyMessage stays un-translated.\n\n\u2022 lighthouse-core/lib/i18n/i18n.js\n  The ICU message loader and formatter live here. Because no locale is swapped in or messages compiled before the fatal error, the raw template ID is all you ever see.\n\n\u2022 lighthouse-core/index.js\n  This is the core runner entrypoint. It throws the LHError synchronously (INVALID_URL) before calling swapLocale/loadLocale, so the i18n subsystem has never been initialized by the time the error is raised.\n\n\u2022 lighthouse-cli/run.js\n  This module is the CLI\u2019s programmatic entrypoint (and what your reproduce script calls directly). It catches the LHError and prints err.friendlyMessage, but by then the message was never formatted. To fix the bug you need to ensure i18n.loadLocale (or swapLocale + message compilation) runs early\u2014either in core/index.js or at the top of run.js\u2014and/or invoke the formatter on the LHError before printing.",
+        "bug_scenario": "When you run the Lighthouse CLI against a URL that lacks a protocol (for example\n\n  node lighthouse-cli www.example.com --view\n\n) the core runner throws an LHError with code INVALID_URL before any i18n initialization has happened. Because the ICU template has never been formatted, the CLI ends up printing the raw template ID (\u201clighthouse-core/lib/lh-error.js | urlInvalid # 0\u201d) instead of a localized, human-readable message."
+    }
+}

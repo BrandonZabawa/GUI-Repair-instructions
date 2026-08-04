@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/crossref/crossref.lua",
+            "src/resources/filters/crossref/theorems.lua",
+            "src/resources/filters/common/theorems.lua",
+            "src/resources/filters/quarto-pre/theorems.lua"
+        ],
+        "explanation": "All of these files are part of the Pandoc/Quarto filtering pipeline that implements theorem environments and cross-references.  \n\n\u2022 resources/filters/crossref/crossref.lua  \n  This is where the error \u201cbad argument #1 to 'insert' (table expected, got nil)\u201d is thrown (tprepend on line 97). It assumes a non-nil caption array for every theorem, so it must be hardened to handle code-only or label-only cases.  \n\n\u2022 resources/filters/crossref/theorems.lua  \n  Defines how theorem blocks are numbered and captioned in the crossref pass; it works in tandem with crossref.lua and must detect missing headers or empty caption nodes.  \n\n\u2022 resources/filters/common/theorems.lua  \n  A common helper that builds the basic theorem Div/Caption structure. If it doesn\u2019t push a default header node, later passes (crossref) see nil lists and crash.  \n\n\u2022 resources/filters/quarto-pre/theorems.lua  \n  The \u201cpre\u201d filter that converts a Div with {.theorem} into a list environment and injects the heading. A bug here wraps the heading inside the first list rather than rendering it separately, which causes the unwanted bullet/number for the theorem title.",
+        "bug_scenario": "There are two interrelated problems in the current Lua filters for \u201ctheorems and proofs\u201d:  \n1) If you omit a header/label and put only a code block inside a theorem div, the crossref.lua filter crashes with \u201cbad argument #1 to 'insert' (table expected, got nil)\u201d (no safe-guard for a missing caption text).  \n2) If you put an (un-)ordered list inside a theorem div, the heading itself is being wrapped as the first list item (so \u201cTheorem 1 \u2026\u201d shows up as a bullet or numbered item) rather than staying outside the list."
+    },
+    "2": {
+        "bug_files": [
+            "src/resources/filters/crossref/crossref.lua",
+            "src/resources/filters/crossref/theorems.lua",
+            "src/resources/filters/common/theorems.lua",
+            "src/resources/filters/quarto-pre/theorems.lua"
+        ],
+        "explanation": "All of these Lua filters collaborate to process theorem and proof blocks and to generate cross-references. \n- crossref.lua defines the tprepend function and drive loop that inserts caption inlines into a block; when a heading is missing, the caption list is nil and table.insert fails at line 97. \n- crossref/theorems.lua builds the caption inlines for each theorem environment but does not initialize an empty list when no label or header is provided. \n- common/theorems.lua (in filters/common) implements the generic theorem wrapper, demoting the first heading into a caption; it also can wrap the heading into a list if the content begins with a list node, which is why list items pick up the caption. \n- quarto-pre/theorems.lua (in filters/quarto-pre) partitions the theorem block into header, caption, and body before any formatting; it likewise assumes the existence of a header AST node and does not guard against missing headings, causing the caption to flow into the first list. \n\nFixing the bug requires updating these filters to initialize caption tables when labels/headings are absent and to prevent list-first rules from pulling the caption into the list body.",
+        "bug_scenario": "When a Theorem/Proof div has code blocks or list content but no explicit heading label, the Lua cross-reference filter (crossref.lua) crashes with \u201cbad argument #1 to 'insert' (table expected, got nil)\u201d. In a related scenario, an unordered or ordered list inside a theorem div causes the automatically generated theorem caption (the heading) to be treated as the first list item, rather than a separate caption element, producing incorrect HTML and unintended bullet numbers."
+    }
+}

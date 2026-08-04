@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableHeader.js",
+            "packages/react/src/components/DataTable/__tests__/TableHeader-test.js"
+        ],
+        "explanation": "The core of the bug lives in TableHeader.js: in the non-sortable path (lines ~71\u201374) {...rest} is correctly applied to the <th>, whereas in the sortable path {...rest} is only applied to the inner <button> (lines ~115\u2013116). That typo/misplacement causes props intended for the header cell (e.g. id for aria-describedby) to be attached to the button instead. The corresponding test file TableHeader-test.js will need updating once the spread is moved back onto the <th> in the sortable branch so that the snapshots and assertions reflect the new behavior.",
+        "bug_scenario": "When you render a sortable column header via <TableHeader isSortable>, any extra props you pass (for example an id for accessibility) do not land on the <th> element. In the non-sortable branch, the component spreads {...rest} on the <th>, but in the sortable branch it spreads {...rest} on the inner <button>. As a result, the <th> itself never receives attributes like id, leading to missing accessible relationships."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableHeader.js"
+        ],
+        "explanation": "This is the file that implements the <TableHeader> component. In the non-sortable branch (around line 74) it spreads {...rest} onto the <th>, but in the sortable branch (around line 116) it incorrectly spreads it onto the <button>. To fix the bug you need to move {...rest} from the <button> back onto the <th> in the sortable path so that any passed props (id, aria-*, data-*, etc.) actually land on the table header cell rather than its child button.",
+        "bug_scenario": "When you use the DataTable\u2019s <TableHeader> with custom props (for example passing an id via {...rest}), non-sortable headers correctly spread those props onto the <th> element, but sortable headers do not. Instead, the props land on the inner <button>, so the <th> never gets the id (or any other passed prop). That breaks the expected HTML structure (and WCAG H43 requirements) because our table header cell lacks the necessary id."
+    }
+}

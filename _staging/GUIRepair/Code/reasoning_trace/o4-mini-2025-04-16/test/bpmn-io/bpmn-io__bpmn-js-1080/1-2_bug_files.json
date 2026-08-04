@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/snapping/BpmnConnectSnapping.js",
+            "lib/features/snapping/BpmnSnappingUtil.js",
+            "lib/modeling/behavior/CreateParticipantBehavior.js",
+            "lib/modeling/behavior/RemoveParticipantBehavior.js",
+            "lib/modeling/behavior/ResizeLaneBehavior.js",
+            "lib/modeling/util/LaneUtil.js",
+            "lib/modeling/util/LineAttachmentUtil.js",
+            "lib/modeling/util/LineIntersect.js"
+        ],
+        "explanation": "\u2022 BpmnConnectSnapping.js and BpmnSnappingUtil.js handle where connectors (including message flows) may attach to element boundaries. A stale lane-header boundary ends up in their hit-testing logic after a split+remove.  \n\u2022 CreateParticipantBehavior.js, RemoveParticipantBehavior.js and ResizeLaneBehavior.js govern creation, deletion and resizing of pools and lanes; an out-of-sync geometry after remove distorts the target shape\u2019s boundaries.  \n\u2022 LaneUtil.js maintains the pool\u2194lane containment model and the header vs body region; if it doesn\u2019t correctly recalculate the pool\u2019s interior when a lane is removed, snapping code will only see the header.  \n\u2022 LineAttachmentUtil.js and LineIntersect.js compute the exact docking point on a shape\u2019s perimeter for a connector; with an incorrect perimeter after lane-removal, these routines will exclude the body edge and force attachment at the header.  \nTogether, these files determine how pool boundaries are exposed to the connection tool. Fixing the lane-removal geometry update and the snapping intersection logic in them will restore the original behavior where you can click anywhere on the pool body to attach a message flow.",
+        "bug_scenario": "When connecting two pools with a message flow, you normally click inside the body of one pool and then inside the body of the other. If you add a lane to a pool and immediately remove it, however, that target pool\u2019s body no longer accepts the message flow drop at the inner lane boundary \u2014 you can only drop at the top header section. The GIF shows how, after split-and-remove, the connector refuses to snap to the pool\u2019s body and instead jumps up into the header area."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js",
+            "lib/features/modeling/util/LaneUtil.js",
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/snapping/BpmnConnectSnapping.js"
+        ],
+        "explanation": "\u2022 DeleteLaneBehavior.js  \n  This behavior runs when you remove a lane. It is responsible for reshaping the participant when lanes are removed. It currently leaves the participant in a state where only its header region is considered a valid connection target. We need to adjust it so that after you delete back to one lane, the remaining lane shape is promoted to act as the full body again.  \n\n\u2022 LaneUtil.js  \n  This utility computes lane bounds and the division between header vs. body in a pool. When there\u2019s only one lane left, it should treat that single lane as the full participant region \u2014 not just a nested child. The hit-box math here must be updated so that a single-lane pool expends to its full bounds.  \n\n\u2022 BpmnRules.js  \n  The canConnect/connect rules for message flows identify participants (pools) and lanes, and currently only allow attaching at the participant header, not at a lone lane. We must extend the rule to also accept a single remaining lane as a valid message flow target.  \n\n\u2022 BpmnConnectSnapping.js  \n  This module defines where connector endpoints snap to shapes (e.g. on header, on body). It still calculates snap-zones based on the old pool/lane hierarchy, so when you revert to one lane it only offers the header snap box. Updating its zone computation will let you grab the side of the single lane again.",
+        "bug_scenario": "When a pool (participant) once had more than one lane, and you delete back down to a single lane, the diagram no longer lets you attach a message flow to the body of the pool (i.e. the remaining lane shape) \u2014 you can only target the header area of the participant. Before ever adding/removing a lane you could freely create message flows by clicking on either pool\u2019s body. After adding then removing a lane, the pool\u2019s hit-area for message-flow attachment collapses to just the header region."
+    }
+}

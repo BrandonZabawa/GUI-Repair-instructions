@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/nav/nav.jsx",
+            "src/nav/item.jsx",
+            "src/nav/popup-item.jsx",
+            "src/nav/sub-nav.jsx",
+            "src/nav/group.jsx"
+        ],
+        "explanation": "All of these files implement the Nav’s rendering logic for items and sub-components in iconOnly mode. \n\n• nav.jsx  – orchestrates iconOnly mode and passes props down to the Menu component\n• item.jsx – renders a generic <Item> and always draws an icon container, even when no icon is supplied\n• popup-item.jsx – does the same for <PopupItem>\n• sub-nav.jsx – wraps and renders <SubNav> labels/icons\n• group.jsx – renders <Group> labels/icons\n\nIn iconOnly mode, each of these still outputs an empty placeholder when no icon prop is provided. To fix the bug, the render methods in these modules should check for a supplied icon prop (and/or hasTooltip/hasArrow flags) and suppress the entire icon container (or add a CSS modifier) when icon===undefined, so that iconless items don’t render a blank column.",
+        "bug_scenario": "When Nav is in iconOnly mode (vertical only), items that do not have an icon prop still reserve a placeholder slot (empty blank icon area) in the menu. In the reproduction screenshot, you can see “Item 3” (which had no icon) renders a blank square in the icon column. According to the API docs, iconOnly should only show real icons and should not leave blank space for items without an icon."
+    },
+    "2": {
+        "bug_files": [
+            "src/nav/nav.jsx",
+            "src/nav/item.jsx",
+            "src/nav/popup-item.jsx",
+            "src/nav/sub-nav.jsx",
+            "src/nav/group.jsx",
+            "src/nav/main.scss"
+        ],
+        "explanation": "这些文件共同组成了 Nav 组件及其子组件的渲染和样式：\n\n- src/nav/nav.jsx：Nav 容器逻辑，负责将 iconOnly 等属性传递给子项，以及整体 layout；需在此处过滤或标记无 icon 的子项。\n- src/nav/item.jsx：渲染单个 Nav.Item，当前无论是否配置 icon 都会渲染一个空的占位元素，需要根据 iconOnly 且未配置 icon 时直接 return null 或不渲染占位。\n- src/nav/popup-item.jsx：渲染弹出菜单中的 PopupItem，同样会空渲染 icon 占位，需要同步修改。\n- src/nav/sub-nav.jsx：渲染 SubNav（带 label 的可展开子菜单），子标题也渲染了空占位，需要对没有 icon 的情况作隐藏处理。\n- src/nav/group.jsx：分组容器，如果 group 本身或其子项未配置 icon，group label／icon 也会产生空白，需要过滤。\n- src/nav/main.scss：控制 icon 区域的宽度和占位样式，需要在 iconOnly 模式下，针对没有 icon 的项去掉宽度或隐藏样式。",
+        "bug_scenario": "当 Nav 设置 iconOnly=true 时，如果某个 Nav.Item、Nav.PopupItem、Nav.SubNav 或 Group 中的 Item 没有传 icon 属性，组件依然会渲染一个空的图标占位并为该项留出宽度，导致在图标模式下出现“空白”或“空槽”。在示例中，可以看到“item”、“Popup item”、“Group”和“Sub Nav”中没有 icon 的那些项都渲染了一个空白方块。根据文档 “iconOnly 只适用垂直方向” 且“未配置 icon 的项不应出现空白”，组件在 iconOnly 模式下，应跳过没有 icon 的项或仅显示 tooltip，而不渲染空占位。"
+    }
+}

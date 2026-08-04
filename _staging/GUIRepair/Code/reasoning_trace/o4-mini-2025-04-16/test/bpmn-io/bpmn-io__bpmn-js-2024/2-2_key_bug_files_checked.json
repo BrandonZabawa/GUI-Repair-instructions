@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/import/BpmnImporter.js",
+            "lib/draw/BpmnRenderer.js"
+        ],
+        "explanation": "\u2022 lib/import/BpmnImporter.js: This file reads the BPMNDI bounds and creates the shape primitives (x, y, width, height) but doesn\u2019t inspect the isHorizontal=false flag. As a result, vertical pools aren\u2019t rotated or resized (width/height swapped), so the pool bar and lane bars still draw horizontally and label bounds are incorrect. \u2022 lib/draw/BpmnRenderer.js: This renderer draws the BPMN shapes and labels based on the element properties but never checks di.isHorizontal. It should rotate pool and lane labels (or swap width/height for participant shapes) when isHorizontal=false, but currently always renders the same horizontal shape and text orientation.",
+        "bug_scenario": "The A.4.1 test diagram defines a two-participant collaboration with both horizontal and vertical pools (participants). In the provided import, the second pool and its lanes are marked in the BPMNDI with isHorizontal=\"false\" (i.e. vertical orientation). However, when rendered: \u2022 The pool and lane bars still render as if horizontal \u2022 The pool label stays unrotated (horizontal) and is clipped \u2022 Lane labels are placed incorrectly (or omitted) \u2022 Bounds/width/height are never swapped to account for vertical orientation In short, the DI flag is ignored, so the entire pool and its labels render like a horizontal pool rather than rotating the shape and text for a vertical orientation."
+    }
+}

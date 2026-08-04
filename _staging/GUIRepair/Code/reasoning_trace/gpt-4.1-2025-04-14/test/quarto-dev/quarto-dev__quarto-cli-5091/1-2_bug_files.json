@@ -1,0 +1,38 @@
+{
+    "1": {
+        "bug_files": [
+            "src/command/render/latexmk/pdf.ts",
+            "src/command/render/latexmk/mediabag.lua",
+            "src/command/render/latexmk/latex.ts",
+            "src/command/render/latexmk/output-tex.ts",
+            "src/core/image.ts",
+            "src/core/url.ts",
+            "src/command/render/filters.ts",
+            "src/command/render/output.ts",
+            "src/command/render/render.ts",
+            "src/command/render/resources.ts",
+            "src/command/render/constants.ts",
+            "resources/filters/common/figures.lua",
+            "resources/filters/common/url.lua"
+        ],
+        "explanation": "The bug concerns the handling of non-standard or URL-encoded image URLs when rendering to PDF via LaTeX. \n- Files under 'src/command/render/latexmk/' (such as pdf.ts, latex.ts, mediabag.lua, output-tex.ts) are responsible for orchestrating the PDF rendering, mapping resources, and managing the mediabag which stores document assets like images.\n- 'src/core/image.ts' and 'src/core/url.ts' likely handle asset fetching, resolution, and URL processing.\n- Files like 'filters.ts', 'output.ts', 'render.ts', 'resources.ts', and 'constants.ts' in 'src/command/render/' coordinate rendering steps, resource collection, and the translation of markdown/Quarto documents into LaTeX or other intermediate forms.\n- 'resources/filters/common/figures.lua' and 'resources/filters/common/url.lua' may be responsible for LaTeX/PDF-specific handling of figures and URL/file mapping in Quarto's Lua-based Pandoc filters, potentially including mediabag filenames.\nInvestigating and likely adjusting the logic in these files should address the issue of correctly deducing, resolving, and naming image resources with non-standard URLs such that LaTeX can find and use them during PDF compilation.",
+        "bug_scenario": "The bug scenario involves rendering a .qmd Quarto document to PDF when it links to an image hosted at a non-standard URL. The error in the bug report indicates that the tool is failing to fetch or process the image from a complex, possibly encoded public image URL (e.g., from substackcdn.com/bucketeer-...). During LaTeX compilation (xelatex), the image fails to be loaded, and the compilation aborts due to inability to find the fetched image with a complex path/filename in the mediabag. The issue is likely related to how image URLs are parsed, fetched, stored, or renamed for LaTeX inclusion and PDF compilation, especially when the URL is not a standard/simple path or includes URL-encoded components."
+    },
+    "2": {
+        "bug_files": [
+            "src/command/render/latexmk/pdf.ts",
+            "src/command/render/latexmk/latex.ts",
+            "src/command/render/latexmk/mediabag.lua",
+            "src/command/render/latexmk/parse-error.ts",
+            "src/command/render/output-tex.ts",
+            "src/command/render/output.ts",
+            "src/core/image.ts",
+            "src/core/url.ts",
+            "src/core/pandoc/self-contained.ts",
+            "resources/filters/common/figures.lua",
+            "resources/filters/quarto-finalize/mediabag.lua"
+        ],
+        "explanation": "These files are implicated due to their likely roles in handling image fetching, path resolution, and mediabag processing for PDFs in Quarto. \n- 'src/command/render/latexmk/pdf.ts', 'latex.ts', and 'mediabag.lua': Central to LaTeX/PDF rendering workflows and mediabag image collection.\n- 'parse-error.ts': Handles LaTeX error parsing and could surface the error in question.\n- 'output-tex.ts' and 'output.ts': Manage how source files (including images) are written and referenced in the workflow.\n- 'src/core/image.ts' and 'url.ts': Likely responsible for image downloading, path sanitization/normalization, and URL parsing \u2013 the core failure is mishandling nonstandard URLs as filenames.\n- 'src/core/pandoc/self-contained.ts': Deals with resource collection for self-contained documents.\n- 'resources/filters/common/figures.lua' and 'quarto-finalize/mediabag.lua': Lua filters handling image references and mediabag resource lookup, which mediates between Markdown references and local files for LaTeX conversion.\nCollectively, these files would need to be investigated and potentially updated to correctly encode and reference nonstandard URLs for LaTeX workflows, ensuring proper fetching, saving, and LaTeX path escaping.",
+        "bug_scenario": "The bug occurs when attempting to render a Quarto document (.qmd) that includes an image with a non-standard URL (with complex query parameters or special encoding) to PDF. The rendering process, using xelatex, fails with an error stating it cannot load the image file, appearing to misinterpret the URL path and saving it as an invalid filename (e.g., 'https://bucket.jpeg'). This suggests that during conversion (likely Pandoc or a Quarto filter step), the system fails to properly fetch and/or encode the image URL for local referencing in the resulting LaTeX project or mediabag, leading to a missing image in PDF output."
+    }
+}

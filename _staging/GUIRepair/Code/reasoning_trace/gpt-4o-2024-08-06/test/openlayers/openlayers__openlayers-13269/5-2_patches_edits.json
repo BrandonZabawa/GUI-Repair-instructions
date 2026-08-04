@@ -1,0 +1,338 @@
+{
+    "1/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);"
+                ],
+                "REPLACE": [
+                    "let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);",
+                    "",
+                    "// Adjust tile size for gutter",
+                    "const gutter = tileLayer.getSource().getGutter();",
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tempSize_);",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const tileResolution = tileGrid.getResolution(z);",
+                    "const tileSize = toSize(tileGrid.getTileSize(z), this.tempSize);",
+                    "const tileExtent = tileGrid.getTileCoordExtent(tileCoord, this.tempExtent_);"
+                ],
+                "REPLACE": [
+                    "const tileResolution = tileGrid.getResolution(z);",
+                    "let tileSize = toSize(tileGrid.getTileSize(z), this.tempSize);",
+                    "let tileExtent = tileGrid.getTileCoordExtent(tileCoord, this.tempExtent_);",
+                    "",
+                    "// Adjust tile size and extent for gutter",
+                    "const gutter = tileLayer.getSource().getGutter();",
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tempSize);",
+                    "tileExtent = buffer(tileExtent, tileResolution * gutter, tileExtent);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileGrid = tileSource.getTileGridForProjection(viewState.projection);",
+                    "const tileRange = tileGrid.getTileRangeForExtentAndZ(",
+                    "extent,",
+                    "z,",
+                    "this.tempTileRange_",
+                    ");",
+                    "...",
+                    "const tileResolution = tileGrid.getResolution(z);",
+                    "let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);"
+                ],
+                "REPLACE": [
+                    "const tileGrid = tileSource.getTileGridForProjection(viewState.projection);",
+                    "const tileRange = tileGrid.getTileRangeForExtentAndZ(",
+                    "extent,",
+                    "z,",
+                    "this.tempTileRange_",
+                    ");",
+                    "",
+                    "const gutter = tileSource.getGutter();",
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tempSize_);",
+                    "tileRange = buffer(tileRange, tileResolution * gutter, tileRange);",
+                    "}",
+                    "",
+                    "const tileResolution = tileGrid.getResolution(z);",
+                    "let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);",
+                    "",
+                    "const centerI =",
+                    "(centerX - tileOrigin[0]) / (tileSize[0] * tileResolution);",
+                    "const centerJ =",
+                    "(tileOrigin[1] - centerY) / (tileSize[1] * tileResolution);"
+                ],
+                "REPLACE": [
+                    "// Adjust for gutter size",
+                    "const gutter = this.getLayer().getSource().getGutter();",
+                    "const adjTileSize = [tileSize[0] - 2 * gutter, tileSize[1] - 2 * gutter];",
+                    "",
+                    "const centerI =",
+                    "(centerX - tileOrigin[0] + gutter * tileResolution) / (adjTileSize[0] * tileResolution);",
+                    "const centerJ =",
+                    "(tileOrigin[1] - centerY - gutter * tileResolution) / (adjTileSize[1] * tileResolution);"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "const tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);",
+                    "",
+                    "const centerI =",
+                    "(centerX - tileOrigin[0]) / (tileSize[0] * tileResolution);",
+                    "const centerJ =",
+                    "(tileOrigin[1] - centerY) / (tileSize[1] * tileResolution);"
+                ],
+                "REPLACE": [
+                    "let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);",
+                    "",
+                    "const gutter = tileLayer.getSource().getGutter(); // Get the gutter size",
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tempSize_);",
+                    "}",
+                    "",
+                    "const centerI =",
+                    "(centerX - tileOrigin[0]) / (tileSize[0] * tileResolution);",
+                    "const centerJ =",
+                    "(tileOrigin[1] - centerY) / (tileSize[1] * tileResolution);"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "composeTransform(",
+                    "this.tileTransform_,",
+                    "0,",
+                    "0,",
+                    "2 / ((frameState.size[0] * tileScale) / tileSize[0]),",
+                    "-2 / ((frameState.size[1] * tileScale) / tileSize[1]),",
+                    "viewState.rotation,",
+                    "-(centerI - tileCenterI),",
+                    "-(centerJ - tileCenterJ)",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const gutter = tileLayer.getSource().getGutter();",
+                    "composeTransform(",
+                    "this.tileTransform_,",
+                    "gutter,",
+                    "gutter,",
+                    "2 / ((frameState.size[0] * tileScale) / (tileSize[0] - 2 * gutter)),",
+                    "-2 / ((frameState.size[1] * tileScale) / (tileSize[1] - 2 * gutter)),",
+                    "viewState.rotation,",
+                    "-(centerI - tileCenterI),",
+                    "-(centerJ - tileCenterJ)",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "// While setting up the texture parameters",
+                    "this.helper.bindBuffer(tileTexture.coords);",
+                    "this.helper.bindBuffer(this.indices_);",
+                    "this.helper.enableAttributes(attributeDescriptions);",
+                    "",
+                    "let textureSlot = 0;",
+                    "while (textureSlot < tileTexture.textures.length) {",
+                    "const textureProperty = 'TEXTURE' + textureSlot;",
+                    "const uniformName = `${Uniforms.TILE_TEXTURE_ARRAY}[${textureSlot}]`;",
+                    "gl.activeTexture(gl[textureProperty]);",
+                    "gl.bindTexture(gl.TEXTURE_2D, tileTexture.textures[textureSlot]);"
+                ],
+                "REPLACE": [
+                    "const gutter = tileSource.getGutter();",
+                    "",
+                    "// Adjusting the texture coordinates to handle gutter",
+                    "this.helper.bindBuffer(tileTexture.coords);",
+                    "this.helper.bindBuffer(this.indices_);",
+                    "this.helper.enableAttributes(attributeDescriptions);",
+                    "",
+                    "let textureSlot = 0;",
+                    "while (textureSlot < tileTexture.textures.length) {",
+                    "const textureProperty = 'TEXTURE' + textureSlot;",
+                    "const uniformName = `${Uniforms.TILE_TEXTURE_ARRAY}[${textureSlot}]`;",
+                    "gl.activeTexture(gl[textureProperty]);",
+                    "gl.bindTexture(gl.TEXTURE_2D, tileTexture.textures[textureSlot]);",
+                    "",
+                    "if (gutter > 0) {",
+                    "// Adjust texture coordinates for gutter handling",
+                    "gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);",
+                    "gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/TileWMS.js": [
+            {
+                "SEARCH": [
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tmpSize);",
+                    "tileExtent = buffer(tileExtent, tileResolution * gutter, tileExtent);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "// Calculate tile size and extent considering potential use in WebGLTile",
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tmpSize);",
+                    "tileExtent = buffer(tileExtent, tileResolution * gutter, tileExtent);",
+                    "}",
+                    "tileSize = tileGrid.getTileSize(tileCoord[0]);",
+                    "",
+                    "// Ensure tile size considers gutter when determining actual tile size",
+                    "tileExtent = buffer(tileExtent, tileResolution * gutter, tileExtent);"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);"
+                ],
+                "REPLACE": [
+                    "let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);",
+                    "",
+                    "const source = this.getLayer().getRenderSource();",
+                    "if (source instanceof TileWMS && source.getGutter() > 0) {",
+                    "const gutter = source.getGutter();",
+                    "tileSize = bufferSize(tileSize, gutter, this.tempSize_);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);"
+                ],
+                "REPLACE": [
+                    "let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const gutter = tileLayer.getSource().getGutter();",
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tempSize_);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const centerI =",
+                    "(centerX - tileOrigin[0]) / (tileSize[0] * tileResolution);",
+                    "const centerJ =",
+                    "(tileOrigin[1] - centerY) / (tileSize[1] * tileResolution);",
+                    "",
+                    "const tileScale = viewState.resolution / tileResolution;"
+                ],
+                "REPLACE": [
+                    "const gutter = tileLayer.getSource().getGutter();",
+                    "const effectiveTileSize = [",
+                    "(tileSize[0] - 2 * gutter) / tileSize[0],",
+                    "(tileSize[1] - 2 * gutter) / tileSize[1],",
+                    "];",
+                    "",
+                    "const centeredTileSize = [",
+                    "centerX - tileOrigin[0] + gutter * tileResolution,",
+                    "tileOrigin[1] - centerY - gutter * tileResolution,",
+                    "];",
+                    "",
+                    "const centerI =",
+                    "centeredTileSize[0] / (tileSize[0] * tileResolution * effectiveTileSize[0]);",
+                    "const centerJ =",
+                    "centeredTileSize[1] / (tileSize[1] * tileResolution * effectiveTileSize[1]);",
+                    "",
+                    "const tileScale = (viewState.resolution / tileResolution) * effectiveTileSize[0];"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileExtent = tileGrid.getTileCoordExtent(tileCoord, this.tempExtent_);"
+                ],
+                "REPLACE": [
+                    "let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "let tileExtent = tileGrid.getTileCoordExtent(tileCoord, this.tempExtent_);",
+                    "",
+                    "// Integrate gutter to adjust tile size and extent",
+                    "const gutter = tileSource.getGutter ? tileSource.getGutter() : 0;",
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tempSize_);",
+                    "tileExtent = buffer(tileExtent, gutter * tileResolution, tileExtent);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);",
+                    "",
+                    "const centerI =",
+                    "(centerX - tileOrigin[0]) / (tileSize[0] * tileResolution);",
+                    "const centerJ =",
+                    "(tileOrigin[1] - centerY) / (tileSize[1] * tileResolution);"
+                ],
+                "REPLACE": [
+                    "let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);",
+                    "const tileOrigin = tileGrid.getOrigin(tileZ);",
+                    "const gutter = tileLayer.getSource().getGutter(); // Adding gutter handling",
+                    "",
+                    "if (gutter !== 0) {",
+                    "tileSize = bufferSize(tileSize, gutter, this.tempSize_);",
+                    "}",
+                    "",
+                    "const centerI =",
+                    "(centerX - tileOrigin[0] + gutter * tileResolution) / (tileSize[0] * tileResolution);",
+                    "const centerJ =",
+                    "(tileOrigin[1] - centerY - gutter * tileResolution) / (tileSize[1] * tileResolution);"
+                ]
+            }
+        ]
+    }
+}

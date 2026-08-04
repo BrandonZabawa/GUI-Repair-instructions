@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Pagination/Pagination.js//Pagination"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Pagination/Pagination.js//render",
+            "packages/react/src/components/Pagination/Pagination.js//handleSizeChange",
+            "packages/react/src/components/Pagination/Pagination.js//renderSelectItems"
+        ],
+        "explanation": "All of the logic that drives the page-size dropdown and the subsequent range/page calculations lives inside the Pagination class.  \n\u2022 In propTypes the component only accepts an array of numbers (`pageSizes: PropTypes.arrayOf(PropTypes.number)`), so passing objects breaks type assumptions.  \n\u2022 In render(), it maps each `size` in pageSizes to a <SelectItem key={size} value={size} text={String(size)} />; custom objects aren\u2019t handled and String(size) yields '[object Object]'.  \n\u2022 handleSizeChange immediately does `Number(evt.target.value)`, which also yields NaN for a non-numeric value.  \n\u2022 renderSelectItems and the math in render() (computing totalPages and itemRangeText) all rely on numeric pageSize values.  \nTo fix this, Pagination.render (mapping logic), handleSizeChange (value parsing), renderSelectItems (if used for custom labels), and the propTypes declaration on Pagination must be updated to accept and correctly handle objects of shape {value, text} as well as plain numbers.",
+        "bug_scenario": "In the Pagination component, a developer wants to supply a custom \u201cAll\u201d option alongside numeric page sizes so that selecting \u201cAll\u201d displays all items at once. They passed an array of objects like `{value: totalItems, text: 'All'}`, but because the component only expects numbers, the dropdown still shows \u201cAll\u201d (the label is coerced from the object) but all of the other count labels in the pagination (item ranges and page totals) become NaN\u2013NaN, \u201cof NaN pages\u201d, etc."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Pagination/Pagination.js//Pagination"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Pagination/Pagination.js//constructor",
+            "packages/react/src/components/Pagination/Pagination.js//static propTypes",
+            "packages/react/src/components/Pagination/Pagination.js//handleSizeChange",
+            "packages/react/src/components/Pagination/Pagination.js//render"
+        ],
+        "explanation": "All of the key logic for page size handling lives in the `Pagination` class of `Pagination.js`. \n\n\u2022 constructor(props): Initializes state.pageSize by checking membership against the numeric `pageSizes` array. Because custom objects won\u2019t match by `includes()`, custom values break this logic. \n\n\u2022 static propTypes: Currently enforces `pageSizes` as `arrayOf(PropTypes.number)`. To support custom labels, this must be widened (e.g. to allow objects with `{value, text}`). \n\n\u2022 handleSizeChange(evt): Casts `evt.target.value` to a Number unconditionally, which turns object stringifications into `NaN`. \n\n\u2022 render(): Maps `pageSizes.map(size => <SelectItem value={size} text={String(size)} />)`. This assumes each entry is a number and uses it directly for both value and display text. To support separate `value` and `text`, this mapping must be updated to detect object entries and extract `.value` and `.text` fields instead of treating every entry as a raw number.",
+        "bug_scenario": "The Pagination component only accepts an array of numbers for its `pageSizes` prop and uses each numeric size both as the option\u2019s value and its displayed text. When a developer instead passes an array of objects (e.g. `{ value: totalItems, text: 'All' }`), the `<SelectItem>` ends up stringifying the object as its value (`\"[object Object]\"`). Calling `Number(evt.target.value)` then yields `NaN`, which propagates through the state and renders labels like \"NaN\u2013NaN of 200 items\" and \"of NaN pages\"."
+    }
+}

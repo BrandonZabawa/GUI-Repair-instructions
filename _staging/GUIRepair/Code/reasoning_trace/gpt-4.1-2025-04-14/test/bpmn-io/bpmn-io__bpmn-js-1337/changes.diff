@@ -1,0 +1,45 @@
+diff --git a/lib/features/popup-menu/ReplaceMenuProvider.js b/lib/features/popup-menu/ReplaceMenuProvider.js
+index 851bdf0d..35eea3ca 100644
+--- a/lib/features/popup-menu/ReplaceMenuProvider.js
++++ b/lib/features/popup-menu/ReplaceMenuProvider.js
+@@ -80,7 +80,15 @@ ReplaceMenuProvider.prototype.getEntries = function(element) {
+   // start events outside event sub processes
+   if (is(businessObject, 'bpmn:StartEvent') && !isEventSubProcess(businessObject.$parent)) {
+ 
+-    entries = filter(replaceOptions.START_EVENT, differentType);
++    // If inside a subprocess (but not an event subprocess), only allow blank start event
++    if (is(businessObject.$parent, 'bpmn:SubProcess')) {
++      entries = filter(replaceOptions.START_EVENT, function(entry) {
++        // Only allow blank (untyped) start event
++        return !entry.target.eventDefinitionType && differentType(entry);
++      });
++    } else {
++      entries = filter(replaceOptions.START_EVENT, differentType);
++    }
+ 
+     return this._createEntries(element, entries);
+   }
+diff --git a/lib/features/replace/BpmnReplace.js b/lib/features/replace/BpmnReplace.js
+index 5547d467..30339fb2 100644
+--- a/lib/features/replace/BpmnReplace.js
++++ b/lib/features/replace/BpmnReplace.js
+@@ -166,7 +166,18 @@ export default function BpmnReplace(
+     );
+ 
+     // initialize custom BPMN extensions
+-    if (target.eventDefinitionType) {
++    // Disallow typed start events inside non-event subprocess
++    if (
++      target.eventDefinitionType &&
++      is(newBusinessObject, 'bpmn:StartEvent') &&
++      newBusinessObject.$parent &&
++      is(newBusinessObject.$parent, 'bpmn:SubProcess') &&
++      !isEventSubProcess(newBusinessObject.$parent)
++    ) {
++      // Do not set eventDefinitionType (force blank start event)
++      // Remove any event definitions
++      newBusinessObject.eventDefinitions = [];
++    } else if (target.eventDefinitionType) {
+ 
+       // only initialize with new eventDefinition
+       // if we did not set an event definition yet,

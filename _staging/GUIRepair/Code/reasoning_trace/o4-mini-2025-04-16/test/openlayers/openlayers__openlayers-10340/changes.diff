@@ -1,0 +1,50 @@
+diff --git a/src/ol/interaction/Draw.js b/src/ol/interaction/Draw.js
+index c4e2824b44..aee597afaa 100644
+--- a/src/ol/interaction/Draw.js
++++ b/src/ol/interaction/Draw.js
+@@ -292,20 +292,31 @@ class Draw extends PointerInteraction {
+ 
+     let geometryFunction = options.geometryFunction;
+     if (!geometryFunction) {
+-      if (this.type_ === GeometryType.CIRCLE) {
+-        /**
+-         * @param {!LineCoordType} coordinates The coordinates.
+-         * @param {import("../geom/SimpleGeometry.js").default=} opt_geometry Optional geometry.
+-         * @return {import("../geom/SimpleGeometry.js").default} A geometry.
+-         */
+-        geometryFunction = function(coordinates, opt_geometry) {
+-          const circle = opt_geometry ? /** @type {Circle} */ (opt_geometry) :
+-            new Circle([NaN, NaN]);
+-          const squaredLength = squaredCoordinateDistance(
+-            coordinates[0], coordinates[1]);
+-          circle.setCenterAndRadius(coordinates[0], Math.sqrt(squaredLength));
+-          return circle;
+-        };
++        if (this.type_ === GeometryType.CIRCLE) {
++          /**
++           * @param {!LineCoordType} coordinates The coordinates.
++           * @param {import("../geom/SimpleGeometry.js").default=} opt_geometry Optional geometry.
++           * @return {import("../geom/SimpleGeometry.js").default} A geometry.
++           */
++          geometryFunction = function(coordinates, opt_geometry) {
++            const circle = opt_geometry ? /** @type {Circle} */ (opt_geometry) :
++              new Circle([NaN, NaN]);
++
++            // Compute radius from pixel distance so that the on-screen circle
++            // is truly circular regardless of projection or useGeographic.
++            const map = this.overlay_.getMap();
++            const view = map.getView();
++            const p0 = map.getPixelFromCoordinate(coordinates[0]);
++            const p1 = map.getPixelFromCoordinate(coordinates[1]);
++            const dx = p1[0] - p0[0];
++            const dy = p1[1] - p0[1];
++            const radiusPx = Math.sqrt(dx * dx + dy * dy);
++            const resolution = /** @type {number} */ (view.getResolution());
++            const radiusMap = radiusPx * resolution;
++
++            circle.setCenterAndRadius(coordinates[0], radiusMap);
++            return circle;
++          };
+       } else {
+         let Constructor;
+         const mode = this.mode_;

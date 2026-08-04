@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/field/index.js//Field"
+        ],
+        "bug_functions": [
+            "src/field/index.js//Field.constructor",
+            "src/field/index.js//Field.setValue",
+            "src/field/index.js//Field.setValues",
+            "src/field/index.js//Field.spliceArray"
+        ],
+        "explanation": "All of these methods operate on the internal `this.values` store. In the constructor, `this.values` is assigned directly from `options.values`, creating a reference to the external object. Later, methods like `setValue`, `setValues`, and `spliceArray` perform in-place updates on `this.values`, thereby mutating the original object passed in by the consumer. To fix this, the constructor should clone the incoming values (e.g., via a shallow copy) and the update methods should produce new copies instead of mutating existing objects or arrays.",
+        "bug_scenario": "When a user initializes a Field with a values prop, the Field form methods (setValue, setValues, spliceArray, etc.) end up mutating the original data object passed in. The screenshot highlights the constructor\u2019s line \u201cthis.values = options.values || {}\u201d, which directly assigns the incoming values object. As a result, external state is modified when the field updates, violating the principle that the component shouldn\u2019t alter its input props."
+    },
+    "2": {
+        "bug_classes": [
+            "src/field/index.js//Field"
+        ],
+        "bug_functions": [
+            "src/field/index.js//constructor",
+            "src/field/index.js//setValue",
+            "src/field/index.js//setValues"
+        ],
+        "explanation": "All of the core data\u2010mutation logic in Field lives on the instance\u2019s this.values. In the constructor it\u2019s wired up by direct reference to options.values, and both setValue and setValues perform in\u2010place modifications on that same object. Because options.values is never cloned, any updates propagate back to the caller\u2019s data. To fix the bug, the constructor should clone the incoming values (e.g. via a shallow or deep copy), and the mutators (setValue/setValues) should operate on the internal copy only, preventing accidental side\u2010effects on the original data.",
+        "bug_scenario": "In the provided screenshot and report, the Field component is initialized with a values object passed in from outside (via options.values). Because the constructor assigns this.values = options.values (by reference), subsequent calls to setValue/setValues (and other internal updates) end up mutating the original object the caller passed in. The requirement is that the Field component must not alter the incoming data\u2014any changes it makes should be kept in its own copy."
+    }
+}

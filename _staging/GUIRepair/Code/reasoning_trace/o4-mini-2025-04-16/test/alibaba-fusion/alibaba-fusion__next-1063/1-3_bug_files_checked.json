@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/field/index.js"
+        ],
+        "explanation": "index.js 是 Field 核心逻辑所在文件，其中 this.values 直接引用了外部传入的 values 对象，违反了“不得更改传入数据”的原则。应在赋值时对 options.values 做一次浅拷贝或深拷贝，以避免对外部对象的修改。",
+        "bug_scenario": "Field 组件在内部直接引用并修改了传入的 values 对象，导致外部传入的数据也被不可预期地更改。截图中显示在 src/field/index.js 的第 35 行：\nthis.values = options.values || {};\n此处直接将 options.values 的引用赋值给 this.values，后续对 this.values 的任何修改都会反向影响外部传入的对象。"
+    },
+    "2": {
+        "bug_files": [
+            "src/field/index.js",
+            "src/field/utils.js"
+        ],
+        "explanation": "1. src/field/index.js：第 35 行 this.values = options.values || {} 会让组件内部直接持有并操作外部传入的 values 对象，导致外部对象被意外修改。应在此处对 options.values 做一次深拷贝（或至少浅拷贝），避免后续 set/get 操作 mutating 外部数据。\n2. src/field/utils.js：提供了读写 values 对象（getValue、setValue 等）工具函数，会对传入的对象做增删改操作。如果上层没做拷贝，这里的修改就会污染外部原始对象。",
+        "bug_scenario": "在 Field 组件初始化时，代码直接将外部传入的 options.values 对象赋值给 this.values（见 src/field/index.js 第 35 行），导致组件内部对 this.values 的任何增删改操作都会直接反映到外部传入的数据上，破坏了原始数据的不可变性。"
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/behavior/util/LineIntersect.js",
+            "lib/features/modeling/behavior/util/LineAttachmentUtil.js",
+            "lib/features/modeling/BpmnLayouter.js"
+        ],
+        "explanation": "1. DropOnFlowBehavior.js\n   \u2022 This is the core behavior fired when you drop a shape onto a flow. It splits the original connection and creates two new sequence flows, inserting the new shape in between. Any mistake here in propagating the exact intersection coordinates will cause the connectors to mis-dock.\n\n2. LineIntersect.js\n   \u2022 Provides the geometric logic to find the intersection point between the original flow\u2019s waypoints and the bounding box of the new shape. If the line intersection is computed incorrectly, the split will use a bad anchor (e.g. the shape\u2019s top-left).\n\n3. LineAttachmentUtil.js\n   \u2022 Once an intersection point is identified, this util calculates the precise docking location on the shape\u2019s perimeter (e.g. which side/edge to attach to). A bug in the perimeter\u2010point logic will snap attachments to corners rather than true intersection points.\n\n4. BpmnLayouter.js\n   \u2022 After splitting and re-connecting, the new flows are passed through the BPMN layout engine to recalculate waypoints and routing. If it does not respect the custom intersection passed in, it\u2019ll re-anchor connections at default ports (commonly the top-left).\n\nTogether these modules handle the determination of where on a shape a flow should attach when a drop-on-flow occurs. Any inaccuracy in computing or propagating that point results in the observed \u201calways snaps to top-left\u201d failure.",
+        "bug_scenario": "When you drag a new BPMN element (e.g.\n   a task or gateway) and drop it onto\n   an existing sequence flow, the runtime splits\n   the original flow into two and inserts the new shape\n   at the drop point. In the demo you can see that,\n   although the shape itself lands on the flow,\n   the freshly created incoming sequence flow\n   does _not_ dock at the correct intersection point \u2013\n   it instead snaps to the top-left corner of the shape,\n   completely breaking the intended layout."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/behavior/util/LineAttachmentUtil.js",
+            "lib/features/modeling/behavior/util/LineIntersect.js"
+        ],
+        "explanation": "The core of the problem lives in DropOnFlowBehavior.js: this is where the engine intercepts a drop on a sequence flow, splits the existing connection into two new flows, and tries to calculate the attachment points (waypoints) on the newly dropped shape. It uses LineAttachmentUtil (and under-the-hood LineIntersect) to compute exactly where the old flow hit the shape border so the two new flows can be docked correctly. A bug in those utility calculations (or their use in DropOnFlowBehavior) causes the attachment to fall back to the shape\u2019s top-left coordinate rather than the correct intersection point.",
+        "bug_scenario": "When you drag and drop any BPMN element (for example a Task) onto an existing Sequence Flow, the layout of the flow is completely broken. Instead of splitting the connection cleanly and routing the two new segments through the center of the dropped element, the new incoming flow docks at the top-left corner of the shape (and the outgoing flow also loses its original geometry)."
+    }
+}

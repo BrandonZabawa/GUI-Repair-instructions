@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/canvas/Executor.js//Executor",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/Executor.js//calculateImageOrLabelDimensions_",
+            "src/ol/render/canvas/Executor.js//replayImageOrLabel_",
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame"
+        ],
+        "explanation": "The bug lies where rotated text labels have their own specialized transform logic that never picks up the layer-level clipping/translation applied in renderFrame().  calculateImageOrLabelDimensions_ computes the bounding box and canvasTransform for rotated labels, but it builds that transform in isolation (omitting the post-clip translation).  replayImageOrLabel_ then applies that canvasTransform directly, wiping out any preexisting translate/clip region set up by CanvasVectorLayerRenderer.renderFrame.  Because the translation from the spyglass mask is applied in renderFrame, but then replaced when the rotated label\u2019s own transform is applied, the rotated text is drawn at its original, untranslated position.  Fixing the bug requires merging the layer\u2019s translation into the label\u2019s transform (in calculateImageOrLabelDimensions_) or applying the translation after replayImageOrLabel_, so that rotated labels honor the clipped+translated context.",
+        "bug_scenario": "In the spyglass example the vector layers are being clipped and then translated into a separate \u201clens\u201d area above and to the right of the cursor.  Non-rotated text symbols (\u201c1\u201d in blue, \u201c2\u201d in red) respect both the clipping and the translation and end up in the spyglass window, but any text symbol drawn with a non-zero rotation (\u201c3\u201d in green) ignores the translation step and is drawn back at its original map location.  In other words, rotation triggers a code path in which the label\u2019s transform is reset to the global (untranslated) canvas origin."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/canvas/Executor.js//Executor",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/Executor.js//calculateImageOrLabelDimensions_",
+            "src/ol/render/canvas/Executor.js//replayImageOrLabel_",
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame"
+        ],
+        "explanation": "The core of the problem is that rotated text is drawn by Executor.replayImageOrLabel_ (and its helper calculateImageOrLabelDimensions_) using context.setTransform or context.rotate calls that reset the canvas transform. The prior clipping+translation done in CanvasVectorLayerRenderer.renderFrame is lost when a rotation transform is applied, so the rotated label snaps back to the map\u2019s original coordinates. Non\u2010rotated text simply uses fillText on the already\u2010translated context, so it renders in the right spot. To fix this, the Executor methods need to compose the existing translation into their transform calculations (or apply rotation without resetting the existing transform), ensuring that rotated labels respect the spyglass translation.",
+        "bug_scenario": "When the spyglass area is clipped and translated (blue box \u2192 red box), non\u2010rotated text (blue \u201c1\u201d and red \u201c2\u201d) follow that translation and render in the correct spot over Miami. But a rotated text label (green \u201c3\u201d) is drawn at Miami\u2019s original map location instead of in the translated spyglass area. This happens only when a nonzero rotation is applied."
+    }
+}

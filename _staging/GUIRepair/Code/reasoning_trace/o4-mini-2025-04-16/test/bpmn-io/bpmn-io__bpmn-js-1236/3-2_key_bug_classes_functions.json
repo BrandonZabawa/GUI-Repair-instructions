@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//ToggleElementCollapseBehaviour",
+            "lib/features/replace/BpmnReplace.js//BpmnReplace"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//collapsedBounds",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//expandedBounds",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//postExecuted(shape.toggleCollapse)",
+            "lib/features/replace/BpmnReplace.js//toggeling",
+            "lib/features/replace/BpmnReplace.js//replaceElement"
+        ],
+        "explanation": "The ToggleElementCollapseBehaviour class in ToggleElementCollapseBehaviour.js contains the core logic for resizing a subprocess after collapse or expansion. Its collapsedBounds and expandedBounds functions compute the new shape dimensions, and the postExecuted handler invokes modeling.resizeShape based on those bounds. Errors in these calculations will directly manifest as incorrect dimensions when collapsing or re-expanding.\n\nAdditionally, in BpmnReplace.js the replaceElement method, together with the toggeling helper, drives the collapse/expand behavior when converting a subprocess into another type (e.g. Ad Hoc). The toggeling function decides if a toggleCollapse command must be issued and thus triggers the resize logic in ToggleElementCollapseBehaviour. If toggeling or replaceElement mishandles the collapsed state or dimensions during replacement, the bounds computed by collapsedBounds/expandedBounds will be applied incorrectly.\n\nTogether, these classes/functions orchestrate collapse, expansion, and replacement of subprocesses\u2014so any bug in their bounds calculations or state toggling will lead to the observed weird dimensions.",
+        "bug_scenario": "When an expanded BPMN Sub Process (containing a child element) is first collapsed and then converted into an Ad Hoc Sub Process, its visual dimensions unexpectedly change. In the provided GIF, after toggling collapse and then replacing the subprocess type, the red dashed bounding box (the default collapsed size) is altered\u2014growing or shifting\u2014rather than remaining at the original default size."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//ToggleElementCollapseBehaviour",
+            "lib/features/replace/BpmnReplace.js//BpmnReplace"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//expandedBounds",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//collapsedBounds",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//postExecuted",
+            "lib/features/replace/BpmnReplace.js//toggeling"
+        ],
+        "explanation": "ToggleElementCollapseBehaviour is responsible for calculating and applying new shape bounds when a subprocess is collapsed or expanded. Its helper methods expandedBounds and collapsedBounds \u2013 invoked in the postExecuted handler \u2013 compute the size based on default sizes and child bboxes. When switching to an Ad-Hoc subprocess, these methods get the wrong defaultSize (or ignore the existing collapsed dimensions), leading to the jumpy, oversized box. Meanwhile, BpmnReplace\u2019s toggeling function decides whether to toggle collapse state during a replace operation. Because it does not preserve the original collapsed width/height for a subprocess\u2010to-subprocess replacement when the target has Ad-Hoc markers, it triggers a shape.toggleCollapse call that then feeds incorrect defaults into ToggleElementCollapseBehaviour. Fixing these two areas (preserving collapsed dimensions in toggeling and using the existing shape size in collapsedBounds/expandedBounds) will prevent the unexpected resize on Ad-Hoc conversion.",
+        "bug_scenario": "The provided GIF shows a BPMN subprocess being collapsed, then switched to an Ad-Hoc subprocess. As soon as the type is changed to Ad-Hoc, the dashed resize box jumps to a strange, oversized rectangle instead of preserving the collapsed subprocess\u2019s existing width and height. In other words, collapsing \u2192 type-swap to Ad-Hoc \u2192 unexpected large dimensions."
+    }
+}

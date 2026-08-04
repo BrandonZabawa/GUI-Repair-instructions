@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-typescript.js"
+        ],
+        "bug_functions": [
+            "components/prism-typescript.js//keyword",
+            "components/prism-typescript.js//class-name"
+        ],
+        "explanation": "The root of the issue lies in the definition of the `keyword` pattern in components/prism-typescript.js, which unconditionally treats the bare word \u201ctype\u201d as a keyword (because it\u2019s listed in the big alternation). This means that anywhere \u201ctype\u201d appears, even in property names, it is highlighted as a keyword. Additionally, the `class-name` pattern also includes \u201ctype\u201d in its alternation to match type declarations, which can further interfere with correct tokenization of the word. To fix this, the grammar must be refined so that \u201ctype\u201d is only recognized as a keyword in declaration contexts (e.g., before identifiers in type alias or class/interface declarations), and not in object or interface property positions.",
+        "bug_scenario": "When Prism highlights TypeScript code that declares an interface with a property named \u201ctype\u201d (e.g.\n\nexport interface R<T> {\n  data: T;\n  total: number;\n  type?: string;\n}\n\n), the word \u201ctype\u201d is styled as a keyword (blue) instead of as a normal property name."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-typescript.js//Prism.languages.typescript['keyword']",
+            "components/prism-typescript.js//Prism.languages.typescript['class-name']"
+        ],
+        "explanation": "The root of the problem lies in the grammar definitions inside components/prism-typescript.js. The `keyword` regex includes the word \u201ctype\u201d as a reserved word, so whenever the identifier \u201ctype\u201d appears (even as a property name), PrismJS marks it as a keyword. Additionally, the `class-name` pattern also treats \u201ctype\u201d as a context keyword (for type aliases), which can bleed into other parts of the grammar. Both of these patterns need to be refined so that \u201ctype\u201d is only tokenized as a keyword in appropriate contexts (e.g. in a `type` declaration) and not when used as an interface or object property name.",
+        "bug_scenario": "In a TypeScript interface with an optional property named \u201ctype\u201d (e.g. \u201ctype?: string\u201d), PrismJS highlights the word \u201ctype\u201d as a keyword rather than as a property name. The screenshot shows \u201ctype?\u201d incorrectly colored as a keyword."
+    }
+}

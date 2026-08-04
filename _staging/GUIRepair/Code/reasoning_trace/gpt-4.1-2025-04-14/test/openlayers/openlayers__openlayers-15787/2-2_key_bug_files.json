@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/PaletteTexture.js",
+            "src/ol/webgl/Helper.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This is the main class for the WebGLTileLayer, which manages the style (including palettes) and interacts with the renderer. Any issues with how styles or palette textures are set, reset, or re-initialized when the layer is re-added would be handled here.\n\n2. src/ol/renderer/webgl/TileLayer.js: This is the WebGL renderer for tile layers. It manages the use of palette textures in rendering, including binding them to the WebGL context. If palette textures are not properly re-bound or re-created after context loss or layer re-addition, the bug would manifest here.\n\n3. src/ol/webgl/PaletteTexture.js: This class manages the creation and caching of palette textures. If the texture is not re-created for a new WebGL context (e.g., after context loss or when the layer is re-added), the old texture may be invalid, leading to the observed errors.\n\n4. src/ol/webgl/Helper.js: This is the low-level WebGL helper that manages WebGL contexts, programs, and textures. It is responsible for handling context loss/restoration and texture (re)creation. If palette textures are not properly re-initialized or if the helper does not handle context changes correctly, this would be a key file to address.\n\nThese files are key because the bug is about the lifecycle and validity of WebGL resources (specifically palette textures) across layer removal/addition and context changes. The bug likely requires changes to ensure palette textures are re-created or re-bound to the correct context when needed.",
+        "bug_scenario": "The bug scenario involves a WebGLTileLayer in a mapping application that uses a palette-based style. When the layer is removed from the map and then re-added, the layer fails to render correctly (shows as a black layer), and WebGL errors are logged indicating that a texture is from a different or lost WebGL context. This suggests that palette textures or other WebGL resources are not properly managed or re-initialized when the layer is re-added, especially after a context loss or recreation."
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/table/selection.jsx",
+            "src/table/base/header.jsx",
+            "src/table/list-header.jsx",
+            "src/table/fixed/header.jsx"
+        ],
+        "explanation": "src/table/selection.jsx is responsible for detecting rowSelection in the Table API and injecting the selection column definition, including the header cell rendering logic for the \u201cselect all\u201d checkbox. src/table/base/header.jsx and src/table/list-header.jsx implement the generic header rendering pipeline (rendering header rows and cells) and currently treat the selection header cell as a fixed checkbox, ignoring any custom cell renderers. src/table/fixed/header.jsx is the variant used when fixedHeader or locked columns are enabled and likewise hard-codes the select-all header cell. All four files must be updated to expose a hook or respect a custom headerCell/cell renderer for the injected selection column in order to allow users to override the default checkbox UI.",
+        "bug_scenario": "When enabling rowSelection on the Table, the component automatically injects a \u201cselect\u2010all\u201d column at the left. Its header cell always renders the default checkbox and cannot be customized via the normal Column \u2018cell\u2019 prop or any rowSelection API. In our repro we wrapped our own ColumnGroup and Columns, but the generated selection\u2010column header stays hard\u2010coded. The screenshot shows the default select\u2010all checkbox header; we need a way to override or customize that header cell."
+    },
+    "2": {
+        "bug_files": [
+            "src/table/selection.jsx",
+            "src/table/selection/row.jsx"
+        ],
+        "explanation": "The selection.jsx file in src/table is responsible for generating the extra selection column, including the header cell that contains the select-all checkbox. It hard-codes the header render and does not provide any hook for custom cell content. The row.jsx file under src/table/selection handles each individual row\u2019s checkbox but is structurally tied to the header logic. To allow custom header content for the select-all cell, these two files must be updated: selection.jsx must expose a prop (for example, headerCell or cell) for overriding the header render, and row.jsx should continue supporting that override consistently across header and body selection cells.",
+        "bug_scenario": "In a table with rowSelection enabled, the auto-inserted \u201cselect-all\u201d column renders a fixed header checkbox and does not honor any custom cell rendering. When a developer tries to customize the header cell content (for example, to render text or a custom component instead of the default checkbox), the header cell remains uncustomizable. In other words, the select-all cell\u2019s header is hard-coded and cannot be overridden via a cell or header render function."
+    }
+}

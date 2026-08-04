@@ -1,0 +1,34 @@
+{
+    "1/1": {
+        "core/audits/no-unload-listeners.js": [
+            {
+                "SEARCH": [
+                    "const unloadListeners = artifacts.GlobalListeners.filter(l => l.type === 'unload');",
+                    "if (!unloadListeners.length) {",
+                    "return {",
+                    "score: 1,",
+                    "};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    const allExecutionContexts = await context.driver.executionContext.getAllExecutionContexts();",
+                    "    let unloadListeners = [];",
+                    "",
+                    "    for (const executionContext of allExecutionContexts) {",
+                    "      const contextUnloadListeners = await context.driver.executionContext.evaluateAsync(",
+                    "        'getEventListeners(window).unload || []',",
+                    "        {contextId: executionContext.id}",
+                    "      );",
+                    "      unloadListeners = unloadListeners.concat(contextUnloadListeners);",
+                    "    }",
+                    "",
+                    "    if (!unloadListeners.length) {",
+                    "      return {",
+                    "        score: 1,",
+                    "      };",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

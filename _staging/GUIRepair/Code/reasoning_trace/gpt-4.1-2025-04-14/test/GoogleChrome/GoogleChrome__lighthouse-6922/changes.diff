@@ -1,0 +1,102 @@
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index bcb475ced..0095eaae5 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -75,10 +75,33 @@ class Driver {
+         this._networkStatusMonitor.dispatch(event);
+       }
+ 
+-      // @ts-ignore TODO(bckenny): tsc can't type event.params correctly yet,
+-      // typing as property of union instead of narrowing from union of
+-      // properties. See https://github.com/Microsoft/TypeScript/pull/22348.
+-      this._eventEmitter.emit(event.method, event.params);
++      // Handle network events from OOPIFs (child targets)
++      if (event.method === 'Target.receivedMessageFromTarget') {
++        try {
++          const message = JSON.parse(event.params.message);
++          // Forward network events from OOPIFs to the main event emitter
++          if (message.method && message.method.startsWith('Network.')) {
++            this._devtoolsLog.record({
++              ...message,
++              sessionId: event.params.sessionId,
++            });
++            if (this._networkStatusMonitor) {
++              this._networkStatusMonitor.dispatch({
++                ...message,
++                sessionId: event.params.sessionId,
++              });
++            }
++            this._eventEmitter.emit(message.method, message.params);
++          }
++        } catch (e) {
++          // Ignore parse errors
++        }
++      } else {
++        // @ts-ignore TODO(bckenny): tsc can't type event.params correctly yet,
++        // typing as property of union instead of narrowing from union of
++        // properties. See https://github.com/Microsoft/TypeScript/pull/22348.
++        this._eventEmitter.emit(event.method, event.params);
++      }
+     });
+ 
+     /**
+@@ -921,10 +944,7 @@ class Driver {
+    * will be monitored for redirects, with the final loaded URL passed back in
+    * _endNetworkStatusMonitoring.
+    * @param {string} startingUrl
+-   * @return {Promise<void>}
+-   * @private
+-   */
+-  _beginNetworkStatusMonitoring(startingUrl) {
++  async _beginNetworkStatusMonitoring(startingUrl) {
+     this._networkStatusMonitor = new NetworkRecorder();
+ 
+     // Update startingUrl if it's ever redirected.
+@@ -942,6 +962,47 @@ class Driver {
+     };
+     this._networkStatusMonitor.on('requestloaded', requestLoadedListener);
+ 
++    // --- OOPIF support: discover and attach to child targets ---
++    await this.sendCommand('Target.setAutoAttach', {
++      autoAttach: true,
++      waitForDebuggerOnStart: false,
++      flatten: true,
++    });
++
++    // Enable network on the main target
++    await this.sendCommand('Network.enable');
++
++    // Listen for new targets and enable network on them
++    this.on('Target.attachedToTarget', async params => {
++      try {
++        // Only enable network for iframes (OOPIFs)
++        if (params.targetInfo.type === 'iframe') {
++          await this.sendCommand('Target.sendMessageToTarget', {
++            sessionId: params.sessionId,
++            message: JSON.stringify({id: 1, method: 'Network.enable', params: {}})
++          });
++        }
++      } catch (e) {
++        // Ignore errors
++      }
++    });
++
++    // Attach to already existing targets (if any)
++    const targets = await this.sendCommand('Target.getTargets');
++    for (const target of targets.targetInfos) {
++      if (target.type === 'iframe') {
++        try {
++          await this.sendCommand('Target.attachToTarget', {
++            targetId: target.targetId,
++            flatten: true,
++          });
++        } catch (e) {
++          // Ignore errors
++        }
++      }
++    }
++  }
++
+     return this.sendCommand('Network.enable');
+   }
+ 

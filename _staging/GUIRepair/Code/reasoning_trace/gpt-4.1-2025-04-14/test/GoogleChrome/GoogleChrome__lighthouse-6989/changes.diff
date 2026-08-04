@@ -1,0 +1,51 @@
+diff --git a/lighthouse-core/report/html/renderer/category-renderer.js b/lighthouse-core/report/html/renderer/category-renderer.js
+index 0fa8be23b..8670e9bbf 100644
+--- a/lighthouse-core/report/html/renderer/category-renderer.js
++++ b/lighthouse-core/report/html/renderer/category-renderer.js
+@@ -408,6 +408,46 @@ class CategoryRenderer {
+       const description = clumpId === 'manual' ? category.manualDescription : undefined;
+       const clumpElem = this.renderClump(clumpId, {auditRefs, description});
+       element.appendChild(clumpElem);
++
++      // After rendering the "passed" clump, render a warnings block if there are any warnings.
++      if (clumpId === 'passed') {
++        // Collect all warnings from passed audits
++        const allWarnings = [];
++        for (const auditRef of auditRefs) {
++          const warnings = auditRef.result.warnings;
++          if (warnings && warnings.length) {
++            if (Array.isArray(warnings)) {
++              allWarnings.push(...warnings);
++            } else {
++              allWarnings.push(warnings);
++            }
++          }
++        }
++        if (allWarnings.length > 0) {
++          // Render the warnings block
++          const warningsBlock = this.dom.createElement('div', 'lh-passed-audits__warnings');
++          warningsBlock.style.margin = '16px 0';
++          warningsBlock.style.border = '1px solid #ffa500';
++          warningsBlock.style.background = '#fff8e1';
++          warningsBlock.style.padding = '16px';
++          warningsBlock.style.borderRadius = '8px';
++
++          const warningsTitle = this.dom.createElement('div');
++          warningsTitle.textContent = 'Warnings:';
++          warningsTitle.style.fontWeight = 'bold';
++          warningsBlock.appendChild(warningsTitle);
++
++          const warningsList = this.dom.createElement('ul');
++          for (const warning of allWarnings) {
++            const li = this.dom.createElement('li');
++            li.textContent = warning;
++            warningsList.appendChild(li);
++          }
++          warningsBlock.appendChild(warningsList);
++
++          element.appendChild(warningsBlock);
++        }
++      }
+     }
+ 
+     return element;

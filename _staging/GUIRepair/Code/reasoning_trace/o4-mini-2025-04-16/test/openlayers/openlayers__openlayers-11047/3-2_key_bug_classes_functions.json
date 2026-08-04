@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/Raster.js//RasterSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/Raster.js//RasterSource#constructor",
+            "src/ol/source/Raster.js//RasterSource#setOperation",
+            "src/ol/source/Raster.js//RasterSource#processSources_",
+            "src/ol/source/Raster.js//RasterSource#onWorkerComplete_"
+        ],
+        "explanation": "The class RasterSource is responsible for creating pixel-processing workers via the imported Processor from pixelworks. Its constructor and setOperation methods initialize and configure the workers (or thread pool). processSources_ launches work on these workers, and onWorkerComplete_ handles the completion callback. However, nowhere in these methods are the workers ever terminated, causing them to pile up. Fixing the memory leak requires modifying these key methods to call Processor.terminate() (or similar) when a frame is no longer needed or when disposing the source.",
+        "bug_scenario": "The user is instantiating a RasterSource with multiple threads for pixel operations and observing in Chrome DevTools that each change to the input spawns new web workers (with unique UUIDs) that remain alive. Over time this leads to an accumulation of workers and high memory usage\u2014indicating they are never terminated."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/Raster.js//RasterSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/Raster.js//RasterSource.processSources_",
+            "src/ol/source/Raster.js//RasterSource.onWorkerComplete_"
+        ],
+        "explanation": "The RasterSource class is where pixelworks Processor instances (and their underlying web workers) are created and driven. In processSources_() the source kicks off pixel/image operations by spawning workers, and onWorkerComplete_() is invoked when a worker finishes its task. However, neither method ever terminates the workers once they\u2019ve finished, so every new invocation leaks an additional worker. To fix the leak, these methods (or the class\u2019 cleanup logic) need to explicitly terminate or dispose of the pixelworks Processor and its workers after use.",
+        "bug_scenario": "In the screenshot you can see Chrome DevTools\u2019 \u201cSelect JavaScript VM instance\u201d pane filled with dozens of live VM instances. Each entry represents a pixelworks web-worker spun up by the RasterSource. As you change the input number in the demo, new workers are created but never torn down\u2014they stick around in memory, leading to steadily increasing worker counts (and memory growth)."
+    }
+}

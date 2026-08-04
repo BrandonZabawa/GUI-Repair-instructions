@@ -1,0 +1,18 @@
+diff --git a/lighthouse-core/report/v2/report-generator.js b/lighthouse-core/report/v2/report-generator.js
+index d0341a032..7d945991c 100644
+--- a/lighthouse-core/report/v2/report-generator.js
++++ b/lighthouse-core/report/v2/report-generator.js
+@@ -78,7 +78,12 @@ class ReportGeneratorV2 {
+    */
+   generateReportHtml(reportAsJson) {
+     const sanitizedJson = JSON.stringify(reportAsJson).replace(/</g, '\\u003c');
+-    const sanitizedJavascript = REPORT_JAVASCRIPT.replace(/<\//g, '\\u003c/');
++    const sanitizedJavascript = REPORT_JAVASCRIPT
++      .replace(/<\\//g, '\\u003c/')
++      // Escape every '$' so that when this string is used
++      // as the replacement text, no '$' sequences are treated
++      // as special tokens (eg. $', $&, etc).
++      .replace(/\$/g, '$$$$');
+     return REPORT_TEMPLATE
+       .replace(/%%LIGHTHOUSE_JSON%%/, sanitizedJson)
+       .replace(/%%LIGHTHOUSE_JAVASCRIPT%%/, sanitizedJavascript);

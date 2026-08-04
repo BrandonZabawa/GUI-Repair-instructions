@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Tile/Tile.js",
+            "packages/react/src/components/Tile/Tile-test.js"
+        ],
+        "explanation": "packages/react/src/components/Tile/Tile.js houses the SelectableTile component, including getDerivedStateFromProps, handleClick, and handleKeyDown. The bug originates here because handleClick always inverts the incoming prop instead of reading the updated selected prop after a Shift\u2010click range update. This logic causes a tile that should remain selected to toggle off. The accompanying test file (Tile-test.js) needs to be updated to cover the Shift+click multi\u2010select scenario and ensure the component honors the selected prop rather than solely toggling internal state.",
+        "bug_scenario": "When a user performs a range\u2010selection by holding the Shift key and clicking on a SelectableTile, the last tile in the range\u2014if it was already selected\u2014gets deselected. The component\u2019s handleClick (and handleKeyDown) unconditionally invert this.props.selected rather than respecting the updated prop value provided by a parent (e.g. TileGroup\u2019s range selection), so the visible selected state falls out of sync with the selected prop."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Tile/Tile.js",
+            "packages/components/src/components/tile/tile.js"
+        ],
+        "explanation": "All of the selection-toggle logic for the React and vanilla-JS versions of the Tile lives in these two files. In packages/react/src/components/Tile/Tile.js the SelectableTile\u2019s `handleClick` and `handleKeyDown` methods invert `this.props.selected` instead of respecting the updated prop value when performing a multi-select with Shift+click, leading to a stale local state. The companion vanilla JS implementation in packages/components/src/components/tile/tile.js also handles click/toggle on the same underlying `<input>` and needs to mirror the fix so that range-select never inverts a stale state.",
+        "bug_scenario": "When you hold Shift and click on a previously selected SelectableTile to do a multi-selection, the tile briefly deselects itself (the local component state flips) even though the parent\u2019s `selected` prop is still `true`. In other words, on Shift+click the last tile is toggled out of sync with the props coming from your application\u2019s state, so it loses its visual \u201cselected\u201d styling even though it should remain selected."
+    }
+}

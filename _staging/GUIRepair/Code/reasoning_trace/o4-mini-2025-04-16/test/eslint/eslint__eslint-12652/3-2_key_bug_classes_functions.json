@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/rules/key-spacing.js"
+        ],
+        "bug_functions": [
+            "lib/rules/key-spacing.js//initOptions",
+            "lib/rules/key-spacing.js//verifyAlignment",
+            "lib/rules/key-spacing.js//create"
+        ],
+        "explanation": "All of the logic for computing and applying the value-alignment lives in lib/rules/key-spacing.js.  \n\u2022 initOptions is where the multiLine.align option is read and normalized \u2014 it must know to ignore JSX attribute object literals when align:'value' is in effect.  \n\u2022 verifyAlignment is the helper that actually enforces (and auto-fixes) vertical value alignment on groups of properties; it must be altered to skip object expressions found inside JSXExpressionContainers (i.e. inline style={{\u2026}}).  \n\u2022 create is the rule\u2019s entrypoint that defines the Property visitor; this is where you can detect the JSX context (by walking up parent nodes to see if you\u2019re inside a JSXAttribute) and short-circuit the spacing checks altogether. Together, changes to these parts will prevent key-spacing\u2019s align:'value' fixer from re-formatting style objects embedded in JSX.",
+        "bug_scenario": "When running eslint --fix on JSX files with the key-spacing rule configured for multiLine align:'value', inline style objects (e.g. style={{\u2026}} on JSX tags) get forcibly broken into multiple lines and have their values vertically aligned. The auto-fix turns a compact single-line style object into an ugly column-aligned multiline block inside the JSX, which is not the desired behavior."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "lib/rules/key-spacing.js//initOptionProperty",
+            "lib/rules/key-spacing.js//initOptions",
+            "lib/rules/key-spacing.js//isSingleLine",
+            "lib/rules/key-spacing.js//create (ObjectExpression visitor)",
+            "lib/rules/key-spacing.js//verifyAlignment"
+        ],
+        "explanation": "All of these functions are part of the key-spacing rule\u2019s implementation of multi-line alignment: \u2022 initOptionProperty and initOptions read and normalize the align: \"value\" configuration for multiLine objects. \u2022 isSingleLine determines whether a property stays on one line and thus bypasses alignment. \u2022 The create function (the rule\u2019s public API) installs an ObjectExpression visitor that groups properties and invokes the spacing checks. \u2022 verifyAlignment is responsible for vertically aligning the property values across a group. \n\nBecause JSX style objects are just ObjectExpression nodes in the AST, the verifyAlignment logic treats them identically to plain JS objects, forcing misaligned fixes across multiple inline style objects. Tweaking initOptions or the create visitor to detect and skip ObjectExpression nodes inside JSXExpressionContainer (or adding a guard in verifyAlignment to ignore JSX) will prevent unwanted re-alignment in JSX curly style blocks.",
+        "bug_scenario": "The screenshots show that when using ESLint\u2019s key-spacing rule with { multiLine: { align: \"value\" } } on React JSX style objects, running eslint --fix will re-align the object literal properties inside JSX curly braces across multiple lines. The fixer moves the colons/values to line-up vertically across separate <Fa style={{\u2026}}/> and nested <span style={{\u2026}}/> objects, creating large unwanted gaps and breaking the original inline style formatting. The user expects key-spacing to leave JSX style objects untouched when align: \"value\" is set."
+    }
+}

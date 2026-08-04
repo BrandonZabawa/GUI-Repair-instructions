@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/reproj/DataTile.js",
+            "src/ol/reproj/Image.js"
+        ],
+        "explanation": "\u2022 src/ol/source/GeoTIFF.js defines the GeoTIFF source, parses the \u201cwrapX\u201d option and applies cropping to tile data in the native projection pipeline. \n\u2022 src/ol/reproj/DataTile.js implements reprojection of raw data tiles (used by GeoTIFF and other data sources) but never invokes or respects the wrapX/extents cropping logic defined in GeoTIFF. \n\u2022 src/ol/reproj/Image.js handles reprojection of image tiles and likewise ignores the GeoTIFF wrapX cropping, allowing out-of-extent pixels through when an image-based reprojection pipeline is used. \nAll three files are on the reprojection path for GeoTIFF sources; because the cropping in GeoTIFF.js is only applied when the tile is used directly (unreprojected), the reproj/* modules that consume those tiles need to incorporate the same extents\u2010based clipping step to fix the bug.",
+        "bug_scenario": "When using a GeoTIFF source with a non\u2013zero nodata value in a view that requires reprojection, the GeoTIFF\u2019s \u201cwrapX\u201d option (which in practice crops the fetched tile data to the tile grid extent on both axes) is not honored. In native (unreprojected) views the source tiles are properly cropped to the grid extent, but as soon as reprojection is triggered the cropping step is bypassed \u2013 resulting in tiles that include out-of-extent data (e.g. nodata areas) and mismatched nodata handling."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/reproj/DataTile.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/reproj/common.js"
+        ],
+        "explanation": "GeoTIFF.js is where wrapX is applied to crop raw source tiles to the tile grid extent. When the source is reprojected, the ReprojDataTile implementation (in reproj/DataTile.js) and its helper ReprojTile (in reproj/Tile.js) invoke reprojection transforms from reproj/common.js but do not re-apply the GeoTIFF wrapX cropping step. As a result, the nodata regions outside the tile grid extent remain in the output instead of being clipped away, so these four files must be adjusted to propagate or re-invoke the original cropping during reprojection.",
+        "bug_scenario": "When a GeoTIFF source with a non-zero nodata value is both wrapped (wrapX: true) and reprojected, the tiles are no longer clipped to the original tile-grid extent. In the provided example (#15402) you can see that outside the intended tile boundary the reprojected tile is filled with nodata values instead of being cropped\u2014because the GeoTIFF source\u2019s wrapX-based cropping logic never runs when reprojection is active."
+    }
+}

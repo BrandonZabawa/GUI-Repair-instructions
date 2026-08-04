@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ComboBox/index.js",
+            "packages/react/src/components/ComboBox/ComboBox-test.js"
+        ],
+        "explanation": "All of the logic for the ComboBox component lives in ComboBox.js, but it\u2019s currently defined and exported as a plain function component. To support refs, it must be wrapped with React.forwardRef so that an incoming ref is received and forwarded to the internal input (or ListBoxField) element. The index.js file simply re-exports ComboBox and will need to export the forwarded-ref version instead. Finally, ComboBox-test.js will need to be updated to test ref forwarding behavior so that the new implementation is verified and no ref warnings occur.",
+        "bug_scenario": "The ComboBox component in carbon-components-react was rewritten as a functional component in March 2021, but it does not use React.forwardRef. As a result, when a consumer passes a ref to <ComboBox ref={comboBoxRef} />, React emits the warning \u201cFunction components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?\u201d. The user needs the ability to attach a ref to the underlying input element in the ComboBox without triggering this warning."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ComboBox/index.js"
+        ],
+        "explanation": "Both of these files are responsible for how the ComboBox component is defined and exported. ComboBox.js declares the functional component but does not accept or forward any ref. index.js simply re-exports the component without wrapping it in React.forwardRef. To fix the issue, ComboBox.js must be updated to accept a forwarded ref (for example via an innerRef prop) and index.js must wrap the default export in React.forwardRef so that when users pass a ref it is properly forwarded to the underlying input element.",
+        "bug_scenario": "The ComboBox component was rewritten as a functional component in March 2021 and no longer uses React.forwardRef. As a result, when a consumer passes a ref to <ComboBox ref={comboBoxRef}>, React issues the warning:\n\n  \u201cFunction components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?\u201d\n\nBecause ComboBox is not wrapped with forwardRef and does not accept an innerRef prop, the ref never reaches the underlying <input> element."
+    }
+}

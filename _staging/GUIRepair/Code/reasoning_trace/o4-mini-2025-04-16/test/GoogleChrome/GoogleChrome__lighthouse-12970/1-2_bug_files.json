@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js"
+        ],
+        "explanation": "The core of this bug lives in the render-blocking-resources audit implementation. That file gathers all CSS and JS resources that delay first paint, but doesn\u2019t filter out file:// URLs. To fix the issue, you need to update lighthouse-core/audits/byte-efficiency/render-blocking-resources.js so that any resource whose URL starts with the file: protocol is skipped and not included in the list of render-blocking items.",
+        "bug_scenario": "When Lighthouse runs its \u201cEliminate render-blocking resources\u201d audit on a page that includes <link> or <script> tags pointing at file:/// URLs, it still treats those local file:// resources as if they were real network requests and reports them under \u201crender-blocking resources\u201d with non-zero wasted time\u2014even though file:// never actually blocks network rendering. In other words, the audit fails to ignore file-scheme URLs and incorrectly flags them as performance problems."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js"
+        ],
+        "explanation": "The file lighthouse-core/audits/byte-efficiency/render-blocking-resources.js contains the logic to identify and report CSS/JS files that block initial rendering. It iterates over network records and currently does not exclude file:// schemes, so those local resources end up in the audit. Modifying this audit to skip resources whose URL protocol is file:// (similar to how data: URIs are excluded) will prevent local file URLs from being flagged as render-blocking.",
+        "bug_scenario": "When auditing an HTTP-served page that includes <link> or <script> tags pointing to file:/// URLs, Lighthouse\u2019s \u201cEliminate render-blocking resources\u201d audit still flags those local file:// resources (transfer size 0 KiB) as blocking the first paint and reports hundreds of wasted milliseconds\u2014even though file:// URLs never go over the network and can\u2019t block rendering."
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/rules/BpmnRules.js"
+        ],
+        "bug_functions": [
+            "lib/features/rules/BpmnRules.js//canDrop",
+            "lib/features/rules/BpmnRules.js//canCreate",
+            "lib/features/rules/BpmnRules.js//canPaste"
+        ],
+        "explanation": "The core of the bug is the rules logic that allows a typed start event to be pasted inside a subprocess. The 'BpmnRules.js' file is responsible for BPMN-specific modeling rules, including restrictions on where different elements (like typed start events) can be created, dropped, or pasted. The functions 'canDrop', 'canCreate', and potentially a 'canPaste' function (if present, or logic handled similarly within canCreate/canDrop) are the likely locations where checks should be enforced to prevent the pasting of typed start events into subprocesses. These functions determine if an element can be created or dropped in a target container based on its type and the BPMN rules. Tightening or adding checks in these functions will prevent the invalid paste operation.",
+        "bug_scenario": "The bug scenario, as described in the report and as shown in the animation, demonstrates that a 'typed start event' (e.g., a Start Event with a type like 'message') can be copied and pasted onto a subprocess. This should not be allowed according to BPMN rules, as subprocesses should only contain plain (blank) start events. The animation shows the user copying a typed start event and pasting it inside a subprocess, which is currently possible but should be prevented."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/rules/BpmnRules.js"
+        ],
+        "bug_functions": [
+            "lib/features/rules/BpmnRules.js//canDrop",
+            "lib/features/rules/BpmnRules.js//canCreate",
+            "lib/features/rules/BpmnRules.js//canPaste"
+        ],
+        "explanation": "The core of the bug is that the BPMN rules for paste/move operations do not prevent invalid typed start events from being pasted into subprocesses. 'BpmnCopyPaste.js' is responsible for handling the copy-paste mechanics, but the actual rules for what is allowed are enforced in 'BpmnRules.js'. Within 'BpmnRules.js', the functions 'canDrop', 'canCreate', and potentially a missing or implicit 'canPaste' (if paste is just a create/move operation) are responsible for determining if a shape (such as a start event) can be added to a target (such as a subprocess). These functions need to check if the pasted event is a typed start event and, if so, disallow the operation when the target is a subprocess. Thus, the bug is rooted in an omission or incorrect logic in these rule-checking functions. The fix should ensure these rules are enforced during paste operations.",
+        "bug_scenario": "The scenario, as described in the bug report and shown in the animation, involves copying a 'typed start event' (such as a message start event) and pasting it onto a subprocess. The system currently allows this, even though BPMN rules prohibit typed start events within subprocesses. The expected behavior is that pasting such events onto subprocesses should not be allowed, but the bug allows users to bypass this restriction through copy-paste, resulting in invalid BPMN diagrams."
+    }
+}

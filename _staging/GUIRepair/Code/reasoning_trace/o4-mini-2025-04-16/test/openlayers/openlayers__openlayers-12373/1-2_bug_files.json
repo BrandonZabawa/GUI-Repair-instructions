@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/TileDebug.js",
+            "src/ol/tileurlfunction.js",
+            "src/ol/source/UrlTile.js",
+            "src/ol/source/XYZ.js"
+        ],
+        "explanation": "\u2022 src/ol/source/TileDebug.js: This is where the library actually draws the red grid tiles and labels their Z/X/Y indices. It currently just takes the raw tileCoord[2] (y) and renders it, without applying any inversion logic. That is exactly where you would inject the same \u201cinvert y\u201d calculation that tileurlfunction.js does for a {-y} placeholder.  \n\n\u2022 src/ol/tileurlfunction.js: This module implements the parsing of URL templates, including support for the special \u201c{-y}\u201d placeholder. When you change TileDebug to mirror its behavior you can call into this code (or borrow its inversion formula) so that the debug layer shows exactly the same Y values that the URL templating engine sends.  \n\n\u2022 src/ol/source/UrlTile.js: This base class wires up tileUrlFunction (and the underlying getTileCoordForTileUrl routine) to UrlTile-derived sources. XYZ and TileImage both inherit this logic. Reviewing it shows how UrlTile builds its final request coordinates; TileDebug should do the same when it is asked to infer the inverted Y.  \n\n\u2022 src/ol/source/XYZ.js: This convenience subclass sets up the default XYZ tile grid (including its origin/top-left orientation) and delegates to UrlTile for templating. It\u2019s where {-y} is expected to flip against the grid\u2019s origin. TileDebug can either switch to using the same tileGrid instance or at least re-use its invert-Y math so that both layers report the same coordinates.",
+        "bug_scenario": "When you turn on the built-in TileDebug overlay against a TileImage (XYZ) layer whose URL template uses the \u201c{-y}\u201d placeholder, the little red debug tiles still label themselves with the raw y index (0,1,2\u2026) instead of the inverted index that the server actually receives. In other words, the network requests are going out to e.g. /{z}/{x}/{-y}.png (so y=3\u2192inverted to 4\u20133\u20131=0), but the TileDebug layer is drawing \u201cY: 3\u201d rather than \u201cY: 0,\u201d so your debug grid and your real tiles don\u2019t line up."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/TileDebug.js"
+        ],
+        "explanation": "TileDebug.js is the only source in the repository that draws debug tiles (with x/y/z labels) rather than fetching them via URL templates. All UrlTile derivatives (e.g. TileImage, XYZ) call getTileCoordForTileUrl internally, which applies the tileGrid logic for {y} vs. {-y} placeholders (using the generic tileurlfunction module). TileDebug, however, takes the raw tileCoord from the map and draws it directly, so it never applies the \u201cinvert Y\u201d logic. To correct the discrepancy you must modify TileDebug.js so that it first calls this.getTileCoordForTileUrl(tileCoord) (inherited from UrlTile) and then uses the resulting coord when rendering \u2014 thereby honoring any {-y} inversion just like the real tile sources do.",
+        "bug_scenario": "When using a TileDebug layer alongside an XYZ/TileImage layer whose URL template uses \u201c{-y}\u201d to flip the tile Y coordinate, the debug overlay still draws the raw Y it receives (uncorrected), while the image layer actually requests tiles with an inverted Y. You end up with mismatched tile indices: the debug grid shows one set of Y coordinates but the loaded PNG images come from a flipped Y scheme."
+    }
+}

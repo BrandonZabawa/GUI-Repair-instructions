@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/ImageWMS.js",
+            "src/ol/source/TileWMS.js",
+            "src/ol/renderer/canvas/ImageLayer.js"
+        ],
+        "explanation": "All of the key blur issues stem from how WMS images are requested and then rendered when the requested image size or the drawing transforms involve fractional pixels:  \n1. In src/ol/source/ImageWMS.js (and similarly in TileWMS.js), the code computes request widths/heights using a non\u2010integer ratio (e.g. 1.5) and the map extent, rounding to four decimal places and then feeding floats into the WIDTH/HEIGHT parameters of the GetMap request.  Because these aren\u2019t guaranteed to be whole numbers, the server returns images whose pixel dimensions don\u2019t align exactly with the map viewport.  \n2. In src/ol/source/TileWMS.js the same fractional sizing logic applies to tiled requests, so when the ratio or the tile grid yields odd or non\u2010even dimensions, the individual tiles must be scaled non\u2010uniformly.  \n3. In src/ol/renderer/canvas/ImageLayer.js the returned WMS images are drawn onto a canvas using CSS transforms and drawImage calls that apply non\u2010integral scale and translation (due to fractional pixel ratios and odd map sizes). These fractional canvas operations activate imageSmoothing by default and produce a blurred result.  \n\nTogether, these files control both the source request dimensions and the final canvas scaling. Fixing the bug requires ensuring integer image request sizes (rounding to whole pixels) and avoiding fractional canvas transforms (e.g. aligning to whole\u2010pixel boundaries when map width/height or ratio are non\u2010integer).",
+        "bug_scenario": "The screenshots show a WMS layer drawn on an OpenLayers 7 map that looks \u2018\u2018fuzzy\u2019\u2019 or \u2018\u2018out of focus\u2019\u2019 whenever the configured ratio or the map container dimensions aren\u2019t whole integers. For example, using the default ratio of 1.5 or displaying the map at an odd-numbered pixel width or height produces non\u2010integer request sizes and fractional CSS transforms. The WMS tiles get requested at fractional widths/heights and then have to be scaled by non\u2010integral factors on the canvas, resulting in a blurry appearance instead of a crisp, pixel\u2010perfect rendering."
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/auto-place/AutoPlaceUtil.js",
+            "lib/features/modeling/behavior/GroupBehavior.js"
+        ],
+        "explanation": "1. lib/features/auto-place/AutoPlaceUtil.js  \n   \u2013 This module computes the x/y position for newly auto-placed shapes. In an empty diagram after a Group has been created, it returns NaN or Infinity for the Pool\u2019s translate coordinates (due to missing or mis-initialized shape bounds), which then get passed into SVGTransform.setTranslate, triggering the non-finite error.\n\n2. lib/features/modeling/behavior/GroupBehavior.js  \n   \u2013 While the immediate console error comes from the placement transform, the root cause lies in how GroupBehavior wires up a new CategoryValue and updates the BPMN definitions without correctly initializing the Group\u2019s graphical bounds. That missing initialization cascades into AutoPlaceUtil\u2019s geometry computations, producing invalid numbers. Adjusting GroupBehavior to establish proper default bounds (or deferring auto-placement until after the Group\u2019s DI bounds are set) will prevent the NaN translation values.",
+        "bug_scenario": "The user starts with an empty BPMN canvas (only the start event). They delete that start event, then place a Group onto the now-empty diagram. That works. Next they use the Group\u2019s little \u201cplus\u201d auto-place handle to drop in a Pool (Participant). As soon as the Pool is added, the browser console explodes with \u201cFailed to execute \u2018setTranslate\u2019 on \u2018SVGTransform\u2019: The provided float value is non-finite.\u201d and the editor freezes. In the screenshots you can see the gif of placing the Group and then the Pool, and the red console stack traces pointing into Create.js, EventBus.js and SvgTransformUtil.js."
+    }
+}

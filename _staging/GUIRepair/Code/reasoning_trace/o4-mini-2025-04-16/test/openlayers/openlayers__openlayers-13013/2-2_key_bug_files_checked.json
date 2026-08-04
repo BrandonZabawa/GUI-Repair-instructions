@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/tilegrid/TileGrid.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "1. src/ol/tilegrid/TileGrid.js: this module builds the resolutions, origins and tileSizes arrays and implements getTileSize(z). In the custom grid case getTileSize always returns the *full* declared tileSize (e.g. 770\u00d7768), even when the map extent causes the final tile to be smaller. 2. src/ol/webgl/TileTexture.js: uploadDataTexture() reads the size from grid.getTileSize and calls gl.texImage2D with those dimensions, then slices the data into a typed array of exactly size[0]\u00d7size[1]. Because the loader only returns data for the *actual* tile region (short by a few pixels on the last tile), texImage2D reports \u201cmore data needed than available\u201d and the tile renders black. 3. src/ol/renderer/webgl/TileLayer.js: the renderer expects textures uploaded at the grid\u2019s fixed dimensions and does not compensate for partial\u2010tile edge cases. You will need to either have TileGrid compute the real pixel dimensions for each tile (including edge tiles) or have TileTexture use the actual data array shape instead of the full grid size when calling texImage2D.",
+        "bug_scenario": "The screenshots show a WebGL\u2010powered tile layer rendered entirely as solid black tiles. In the console you see the warning:  \u201ctexImage: Desired upload requires more data than is available: (767 rows plus 770 pixels needed, 767 rows plus 258 pixels available)\u201d. The user is using a custom TileGrid (extent [0, \u201323828, 23903, 0], sizes [[1,1],[7,7],[25,25],[100,100]], tileSizes [[770,768],[240,240],[240,240],[240,240]]), a DataTileSource loader, and a WebGLTileLayer. The grid and the WebGL texture upload disagree on the actual pixel dimensions of one of the tiles (the last row/column), so WebGL is told to upload a 770\u00d7768 texture but only gets data for a smaller subregion, resulting in black tiles."
+    }
+}

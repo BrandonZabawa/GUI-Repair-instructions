@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/transforms.js",
+            "src/ol/tilegrid/WMTS.js",
+            "src/ol/reproj/Triangulation.js"
+        ],
+        "explanation": "\u2022 src/ol/proj/proj4.js  \n  This module picks up the proj4.defs[code].axis string and passes it straight into OL\u2019s Projection constructor as axisOrientation.  After proj4js 2.6.1 changed its axis codes to follow EPSG metadata, OL\u2019s simple pass-through no longer matches OL\u2019s expectations and breaks the downstream logic.  \n\n\u2022 src/ol/proj/transforms.js  \n  OL\u2019s proj4 integration registers forward/inverse functions under keys like \u201cEPSG:2180\u2192EPSG:3857\u201d.  If the axisOrientation in the Projection instances is wrong, those transforms get called with the wrong [x,y] ordering.  Fixing registration or invocation here is part of correcting the reprojection.  \n\n\u2022 src/ol/tilegrid/WMTS.js  \n  To set the WMTS TileGrid origins, OL inspects projection.getAxisOrientation(), and when substr(0,2)==\"ne\" it swaps the TopLeftCorner coords.  Because axisOrientation is now coming from the new proj4js value, OL erroneously toggles (or doesn\u2019t toggle) the swap, giving the tile grid a wrong origin and causing imagery to appear rotated.  \n\n\u2022 src/ol/reproj/Triangulation.js  \n  The reprojection triangulation builds meshes by repeatedly transforming corner coordinates via getTransform(proj1,proj2).  The wrong axis order in the registered transforms feeds directly into this algorithm, skewing the entire reprojection mesh.  Correcting the axisOrientation at registration or normalizing inputs in Triangulation fixes the rotations.",
+        "bug_scenario": "When upgrading proj4js from 2.6.0 to 2.6.1 in an OpenLayers 6.3.2\u2010dev build, all externally served WMTS (EPSG:2180) or OSM (EPSG:3857) layers get a consistent \u201crotation\u201d when reprojected into a view with a different projection.  \n\u2013 With proj4js 2.6.0 both Mercator (EPSG:3857) and WMTS (EPSG:2180) layers draw perfectly under both views.  \n\u2013 After the proj4js 2.6.1 axis\u2010order change, viewing a Mercator view with an EPSG:2180 WMTS source produces a rotated ortho image, and vice versa.  \nThis clearly points to a mismatch in how OL registers and uses the new proj4js axis\u2010orientation definitions and applies them both in the projection registry and in the WMTS tile grid origin logic, causing the reprojection pipeline to mis\u2010order axes and skew the imagery."
+    }
+}

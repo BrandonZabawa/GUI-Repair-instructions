@@ -1,0 +1,99 @@
+diff --git a/packages/react/src/components/NumberInput/NumberInput.js b/packages/react/src/components/NumberInput/NumberInput.js
+index 5c61144d..173d9823 100644
+--- a/packages/react/src/components/NumberInput/NumberInput.js
++++ b/packages/react/src/components/NumberInput/NumberInput.js
+@@ -76,7 +76,8 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+     [`${prefix}--number--readonly`]: readOnly,
+     [`${prefix}--number--light`]: light,
+     [`${prefix}--number--nolabel`]: hideLabel,
+-    [`${prefix}--number--nosteppers`]: hideSteppers,
++    // hide steppers when either hideSteppers OR readOnly
++    [`${prefix}--number--nosteppers`]: hideSteppers || readOnly,
+     [`${prefix}--number--${size}`]: size,
+     [customClassName]: !enabled,
+   });
+@@ -124,7 +125,7 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+   }
+ 
+   function handleOnChange(event) {
+-    if (disabled) {
++    if (disabled || readOnly) {
+       return;
+     }
+ 
+@@ -193,16 +194,17 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+           ) : null}
+           {!hideSteppers && (
+             <div className={`${prefix}--number__controls`}>
+-              <button
+-                aria-label={decrementNumLabel || iconDescription}
+-                className={`${prefix}--number__control-btn down-icon`}
+-                disabled={disabled}
+-                onClick={(event) => {
+-                  const state = {
+-                    value: clamp(max, min, parseInt(value) - step),
+-                    direction: 'down',
+-                  };
+-                  setValue(state.value);
++            <button
++              aria-label={decrementNumLabel || iconDescription}
++              className={`${prefix}--number__control-btn down-icon`}
++              // also disable when readOnly
++              disabled={disabled || readOnly}
++              onClick={(event) => {
++                const state = {
++                  value: clamp(max, min, parseInt(value) - step),
++                  direction: 'down',
++                };
++                setValue(state.value);
+ 
+                   if (onChange) {
+                     onChange(event, state);
+@@ -218,16 +220,17 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+                 <Subtract className="down-icon" />
+               </button>
+               <div className={`${prefix}--number__rule-divider`} />
+-              <button
+-                aria-label={incrementNumLabel || iconDescription}
+-                className={`${prefix}--number__control-btn up-icon`}
+-                disabled={disabled}
+-                onClick={(event) => {
+-                  const state = {
+-                    value: clamp(max, min, parseInt(value) + step),
+-                    direction: 'up',
+-                  };
+-                  setValue(state.value);
++            <button
++              aria-label={incrementNumLabel || iconDescription}
++              className={`${prefix}--number__control-btn up-icon`}
++              // also disable when readOnly
++              disabled={disabled || readOnly}
++              onClick={(event) => {
++                const state = {
++                  value: clamp(max, min, parseInt(value) + step),
++                  direction: 'up',
++                };
++                setValue(state.value);
+ 
+                   if (onChange) {
+                     onChange(event, state);
+diff --git a/packages/react/src/components/NumberInput/__tests__/NumberInput-test.js b/packages/react/src/components/NumberInput/__tests__/NumberInput-test.js
+index 32bfe638..86efa6e4 100644
+--- a/packages/react/src/components/NumberInput/__tests__/NumberInput-test.js
++++ b/packages/react/src/components/NumberInput/__tests__/NumberInput-test.js
+@@ -58,6 +58,15 @@ describe('NumberInput', () => {
+     expect(screen.getByLabelText('test-label')).toHaveAttribute('disabled');
+   });
+ 
++  it('should set `readonly` on the underlying <input> when readOnly is true', () => {
++    render(<NumberInput label="test-label" id="test" readOnly />);
++    const input = screen.getByLabelText('test-label');
++    expect(input).toHaveAttribute('readonly');
++    // steppers should be disabled for read-only
++    expect(screen.getByLabelText('Increment number')).toBeDisabled();
++    expect(screen.getByLabelText('Decrement number')).toBeDisabled();
++  });
++
+   it('should set the defaultValue of the <input> with `defaultValue`', () => {
+     render(<NumberInput label="test-label" id="test" defaultValue={5} />);
+     expect(screen.getByLabelText('test-label')).toHaveValue(5);

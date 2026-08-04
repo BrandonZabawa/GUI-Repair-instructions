@@ -1,0 +1,64 @@
+diff --git a/packages/components/src/components/floating-menu/floating-menu.js b/packages/components/src/components/floating-menu/floating-menu.js
+index 5f2091b5..4117ee11 100644
+--- a/packages/components/src/components/floating-menu/floating-menu.js
++++ b/packages/components/src/components/floating-menu/floating-menu.js
+@@ -208,7 +208,15 @@ class FloatingMenu extends mixin(
+    */
+   _getPos() {
+     const { element } = this;
+-    const { refNode, offset, direction } = this.options;
++    const { refNode, offset, direction, absolutePosition } = this.options;
++
++    // If absolutePosition is provided, use it directly
++    if (absolutePosition && typeof absolutePosition.left === 'number' && typeof absolutePosition.top === 'number') {
++      return {
++        left: absolutePosition.left,
++        top: absolutePosition.top,
++      };
++    }
+ 
+     if (!refNode) {
+       throw new Error(
+diff --git a/packages/components/src/components/overflow-menu/overflow-menu.js b/packages/components/src/components/overflow-menu/overflow-menu.js
+index 72c56622..436e8ebe 100644
+--- a/packages/components/src/components/overflow-menu/overflow-menu.js
++++ b/packages/components/src/components/overflow-menu/overflow-menu.js
+@@ -166,6 +166,8 @@ class OverflowMenu extends mixin(
+         offset: this.options.objMenuOffset,
+         triggerNode: this.triggerNode,
+         contentNode: this.element.querySelector(this.options.selectorContent),
++        // Pass through absolutePosition if set on this.options
++        absolutePosition: this.options.absolutePosition,
+       });
+       this.children.push(this.optionMenu);
+     }
+diff --git a/packages/react/src/components/OverflowMenu/OverflowMenu.js b/packages/react/src/components/OverflowMenu/OverflowMenu.js
+index b3d814d0..865e47a9 100644
+--- a/packages/react/src/components/OverflowMenu/OverflowMenu.js
++++ b/packages/react/src/components/OverflowMenu/OverflowMenu.js
+@@ -101,6 +101,14 @@ class OverflowMenu extends Component {
+      */
+     ariaLabel: PropTypes.string,
+ 
++    /**
++     * If set, positions the menu absolutely at the given { left, top } coordinates (for context menu mode).
++     */
++    absolutePosition: PropTypes.shape({
++      left: PropTypes.number.isRequired,
++      top: PropTypes.number.isRequired,
++    }),
++
+     /**
+      * The child nodes.
+      */
+@@ -523,7 +531,9 @@ class OverflowMenu extends Component {
+         flipped={this.props.flipped}
+         target={this._getTarget}
+         onPlace={this._handlePlace}
+-        selectorPrimaryFocus={this.props.selectorPrimaryFocus}>
++        selectorPrimaryFocus={this.props.selectorPrimaryFocus}
++        absolutePosition={this.props.absolutePosition}
++      >
+         {React.cloneElement(menuBody, {
+           'data-floating-menu-direction': direction,
+         })}

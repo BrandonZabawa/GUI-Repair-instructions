@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/DataTable/buildState.js",
+            "src/js/components/DataTable/DataTable.js"
+        ],
+        "explanation": "1. src/js/components/DataTable/buildState.js: This file\u2019s filterAndSortData function uses datumValue to pull out the sort key. If the property is null or undefined, datumValue returns undefined and the comparator then does numeric/string comparisons on undefined, causing nulls to sort incorrectly. We need to normalize null/undefined to an empty string (e.g. via `const d1Val = datumValue(d1, property) || ''`) before comparing.\n\n2. src/js/components/DataTable/DataTable.js: This component calls filterAndSortData internally to drive its sort behavior. It should ensure that, when preparing the sort object or passing values into filterAndSortData, any nullish values are coerced to empty strings. Adjusting DataTable.js to map datumValue results (or passing a default via a wrapper) will guarantee consistent treatment of null/undefined across all sorting scenarios.",
+        "bug_scenario": "The screenshot shows a DataTable sorted by the \u201cParent\u201d column. Rows whose parent_id is null or undefined (rendered as \u201c--\u201d via the cell renderer) are not being ordered as if they were empty strings. Instead, because the internal sort logic retrieves null/undefined values and compares them directly, those rows end up in the wrong position. Null or undefined should be treated as an empty string so that they appear at the top (or bottom) consistently when sorting."
+    }
+}

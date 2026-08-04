@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Form/Form.js",
+            "src/js/components/Form/FormContext.js"
+        ],
+        "explanation": "The core of Grommet\u2019s dynamic\u2010field validation lives in Form.js and the surrounding FormContext. When a field is removed from the DOM, its name/value segment should also be dropped from the internal \"errors\" and \"touched\" state so that onValidate sees no outstanding errors. Form.js currently validates on change or blur but does not clear errors for removed keys, leaving the form perpetually invalid. FormContext.js holds and exposes that error state. Fixing this bug involves updating Form.js to detect when a value key is deleted (e.g. via onChange adjustment) and remove any corresponding error entry in its validation map.",
+        "bug_scenario": "In a Grommet Form that conditionally adds or removes a required field (\"alias\"), toggling off that field (removing it) should clear its validation state and allow the form to become valid if all remaining fields pass. Instead, after removing the field, the form remains invalid because the internal error entry for the now\u2010removed field is never cleared."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/Form/Form.js",
+            "src/js/components/Form/FormContext.js",
+            "src/js/components/FormField/FormField.js"
+        ],
+        "explanation": "1. Form.js: Contains the core logic for validating fields on change and managing form-level validity. It currently retains validation errors for fields that have been removed, so the form remains invalid even after the field is unmounted.\n2. FormContext.js: Manages registration of fields in context. It should deregister fields when they unmount, but stale registrations persist, causing outdated validation to still count against form validity.\n3. FormField.js: Responsible for registering each field in the form. It registers new fields but does not properly unregister on unmount, so FormContext continues to treat removed fields as present, and Form.js continues to validate them.",
+        "bug_scenario": "In a Grommet Form configured with validate=\"change\", dynamically adding a required TextInput when a checkbox is unchecked correctly marks the form invalid. However, toggling the checkbox back to hide (remove) that required field does not clear its stale validation state. Even though the \u201calias\u201d value is removed from the form\u2019s value object in onChange, the form\u2019s overall validity remains false, preventing Submit from enabling. Essentially, removing a required field does not unregister its prior validation status, leaving the form stuck in an invalid state."
+    }
+}

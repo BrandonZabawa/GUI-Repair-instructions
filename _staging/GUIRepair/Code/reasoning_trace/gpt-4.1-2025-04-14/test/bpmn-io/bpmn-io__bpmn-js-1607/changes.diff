@@ -1,0 +1,40 @@
+diff --git a/lib/features/modeling/behavior/util/CategoryUtil.js b/lib/features/modeling/behavior/util/CategoryUtil.js
+index 4d0b7c09..45dd8af6 100644
+--- a/lib/features/modeling/behavior/util/CategoryUtil.js
++++ b/lib/features/modeling/behavior/util/CategoryUtil.js
+@@ -15,16 +15,29 @@ import {
+  * @return {ModdleElement} categoryValue.
+  */
+ export function createCategoryValue(definitions, bpmnFactory) {
++  // Always ensure category is added to the global definitions' rootElements
++  // to avoid unresolved references on import
++
++  // Find the global definitions if not already
++  var globalDefinitions = definitions;
++  if (globalDefinitions.$type !== 'bpmn:Definitions' && globalDefinitions.$parent) {
++    while (globalDefinitions.$parent) {
++      globalDefinitions = globalDefinitions.$parent;
++      if (globalDefinitions.$type === 'bpmn:Definitions') {
++        break;
++      }
++    }
++  }
++
+   var categoryValue = bpmnFactory.create('bpmn:CategoryValue'),
+       category = bpmnFactory.create('bpmn:Category', {
+         categoryValue: [ categoryValue ]
+       });
+ 
+-  // add to correct place
+-  collectionAdd(definitions.get('rootElements'), category);
+-  getBusinessObject(category).$parent = definitions;
++  // add to correct place (always global definitions)
++  collectionAdd(globalDefinitions.get('rootElements'), category);
++  getBusinessObject(category).$parent = globalDefinitions;
+   getBusinessObject(categoryValue).$parent = category;
+ 
+   return categoryValue;
+-
+-}
+\ No newline at end of file
++}

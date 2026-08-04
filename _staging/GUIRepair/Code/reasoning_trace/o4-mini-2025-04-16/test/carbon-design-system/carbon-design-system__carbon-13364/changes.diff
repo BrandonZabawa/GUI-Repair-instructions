@@ -1,0 +1,44 @@
+diff --git a/packages/react/src/components/InlineCheckbox/InlineCheckbox.js b/packages/react/src/components/InlineCheckbox/InlineCheckbox.js
+index 1b13c46a..d79a93d8 100644
+--- a/packages/react/src/components/InlineCheckbox/InlineCheckbox.js
++++ b/packages/react/src/components/InlineCheckbox/InlineCheckbox.js
+@@ -9,6 +9,7 @@ import PropTypes from 'prop-types';
+ import React, { useEffect, useRef } from 'react';
+ import { usePrefix } from '../../internal/usePrefix';
+ import { useMergedRefs } from '../../internal/useMergedRefs';
++import deprecate from '../../internal/deprecate';
+ 
+ /** @type any */
+ const InlineCheckbox = React.forwardRef(function InlineCheckbox(
+@@ -16,7 +17,8 @@ const InlineCheckbox = React.forwardRef(function InlineCheckbox(
+   forwardRef
+ ) {
+   const {
+-    ariaLabel,
++    'aria-label': ariaLabelHyphen,
++    ariaLabel: ariaLabelCamel,
+     checked = false,
+     disabled,
+     id,
+@@ -27,6 +29,8 @@ const InlineCheckbox = React.forwardRef(function InlineCheckbox(
+     onKeyDown,
+     title,
+   } = props;
++  // prefer the new hyphen-case if provided, else fall back
++  const ariaLabel = ariaLabelHyphen ?? ariaLabelCamel;
+   const prefix = usePrefix();
+   const inputRef = useRef(null);
+   const ref = useMergedRefs([inputRef, forwardRef]);
+@@ -76,7 +80,11 @@ InlineCheckbox.propTypes = {
+   /**
+    * Specify the label for the control
+    */
+-  ariaLabel: PropTypes.string.isRequired,
++  'aria-label': PropTypes.string,
++  ariaLabel: deprecate(
++    PropTypes.string,
++    'The `ariaLabel` prop is deprecated. Please use `aria-label` (kebab-case) instead.'
++  ),
+ 
+   /**
+    * Specify whether the underlying control is checked, or not

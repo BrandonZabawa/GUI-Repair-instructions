@@ -1,0 +1,42 @@
+diff --git a/lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js b/lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js
+index 023f13ca..c5c03eb2 100644
+--- a/lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js
++++ b/lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js
+@@ -26,11 +26,12 @@ UpdateModdlePropertiesHandler.prototype.execute = function(context) {
+   }
+ 
+   var changed = context.changed || this.getVisualReferences(moddleElement).concat(element);
+-  var oldProperties = context.oldProperties || getModdleProperties(moddleElement, keys(properties));
++var oldProperties = context.oldProperties || getModdleProperties(moddleElement, keys(properties));
+ 
+-  setModdleProperties(moddleElement, properties);
++// Ensure properties are saved before updating
++context.oldProperties = JSON.parse(JSON.stringify(oldProperties));
+ 
+-  context.oldProperties = oldProperties;
++setModdleProperties(moddleElement, properties);
+   context.changed = changed;
+ 
+   return changed;
+@@ -40,9 +41,12 @@ UpdateModdlePropertiesHandler.prototype.revert = function(context) {
+   var oldProperties = context.oldProperties,
+       moddleElement = context.moddleElement,
+       changed = context.changed;
++// Restore properties correctly
++if (oldProperties) {
++setModdleProperties(moddleElement, oldProperties);
++}
+ 
+-  setModdleProperties(moddleElement, oldProperties);
+-
++return changed;
+   return changed;
+ };
+ 
+@@ -87,4 +91,4 @@ function getAllDataObjectReferences(dataObject, elementRegistry) {
+           getBusinessObject(element).dataObjectRef === dataObject
+     );
+   });
+-}
++}
+\ No newline at end of file

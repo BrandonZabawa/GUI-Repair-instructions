@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/behavior/DataStoreBehavior.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnUpdater.js//updateParent",
+            "lib/features/modeling/BpmnUpdater.js//updateDiParent"
+        ],
+        "explanation": "The error occurs during the morphing of a DataStoreReference to a DataObjectReference outside of a Pool, as indicated by the stack trace referencing updateDiParent and updateParent in BpmnUpdater.js. These functions are responsible for updating the DI (diagram interchange) parent and the semantic parent of BPMN elements when their parent context changes (e.g., due to morphing between different element types). The collaboration context and data store-specific logic is handled in DataStoreBehavior.js, which manages special containment and parent update rules for DataStoreReference elements. The bug likely arises because these functions (updateParent, updateDiParent) do not correctly handle the edge case where a DataStoreReference is morphed outside a Pool, resulting in a missing or undefined parent DI object. Both BpmnUpdater.js and DataStoreBehavior.js are involved in handling these BPMN-specific containment rules and should be inspected/updated to properly handle morphing and containment validation for these element types.",
+        "bug_scenario": "The bug scenario involves morphing a DataStoreReference element to a DataObjectReference element outside of a Pool (within a Collaboration context) in the BPMN modeler. When this operation is attempted, an uncaught TypeError is thrown in the console (\"Cannot read properties of undefined (reading 'get')\"), causing the application to break. The error trace points to BpmnUpdater.js, specifically the updateDiParent and updateParent functions, during the morph and shape update process."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateParent",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateDiParent"
+        ],
+        "explanation": "The bug is triggered during the morphing process when updating the parent or DI (Diagram Interchange) parent of the element. The stack trace points to BpmnUpdater.js, specifically to updateDiParent and updateParent. The class BpmnUpdater is responsible for synchronizing the BPMN diagram's semantic model and its DI representations when elements change, such as during morphs. The functions updateParent and updateDiParent are directly involved in changing parent relationships and updating DI information, which are critical when morphing elements. The error suggests that for DataStoreReference morphs outside of a Pool, the expected parent or DI parent is not properly set or is undefined. This causes the TypeError when the code attempts to access properties of an undefined object. Fixes would involve ensuring that valid parent and DI references are supplied during such morphs, or restricting the morph operation if it cannot be safely performed.",
+        "bug_scenario": "The bug occurs when a user tries to morph (convert) a DataStoreReference to a DataObjectReference outside of a Pool (i.e., within a Collaboration context in BPMN modeling). Instead of a smooth morph or a constraint that prevents the morph, a TypeError is thrown because the code tries to access a property of an undefined object, as indicated by the stack trace. The attached scenario image shows the error appearing in the browser console during the morphing operation."
+    }
+}

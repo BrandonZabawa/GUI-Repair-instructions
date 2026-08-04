@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder",
+            "src/ol/render/canvas/Executor.js//Executor"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.drawText",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.setTextStyle",
+            "src/ol/render/canvas/Executor.js//Executor.execute_",
+            "src/ol/render/canvas/Executor.js//Executor.calculateImageOrLabelDimensions_",
+            "src/ol/render/canvas/Executor.js//Executor.replayImageOrLabel_"
+        ],
+        "explanation": "The bug is about incorrect placement of rotated text when the context is clipped and translated. The core logic for drawing and positioning text is in CanvasTextBuilder (drawText and setTextStyle) and Executor (especially execute_, calculateImageOrLabelDimensions_, and replayImageOrLabel_). These functions/classes are responsible for computing the text's coordinates, applying transformations (including translation and rotation), and rendering the text in the correct location. Since the bug specifically occurs for rotated text, the error likely lies in how these transformations are applied in relation to the context's translation. Non-rotated text works, suggesting that the translation is not being properly combined with rotation for text labels in these functions.",
+        "bug_scenario": "The images depict a map with two highlighted regions: a blue spyglass area and a red reveal area. The bug is that rotated vector layer text (the green '3') is displayed at its original location (south of Miami) rather than being properly translated to the spyglass/reveal area, unlike non-rotated text ('1' and '2'), which appear correctly. Only when the rotation value is zero does the translation work as expected."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder",
+            "src/ol/render/canvas/Executor.js//Executor"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.drawText",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.setTextStyle",
+            "src/ol/render/canvas/Executor.js//Executor.execute_",
+            "src/ol/render/canvas/Executor.js//Executor.calculateImageOrLabelDimensions_",
+            "src/ol/render/canvas/Executor.js//Executor.replayImageOrLabel_"
+        ],
+        "explanation": "The bug is about incorrect placement of rotated text when the rendering context is translated and clipped. This is likely an issue with how the translation and rotation transforms are composed/applied for text labels. \n\n- CanvasTextBuilder (in TextBuilder.js) is responsible for building instructions for rendering text, including handling text rotation and translation. Its drawText and setTextStyle methods are the main places where geometry, style, and rendering transforms are handled.\n- Executor (in Executor.js) takes those instructions and actually draws the text onto the canvas, applying transforms. Its execute_, calculateImageOrLabelDimensions_, and replayImageOrLabel_ methods are responsible for applying the necessary canvas transformations (translation, rotation, scaling) and rendering the image or label at the correct position.\n\nThe bug likely arises from an incorrect order or omission in applying translation before rotation (or vice versa), causing rotated text to ignore the clipped/translated context. Edits would be required in these classes/functions to ensure that any translation applied to the context is respected by rotated text labels.",
+        "bug_scenario": "The bug scenario involves a 'spyglass'-like feature where a part of the map is rendered in a translated and clipped context (red box). Non-rotated text styles (like the blue '1' and red '2') are correctly shown at the translated location inside the red box. However, when text has a rotation (like the green '3'), it incorrectly appears at the original, untranslated location from the main map, rather than being correctly translated. The green '3' should overlap with the red '2' in the red box, but instead appears in the wrong position. This shows the bug only affects rotated text styles when clipping and translation are applied to the rendering context."
+    }
+}

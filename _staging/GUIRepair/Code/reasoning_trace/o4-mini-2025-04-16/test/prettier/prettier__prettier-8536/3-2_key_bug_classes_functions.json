@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/document/doc-printer.js//printDocToString",
+            "src/document/doc-printer.js//trim",
+            "src/language-js/printer-estree.js//printPathNoParens"
+        ],
+        "explanation": "\u2022 printDocToString (in doc-printer.js) is responsible for converting the internal Doc representation into a final string and appending the final newline. If it unconditionally adds a hardline or fails to account for existing trailing newlines, it can introduce an extra blank line.\n\u2022 trim (in doc-printer.js) performs whitespace trimming at the end of lines. Its logic may not remove an extra hardline at the very end of the file, causing two newlines to remain.\n\u2022 printPathNoParens (in printer-estree.js) handles printing of the Program node, including directives like 'use strict'. It contains the logic \u201cOnly force a trailing newline if there were any contents,\u201d and may incorrectly decide to add a second newline when printing a directive followed by a comment. Adjusting its trailing-newline condition or how it marks content will prevent the duplicate blank line.",
+        "bug_scenario": "When a file contains nothing but a directive (e.g. 'use strict') followed by a blank line and then a comment, Prettier emits two trailing newlines instead of one. In the provided screenshot you can see the input with a directive and a comment, and on the right side Prettier\u2019s output ends with an extra blank line."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/document/doc-printer.js//trim",
+            "src/document/doc-printer.js//printDocToString",
+            "src/language-js/printer-estree.js//printPathNoParens"
+        ],
+        "explanation": "The extra newline originates in the document printer\u2019s whitespace\u2010trimming and final stringification logic. The trim() function in src/document/doc-printer.js is responsible for dropping trailing spaces and line endings, but currently it leaves one too many hardlines when a comment immediately follows a directive. The printDocToString() function invokes trim() on the accumulated output and then always appends a terminating newline, so any extra hardline left by trim() turns into two newlines. Meanwhile, in src/language-js/printer-estree.js the printPathNoParens() function that handles the Program\u2019s InterpreterDirective also unconditionally forces a trailing newline when there is content, even in the special case of a lone directive plus comment. Fixing either or both\u2014by having trim() collapse multiple trailing hardlines into one, and/or by making printPathNoParens() only add a single newline when no code follows the comment\u2014will correct the behavior so that the final output ends with exactly one newline.",
+        "bug_scenario": "When formatting a JS file that consists of only a \"use strict\" directive followed by a comment, Prettier currently emits two trailing newlines instead of a single one. The playground screenshot shows the input of a directive and a comment, and the formatted output ends in an extra blank line."
+    }
+}

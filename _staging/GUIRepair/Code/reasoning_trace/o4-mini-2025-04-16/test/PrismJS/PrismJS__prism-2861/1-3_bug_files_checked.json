@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-typescript.js",
+            "components/prism-typescript.min.js"
+        ],
+        "explanation": "The files prism-typescript.js (and its minified counterpart) define the TypeScript grammar used by Prism. They include the regular expressions and keyword lists that identify TypeScript keywords. Because the current patterns do not distinguish between keywords in code and property names in an interface, the word \u201ctype\u201d in \u201ctype?: string\u201d is incorrectly matched as a keyword. To fix this, the grammar in these files must be adjusted to avoid matching these reserved words when they appear as property names (for example by requiring context such as trailing parentheses or preventing matches inside interface property declarations).",
+        "bug_scenario": "When Prism highlights TypeScript code, it treats property names in an interface that match reserved words (for example the property \u201ctype?\u201d in \u201cexport interface R<T> { type?: string; }\u201d) as language keywords instead of plain identifiers. As a result the word \u201ctype\u201d in the interface is colored as a keyword even though it\u2019s simply a property name."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-typescript.js",
+            "components/prism-typescript.min.js",
+            "components/prism-tsx.js",
+            "components/prism-tsx.min.js"
+        ],
+        "explanation": "These four files define the TypeScript (and TSX) grammars that Prism uses to tokenize and highlight TypeScript code. In them, \u201ctype\u201d appears in the list of recognized keywords without context-sensitive checks, so any standalone word \u201ctype\u201d (even when it\u2019s a property name in an interface) is marked as a keyword. To fix the bug, the grammar in these files needs to be adjusted so that property names (e.g., identifiers followed by a colon) are tokenized as properties before the keyword rule is applied.",
+        "bug_scenario": "When Prism highlights a TypeScript interface declaration, it incorrectly marks the property name \u201ctype?\u201d as a language keyword. In the screenshot you can see an interface\n\nexport interface R<T> {\n  data: T;\n  total: number;\n  type?: string;\n}\n\nPrism\u2019s highlighter treats the \u201ctype\u201d identifier on the left side of the colon as the built-in keyword \u201ctype\u201d, instead of simply a property name."
+    }
+}

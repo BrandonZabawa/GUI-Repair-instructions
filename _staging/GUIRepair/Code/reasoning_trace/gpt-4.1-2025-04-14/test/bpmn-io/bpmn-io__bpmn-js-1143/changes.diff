@@ -1,0 +1,84 @@
+diff --git a/lib/features/modeling/ElementFactory.js b/lib/features/modeling/ElementFactory.js
+index 498c50d1..9e429ac6 100644
+--- a/lib/features/modeling/ElementFactory.js
++++ b/lib/features/modeling/ElementFactory.js
+@@ -64,6 +64,14 @@ ElementFactory.prototype.createBpmnElement = function(elementType, attrs) {
+     }
+ 
+     businessObject = this._bpmnFactory.create(attrs.type);
++
++    // Ensure that for bpmn:Group, the businessObject is attached to a definitions/root if missing
++    if (attrs.type === 'bpmn:Group' && !businessObject.$parent && this._moddle && this._moddle.getDefinitions) {
++      var definitions = this._moddle.getDefinitions();
++      if (definitions) {
++        businessObject.$parent = definitions;
++      }
++    }
+   }
+ 
+   if (!businessObject.di) {
+@@ -238,4 +246,4 @@ function applyAttribute(element, attrs, attributeName) {
+   element[attributeName] = attrs[attributeName];
+ 
+   delete attrs[attributeName];
+-}
+\ No newline at end of file
++}
+diff --git a/lib/features/modeling/behavior/GroupBehavior.js b/lib/features/modeling/behavior/GroupBehavior.js
+index 11e5114c..776f927e 100644
+--- a/lib/features/modeling/behavior/GroupBehavior.js
++++ b/lib/features/modeling/behavior/GroupBehavior.js
+@@ -29,8 +29,18 @@ export default function GroupBehavior(eventBus, bpmnFactory, canvas, elementRegi
+    * @return {ModdleElement} definitions
+    */
+   function getDefinitions() {
+-    var rootElement = canvas.getRootElement(),
+-        businessObject = getBusinessObject(rootElement);
++    var rootElement = canvas.getRootElement();
++
++    if (!rootElement) {
++      return null;
++    }
++
++    var businessObject = getBusinessObject(rootElement);
++
++    // If businessObject or its $parent is missing, return null to avoid errors
++    if (!businessObject || !businessObject.$parent) {
++      return null;
++    }
+ 
+     return businessObject.$parent;
+   }
+@@ -67,6 +77,10 @@ export default function GroupBehavior(eventBus, bpmnFactory, canvas, elementRegi
+ 
+     var definitions = getDefinitions();
+ 
++    if (!definitions) {
++      return;
++    }
++
+     collectionRemove(definitions.get('rootElements'), category);
+   }
+ 
+@@ -133,8 +147,12 @@ export default function GroupBehavior(eventBus, bpmnFactory, canvas, elementRegi
+           definitions = getDefinitions(),
+           category = categoryValueRef ? categoryValueRef.$parent : null;
+ 
+-      collectionAdd(category.get('categoryValue'), categoryValueRef);
+-      collectionAdd(definitions.get('rootElements'), category);
++      if (category && categoryValueRef) {
++        collectionAdd(category.get('categoryValue'), categoryValueRef);
++      }
++      if (definitions && category) {
++        collectionAdd(definitions.get('rootElements'), category);
++      }
+     }
+   });
+ 
+@@ -189,4 +207,4 @@ GroupBehavior.$inject = [
+   'elementRegistry'
+ ];
+ 
+-inherits(GroupBehavior, CommandInterceptor);
+\ No newline at end of file
++inherits(GroupBehavior, CommandInterceptor);

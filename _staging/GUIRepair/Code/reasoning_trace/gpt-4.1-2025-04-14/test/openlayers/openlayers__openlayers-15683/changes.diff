@@ -1,0 +1,37 @@
+diff --git a/src/ol/renderer/canvas/VectorLayer.js b/src/ol/renderer/canvas/VectorLayer.js
+index 4a86f6b48b..327cb7bcf5 100644
+--- a/src/ol/renderer/canvas/VectorLayer.js
++++ b/src/ol/renderer/canvas/VectorLayer.js
+@@ -185,8 +185,13 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+       viewHints[ViewHint.ANIMATING] || viewHints[ViewHint.INTERACTING]
+     );
+     const context = this.context;
+-    const width = Math.round((getWidth(extent) / resolution) * pixelRatio);
+-    const height = Math.round((getHeight(extent) / resolution) * pixelRatio);
++    // Calculate canvas size to cover the rotated viewport
++    const unrotatedWidth = (getWidth(extent) / resolution) * pixelRatio;
++    const unrotatedHeight = (getHeight(extent) / resolution) * pixelRatio;
++    const cos = Math.abs(Math.cos(rotation));
++    const sin = Math.abs(Math.sin(rotation));
++    const width = Math.round(unrotatedWidth * cos + unrotatedHeight * sin);
++    const height = Math.round(unrotatedWidth * sin + unrotatedHeight * cos);
+ 
+     const multiWorld = vectorSource.getWrapX() && projection.canWrapX();
+     const worldWidth = multiWorld ? getWidth(projectionExtent) : null;
+@@ -289,8 +294,14 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+     this.opacity_ = layerState.opacity;
+     const extent = frameState.extent;
+     const resolution = frameState.viewState.resolution;
+-    const width = Math.round((getWidth(extent) / resolution) * pixelRatio);
+-    const height = Math.round((getHeight(extent) / resolution) * pixelRatio);
++    // Calculate canvas size to cover the rotated viewport
++    const unrotatedWidth = (getWidth(extent) / resolution) * pixelRatio;
++    const unrotatedHeight = (getHeight(extent) / resolution) * pixelRatio;
++    const rotation = frameState.viewState.rotation;
++    const cos = Math.abs(Math.cos(rotation));
++    const sin = Math.abs(Math.sin(rotation));
++    const width = Math.round(unrotatedWidth * cos + unrotatedHeight * sin);
++    const height = Math.round(unrotatedWidth * sin + unrotatedHeight * cos);
+ 
+     // set forward and inverse pixel transforms
+     composeTransform(

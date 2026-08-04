@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/import/BpmnImporter.js//BpmnImporter",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer"
+        ],
+        "bug_functions": [
+            "lib/import/BpmnImporter.js//BpmnImporter.prototype.add",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer.prototype.drawShape",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer.prototype.getShapePath"
+        ],
+        "explanation": "\u2022 BpmnImporter.prototype.add (in lib/import/BpmnImporter.js) reads shape bounds from the DI but never honors the isHorizontal flag, so vertical pools still use horizontal x/y/width/height when creating Shape instances.  \n\u2022 BpmnRenderer.prototype.drawShape (in lib/draw/BpmnRenderer.js) is responsible for placing and orienting swimlane shapes and their labels, but does not inspect the orientation flag to rotate or swap dimensions for vertical pools/lanes.  \n\u2022 BpmnRenderer.prototype.getShapePath defines the pool/lane outline path but likewise lacks logic to adjust for vertical orientation.  \nBy enhancing these import and render entry points to detect isHorizontal=false and rotate/swap bounds and adjust label placement accordingly, vertical pools and lane labels will render correctly.",
+        "bug_scenario": "In the provided BPMN diagram two participants (pools) have been marked vertical in the DI (isHorizontal=\"false\"), yet both their swimlane containers and labels are still rendered as if they were horizontal. Pool and lane labels stay in the default, non\u2010rotated orientation and the shapes use the horizontal bounds, so labels and container geometry end up misaligned."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/draw/BpmnRenderer.js//BpmnRenderer",
+            "lib/import/BpmnImporter.js//BpmnImporter"
+        ],
+        "bug_functions": [
+            "lib/draw/BpmnRenderer.js//BpmnRenderer.prototype.drawShape",
+            "lib/import/BpmnImporter.js//BpmnImporter.prototype.addLabel"
+        ],
+        "explanation": "BpmnRenderer.prototype.drawShape is the central hook that draws all BPMN shapes (including pools/participants and lanes) and must also place and orient their headers. Currently it ignores the DI attribute isHorizontal, so labels are always drawn as if pools run left-to-right. Likewise, BpmnImporter.prototype.addLabel calculates external label bounds via getExternalLabelBounds and then hands them straight to the TextRenderer, again without accounting for vertical orientation. To fix the bug, drawShape needs to detect di.isHorizontal===false for participants and lanes, and rotate or swap x/y and width/height when placing the label; addLabel (or the underlying LabelUtil/TextRenderer calls) likewise must adjust the computed bounds if the pool/lane is vertical so that header text is rendered at the correct edge and orientation.",
+        "bug_scenario": "The imported diagram shows two participant pools (\u201cPool 1\u201d and \u201cPool 2\u201d) with nested lanes. Pool 1 is oriented vertically (isHorizontal=\"false\") but its header label and the lane labels are still rendered as if the pool were horizontal \u2013 at the top and left of the shape without any rotation or repositioning. As a result, both the \u201cPool 1\u201d text and its lane label (\u201cLane 1\u201d) are misplaced when the pool is vertical, and similarly for any vertical lanes in the collaboration."
+    }
+}

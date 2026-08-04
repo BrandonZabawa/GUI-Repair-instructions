@@ -1,0 +1,65 @@
+diff --git a/lib/features/modeling/behavior/DropOnFlowBehavior.js b/lib/features/modeling/behavior/DropOnFlowBehavior.js
+index ef843a0a..377be309 100644
+--- a/lib/features/modeling/behavior/DropOnFlowBehavior.js
++++ b/lib/features/modeling/behavior/DropOnFlowBehavior.js
+@@ -109,16 +109,21 @@ export default function DropOnFlowBehavior(eventBus, bpmnRules, modeling) {
+     if (duplicateConnections.length) {
+       modeling.removeElements(duplicateConnections);
+     }
++this.preExecute('elements.move', function(context) {
++  
++  var newParent = context.newParent,
++      shapes    = context.shapes,
++      delta     = context.delta,
++      shape     = shapes[0];
++
++  // skip drop-on-flow behavior for multiple shapes
++  if (shapes.length !== 1) {
++    return;
++  }
++  
++  if (!shape || !newParent) {
++    return;
+   }
+-
+-  this.preExecute('elements.move', function(context) {
+-
+-    var newParent = context.newParent,
+-        shapes = context.shapes,
+-        delta = context.delta,
+-        shape = shapes[0];
+-
+-    if (!shape || !newParent) {
+       return;
+     }
+ 
+@@ -148,15 +153,20 @@ export default function DropOnFlowBehavior(eventBus, bpmnRules, modeling) {
+     }
+ 
+   }, true);
+-
+-  this.postExecuted('elements.move', function(context) {
+-
+-    var shapes = context.shapes,
+-        targetFlow = context.targetFlow,
+-        position = context.position;
+-
+-    if (targetFlow) {
+-      insertShape(shapes[0], targetFlow, position);
++this.postExecuted('elements.move', function(context) {
++  
++  var shapes     = context.shapes,
++      targetFlow = context.targetFlow,
++      position   = context.position;
++
++  // skip drop-on-flow behavior for multiple shapes
++  if (shapes.length !== 1) {
++    return;
++  }
++  
++  if (targetFlow) {
++    insertShape(shapes[0], targetFlow, position);
++  }
+     }
+ 
+   }, true);

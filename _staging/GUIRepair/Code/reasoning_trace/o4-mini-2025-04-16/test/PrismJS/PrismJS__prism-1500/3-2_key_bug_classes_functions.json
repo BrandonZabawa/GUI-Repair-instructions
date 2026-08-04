@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-sql.js",
+            "components/prism-sql.min.js"
+        ],
+        "bug_functions": [
+            "components/prism-sql.js//Prism.languages.sql.comment.pattern",
+            "components/prism-sql.js//Prism.languages.sql.string.pattern",
+            "components/prism-sql.min.js//comment.pattern",
+            "components/prism-sql.min.js//string.pattern"
+        ],
+        "explanation": "Both the comment and string grammar rules in the Prism SQL definition are mis-behaving. The string rule is marked greedy and uses [\\s\\S], which allows it to span across line breaks and accidentally consume the comment line and following SQL. The comment rule likewise is too permissive and doesn\u2019t prevent matching inside an open string. To fix the highlighting, these two regex patterns must be adjusted (e.g. make the string pattern non-greedy or restrict it to exclude newlines, and tighten the comment pattern to avoid matches inside string literals).",
+        "bug_scenario": "The screenshot shows that after the first SQL INSERT block is highlighted correctly, the comment line \u201c-- this is a comment\u201d and the subsequent INSERT block are all highlighted as part of the previous string or comment. In other words, the SQL comment and the next code block are swallowed by the preceding string/ comment rule, so Prism never returns to normal SQL highlighting after the comment."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-sql.js//Prism.languages.sql.comment",
+            "components/prism-sql.js//Prism.languages.sql.string"
+        ],
+        "explanation": "The two key grammar definitions live in Prism.languages.sql:\n- The \"string\" rule uses a greedy regex that allows [^\\\\] to match newlines, so it spans across the line break and consumes the \u201c--\u201d marker on the next line.\n- The \"comment\" rule (the regex for --, //, #, and /* */) never sees the \u201c--\u201d on that line, so Prism never classifies it as a comment. \nTo fix the highlighting, the string pattern must be made non\u2010greedy across newlines or explicitly forbid unescaped newlines, ensuring the comment rule can match the \u201c--\u201d at the start of its own line.",
+        "bug_scenario": "When PrismJS highlights SQL code that contains single\u2010quoted strings with escaped quotes (e.g. ''hello world''), the multi\u2010line string rule swallows the subsequent line that begins with \u201c--\u201d. As a result, the second \u201c-- this is a comment\u201d is not recognized as a comment at all (it stays in the default token style) rather than being highlighted in the comment color."
+    }
+}

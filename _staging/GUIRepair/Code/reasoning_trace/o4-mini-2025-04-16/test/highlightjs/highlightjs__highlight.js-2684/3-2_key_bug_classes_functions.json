@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/bash.js"
+        ],
+        "bug_functions": [
+            "src/languages/bash.js//export default function(hljs)",
+            "src/languages/bash.js//SUBST",
+            "src/languages/bash.js//VAR"
+        ],
+        "explanation": "All of the missing highlighting constructs live in the bash.js language definition.  The top-level export function builds and returns the Bash grammar but currently only includes modes for comments, quotes, variables, arithmetic expansions, functions and shebangs.  Pipes (|), I/O redirections (<, >), heredoc/here-string markers (<<, <<<), and the line-continuation backslash are never declared as separate modes, so hljs never assigns them a token class.  To fix the issue you must modify the export default function to add operator patterns (for |, <, >), a continuation rule for trailing backslashes, and a heredoc here-doc/here-string matcher alongside the existing SUBST/VAR rules so those punctuation elements become highlighted.",
+        "bug_scenario": "In the screenshots the user\u2019s Bash snippets still show plain text for pipeline (|), redirection operators (<, >), here-doc markers (<<, <<<) and the line-continuation backslash (\\) \u2014 none of these are picked up by the existing bash highlighter.  Likewise, while $(\u2026) substitution is partially implemented, the opening/closing tokens themselves are not being highlighted consistently."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/bash.js//default export (LanguageFn)"
+        ],
+        "bug_functions": [
+            "src/languages/bash.js//SUBST",
+            "src/languages/bash.js//VAR",
+            "src/languages/bash.js//QUOTE_STRING",
+            "src/languages/bash.js//ARITHMETIC"
+        ],
+        "explanation": "All of the missing highlights come from the Bash language definition in bash.js. The default exported function builds the grammar. Key pattern objects in that file are:\n\n\u2022 SUBST \u2013 matches \u2018$(\u2026)\u2019 substitutions, but it\u2019s only included inside quoted strings. To highlight subshells everywhere it needs to be lifted into the top-level contains array.\n\n\u2022 VAR \u2013 matches simple $variable and ${\u2026} variable forms. It\u2019s already top-level, but similar logic would apply for here-strings \u2018<<<\u2019 and here-docs \u2018<<\u2019, which are not defined at all.\n\n\u2022 QUOTE_STRING \u2013 handles \"\u2026\" strings and incorporates SUBST internally; it doesn\u2019t cover unquoted operators or backslashes at line ends.\n\n\u2022 ARITHMETIC \u2013 matches $((\u2026)) forms, but pipes (\u2018|\u2019), redirections (\u2018>\u2019, \u2018<\u2019), continuation (\u2018\\\u2019 at end of line) and here-doc markers (\u2018<<\u2019, \u2018<<<\u2019) are never specified.\n\nTherefore the fix is to extend the default export in bash.js by:\n1. Adding pattern definitions for heredoc markers (e.g. a HERE_DOC rule for /<<<?\\s*\\w+/ \u2026).  \n2. Adding a simple operator rule for /[|<>\\\\]+/ with className 'operator'.  \n3. Moving SUBST into the top-level contains array (not only inside QUOTE_STRING).  \n\nNo edits are needed in shell.js, since it simply embeds the bash subLanguage.",
+        "bug_scenario": "The two side-by-side screenshots show a shell session (with the \u201cShell Session\u201d grammar) correctly highlighting pipes (|), redirections (<, >), the line-continuation backslash (\\) and heredocs (<<, <<<), as well as subshell expansions ($(\u2026)). When the same code is highlighted with the Bash grammar, none of those operators or heredoc markers are recognized\u2014everything runs together as plain text."
+    }
+}

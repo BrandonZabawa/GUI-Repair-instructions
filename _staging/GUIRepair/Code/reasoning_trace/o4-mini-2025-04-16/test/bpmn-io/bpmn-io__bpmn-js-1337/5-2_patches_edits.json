@@ -1,0 +1,71 @@
+{
+    "1/1": {
+        "lib/features/rules/BpmnRules.js": [
+            {
+                "SEARCH": [
+                    "import {",
+                    "hasErrorEventDefinition,",
+                    "hasEscalationEventDefinition,",
+                    "hasCompensateEventDefinition",
+                    "} from '../../util/DiUtil';"
+                ],
+                "REPLACE": [
+                    "import {",
+                    "  hasErrorEventDefinition,",
+                    "  hasEscalationEventDefinition,",
+                    "  hasCompensateEventDefinition,",
+                    "  isEventSubProcess",
+                    "} from '../../util/DiUtil';"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "function canDrop(element, target, position) {",
+                    "",
+                    "// can move labels and groups everywhere"
+                ],
+                "REPLACE": [
+                    "function canDrop(element, target, position) {",
+                    "",
+                    "  // can move labels and groups everywhere",
+                    "",
+                    "  // disallow typed StartEvent inside non-event-based SubProcess",
+                    "  if ( is(element, 'bpmn:StartEvent') &&",
+                    "       is(target, 'bpmn:SubProcess') &&",
+                    "       !isEventSubProcess(target) &&",
+                    "       // hasNoEventDefinition returns true for an untyped StartEvent",
+                    "       !hasNoEventDefinition(element) ) {",
+                    "    return false;",
+                    "  }"
+                ]
+            }
+        ],
+        "lib/features/popup-menu/ReplaceMenuProvider.js": [
+            {
+                "SEARCH": [
+                    "// start events outside event sub processes",
+                    "if (is(businessObject, 'bpmn:StartEvent') && !isEventSubProcess(businessObject.$parent)) {",
+                    "entries = filter(replaceOptions.START_EVENT, differentType);",
+                    "return this._createEntries(element, entries);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  // start events outside event sub processes",
+                    "  if (is(businessObject, 'bpmn:StartEvent') && !isEventSubProcess(businessObject.$parent)) {",
+                    "",
+                    "    // disallow morphing to *typed* start events when inside a non-event subprocess",
+                    "    entries = filter(replaceOptions.START_EVENT, function(entry) {",
+                    "      // only allow entries that are:",
+                    "      //  * a different shape/event-definition than the current one",
+                    "      //  * and *not* a typed StartEvent (:StartEvent + eventDefinitionType)",
+                    "      return differentType(entry)",
+                    "          && !(entry.target.type === 'bpmn:StartEvent' && entry.target.eventDefinitionType);",
+                    "    });",
+                    "",
+                    "    return this._createEntries(element, entries);",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

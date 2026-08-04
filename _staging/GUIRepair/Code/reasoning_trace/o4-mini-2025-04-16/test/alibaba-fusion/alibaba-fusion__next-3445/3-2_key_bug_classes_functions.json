@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/rating/rating.jsx//Rating"
+        ],
+        "bug_functions": [
+            "src/rating/rating.jsx//handleClick",
+            "src/rating/rating.jsx//handleChecked"
+        ],
+        "explanation": "核心 Rating 组件（src/rating/rating.jsx）里，handleClick 和 handleChecked 这两个方法共同负责用户点击评分时的处理。handleClick 会在 DOM 点击事件里被调用，而内部又会调用 handleChecked 来更新状态并触发 props.onChange。如果组件在接收到 id 属性后还会绑定其它原生事件或渲染额外的可聚焦元素（如隐藏的输入框用于无障碍），就可能导致同一个点击既触发 handleClick 又触发原生 onChange，从而 onChange 被调用两次。因此，需要在 Rating 内部的 handleClick 和 handleChecked 中排查重复触发 onChange 的逻辑，比如去重或仅在其中一个方法里调用 props.onChange。",
+        "bug_scenario": "用户在 Rating 组件上添加了 id 属性后，每次点击星级评分时，控制台的 onChange 回调被触发了两次。具体重现步骤：在 <Rating id=\"score\" onChange={…} /> 中传入 id，再点击任意星级，发现一次点击会打印两条日志。"
+    },
+    "2": {
+        "bug_classes": [
+            "src/rating/rating.jsx//Rating"
+        ],
+        "bug_functions": [
+            "src/rating/rating.jsx//handleClick",
+            "src/rating/rating.jsx//handleChecked"
+        ],
+        "explanation": "Rating 组件的点击选中逻辑分为两个函数：handleClick 和 handleChecked。handleClick 在原生 click 事件中调用了 onChange；而 handleChecked 在内部切换选中状态时也会调用 onChange。传入 id 属性后，组件为了支持无障碍会额外生成 label 和对应的 input/aria 元素，导致一次点击同时触发原生 click（走 handleClick）和辅助元素的点击（走 handleChecked），从而 onChange 被执行两次。定位到这两个函数后，可以合并或去重 onChange 的调用来修复此问题。",
+        "bug_scenario": "在 Rating 组件上加了 id 属性后，点击星星评分时，onChange 会被重复触发两次，导致控制台打印两条日志。"
+    }
+}

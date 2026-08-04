@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/rules/key-spacing.js",
+            "lib/rules/key-spacing.js"
+        ],
+        "explanation": "1. lib/rules/key-spacing.js is the implementation of the \u201ckey-spacing\u201d rule. It contains the logic that determines when to apply singleLine vs. multiLine alignment, and it\u2019s mis-detecting inline JSX objects as multiLine (or even breaking single-line objects open) and then re-aligning their values. \n\n2. tests/lib/rules/key-spacing.js is where you would add or update rule tests to capture this regression (i.e. ensure that objects inside JSXExpressionContainers are left untouched unless they already span multiple lines). By updating the implementation in key-spacing.js and adding a new test case here, you can both fix the behavior and guard against future regressions.",
+        "bug_scenario": "When you enable the ESLint \u201ckey-spacing\u201d rule with \u201cmultiLine: { align: 'value' }\u201d and run \u201ceslint --fix\u201d on a JSX file containing inline style={{ \u2026 }} objects, ESLint will forcibly break your single-line style objects into multiple lines and then mis-align the colons and values. In other words, instead of leaving your compact style={{marginRight: '4px', color: '#0C090A', \u2026}} alone, it expands it to\n\n  style={{\n      marginRight:     '4px',\n      color:           '#0C090A',\n      opacity:         '0.6',\n      fontSize:        '18px',\n      verticalAlign:   'middle'\n  }}\n\neven though you didn\u2019t ask to break it across lines. The result is both a spurious line-break on a single-line object and an ugly re-alignment inside your JSX curly braces."
+    },
+    "2": {
+        "bug_files": [
+            "lib/rules/key-spacing.js"
+        ],
+        "explanation": "The key-spacing rule implementation in lib/rules/key-spacing.js is what enforces and fixes spacing around the colon in object literals. It currently treats any multiline ObjectExpression the same, including those inside a JSXExpressionContainer (e.g. style={{\u2026}}). That extra pair of JSX braces causes the rule\u2019s offset calculations to be wrong, so it realigns everything incorrectly. To resolve this bug, the rule needs to detect object literals nested in JSX expressions and either skip alignment or adjust its column-offset logic accordingly.",
+        "bug_scenario": "When using ESLint\u2019s key-spacing rule with the multiLine \u201calign: 'value'\u201d option on a JSX style={{\u2026}} object expression, running eslint --fix will realign all the nested object properties inside the JSX curly braces. Because the rule doesn\u2019t account for the extra pair of braces around the object in JSX, it computes the wrong column offsets and produces the ugly, over-aligned formatting shown in the screenshots."
+    }
+}

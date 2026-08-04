@@ -1,0 +1,180 @@
+{
+    "1/5": {
+        "lib/import/BpmnTreeWalker.js": [
+            {
+                "SEARCH": [
+                    "} else if (is(e, 'bpmn:BoundaryEvent')) {",
+                    "deferred.unshift(function() {",
+                    "handleBoundaryEvent(e, context);",
+                    "});"
+                ],
+                "REPLACE": [
+                    "} else if (is(e, 'bpmn:BoundaryEvent')) {",
+                    "deferred.unshift(function() {",
+                    "handleBoundaryEvent(e, context);",
+                    "});",
+                    "// Ensure associations for boundary events are handled",
+                    "forEach(e.dataInputAssociations, contextual(handleDataAssociation, context));",
+                    "forEach(e.dataOutputAssociations, contextual(handleDataAssociation, context));"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "lib/import/BpmnImporter.js": [
+            {
+                "SEARCH": [
+                    "if (is(semantic, 'bpmn:SequenceFlow')) {",
+                    "parentIndex = 0;",
+                    "}",
+                    "",
+                    "this._canvas.addConnection(element, parentElement, parentIndex);"
+                ],
+                "REPLACE": [
+                    "if (is(semantic, 'bpmn:SequenceFlow') || is(semantic, 'bpmn:Association')) {",
+                    "parentIndex = 0;",
+                    "}",
+                    "",
+                    "this._canvas.addConnection(element, parentElement, parentIndex);"
+                ]
+            }
+        ],
+        "lib/import/BpmnTreeWalker.js": [
+            {
+                "SEARCH": [
+                    "function handleArtifacts(artifacts, context) {",
+                    "",
+                    "forEach(artifacts, function(e) {",
+                    "if (is(e, 'bpmn:Association')) {",
+                    "deferred.push(function() {",
+                    "handleArtifact(e, context);",
+                    "});",
+                    "} else {"
+                ],
+                "REPLACE": [
+                    "function handleArtifacts(artifacts, context) {",
+                    "",
+                    "forEach(artifacts, function(e) {",
+                    "if (is(e, 'bpmn:Association')) {",
+                    "visitIfDi(e, context);",
+                    "} else {"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "lib/import/BpmnImporter.js": [
+            {
+                "SEARCH": [
+                    "if (is(semantic, 'bpmn:SequenceFlow')) {",
+                    "parentIndex = 0;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (is(semantic, 'bpmn:SequenceFlow') || is(semantic, 'bpmn:Association')) {",
+                    "parentIndex = 0;",
+                    "}"
+                ]
+            }
+        ],
+        "lib/import/BpmnTreeWalker.js": [
+            {
+                "SEARCH": [
+                    "} else if (is(e, 'bpmn:FlowNode')) {",
+                    "handleFlowNode(e, context);"
+                ],
+                "REPLACE": [
+                    "} else if (is(e, 'bpmn:BoundaryEvent') || is(e, 'bpmn:FlowNode')) {",
+                    "handleFlowNode(e, context);"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "lib/import/BpmnImporter.js": [
+            {
+                "SEARCH": [
+                    "if (is(semantic, 'bpmn:DataAssociation')) {"
+                ],
+                "REPLACE": [
+                    "if (is(semantic, 'bpmn:DataAssociation') || is(semantic, 'bpmn:Association')) {"
+                ]
+            }
+        ],
+        "lib/import/BpmnTreeWalker.js": [
+            {
+                "SEARCH": [
+                    "function handleArtifacts(artifacts, context) {",
+                    "",
+                    "forEach(artifacts, function(e) {",
+                    "if (is(e, 'bpmn:Association')) {",
+                    "deferred.push(function() {",
+                    "handleArtifact(e, context);",
+                    "});",
+                    "} else {",
+                    "handleArtifact(e, context);",
+                    "}",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function handleArtifacts(artifacts, context) {",
+                    "",
+                    "forEach(artifacts, function(e) {",
+                    "if (is(e, 'bpmn:Association') && is(e.sourceRef, 'bpmn:BoundaryEvent')) {",
+                    "deferred.unshift(function() {",
+                    "handleArtifact(e, context);",
+                    "});",
+                    "} else if (is(e, 'bpmn:Association')) {",
+                    "deferred.push(function() {",
+                    "handleArtifact(e, context);",
+                    "});",
+                    "} else {",
+                    "handleArtifact(e, context);",
+                    "}",
+                    "});",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "lib/import/BpmnImporter.js": [
+            {
+                "SEARCH": [
+                    "// CONNECTION",
+                    "else if (is(di, 'bpmndi:BPMNEdge')) {",
+                    "",
+                    "var source = this._getSource(semantic),",
+                    "target = this._getTarget(semantic);"
+                ],
+                "REPLACE": [
+                    "// CONNECTION",
+                    "else if (is(di, 'bpmndi:BPMNEdge')) {",
+                    "",
+                    "var source = this._getElement(semantic.sourceRef),",
+                    "target = this._getElement(semantic.targetRef);"
+                ]
+            }
+        ],
+        "lib/import/BpmnTreeWalker.js": [
+            {
+                "SEARCH": [
+                    "function handleBoundaryEvent(dataObject, context) {",
+                    "visitIfDi(dataObject, context);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function handleBoundaryEvent(boundaryEvent, context) {",
+                    "visitIfDi(boundaryEvent, context);",
+                    "",
+                    "deferred.push(function() {",
+                    "forEach(boundaryEvent.dataInputAssociations, contextual(handleDataAssociation, context));",
+                    "forEach(boundaryEvent.dataOutputAssociations, contextual(handleDataAssociation, context));",
+                    "});",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

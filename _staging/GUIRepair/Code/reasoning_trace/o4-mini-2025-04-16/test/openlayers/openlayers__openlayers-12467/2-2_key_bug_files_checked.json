@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/render/canvas/ExecutorGroup.js",
+            "src/ol/render/canvas/Executor.js"
+        ],
+        "explanation": "The jitter stems from new default pixel-snapping behavior in the canvas renderer.\n\u2022 VectorLayerRenderer (src/ol/renderer/canvas/VectorLayer.js) is where renderFrame() computes whether to snap to integer pixels based on animation/interaction state. If that flag is set incorrectly (true during animation), geometry positions get rounded each frame, causing the shake.  \n\u2022 ExecutorGroup (src/ol/render/canvas/ExecutorGroup.js) consumes the snapToPixel boolean and drives the low-level replay of drawing instructions. It must honor the flag when calling individual replays.  \n\u2022 Executor (src/ol/render/canvas/Executor.js) actually draws shapes and text; when snapToPixel is true it rounds coordinates inside replay routines. Fixing jitter requires adjusting the flag logic in VectorLayerRenderer or the conditional rounding in ExecutorGroup/Executor so that during animations circles are rendered using full sub-pixel transforms (no rounding).",
+        "bug_scenario": "When animating a large circle symbol on a vector layer after upgrading from OpenLayers 4.6.5 to 6.5, the circle \u201cjitters\u201d noticeably as it grows\u2014especially near the end of the animation. In 4.x there was a `snapToPixel: false` option on Circle styles to get \u201caccurate\u201d sub-pixel positioning, but that option was removed in 5.x and the library now tries to snap or not snap automatically. The demo side-by-side video shows the 4.x version smooth but the 6.5 version shaking, indicating the current pixel-snapping logic isn\u2019t suppressing rounding during the animation."
+    }
+}

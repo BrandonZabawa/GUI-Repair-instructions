@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/webgl/PaletteTexture.js//PaletteTexture",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/PaletteTexture.js//getTexture",
+            "src/ol/renderer/webgl/TileLayer.js//reset",
+            "src/ol/renderer/webgl/TileLayer.js//disposeInternal"
+        ],
+        "explanation": "The root cause is that PaletteTexture caches its WebGLTexture in the private texture_ field and never clears or deletes it when the layer is removed. When WebGLTileLayerRenderer.disposeInternal() is called on layer removal it deletes the program and buffers but does not clean up or reset the palette textures, so getTexture() returns an orphaned texture that no longer belongs to the current GL context. On re-adding the layer, reset() assigns the same PaletteTexture instances (with stale texture_), instead of forcing their recreation. Fixing this requires either clearing PaletteTexture.texture_ in disposeInternal()/reset() or explicitly deleting the old WebGLTexture so that getTexture() will create a fresh, valid texture after adding the layer back.",
+        "bug_scenario": "When a WebGLTileLayer is styled with a palette and you repeatedly remove and add the layer, the layer ends up drawing completely black tiles and you see console warnings like \u201cbindTexture: object does not belong to this context.\u201d In other words, after map.removeLayer(map.addLayer), the palette\u2010based textures aren\u2019t recreated properly and remain tied to a lost or deleted WebGLTexture."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/webgl/PaletteTexture.js//PaletteTexture",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/PaletteTexture.js//getTexture",
+            "src/ol/renderer/webgl/TileLayer.js//disposeInternal"
+        ],
+        "explanation": "1. PaletteTexture.getTexture (in PaletteTexture.js):\n   \u2022 This method caches the first WebGLTexture it creates in the field this.texture_ and never clears or reinitializes it on subsequent calls.\n   \u2022 When the layer is removed, the WebGL context may be destroyed or changed, but this.texture_ still points to the old context\u2019s texture. On re-add, getTexture returns the stale texture, causing the \u201cobject does not belong to this context\u201d error.\n\n2. WebGLTileLayerRenderer.disposeInternal (in TileLayer.js):\n   \u2022 The renderer\u2019s disposeInternal deletes the shader program and vertex/index buffers, but it does not delete or reset any palette textures held in this.paletteTextures_.\n   \u2022 Because paletteTextures_ is reused across remove/add cycles without cleaning up its underlying WebGLTexture objects, stale textures remain in memory and trigger invalid\u2010context errors on re\u2010binding.\n\nTo fix the bug, PaletteTexture.getTexture should detect a context change (or expose a reset) and recreate the texture, or WebGLTileLayerRenderer.disposeInternal/reset should explicitly delete and null out each PaletteTexture.texture_ so that getTexture will generate a new, valid texture when the layer is re-added.",
+        "bug_scenario": "When a WebGLTileLayer using a palette\u2010based style is removed and then re\u2010added to the map, the tiles render as a solid black layer and the browser console emits WebGL errors such as \u201cbindTexture: object does not belong to this context\u201d or \u201cbindTexture: tex is from a different (or lost) WebGL context.\u201d Toggling the layer on/off multiple times triggers these errors only after switching to a palette\u2010based style, indicating that the palette texture is not being re\u2010created or properly cleaned up when the layer (and its rendering context) is torn down and rebuilt."
+    }
+}

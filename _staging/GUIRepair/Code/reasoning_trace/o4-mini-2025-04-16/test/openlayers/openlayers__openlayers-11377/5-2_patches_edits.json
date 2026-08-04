@@ -1,0 +1,82 @@
+{
+    "1/1": {
+        "src/ol/MapBrowserEventHandler.js": [
+            {
+                "SEARCH": [
+                    "/** @type {?import(\"./events.js\").EventsKey} @private */",
+                    "this.relayedListenerKey_ = listen(",
+                    "element,",
+                    "PointerEventType.POINTERMOVE,",
+                    "this.relayEvent_,",
+                    "this",
+                    ");",
+                    "/** @private */",
+                    "this.boundHandleTouchMove_ = this.handleTouchMove_.bind(this);"
+                ],
+                "REPLACE": [
+                    "    /** @type {?import(\"./events.js\").EventsKey} @private */",
+                    "    this.relayedListenerKey_ = listen(",
+                    "      element,",
+                    "      PointerEventType.POINTERMOVE,",
+                    "      this.relayEvent_,",
+                    "      this",
+                    "    );",
+                    "    /** @private @type {boolean} */",
+                    "    this.pointerMoveQueued_ = false;",
+                    "    /** @private */",
+                    "    this.boundHandleTouchMove_ = this.handleTouchMove_.bind(this);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "/**",
+                    "* Wrap and relay a pointer event.  Note that this requires that the type",
+                    "* string for the MapBrowserEvent matches the PointerEvent type.",
+                    "* @param {PointerEvent} pointerEvent Pointer",
+                    "* event.",
+                    "* @private",
+                    "*/",
+                    "relayEvent_(pointerEvent) {",
+                    "this.originalPointerMoveEvent_ = pointerEvent;",
+                    "const dragging = !!(this.down_ && this.isMoving_(pointerEvent));",
+                    "this.dispatchEvent(",
+                    "new MapBrowserEvent(pointerEvent.type, this.map_, pointerEvent, dragging)",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  /**",
+                    "   * Wrap and relay a pointer event.  Note that this requires that the type",
+                    "   * string for the MapBrowserEvent matches the PointerEvent type.",
+                    "   * We batch pointermove events via requestAnimationFrame to avoid",
+                    "   * flooding the map with one event per pixel.",
+                    "   * @param {PointerEvent} pointerEvent Pointer event.",
+                    "   * @private",
+                    "   */",
+                    "  relayEvent_(pointerEvent) {",
+                    "    this.originalPointerMoveEvent_ = pointerEvent;",
+                    "    const dragging = !!(this.down_ && this.isMoving_(pointerEvent));",
+                    "",
+                    "    if (pointerEvent.type === PointerEventType.POINTERMOVE) {",
+                    "      if (!this.pointerMoveQueued_) {",
+                    "        this.pointerMoveQueued_ = true;",
+                    "        // schedule exactly one pointermove per frame",
+                    "        requestAnimationFrame(() => {",
+                    "          this.pointerMoveQueued_ = false;",
+                    "          this.dispatchEvent(",
+                    "            new MapBrowserEvent(pointerEvent.type, this.map_, pointerEvent, dragging)",
+                    "          );",
+                    "        });",
+                    "      }",
+                    "    } else {",
+                    "      // all other pointer events go through immediately",
+                    "      this.dispatchEvent(",
+                    "        new MapBrowserEvent(pointerEvent.type, this.map_, pointerEvent, dragging)",
+                    "      );",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

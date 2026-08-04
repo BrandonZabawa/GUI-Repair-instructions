@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/computed/metrics/timing-summary.js",
+            "lighthouse-core/computed/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/total-blocking-time.js",
+            "lighthouse-core/audits/metrics/interactive.js",
+            "lighthouse-core/audits/metrics/total-blocking-time.js"
+        ],
+        "explanation": "\u2022 timing-summary.js builds the overall trace summary (FCP, CPU idle periods, trace end) and is where the code fails to detect any quiet window after FCP when the page immediately idles. No cpuIdlePeriods after FCP leads to the NO_TTI_CPU_IDLE_PERIOD condition.\n\u2022 computed/metrics/interactive.js and computed/metrics/total-blocking-time.js consume that summary, and when they see no valid idle period they throw the NO_TTI_CPU_IDLE_PERIOD error, causing both audits to error out rather than report zero or a minimal TTI/TBT.\n\u2022 audits/metrics/interactive.js and audits/metrics/total-blocking-time.js are the front-end audit definitions that display the error message to the user when their underlying computed artifact errors with NO_TTI_CPU_IDLE_PERIOD. To fix the problem, the timing-summary logic needs to be updated to treat an idle window immediately following FCP (or at trace end) as a valid quiet window, and the computed-metric artifacts and audit definitions will then succeed rather than error.",
+        "bug_scenario": "When Lighthouse is run with \"provided\"/DevTools throttling against a page that artificially delays its First Contentful Paint (~1.7 s) and then does almost no work (so the page is immediately idle after FCP), the computed metrics for Time to Interactive (TTI) and Total Blocking Time (TBT) bail out with the NO_TTI_CPU_IDLE_PERIOD error. In other words, because Lighthouse never sees a \u201cquiet window\u201d after FCP before the trace ends, both interactive and total-blocking-time audits error out."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/computed/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/total-blocking-time.js",
+            "lighthouse-core/computed/metrics/lantern-interactive.js",
+            "lighthouse-core/computed/metrics/lantern-total-blocking-time.js"
+        ],
+        "explanation": "All four of these files implement or wrap the logic that detects a post-FCP CPU-idle period and computes the TTI and TBT metrics. Both interactive.js and total-blocking-time.js perform the raw trace-of-tab analysis for \u2018provided\u2019 throttling, and lantern-interactive.js and lantern-total-blocking-time.js do the same under the Lantern (simulated) path. Each throws NO_TTI_CPU_IDLE_PERIOD when it can\u2019t find a long enough idle window after the first contentful paint\u2014exactly the failure mode seen in the bug scenario.",
+        "bug_scenario": "When Lighthouse is run with \u201cprovided\u201d (DevTools) throttling against a page that intentionally delays its First Contentful Paint (~1.7 s) and then does almost no CPU work, the trace ends without any quiet window after FCP. Both the interactive (TTI) and total-blocking-time (TBT) computed metrics look for a sufficient CPU-idle period after FCP to signal that the page is \u201cinteractive.\u201d Because none is found before the trace ends, they throw the NO_TTI_CPU_IDLE_PERIOD error and report \u201cError!\u201d instead of a numeric value."
+    }
+}

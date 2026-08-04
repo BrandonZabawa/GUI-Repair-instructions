@@ -1,0 +1,88 @@
+diff --git a/src/dialog/dialog.jsx b/src/dialog/dialog.jsx
+index 5ed513a6b..92c246fe6 100644
+--- a/src/dialog/dialog.jsx
++++ b/src/dialog/dialog.jsx
+@@ -4,6 +4,7 @@ import Overlay from '../overlay';
+ import zhCN from '../locale/zh-cn';
+ import { focus, obj, func, events, dom } from '../util';
+ import Inner from './inner';
++import ConfigProvider from '../config-provider';
+ 
+ const noop = () => {};
+ const { limitTabRange } = focus;
+@@ -282,8 +283,12 @@ export default class Dialog extends Component {
+         }, {});
+     }
+ 
+-    getOverlayRef(ref) {
++    getOverlayRef = (ref) => {
+         this.overlay = ref;
++        // Save overlay node for popupContainer
++        if (ref && ref.getInstance) {
++            this.overlayNode = ref.getInstance().getContentNode();
++        }
+     }
+ 
+     getInner() {
+@@ -315,27 +320,41 @@ export default class Dialog extends Component {
+         } = this.props;
+         const others = pickOthers(Object.keys(Dialog.propTypes), this.props);
+ 
++        // Provide popupContainer context to children
++        const popupContainer = () => this.overlayNode;
++
+         return (
+-            <Inner
+-                prefix={prefix}
+-                className={className}
+-                title={title}
+-                footer={footer}
+-                footerAlign={footerAlign}
+-                footerActions={footerActions}
+-                onOk={visible ? onOk : noop}
+-                onCancel={visible ? onCancel : noop}
+-                okProps={okProps}
+-                cancelProps={cancelProps}
+-                locale={locale}
+-                closeable={closeable}
+-                rtl={rtl}
+-                onClose={onClose.bind(this, 'closeClick')}
+-                height={height}
+-                {...others}
+-            >
+-                {children}
+-            </Inner>
++            <ConfigProvider.ConfigContext.Consumer>
++                {context => (
++                    <ConfigProvider.ConfigContext.Provider
++                        value={{
++                            ...context,
++                            popupContainer,
++                        }}
++                    >
++                        <Inner
++                            prefix={prefix}
++                            className={className}
++                            title={title}
++                            footer={footer}
++                            footerAlign={footerAlign}
++                            footerActions={footerActions}
++                            onOk={visible ? onOk : noop}
++                            onCancel={visible ? onCancel : noop}
++                            okProps={okProps}
++                            cancelProps={cancelProps}
++                            locale={locale}
++                            closeable={closeable}
++                            rtl={rtl}
++                            onClose={onClose.bind(this, 'closeClick')}
++                            height={height}
++                            {...others}
++                        >
++                            {children}
++                        </Inner>
++                    </ConfigProvider.ConfigContext.Provider>
++                )}
++            </ConfigProvider.ConfigContext.Consumer>
+         );
+     }
+ 

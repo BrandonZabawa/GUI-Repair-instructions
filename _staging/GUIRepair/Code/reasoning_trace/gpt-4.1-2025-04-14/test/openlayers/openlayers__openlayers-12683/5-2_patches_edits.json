@@ -1,0 +1,136 @@
+{
+    "1/1": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "this.iconImage_ = getIconImage(",
+                    "image,",
+                    "/** @type {string} */ (src),",
+                    "imgSize,",
+                    "this.crossOrigin_,",
+                    "imageState,",
+                    "this.color_",
+                    ");"
+                ],
+                "REPLACE": [
+                    "    this.iconImage_ = getIconImage(",
+                    "      image,",
+                    "      /** @type {string} */ (src),",
+                    "      imgSize,",
+                    "      this.crossOrigin_,",
+                    "      imageState,",
+                    "      this.color_,",
+                    "      this.offset_,",
+                    "      this.size_",
+                    "    );"
+                ]
+            }
+        ],
+        "src/ol/style/IconImage.js": [
+            {
+                "SEARCH": [
+                    "* @param {import(\"../color.js\").Color} color Color.",
+                    "*/",
+                    "constructor(image, src, size, crossOrigin, imageState, color) {",
+                    "super();"
+                ],
+                "REPLACE": [
+                    "   * @param {import(\"../color.js\").Color} color Color.",
+                    "   * @param {Array<number>} [offset] Offset for sprite.",
+                    "   * @param {import(\"../size.js\").Size} [spriteSize] Size for sprite.",
+                    "   */",
+                    "  constructor(image, src, size, crossOrigin, imageState, color, offset, spriteSize) {",
+                    "    super();"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "/**",
+                    "* @private",
+                    "* @type {import(\"../color.js\").Color}",
+                    "*/",
+                    "this.color_ = color;"
+                ],
+                "REPLACE": [
+                    "    /** ",
+                    "     * @private",
+                    "     * @type {import(\"../color.js\").Color}",
+                    "     */",
+                    "    this.color_ = color;",
+                    "",
+                    "    /**",
+                    "     * @private",
+                    "     * @type {Array<number>|null}",
+                    "     */",
+                    "    this.offset_ = offset || null;",
+                    "",
+                    "    /**",
+                    "     * @private",
+                    "     * @type {import(\"../size.js\").Size|null}",
+                    "     */",
+                    "    this.spriteSize_ = spriteSize || null;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "export function get(image, src, size, crossOrigin, imageState, color) {",
+                    "let iconImage = iconImageCache.get(src, crossOrigin, color);",
+                    "if (!iconImage) {",
+                    "iconImage = new IconImage(image, src, size, crossOrigin, imageState, color);",
+                    "iconImageCache.set(src, crossOrigin, color, iconImage);",
+                    "}",
+                    "return iconImage;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function get(image, src, size, crossOrigin, imageState, color, offset, spriteSize) {",
+                    "  let iconImage = iconImageCache.get(src, crossOrigin, color, offset, spriteSize);",
+                    "  if (!iconImage) {",
+                    "    iconImage = new IconImage(image, src, size, crossOrigin, imageState, color, offset, spriteSize);",
+                    "    iconImageCache.set(src, crossOrigin, color, iconImage);",
+                    "  }",
+                    "  return iconImage;",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "canvas.width = Math.ceil(this.image_.width * pixelRatio);",
+                    "canvas.height = Math.ceil(this.image_.height * pixelRatio);",
+                    "",
+                    "const ctx = canvas.getContext('2d');",
+                    "ctx.scale(pixelRatio, pixelRatio);",
+                    "ctx.drawImage(this.image_, 0, 0);"
+                ],
+                "REPLACE": [
+                    "    let drawWidth = this.image_.width;",
+                    "    let drawHeight = this.image_.height;",
+                    "    let sx = 0, sy = 0;",
+                    "    if (this.offset_ && this.spriteSize_) {",
+                    "      sx = this.offset_[0];",
+                    "      sy = this.offset_[1];",
+                    "      drawWidth = this.spriteSize_[0];",
+                    "      drawHeight = this.spriteSize_[1];",
+                    "      canvas.width = Math.ceil(drawWidth * pixelRatio);",
+                    "      canvas.height = Math.ceil(drawHeight * pixelRatio);",
+                    "    } else {",
+                    "      canvas.width = Math.ceil(this.image_.width * pixelRatio);",
+                    "      canvas.height = Math.ceil(this.image_.height * pixelRatio);",
+                    "    }",
+                    "",
+                    "    const ctx = canvas.getContext('2d');",
+                    "    ctx.scale(pixelRatio, pixelRatio);",
+                    "    if (this.offset_ && this.spriteSize_) {",
+                    "      ctx.drawImage(",
+                    "        this.image_,",
+                    "        sx, sy, drawWidth, drawHeight,",
+                    "        0, 0, drawWidth, drawHeight",
+                    "      );",
+                    "    } else {",
+                    "      ctx.drawImage(this.image_, 0, 0);",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

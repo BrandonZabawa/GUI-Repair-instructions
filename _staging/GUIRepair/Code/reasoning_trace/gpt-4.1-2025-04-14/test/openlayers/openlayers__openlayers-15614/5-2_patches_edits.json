@@ -1,0 +1,47 @@
+{
+    "1/1": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* Render declutter items for this layer",
+                    "* @param {import(\"../../Map.js\").FrameState} frameState Frame state.",
+                    "*/",
+                    "renderDeclutter(frameState) {",
+                    "const declutter = this.getLayer().getDeclutter();",
+                    "if (!declutter) {",
+                    "return;",
+                    "}",
+                    "this.setupCompositionContext_(); //FIXME Check if this works, or if we need to defer something.",
+                    "this.renderWorlds(this.replayGroup_, frameState, true);",
+                    "this.releaseCompositionContext_();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  /**",
+                    "   * Render declutter items for this layer",
+                    "   * @param {import(\"../../Map.js\").FrameState} frameState Frame state.",
+                    "   */",
+                    "  renderDeclutter(frameState) {",
+                    "    const declutter = this.getLayer().getDeclutter();",
+                    "    if (!declutter) {",
+                    "      return;",
+                    "    }",
+                    "    this.setupCompositionContext_();",
+                    "    this.renderWorlds(this.replayGroup_, frameState, true);",
+                    "    // Composite the decluttered items onto the main context with the correct opacity",
+                    "    if (this.opacity_ !== 1) {",
+                    "      const alpha = this.context.globalAlpha;",
+                    "      this.context.globalAlpha = this.opacity_;",
+                    "      this.context.drawImage(this.compositionContext_.canvas, 0, 0);",
+                    "      this.context.globalAlpha = alpha;",
+                    "      releaseCanvas(this.compositionContext_);",
+                    "      canvasPool.push(this.compositionContext_.canvas);",
+                    "      this.compositionContext_ = null;",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

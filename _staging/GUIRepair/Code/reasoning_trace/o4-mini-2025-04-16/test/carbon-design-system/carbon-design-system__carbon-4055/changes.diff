@@ -1,0 +1,42 @@
+diff --git a/packages/react/src/components/Tile/Tile.js b/packages/react/src/components/Tile/Tile.js
+index ddd22ba1..b6d651d5 100644
+--- a/packages/react/src/components/Tile/Tile.js
++++ b/packages/react/src/components/Tile/Tile.js
+@@ -476,6 +476,10 @@ export class ExpandableTile extends Component {
+     } = this.props;
+ 
+     const { expanded } = this.state;
++    // generate an id to label the container with the above-the-fold content
++    const aboveContentId = this.props.id
++      ? `${this.props.id}__abovefold`
++      : `${this.uid}__abovefold`;
+ 
+     const classes = classNames(
+       `${prefix}--tile`,
+@@ -492,7 +496,11 @@ export class ExpandableTile extends Component {
+         : this.state.tileMaxHeight + this.state.tilePadding,
+     };
+     const content = this.getChildren().map((child, index) => {
+-      return React.cloneElement(child, { ref: index });
++      return React.cloneElement(child, {
++        ref: index,
++        // assign the id only to the first (above-the-fold) child so we can aria-label the wrapper
++        id: index === 0 ? aboveContentId : undefined,
++      });
+     });
+     const buttonId = this.props.id ? `${this.props.id}__button` : this.uid;
+     return (
+@@ -503,9 +511,12 @@ export class ExpandableTile extends Component {
+         }}
+         style={tileStyle}
+         className={classes}
++        role="button"
++        aria-expanded={expanded}
++        aria-labelledby={aboveContentId}
+         {...other}
+         onClick={this.handleClick}
+-        onKeyPress={this.handleKeyDown}
++        onKeyDown={this.handleKeyDown}
+         tabIndex={tabIndex}>
+         <button
+           className={`${prefix}--tile__chevron`}

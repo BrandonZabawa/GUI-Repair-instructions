@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/import/BpmnImporter.js",
+            "lib/import/Importer.js",
+            "lib/import/BpmnTreeWalker.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js"
+        ],
+        "explanation": "\n1. lib/import/BpmnImporter.js \u2013 This is the entry point for turning XML/DI into modeling elements including edges. Associations attached to boundary events aren\u2019t being picked up and registered as connections here.\n2. lib/import/Importer.js \u2013 Provides the generic import framework and handler registration. If association handlers aren\u2019t wired up for boundary events (DI nested under the event\u2019s parent), they\u2019ll be skipped.\n3. lib/import/BpmnTreeWalker.js \u2013 Walks the BPMN XML/DI tree and invokes the element/connection creation. Missing or mis-ordered visit logic for <bpmn:Association> when its source is a boundary event prevents creation of that edge.\n4. lib/draw/BpmnRenderer.js \u2013 Once the association edge is in the model, this renderer is responsible for turning it into a dotted line with the correct arrow markers. If the edge isn\u2019t recognized as an association (or is filtered because its source is an event), nothing is drawn.\n5. lib/draw/BpmnRenderUtil.js \u2013 Provides utility routines for path generation, marker setup and styling of associations. If associations from boundary events aren\u2019t passed through the same styling routines, they will silently disappear on redraw.\n\nTogether, these files cover the import of the association semantic and DI data and the subsequent rendering. Fixing the bug will involve correctly detecting and importing the association from the boundary event in the importer and ensuring it flows through to the renderer with the proper styling.",
+        "bug_scenario": "When a BPMN diagram is exported and re-imported that contains a data association from a boundary event to a data object, the dotted\u2010line connection (the \u2018association\u2019) between the boundary event and the data object is completely missing on reload. In the original screenshot you can see the association rendered correctly; after you refresh/import, the boundary event and data object still exist, but their association is never drawn."
+    },
+    "2": {
+        "bug_files": [
+            "lib/import/BpmnImporter.js",
+            "lib/import/BpmnTreeWalker.js",
+            "lib/import/Importer.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js",
+            "lib/features/modeling/behavior/util/LineAttachmentUtil.js",
+            "lib/features/modeling/behavior/ImportDockingFix.js"
+        ],
+        "explanation": "\n\u2022 lib/import/BpmnImporter.js & lib/import/Importer.js: These coordinate the creation of diagram elements (including edges for associations) when a BPMN file is re-imported. Missing or incorrect handling here can cause association edges not to be instantiated.\n\u2022 lib/import/BpmnTreeWalker.js: Walks the BPMN XML and maps di:Edge entries to modeling edges. If associations on boundary events aren\u2019t recognized, they never get a shape in the canvas.\n\u2022 lib/draw/BpmnRenderer.js & lib/draw/BpmnRenderUtil.js: Responsible for turning a modeling edge of type bpmn:Association into a dashed line on screen. If the source or target is a boundary event, their attach point must be calculated correctly here.\n\u2022 lib/features/modeling/behavior/util/LineAttachmentUtil.js: Computes docking points on circular boundary event shapes for connected edges. If associations are not accounted for, the line may fail to dock and thus not render.\n\u2022 lib/features/modeling/behavior/ImportDockingFix.js: Runs after import to correct attachments on imported edges (e.g. event subscriptions, data associations). A gap here can leave the association in an invalid state so it is filtered out at render time.\n\nTogether, these files cover the import pipeline (reading XML, creating edges) and the rendering pipeline (docking and drawing of edges). The bug\u2014associations on boundary events disappearing after import\u2014indicates that one or more of these modules is not detecting or wiring up those association edges for re-rendering.",
+        "bug_scenario": "When a BPMN diagram is created in the modeler with a boundary event attached to a task and a data-object, and then exported and immediately re-imported, the dashed\u2010line association between the boundary event and data object is dropped and never rendered on load. In the live diagram (first screenshot) the association is visible; after refresh + import (second screenshot) the association is gone."
+    }
+}

@@ -1,0 +1,39 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index ec85963a46..ad1b1368fa 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -335,10 +335,16 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+             y,
+             frameState.pixelRatio,
+             viewState.projection
+-          );
+-          if (!tileTexture) {
+-            tileTexture = new TileTexture(tile, tileGrid, this.helper);
+-            tileTextureCache.set(tileCoordKey, tileTexture);
++            if (!tileTexture) {
++              // pass the layer‐source’s imageSmoothing setting to TileTexture:
++              tileTexture = new TileTexture(
++                tile, 
++                tileGrid, 
++                this.helper, 
++                tileLayer.getSource().getImageSmoothing()
++              );
++              tileTextureCache.set(tileCoordKey, tileTexture);
++            }
+           } else {
+             if (this.isDrawableTile_(tile)) {
+               tileTexture.setTile(tile);
+diff --git a/src/ol/webgl/TileTexture.js b/src/ol/webgl/TileTexture.js
+index d67a804d9b..8176fc4eec 100644
+--- a/src/ol/webgl/TileTexture.js
++++ b/src/ol/webgl/TileTexture.js
+@@ -174,7 +174,8 @@ class TileTexture extends EventTarget {
+       const texture = gl.createTexture();
+       this.textures.push(texture);
+       this.bandCount = 4;
+-      uploadImageTexture(gl, texture, tile.getImage());
++      // pass the smoothing flag from this instance:
++      uploadImageTexture(gl, texture, tile.getImage(), this.smooth);
+       return;
+     }
+ 

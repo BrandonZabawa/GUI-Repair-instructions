@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "gulp/compile.js",
+            "lighthouse-cli/performance-experiment/report/perf-x-report-generator.js",
+            "lighthouse-core/report/v2/report-generator.js"
+        ],
+        "explanation": "\u2022 gulp/compile.js: this build script reads static HTML templates and injects compiled JS bundles by doing .replace(placeholder, scriptContents). It does not escape \"$\" in the replacement, so any \"$\" inside scriptContents is treated as a replace token.\n\u2022 lighthouse-cli/performance-experiment/report/perf-x-report-generator.js: likewise reads a template.html and calls String.replace to insert experimental JS. A \"$'\" in the inserted code will be mis-interpreted and break the output.\n\u2022 lighthouse-core/report/v2/report-generator.js: this is where the core report HTML is assembled. It reads index.html and replaces placeholders with the contents of report-renderer.js (and other scripts) via String.replace. Unescaped \"$\" sequences in the injected JS will be treated as special replacement patterns, leading to malformed final HTML/JS.",
+        "bug_scenario": "We use simple String.replace(templatePlaceholder, scriptString) to inject the contents of our JS bundles (e.g. report-renderer.js) into an HTML template. Because String.replace interprets sequences like \"$'\" in the replacement text as special tokens (the substring after the match), any injected code containing \"$\" or \"$'\" will be mangled (it swallows the rest of the template, closes the <script> early, or omits portions of the page), causing malformed HTML/JS and a broken report view."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/report/v2/report-renderer.js",
+            "lighthouse-core/report/v2/report-generator.js",
+            "lighthouse-core/report/report-generator.js",
+            "lighthouse-cli/performance-experiment/report/perf-x-report-generator.js"
+        ],
+        "explanation": "All of these files perform a naive String.replace(templateMarker, replacementString) to splice in JS code or JSON into an HTML template. When the replacementString contains `$` sequences (like `$'`), replace() interprets them as patterns rather than literal text, causing the template markers or surrounding HTML (including the closing </script>) to be swallowed. To fix, these files must escape `$` in the replacement (e.g. convert every `$` to `$$`) or switch to the callback form of replace so that the injected text is not re-interpreted.",
+        "bug_scenario": "We use a very simple HTML template with a placeholder inside a <script> tag and then inject the contents of our report\u2010rendering JS or JSON into that placeholder with String.replace(templateMarker, injectionString). If the injected text contains sequences like `$'`, the replace call will treat them as special replacement tokens (e.g. \u201cthe remainder of the input string\u201d), so part of our page or </script> closing tag gets swallowed and our injected code escapes the <script> block\u2014resulting in a broken page and malformed DOM."
+    }
+}

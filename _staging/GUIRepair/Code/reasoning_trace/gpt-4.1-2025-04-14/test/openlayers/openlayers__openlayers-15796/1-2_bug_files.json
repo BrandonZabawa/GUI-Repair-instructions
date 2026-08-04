@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/layer/Vector.js"
+        ],
+        "explanation": "The problem relates specifically to VectorLayer rendering with canvas, under conditions where 'declutter' and 'opacity' < 1 are configured. Therefore: \n- src/ol/renderer/canvas/VectorLayer.js is directly responsible for rendering vector layers in canvas. This file would handle the logic around clearing the canvas, drawing, and applying both opacity and declutter logic.\n- src/ol/layer/Vector.js defines the VectorLayer itself, which is where properties like 'opacity' and 'declutter' are configured and potentially passed to the renderer. While the root cause is likely in the canvas/VectorLayer renderer, it's important to check the Vector layer definition in case there is a logic issue with how options are managed or passed down to the renderer. \nOther files (e.g., VectorTile.js, vector.js) could be relevant if the bug occurred for vector tiles or in shared/abstract rendering, but the report and scenario are specifically about VectorLayer, not vector tiles.",
+        "bug_scenario": "The bug occurs when using a VectorLayer with both \"declutter: true\" and \"opacity\" less than 1. When panning or moving the map, the VectorLayer does not properly clear the previous frame, resulting in ghosting or repetitive rendering artifacts. This is observable as leftover drawn elements that should have been cleared between renders when layer opacity is set to a value less than 1, alongside decluttering."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Vector.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/render/canvas/ExecutorGroup.js"
+        ],
+        "explanation": "The issue involves VectorLayer rendering with declutter and opacity, both controlled at the VectorLayer and its renderer. The primary files for this logic include:\n- src/ol/layer/Vector.js: Implements the VectorLayer, holds decluttering and opacity properties.\n- src/ol/renderer/canvas/VectorLayer.js: Responsible for rendering VectorLayers on a canvas, including respecting opacity and managing decluttered features. The bug will reside in how it manages buffer/canvas clearing when declutter and partial opacity are used together.\n- src/ol/renderer/canvas/Layer.js: Canvas rendering base logic, including compositing, opacity, and possibly buffer clearing. Errors in buffer handling or composite modes can arise here.\n- src/ol/render/canvas/ExecutorGroup.js: Handles rendering commands and feature batching for vector layers, and may be involved in clearing the canvas between frames or compositing output for decluttered features. It\u2019s often responsible for flushing, z-order, and masking logic relevant for declutter handling.\nAdditional files (such as those for WebGL rendering or unrelated layer types) are not relevant since the bug is specific to canvas VectorLayer rendering with declutter and opacity.",
+        "bug_scenario": "The bug occurs when using an OpenLayers VectorLayer with both `declutter` set to true and `opacity` less than 1. When panning the map, the layer incorrectly fails to clear previous render frames, resulting in feature artifacts (ghosting/overlapping) on the canvas. This suggests a regression where the compositing and declutter rendering logic for translucent vector layers doesn't properly clear or redraw between renders, especially when both decluttering (to avoid label/feature overlap) and partial opacity are active. The provided image visually demonstrates this, showing improperly retained graphics as the user pans the map."
+    }
+}

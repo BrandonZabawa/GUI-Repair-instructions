@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/sql.js//export default function(hljs)"
+        ],
+        "explanation": "All of the SQL syntax rules are defined inside the anonymous default export function in src/languages/sql.js. Within it there\u2019s a string mode rule:\n  { className: 'string', begin: '\\'', end: '\\'', contains: [{ begin: '\\'\\'' }] }\nThis rule only recognizes two single quotes ('') as an escape sequence, but when you have N''<text>;'' (escape at the very end), it doesn\u2019t properly detect and close the string. As a result the highlighter never sees the final quote pair as a valid escape/context and everything afterward is colored as if it were still inside the string. To fix it, the string mode here needs to be extended (or its regex tweaked) to properly handle T-SQL\u2019s N''\u2026'' escape style even when it occurs right before the string terminator.",
+        "bug_scenario": "In the CodePen capture we see a T-SQL block where a dynamically generated SQL string uses nested single-quote escape sequences at the very end (for example: N''DROP VIEW IF EXISTS ...;'';). The built-in SQL grammar in highlight.js (loaded by calling highlight on a <code class=\"sql\"> block) fails to correctly match the closing quotes on that line, causing the remainder of the script to be mis-highlighted."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/sql.js"
+        ],
+        "bug_functions": [
+            "src/languages/sql.js//export default function(hljs)"
+        ],
+        "explanation": "The only place in highlight.js that governs SQL string highlighting is the default export in sql.js. Inside that function there is a \u2018string\u2019 mode defined with begin: '\\'' and end: '\\'' and a single escape rule contains: [{ begin: \"''\" }]. This rule handles two single quotes in a row but does not account for prefixed Unicode string literals (the N''\u2026'' syntax) or nested escapes at the very start/end of the string. As a result the opening and closing quotes around the inner DROP VIEW command (N''\u2026'';) confuse the mode and break out of the intended string matching.",
+        "bug_scenario": "The user is writing dynamic T-SQL that embeds a nested, doubled\u2010quote escape sequence (the N''DROP VIEW IF EXISTS ...''; snippet) inside a single\u2010quoted string. In the CodePen screenshot you can see the SQL code begins parsing correctly but after the nested N''\u2026'' escape sequence the highlighter never recovers, coloring everything as a string or otherwise misformatting the rest of the block."
+    }
+}

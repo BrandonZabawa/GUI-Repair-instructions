@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Graticule.js",
+            "src/ol/coordinate.js"
+        ],
+        "explanation": "The core of the graticule drawing and labeling lives in src/ol/layer/Graticule.js: it computes evenly spaced longitude/latitude lines and then formats their numeric values into strings. The formatting routine itself is implemented in src/ol/coordinate.js (toStringHDMS, toStringXY, etc.) and rounds seconds/minutes to a fixed precision. Because the conversion from a floating-point degree value to DMS inevitably involves rounding, minor inconsistencies (e.g. 3.01\u2032 vs. 2.59\u2032) appear. To fix the user-visible irregularities, both the spacing logic in Graticule.js (ensuring exact multiples) and the DMS formatting in coordinate.js (improving the rounding strategy or clamping) will need adjustment.",
+        "bug_scenario": "When using the built-in Graticule example the grid lines appear at perfectly regular intervals, but the labels printed along the edges jump by irregular values (e.g. \u201c3\u203201\u2033\u201d, \u201c2\u203259\u2033\u201d, \u201c3\u203200\u2033\u201d), giving the impression of uneven spacing. In reality the underlying grid spacing is constant, but the conversion of decimal degrees into degrees-minutes-seconds strings (and subsequent rounding of minutes/seconds) in the Graticule layer produces these small rounding artifacts in the labels."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Graticule.js",
+            "src/ol/coordinate.js"
+        ],
+        "explanation": "All of the graticule line generation, step-selection logic, and default label formatting live in Graticule.js. It computes the meridian/parallels at a floating-point step that can\u2019t be exactly represented in binary and then hands those values to a DMS formatter. The formatter (in coordinate.js) turns the small floating error into seconds/minutes drift. To fix this you need to adjust the step-calculation or rounding logic in Graticule.js (and possibly tighten up the DMS rounding in coordinate.js) so that equally spaced lines get cleanly rounded labels.",
+        "bug_scenario": "In the official graticule example the grid lines appear equally spaced but the longitude labels jump by odd, uneven minute-and-second values (e.g. 0\u00b0 15\u203200\u2033 W, then 0\u00b0 12\u203200\u2033 W, then 0\u00b0 09\u203201\u2033 W, etc.). The user expects clean, constant intervals (for example exactly 3\u2032 or 5\u2032), but the labels are drifting because the code is choosing a dynamic step size and then formatting floating-point longitudes to DMS without compensating for tiny rounding errors."
+    }
+}

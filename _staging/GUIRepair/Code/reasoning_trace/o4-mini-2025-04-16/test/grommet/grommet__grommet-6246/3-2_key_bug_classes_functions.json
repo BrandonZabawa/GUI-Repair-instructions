@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/DataChart/DataChart.js//DataChart"
+        ],
+        "bug_functions": [
+            "src/js/components/Chart/calcs.js//calcBounds",
+            "src/js/components/Chart/calcs.js//calcs"
+        ],
+        "explanation": "The DataChart component (in DataChart.js) delegates computation of axis bounds and tick values to the calcBounds and calcs functions in calcs.js.  When negative values are present, calcBounds is responsible for including zero in the y-range and adjusting minY/maxY accordingly, and calcs then derives the axis ticks and dimensions.  If this logic fails or zero is not included, Chart will have no valid drawing area and nothing appears.  To fix the bug, those two functions must be updated to always ensure the y-axis bounds span across zero when any data point is negative, and DataChart must pass the proper options (e.g. steps or coarseness) so that zero is shown and the negative portion of the data is rendered.",
+        "bug_scenario": "When the DataChart is given a data set containing a negative value (for example, amount: -2 followed by positive amounts), nothing is rendered: the chart area is blank.  With all-positive data the line chart displays correctly, but as soon as a value dips below zero, the component fails to draw any axes or lines.  The expected behavior is that the y-axis should include a zero baseline (guide) by default and portions of the chart below zero should render (and be styleable)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/DataChart/DataChart.js//DataChart"
+        ],
+        "bug_functions": [
+            "src/js/components/Chart/calcs.js//calcBounds",
+            "src/js/components/Chart/calcs.js//calcs"
+        ],
+        "explanation": "The DataChart component orchestrates the rendering of Chart components and relies on the Chart module\u2019s boundary calculations. In calcs.js, the calcBounds function computes the min/max y-axis values and contains logic to adjust bounds when crossing zero; calcs then uses those bounds to generate axis ticks. When negative values appear, the current calcBounds adjustment can collapse the bounds or omit zero, resulting in no axis or data drawn. To support negative values and a zero baseline guide, these two functions must be updated to always include zero in the bounds (and allow customizing negative region styling). The DataChart component then consumes the corrected bounds and can render the negative segment as expected.",
+        "bug_scenario": "When DataChart is given a dataset containing a negative value for the y-axis (e.g. amount: -2), the chart renders nothing \u2014 no bars, lines, or axes appear. With only positive values the chart draws correctly but as soon as a negative is included, the plot area is blank. The user expected to see a zero baseline guide and the negative value plotted (and to be able to customize its color)."
+    }
+}

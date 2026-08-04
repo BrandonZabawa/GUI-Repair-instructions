@@ -1,0 +1,125 @@
+{
+    "1/5": {
+        "src/format/html/format-html.ts": [
+            {
+                "SEARCH": [
+                    "const includeInHeader: string[] = [];"
+                ],
+                "REPLACE": [
+                    "  const includeInHeader: string[] = [",
+                    "    \"<style>\",",
+                    "    \".gt_table .gt_caption {\",",
+                    "    \"  text-align: center;\",",
+                    "    \"  margin-bottom: 10px;\",",
+                    "    \"}\",",
+                    "    \"</style>\"",
+                    "  ];"
+                ]
+            }
+        ],
+        "src/resources/filters/common/tables.lua": [
+            {
+                "SEARCH": [
+                    "function htmlGtTablePattern()",
+                    "return \"<table class=\\\\\"gt_table\\\\\">\"",
+                    "end"
+                ],
+                "REPLACE": [
+                    "function htmlGtTablePattern()",
+                    "  return \"<table class=\\\\\"gt_table\\\\\">\"",
+                    "end",
+                    "",
+                    "function adjustTableCaptionAlignment()",
+                    "  return \"<style>.gt_table .gt_caption { text-align: center; }</style>\"",
+                    "end"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/format/html/format-html.ts": [
+            {
+                "SEARCH": [
+                    "const scripts: DependencyHtmlFile[] = [];",
+                    "const stylesheets: DependencyHtmlFile[] = [];",
+                    "const sassBundles: SassBundle[] = [];"
+                ],
+                "REPLACE": [
+                    "  const scripts: DependencyHtmlFile[] = [];",
+                    "  const stylesheets: DependencyHtmlFile[] = [",
+                    "    { ",
+                    "      name: \"table-spanner-fix.css\",",
+                    "      path: formatResourcePath(\"html\", \"table-spanner-fix.css\")",
+                    "    }",
+                    "  ];",
+                    "  const sassBundles: SassBundle[] = [];"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/format/html/format-html.ts": [
+            {
+                "SEARCH": [
+                    "includeInHeader.push(zenscrollStyle);"
+                ],
+                "REPLACE": [
+                    "// Ensure correct CSS is applied for table layout",
+                    "const cssFile = services.temp.createFile({ suffix: \"-table-fix.css\" });",
+                    "Deno.writeTextFileSync(cssFile, \"<style>table {margin: auto;} table caption {caption-side: top; text-align: center; padding: 5px;} table .gt_table_with_spanner {width: 100%;}</style>\");",
+                    "includeInHeader.push(zenscrollStyle, cssFile);"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/resources/filters/common/tables.lua": [
+            {
+                "SEARCH": [
+                    "function hasGtHtmlTable(raw)",
+                    "if _quarto.format.isRawHtml(raw) and _quarto.format.isHtmlOutput() then",
+                    "return raw.text:match(htmlGtTablePattern())",
+                    "else",
+                    "return false",
+                    "end",
+                    "end",
+                    "",
+                    "function hasPagedHtmlTable(raw)",
+                    "if _quarto.format.isRawHtml(raw) and _quarto.format.isHtmlOutput() then",
+                    "return raw.text:match(htmlPagedTablePattern())",
+                    "else",
+                    "return false",
+                    "end",
+                    "end"
+                ],
+                "REPLACE": [
+                    "function hasGtHtmlTable(raw)",
+                    "  if _quarto.format.isRawHtml(raw) and _quarto.format.isHtmlOutput() then",
+                    "    return raw.text:match(htmlGtTablePattern())",
+                    "  else",
+                    "    return false",
+                    "  end",
+                    "end",
+                    "",
+                    "function adjustTableSpanner(raw)",
+                    "  if _quarto.format.isRawHtml(raw) and _quarto.format.isHtmlOutput() then",
+                    "    raw.text = raw.text:gsub(htmlTableCaptionPattern(), \"<div class='table-caption'>%2</div>\")",
+                    "  end",
+                    "end",
+                    "",
+                    "function hasPagedHtmlTable(raw)",
+                    "  if _quarto.format.isRawHtml(raw) and _quarto.format.isHtmlOutput() then",
+                    "    return raw.text:match(htmlPagedTablePattern())",
+                    "  else",
+                    "    return false",
+                    "  end",
+                    "end",
+                    ""
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/resources/filters/common/tables.lua": []
+    }
+}

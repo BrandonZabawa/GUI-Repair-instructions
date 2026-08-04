@@ -1,0 +1,27 @@
+diff --git a/lib/features/space-tool/BpmnSpaceTool.js b/lib/features/space-tool/BpmnSpaceTool.js
+index 905d17c9..8eadeaf8 100644
+--- a/lib/features/space-tool/BpmnSpaceTool.js
++++ b/lib/features/space-tool/BpmnSpaceTool.js
+@@ -3,6 +3,7 @@ import inherits from 'inherits-browser';
+ import SpaceTool from 'diagram-js/lib/features/space-tool/SpaceTool';
+ 
+ import { is } from '../../util/ModelUtil';
++import { getChildLanes } from '../modeling/behavior/util/LaneUtil';
+ 
+ /**
+  * @typedef {import('didi').Injector} Injector
+@@ -42,5 +43,12 @@ BpmnSpaceTool.prototype.calculateAdjustments = function(elements, axis, delta, s
+     return !is(shape, 'bpmn:TextAnnotation');
+   });
+ 
++  // do not resize empty pools vertically
++  if (axis === 'y') {
++    adjustments.resizingShapes = adjustments.resizingShapes.filter(function(shape) {
++      return !(is(shape, 'bpmn:Participant') && !getChildLanes(shape).length);
++    });
++  }
++
+   return adjustments;
+-};
+\ No newline at end of file
++};

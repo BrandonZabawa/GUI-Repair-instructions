@@ -1,0 +1,19 @@
+diff --git a/lighthouse-core/gather/computed/critical-request-chains.js b/lighthouse-core/gather/computed/critical-request-chains.js
+index da226a8d5..bf8837f8d 100644
+--- a/lighthouse-core/gather/computed/critical-request-chains.js
++++ b/lighthouse-core/gather/computed/critical-request-chains.js
+@@ -41,7 +41,13 @@ class CriticalRequestChains extends ComputedArtifact {
+       return false;
+     }
+ 
+-    return ['VeryHigh', 'High', 'Medium'].includes(request.priority());
++    // Check if the request is a preload with an onload handler that changes rel to stylesheet
++    const isPreloadWithOnload = request._resourceType === WebInspector.resourceTypes.Stylesheet &&
++                                request.initiator.type === 'parser' &&
++                                request.initiator.stack &&
++                                request.initiator.stack.callFrames.some(frame => frame.functionName.includes('onload'));
++
++    return ['VeryHigh', 'High', 'Medium'].includes(request.priority()) && !isPreloadWithOnload;
+   }
+ 
+   static extractChain([networkRecords, mainResource]) {

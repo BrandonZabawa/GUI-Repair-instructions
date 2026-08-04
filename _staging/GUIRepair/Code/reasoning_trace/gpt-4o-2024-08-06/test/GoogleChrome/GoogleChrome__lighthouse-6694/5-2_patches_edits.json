@@ -1,0 +1,34 @@
+{
+    "1/1": {
+        "lighthouse-core/audits/uses-rel-preconnect.js": [
+            {
+                "SEARCH": [
+                    "const [networkRecords, mainResource, loadSimulator] = await Promise.all([",
+                    "NetworkRecords.request(devtoolsLog, context),",
+                    "MainResource.request({devtoolsLog, URL}, context),",
+                    "LoadSimulator.request({devtoolsLog, settings}, context),",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "    const [networkRecords, mainResource, loadSimulator, dom] = await Promise.all([",
+                    "      NetworkRecords.request(devtoolsLog, context),",
+                    "      MainResource.request({devtoolsLog, URL}, context),",
+                    "      LoadSimulator.request({devtoolsLog, settings}, context),",
+                    "      context.driver.evaluateAsync('Array.from(document.querySelectorAll(\"link[rel=preconnect], link[rel=dns-prefetch]\")).map(link => link.href)')",
+                    "    ]);",
+                    "",
+                    "    const preconnectedOrigins = new Set(dom);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "// make sure the requests are below the PRECONNECT_SOCKET_MAX_IDLE (15s) mark"
+                ],
+                "REPLACE": [
+                    "          // filter out origins that are already preconnected in the DOM",
+                    "          preconnectedOrigins.has(record.parsedURL.securityOrigin) ||"
+                ]
+            }
+        ]
+    }
+}

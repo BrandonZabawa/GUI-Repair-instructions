@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/control/Attribution.js",
+            "src/ol/layer/Group.js"
+        ],
+        "explanation": "\u2022 src/ol/control/Attribution.js: This control walks through layer states and collects attributions for all layers whose state.visible flag is true, but it doesn\u2019t check whether those layers are inside a hidden group.  \n\u2022 src/ol/layer/Group.js: The group\u2019s recursive getLayerStatesArray implementation creates a state.visible based only on each layer\u2019s own visible flag, without propagating the parent group\u2019s visibility. Child layers therefore report visible=true even when their parent is hidden, causing Attribution.js to include their attributions erroneously.",
+        "bug_scenario": "When a group layer is turned off (invisible) but one of its child sub-layers remains on (visible) and has attributions configured, the info popup (\u2018i\u2019 control) still shows those attributions\u2014even though the parent group is invisible and nothing from that group should appear.\n\nIn the screenshot: 1) The top-level group \u201cSEZON OFF/ON\u201d is unchecked (invisible), 2) its child \u201cbudynki sezon\u201d remains checked (visible) and has an attribution defined, and 3) the attribution text still appears in the bottom popup."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/control/Attribution.js",
+            "src/ol/layer/Group.js",
+            "src/ol/layer/Layer.js"
+        ],
+        "explanation": "The Attribution control (Attribution.js) builds its attribution list by walking every layer in the map, but it only checks each layer's own .getVisible() flag. It never checks whether any parent Group layer is hidden. The Group layer implementation (Group.js) and the general Layer state merge logic in Layer.js provide the mechanism for computing a layer\u2019s effective visibility (including parent groups), but the Attribution control bypasses that and assumes independent visibility. To fix the bug, Attribution.js must use the resolved layer state (from Layer.js) or explicitly walk up the group chain (Group.js) to confirm a layer is truly visible on the map before including its source attributions.",
+        "bug_scenario": "When you have a group layer (SEZON) set to invisible (checkbox unchecked) but one of its sub-layers (budynki sezon) set to visible, the info-popup still shows the WMS attributions for that sub-layer even though the parent group is hidden. In the screenshot you can see the group \u201cSEZON OFF/ON\u201d is off, the sub-layer \u201cbudynki sezon\u201d is on, yet the popup at the bottom still reads \u201cSEZON: Budynki \u2026\u201d \u2013 it shouldn\u2019t appear when the group is invisible."
+    }
+}

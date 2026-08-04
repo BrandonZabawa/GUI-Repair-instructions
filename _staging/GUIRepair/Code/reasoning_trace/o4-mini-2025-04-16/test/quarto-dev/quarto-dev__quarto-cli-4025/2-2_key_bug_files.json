@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/common/figures.lua",
+            "src/resources/filters/quarto-pre/figures.lua",
+            "src/resources/filters/quarto-post/fig-cleanup.lua"
+        ],
+        "explanation": "All of the Lua filters in Quarto\u2019s Pandoc pipeline are involved in detecting and wrapping images or linked figures into <Div> elements with captions. \n\n\u2022 common/figures.lua: Contains the core discovery routines (discoverFigure, discoverLinkedFigure, discoverLinkedFigureDiv) that decide what constitutes a figure. These functions are over-eager and pick up extra elements in the Bokeh HTML output, turning them into separate figure subelements.\n\n\u2022 quarto-pre/figures.lua: The pre-engine filter invokes discoverFigure and discoverLinkedFigure on every Para and Image element, calling createFigureDiv to wrap them. This is where the empty subfigures (b) and (c) get created because parts of the Bokeh embed output satisfy the discovery predicates even though they have no captions.\n\n\u2022 quarto-post/fig-cleanup.lua: Strips anonymous identifiers after rendering, which can remove identifiers required for caption resolution, leading to the placeholder \u201c?(caption)\u201d when a caption can\u2019t be found. \n\nFixing the bug involves tightening the discovery logic (e.g. in common/figures.lua and quarto-pre/figures.lua) so that only the single Bokeh plot (with a non-empty caption) is wrapped as a figure, and ensuring post-cleanup doesn\u2019t remove the caption ID needed for rendering.",
+        "bug_scenario": "The user has a single Bokeh plot in a Quarto Python notebook chunk with a single caption, but when rendered the output is split into three subfigures: (a) shows the correct plot and caption, while (b) and (c) appear as empty \u201c?(caption)\u201d placeholders. In other words, Quarto\u2019s figure\u2010filter pipeline is mistakenly discovering extra \u201cfigures\u201d in the Bokeh output and wrapping them as subfigures with no captions."
+    }
+}

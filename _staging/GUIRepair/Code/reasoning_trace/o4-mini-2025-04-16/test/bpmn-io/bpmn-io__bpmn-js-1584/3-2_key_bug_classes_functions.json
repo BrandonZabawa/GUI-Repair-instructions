@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/CreateParticipantBehavior.js//CreateParticipantBehavior",
+            "lib/features/modeling/behavior/UnclaimIdBehavior.js//UnclaimIdBehavior",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js//UpdateCanvasRootHandler",
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/CreateParticipantBehavior.js//ensureCollaboration",
+            "lib/features/modeling/behavior/UnclaimIdBehavior.js//preExecute('shape.delete')",
+            "lib/features/modeling/behavior/UnclaimIdBehavior.js//preExecute('canvas.updateRoot')",
+            "lib/features/copy-paste/BpmnCopyPaste.js//moddleCopy.canCopyProperty",
+            "lib/features/copy-paste/BpmnCopyPaste.js//copyPaste.copyElement"
+        ],
+        "explanation": "\n- CreateParticipantBehavior.ensureCollaboration: this helper is responsible for turning a lone Process into a Collaboration + Participant when you create the first pool. It calls modeling.makeCollaboration(), which under the hood swaps out the root via UpdateCanvasRootHandler but does not preserve the original process ID on redo.\n\n- UnclaimIdBehavior.preExecute('shape.delete'): when deleting the only Participant, this behavior unclaims the processRef ID, so that when the modeler reverts back to a plain Process root the ID is free and a new one is generated.\n\n- UnclaimIdBehavior.preExecute('canvas.updateRoot'): triggered during root swaps (Process\u2194Collaboration), it unclaims the old root element\u2019s ID, causing ID churn on delete/undo/redo.\n\n- UpdateCanvasRootHandler: orchestrates the actual root element swap between Process and Collaboration, wiring DI and BPMN definitions. Because it relies on unclaimed IDs, it can trigger fresh ID generation rather than re\u2010using the old ID.\n\n- BpmnCopyPaste.moddleCopy.canCopyProperty & BpmnCopyPaste.copyPaste.copyElement: these functions manage the deep\u2010copy of a Participant + its Process on copy/paste. The default behavior copies the entire businessObject, including its ID, leading to duplicate <bpmn:process> IDs in the exported XML.\n\nTogether, these classes/functions determine when a process ID is preserved, unclaimed, or copied, and they are therefore the correct places to adjust logic so that:\n  \u2022 the original process ID is retained on redo of the first participant creation,\n  \u2022 deleting the last participant does not unclaim the process ID,\n  \u2022 and copy/paste resets or regenerates the process ID to avoid duplicates.",
+        "bug_scenario": "There are two related ID\u2010handling issues in the BPMN modeler:\n\n1. When you add the very first Participant (pool) to an empty diagram, the modeler \u201cre\u2010uses\u201d the existing Process_1 element by promoting the diagram root to a Collaboration but keeping the process ID. If you undo that addition, the Participant is removed and the process ID remains the same. However when you redo (i.e. add the first Participant again), the process is re\u2010attached under the new Collaboration with a freshly generated ID instead of the original one.\n\n2. When you delete the only Participant in the model (not via undo, but by simply using delete), the modeler switches the root back from Collaboration to a bare Process. In doing so it unclaims the old process ID, so the new Process gets assigned a new auto\u2010generated ID.\n\n3. Separately, when copying and pasting an entire Participant (pool) with its underlying Process, the copy/paste logic clones the bpmn:Process and inadvertently reuses the same ID, resulting in two <bpmn:process> elements with identical IDs after export/import.\n\nIn short: the modeler is inconsistent about when it reclaims or re\u2010uses process IDs when moving between Process \u2194 Collaboration and when copying pools."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/CreateParticipantBehavior.js//CreateParticipantBehavior",
+            "lib/features/modeling/behavior/UnclaimIdBehavior.js//UnclaimIdBehavior",
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/CreateParticipantBehavior.js//ensureCollaboration (inside preExecute 'shape.create')",
+            "lib/features/modeling/behavior/UnclaimIdBehavior.js//preExecute('canvas.updateRoot')",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.copyElement')",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.pasteElement')"
+        ],
+        "explanation": "1. CreateParticipantBehavior (ensureCollaboration): this logic turns the lone Process into a Collaboration and re\u2010uses the original Process when adding the first Participant. It must preserve the process\u2019s ID on redo, but currently it relies on context.process and oldProcessRef alone.  \n2. UnclaimIdBehavior (preExecute 'canvas.updateRoot'): this unclaims the root Process\u2019s ID when the root is updated (i.e. when creating the Collaboration). As a result, on redo the old ID is freed and a new one is generated. Preventing unclaiming in this case (or re-claiming the original ID on redo) will restore consistent IDs.  \n3. BpmnCopyPaste (copyPaste.copyElement & copyPaste.pasteElement): when copying/pasting a Pool, the businessObject.id of the underlying Process is copied verbatim into the descriptor and then into the new element. This leads to duplicate <bpmn:process> IDs on import/export. The handlers for copyElement and pasteElement need to omit or regenerate the \u2018id\u2019 property so that each pasted Process gets a fresh, unique ID.",
+        "bug_scenario": "The user starts with a blank BPMN model (Process_1) then adds the very first Participant (pool). On \u201ccreate\u201d the Participant is wrapped in a Collaboration and the original Process is re\u2010used as the pool\u2019s processRef, keeping its ID. Undoing removes the Participant (and collapses back to the lone Process with its original ID). But Redoing the addition results in the Process getting a brand\u2010new ID. Separately, when copying and pasting a Pool (with its child Task) the exported/imported XML shows two <bpmn:process> elements with the very same ID, leading to duplicate IDs in the model."
+    }
+}

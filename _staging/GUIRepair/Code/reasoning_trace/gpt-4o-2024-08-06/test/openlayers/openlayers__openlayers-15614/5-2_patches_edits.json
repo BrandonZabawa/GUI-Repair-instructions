@@ -1,0 +1,359 @@
+{
+    "1/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "setupCompositionContext_() {",
+                    "if (this.opacity_ !== 1) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}",
+                    "}",
+                    "",
+                    "releaseCompositionContext_() {",
+                    "if (this.opacity_ !== 1) {",
+                    "const alpha = this.context.globalAlpha;",
+                    "this.context.globalAlpha = this.opacity_;",
+                    "this.context.drawImage(this.compositionContext_.canvas, 0, 0);",
+                    "this.context.globalAlpha = alpha;",
+                    "releaseCanvas(this.compositionContext_);",
+                    "canvasPool.push(this.compositionContext_.canvas);",
+                    "this.compositionContext_ = null;",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setupCompositionContext_() {",
+                    "if (this.opacity_ !== 1 || this.getLayer().getDeclutter()) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}",
+                    "}",
+                    "",
+                    "releaseCompositionContext_() {",
+                    "if (this.opacity_ !== 1 || this.getLayer().getDeclutter()) {",
+                    "const alpha = this.context.globalAlpha;",
+                    "this.context.globalAlpha = this.opacity_;",
+                    "this.context.drawImage(this.compositionContext_.canvas, 0, 0);",
+                    "this.context.globalAlpha = alpha;",
+                    "releaseCanvas(this.compositionContext_);",
+                    "canvasPool.push(this.compositionContext_.canvas);",
+                    "this.compositionContext_ = null;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "if (this.opacity_ !== 1) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const isDecluttered = this.getLayer().getDeclutter();",
+                    "if (this.opacity_ !== 1 || isDecluttered) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "this.setupCompositionContext_(); //FIXME Check if this works, or if we need to defer something.",
+                    "this.renderWorlds(this.replayGroup_, frameState, true);",
+                    "this.releaseCompositionContext_();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const previousOpacity = this.opacity_;",
+                    "this.opacity_ *= layerState.opacity;",
+                    "",
+                    "this.setupCompositionContext_(); //FIXME Check if this works, or if we need to defer something.",
+                    "this.renderWorlds(this.replayGroup_, frameState, true);",
+                    "this.releaseCompositionContext_();",
+                    "",
+                    "this.opacity_ = previousOpacity;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "if (this.opacity_ !== 1) {",
+                    "const alpha = this.context.globalAlpha;",
+                    "this.context.globalAlpha = this.opacity_;",
+                    "this.context.drawImage(this.compositionContext_.canvas, 0, 0);",
+                    "this.context.globalAlpha = alpha;"
+                ],
+                "REPLACE": [
+                    "if (this.compositionContext_ && this.opacity_ !== 1) {",
+                    "const alpha = this.context.globalAlpha;",
+                    "this.context.globalAlpha = this.opacity_;",
+                    "this.context.drawImage(",
+                    "this.compositionContext_.canvas,",
+                    "0,",
+                    "0,",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height",
+                    ");",
+                    "this.context.globalAlpha = alpha;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.setupCompositionContext_(); //FIXME Check if this works, or if we need to defer something."
+                ],
+                "REPLACE": [
+                    "const originalOpacity = this.opacity_;",
+                    "this.opacity_ = this.getLayer().getOpacity();",
+                    "this.setupCompositionContext_();"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "this.setupCompositionContext_();",
+                    "this.renderWorlds(",
+                    "replayGroup,",
+                    "frameState,",
+                    "this.getLayer().getDeclutter() ? false : undefined,",
+                    ");",
+                    "this.releaseCompositionContext_();"
+                ],
+                "REPLACE": [
+                    "if (this.getLayer().getDeclutter()) {",
+                    "this.setupCompositionContext_();",
+                    "this.renderWorlds(",
+                    "replayGroup,",
+                    "frameState,",
+                    "false,  // For declutter: render separately",
+                    ");",
+                    "this.releaseCompositionContext_();",
+                    "} else {",
+                    "this.setupCompositionContext_();",
+                    "this.renderWorlds(",
+                    "replayGroup,",
+                    "frameState,",
+                    "undefined,",
+                    ");",
+                    "this.releaseCompositionContext_();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "this.context.globalAlpha = alpha;"
+                ],
+                "REPLACE": [
+                    "// Ensure opacity is applied correctly with declutter",
+                    "if (declutter && this.opacity_ < 1) {",
+                    "this.compositionContext_.globalAlpha = this.opacity_;",
+                    "}",
+                    "this.context.globalAlpha = alpha;"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "setupCompositionContext_() {",
+                    "if (this.opacity_ !== 1) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}",
+                    "}",
+                    "",
+                    "releaseCompositionContext_() {",
+                    "if (this.opacity_ !== 1) {",
+                    "const alpha = this.context.globalAlpha;",
+                    "this.context.globalAlpha = this.opacity_;",
+                    "this.context.drawImage(this.compositionContext_.canvas, 0, 0);",
+                    "this.context.globalAlpha = alpha;",
+                    "releaseCanvas(this.compositionContext_);",
+                    "canvasPool.push(this.compositionContext_.canvas);",
+                    "this.compositionContext_ = null;",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setupCompositionContext_() {",
+                    "if (this.opacity_ < 1) {",
+                    "if (!this.compositionContext_ || this.compositionContext_.canvas.width !== this.context.canvas.width || this.compositionContext_.canvas.height !== this.context.canvas.height) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "}",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}",
+                    "}",
+                    "",
+                    "releaseCompositionContext_() {",
+                    "if (this.compositionContext_ && this.opacity_ < 1) {",
+                    "const alpha = this.context.globalAlpha;",
+                    "this.context.globalAlpha = this.opacity_;",
+                    "this.context.drawImage(this.compositionContext_.canvas, 0, 0);",
+                    "this.context.globalAlpha = alpha;",
+                    "releaseCanvas(this.compositionContext_);",
+                    "canvasPool.push(this.compositionContext_.canvas);",
+                    "this.compositionContext_ = null;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "if (this.opacity_ !== 1) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const layerOpacity = this.getLayer().getOpacity();",
+                    "if (layerOpacity !== 1 || this.opacity_ !== 1) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.context.globalAlpha = this.opacity_;"
+                ],
+                "REPLACE": [
+                    "this.context.globalAlpha = this.getLayer().getOpacity() * this.opacity_;"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "this.setupCompositionContext_();"
+                ],
+                "REPLACE": [
+                    "this.setupCompositionContext_();",
+                    "this.compositionContext_.globalAlpha = this.opacity_;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.releaseCompositionContext_();"
+                ],
+                "REPLACE": [
+                    "const previousAlpha = this.compositionContext_.globalAlpha;",
+                    "this.compositionContext_.globalAlpha = this.opacity_;",
+                    "this.releaseCompositionContext_();",
+                    "this.compositionContext_.globalAlpha = previousAlpha;"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "setupCompositionContext_() {",
+                    "if (this.opacity_ !== 1) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setupCompositionContext_() {",
+                    "// Always create a composition context when decluttering, regardless of opacity",
+                    "const declutter = this.getLayer().getDeclutter();",
+                    "if (this.opacity_ !== 1 || declutter) {",
+                    "const compositionContext = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "this.compositionContext_ = compositionContext;",
+                    "} else {",
+                    "this.compositionContext_ = this.context;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

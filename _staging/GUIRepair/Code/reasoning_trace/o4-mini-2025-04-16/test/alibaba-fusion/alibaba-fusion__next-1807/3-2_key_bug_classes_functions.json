@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/menu/view/item.jsx//Item"
+        ],
+        "bug_functions": [
+            "src/menu/view/item.jsx//Item.getTitle",
+            "src/menu/view/item.jsx//Item.render"
+        ],
+        "explanation": "Item 类是渲染 Menu.Item 的核心组件，在其 render 方法中，无论 children 类型（纯字符串或包含 icon 等复杂节点），均通过 this.getTitle(children) 生成 title 属性并注入到 DOM 上：\n\n1. getTitle(children)：递归提取所有子节点中字符串并拼接成完整文案。\n2. render()：直接将上述拼接结果赋值给 <TagName title={...}>。  \n\n这种做法导致两类问题：\n- 重复文本：若 title 与 innerText 完全相同时，用户界面会出现相同内容的双气泡提示，违反 WCAG “不要出现重复性文本” 原则；\n- 不可配置：业务方无法按需关闭 title，严重影响 UI 体验。\n\n定位到 Item.getTitle 和 Item.render 这两个方法后，可在 render 中增加判断：仅当 children 为纯字符串且长度超过显示范围（或结合 isValidElement 判断无图标节点）时才设置 title，否则不设置 title 属性。",
+        "bug_scenario": "当前 Menu.Item 组件在 render 阶段对所有子节点无差别地设置了 title 属性，导致：\n1. 当文字内容被折叠（添加省略号）时，浏览器悬浮提示框依旧展示完整文字，满足“超长折叠文字可 hover 显示”的需求，但在文字与 title 一致时造成重复文本，违反 WCAG 要求；\n2. 一些业务场景下并不需要 title 提示框，但无法关闭；\n\n截图1：表单下拉菜单项“01-产品接入测试在南天门配置商品遇到问题反馈”，悬浮后显示完整提示框。\n截图2：Select 组件中“Frankddddddd”被折叠后悬浮显示完整文本。\n截图3：Select 组件中纯文本“Frank”同样出现悬浮提示框，造成冗余。"
+    },
+    "2": {
+        "bug_classes": [
+            "src/menu/view/item.jsx//Item"
+        ],
+        "bug_functions": [
+            "src/menu/view/item.jsx//getTitle",
+            "src/menu/view/item.jsx//render"
+        ],
+        "explanation": "The Item class in src/menu/view/item.jsx is where menu items are created and rendered. Its getTitle method gathers raw text from the children and its render method always applies that text as the title attribute on the <li> (or custom tag). To implement the proposed fix (only add title for pure string children that need a hover tooltip), you must adjust getTitle (or its callers) and the render logic to conditionally set the title prop based on the type and content of children rather than always setting it.",
+        "bug_scenario": "In the Menu.Item component every item’s DOM node unconditionally gets a title attribute equal to the concatenation of its children’s text. This leads to duplicate tooltips (and duplicate screen‐reader output) when the children are pure text and match the title. Users want to remove the redundant tooltip for items whose label is simple text (especially un‐truncated text) while still providing hover/popover behavior for genuinely long or complex labels."
+    }
+}

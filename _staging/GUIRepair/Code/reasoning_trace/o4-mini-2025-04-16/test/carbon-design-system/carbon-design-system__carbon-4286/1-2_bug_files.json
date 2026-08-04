@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Search/Search.js",
+            "packages/components/src/components/search/search.js"
+        ],
+        "explanation": "Both of these files generate the Search component\u2019s HTML and include the magnifier <svg> with role=\"img\" and no alternative text. Search.js in the React package renders the <Search16> icon (which by default injects role=\"img\") without supplying a label or removing its role. The vanilla JS implementation in packages/components/src/components/search/search.js likewise writes out an SVG icon with role=\"img\" and no aria-label. Those omissions trigger the DAP violation; updating these files to either set aria-hidden=\"true\" and/or change the role to presentation (or to provide an aria-label) will resolve the accessibility error.",
+        "bug_scenario": "When the Carbon Search component is rendered (either via the React wrapper or the vanilla JS version), the magnifier icon is output as an <svg> with role=\"img\" but no non-empty aria-label or title. DAP flags this as a violation (\u201cThe WAI-ARIA widget with IMG role must have a nonempty alternate text or a label.\u201d) because icons with role=\"img\" require accessible text or should be hidden from assistive technologies."
+    },
+    "2": {
+        "bug_files": [
+            "packages/components/src/components/search/search.js",
+            "packages/react/src/components/Search/Search.js",
+            "packages/react/src/components/Search/Search-test.js"
+        ],
+        "explanation": "\n1) packages/components/src/components/search/search.js\n   \u2022 This is the vanilla Carbon Web Component implementation of Search. It inserts the <svg role=\"img\"> magnifier icon with no title or aria-label, causing the same IMG-role violation in non-React builds. It needs to either add a <title> element (and aria-labelledby) or change the SVG to role=\"presentation\".\n\n2) packages/react/src/components/Search/Search.js\n   \u2022 This is the React Search component which renders <Search16> (an SVG icon) with role=\"img\" and aria-hidden but no accessible name. DAP still flags it. You should either pass an explicit aria-label (e.g. aria-label=\"Search icon\") or switch the icon to role=\"presentation\" if purely decorative.\n\n3) packages/react/src/components/Search/Search-test.js\n   \u2022 After making changes to the SVG\u2019s accessibility attributes (adding aria-label, title, or changing role), the existing Jest/Enzyme tests will need to be updated to reflect the new props or attributes on the icon. This ensures tests don\u2019t break and that the accessibility fix is covered by automated tests.",
+        "bug_scenario": "When running DAP 1.8.0.0 against the Carbon Search component, the magnifying-glass SVG is exposed as a widget with role=\"img\" but has no accessible name (no aria-label, aria-labelledby or <title>), yet it is marked aria-hidden=\"true\". DAP flags this as \u201cThe WAI-ARIA widget with IMG role must have a nonempty alternate text or a label.\u201d In other words, an <svg role=\u201cimg\u201d> without any alternate text or proper labelling is a violation, and simply hiding it isn\u2019t sufficient. You must either give it an accessible name or change it to a decorative graphic (role=\u201cpresentation\u201d)."
+    }
+}

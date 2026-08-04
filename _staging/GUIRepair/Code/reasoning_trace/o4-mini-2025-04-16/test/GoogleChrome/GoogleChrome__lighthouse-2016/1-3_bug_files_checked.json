@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js",
+            "lighthouse-core/report/v2/renderer/details-renderer.js"
+        ],
+        "explanation": "The file report-renderer.js is responsible for grouping audits into passing and failing sets and for inserting the \u201cView N passed items\u201d details summary into the DOM. It always generates that section regardless of N. The details-renderer.js module builds the <details> and <summary> elements around each group\u2019s items. To fix the bug, report-renderer.js needs to skip rendering the passed-items <details> entirely when the count is 0, and/or details-renderer.js needs to omit the <summary> when there are no child audits. These are the two modules where the passed-audit dropdown is created and should be adjusted to gate against a zero count.",
+        "bug_scenario": "In the Lighthouse report UI v2, when there are zero passing audits the \u201cView 0 passed items\u201d dropdown control is still rendered\u2014even though there\u2019s nothing inside to show. The screenshot shows the passed-items details summary with an arrow, but clicking it reveals no content. The desired behavior is to suppress the entire details dropdown when the passed count is zero."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/report/v2/renderer/details-renderer.js",
+            "lighthouse-core/report/v2/renderer/report-renderer.js",
+            "lighthouse-core/report/v2/renderer/dom.js"
+        ],
+        "explanation": "All of the v2 report UI logic lives under lighthouse-core/report/v2/renderer. details-renderer.js is where the code unconditionally builds the \"passed audits\" section (and its \"View X passed items\" toggle), report-renderer.js orchestrates grouping and always passes through an empty passed list into details-renderer, and dom.js provides the DOM construction utilities that actually create the <details> element and summary text. To prevent the zero-count dropdown from appearing, you need to modify details-renderer.js (and its caller in report-renderer.js) to skip rendering the passed-items <details> entirely when the passed-items array is empty.",
+        "bug_scenario": "In the Lighthouse v2 report UI, when no audits have passed (\"0 passing audits\"), the report still renders a collapsed \u201cView 0 passed items\u201d dropdown toggle at the bottom. Since there are no passed audits to show, the dropdown is misleading and should be omitted entirely."
+    }
+}

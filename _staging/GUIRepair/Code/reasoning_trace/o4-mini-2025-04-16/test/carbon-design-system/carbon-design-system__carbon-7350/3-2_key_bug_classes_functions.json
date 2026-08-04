@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu",
+            "packages/react/src/internal/FloatingMenu.js//FloatingMenu",
+            "packages/react/src/internal/ClickListener.js//ClickListener",
+            "packages/react/src/internal/useOutsideClick.js//useOutsideClick"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//getMenuOffset",
+            "packages/react/src/internal/FloatingMenu.js//getFloatingPosition",
+            "packages/react/src/internal/ClickListener.js//handleDocumentClick",
+            "packages/react/src/internal/useOutsideClick.js//useOutsideClick"
+        ],
+        "explanation": "\n- OverflowMenu (OverflowMenu.js) is the component that currently drives opening, closing, keyboard handling, and positioning of the menu \u2013 it needs new logic to listen for onContextMenu events, record the mouse coordinates, and pass those as a dynamic offset into getMenuOffset.\n- getMenuOffset (OverflowMenu.js) is the helper that computes arrow\u2013to\u2013trigger offsets; to support context menus we must enhance it (and its call sites) to accept raw x/y coordinates in lieu of a trigger element.\n- FloatingMenu (FloatingMenu.js) actually portals and positions the menu body in the DOM once given an offset; its companion getFloatingPosition must be extended so it can position at arbitrary viewport coordinates (not just relative to a triggerRect).\n- ClickListener (ClickListener.js) (and the useOutsideClick hook in useOutsideClick.js) implement the logic for detecting clicks outside the menu and calling onClickOutside to close it. They currently only listen for normal \u2019click\u2019 events; they must be reviewed or augmented to also catch right-clicks and contextmenu dismissals so that the menu reliably closes when the user clicks or right-clicks away.",
+        "bug_scenario": "The user wants to be able to trigger a Carbon context (right-click) menu anywhere in their app \u2014 at an arbitrary screen coordinate under the mouse \u2014 rather than only by clicking the OverflowMenu \u201cmeatball\u201d icon, and have that menu render and position itself correctly, trap/restore focus, and close when clicking outside. The provided screen captures show right-clicking on a tree-view, a grid, and free\u2010form text all summoning a nested context menu at the pointer location. Carbon\u2019s current OverflowMenu only opens on click of its trigger button and always positions itself relative to that trigger, so it does not support arbitrary \u201ccontext-menu\u201d invocation or mouse\u2010based placement, nor does its click\u2010outside handling know about right-click events."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//getMenuOffset",
+            "packages/react/src/internal/ClickListener.js//ClickListener",
+            "packages/react/src/internal/useOutsideClick.js//useOutsideClick",
+            "packages/react/src/internal/FloatingMenu.js//FloatingMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/internal/FloatingMenu.js//getFloatingPosition"
+        ],
+        "explanation": "\n\u2022 OverflowMenu: the top-level React component that currently drives the overflow menu pattern; it must be extended to support an onContextMenu trigger, expose an \u2018open\u2019 prop, and render at arbitrary screen coordinates rather than next to its icon.\n\n\u2022 getMenuOffset: helper to compute nested submenu offsets based on an arrow\u2019s position; will need adjustments when opening menus at cursor coordinates (no fixed trigger).\n\n\u2022 FloatingMenu: low-level portal component responsible for measuring trigger position and placing the menu; its getFloatingPosition logic ties the menu to a DOM node bounds instead of raw mouse coordinates \u2013 this must be augmented to accept click event positions.\n\n\u2022 getFloatingPosition: core algorithm calculating the absolute left/top of the floating menu in view; must be adapted to handle contextual x/y inputs for the context-menu pattern.\n\n\u2022 ClickListener / useOutsideClick: two complementary implementations for detecting clicks outside the menu to close it; these are the mechanisms that close the context menu when clicking elsewhere and may need to remain or be unified under the new ContextMenu component.\n",
+        "bug_scenario": "The provided screen captures show a native browser context\u2010menu replacement workflow \u2013 right-clicking on various UI elements (list items, table cells, text) should open a custom nested context menu at the cursor location, allow navigating into child submenus, and close when clicking outside. However, Carbon\u2019s current OverflowMenu component doesn\u2019t listen to right-click (onContextMenu), only a button click; its positioning is tied to a trigger element rather than arbitrary mouse coordinates; and nested \u201coverflow\u201d submenus (via menuOffset/getMenuOffset) are not surfaced in this pattern."
+    }
+}

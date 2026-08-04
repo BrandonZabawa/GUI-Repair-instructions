@@ -1,0 +1,20 @@
+diff --git a/src/ol/format/GeoJSON.js b/src/ol/format/GeoJSON.js
+index d7cd11911a..566ffa6a4b 100644
+--- a/src/ol/format/GeoJSON.js
++++ b/src/ol/format/GeoJSON.js
+@@ -383,7 +383,14 @@ function readMultiPointGeometry(object) {
+  * @return {MultiPolygon} MultiPolygon.
+  */
+ function readMultiPolygonGeometry(object) {
+-  return new MultiPolygon(object['coordinates']);
++  // Filter out any empty rings so that deflateMultiCoordinatesArray()
++  // never sees a zero‐length ring and produces an undefined end index.
++  const coords = object['coordinates'].map(
++    polygon => polygon.filter(
++      ring => Array.isArray(ring) && ring.length > 0
++    )
++  );
++  return new MultiPolygon(coords);
+ }
+ 
+ /**

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/offline.js",
+            "lighthouse-core/gather/gatherers/start-url.js",
+            "lighthouse-core/audits/offline-start-url.js",
+            "lighthouse-core/runner.js"
+        ],
+        "explanation": "\u2022 gatherers/offline.js is responsible for putting Chrome into offline mode during the offline pass. If this code fails or isn\u2019t invoked, Chrome remains online and requests go to the network instead of the service worker or cache.\n\n\u2022 gatherers/start-url.js loads the start URL under whatever network conditions are set by the offline gatherer. If offline simulation never happens, this file will navigate to the live site instead of invoking the offline fallback.\n\n\u2022 audits/offline-start-url.js inspects the results of the offline pass (network records and screenshots) to determine whether the start URL loaded offline. Because the gatherers never actually go offline, this audit always reports a failure.\n\n\u2022 runner.js orchestrates the two-pass strategy (offline pass + online pass) and wires up which gatherers run in each phase. A misconfiguration or bug here could mean the offline gatherer isn\u2019t included or its results aren\u2019t isolated correctly, causing the offline pass to load the live site.",
+        "bug_scenario": "When Lighthouse runs the \"offline-start-url\" audit against a site with a working offline-fallback service worker (e.g. bhphotovideo.com), the offline pass isn\u2019t actually going offline. Instead of triggering the service worker\u2019s offline UI (\u201cYou are offline\u2026\u201d), Lighthouse still fetches the live desktop site. All network events in the offline pass report fromServiceWorker=false and fromDiskCache=false, so the audit mistakenly fails (score: 0) even though a genuine offline fallback is served."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/offline.js",
+            "lighthouse-core/gather/gatherers/start-url.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/driver.js"
+        ],
+        "explanation": "\u2022 gatherers/offline.js: This is the gatherer responsible for emulating offline network conditions (calling CDP emulation.setNetworkConditions). If this code never executes or uses the wrong protocol method, the browser won\u2019t actually go offline.  \n\u2022 gatherers/start-url.js: This gatherer triggers the offline navigation to the start URL and captures the resulting document. If offline isn\u2019t actually enabled, it will simply load the live page.  \n\u2022 gather-runner.js: This orchestrates the two pass structure (default pass and offline pass), invoking the offline and start-url gatherers in the correct order. A bug here could skip or misorder the offline step.  \n\u2022 driver.js: This module wraps the Chrome DevTools Protocol commands. If the driver\u2019s emulateNetworkConditions or network handling is incorrect or never sent, offline emulation will silently fail.",
+        "bug_scenario": "When Lighthouse runs the \"offline-start-url\" audit it is supposed to perform a second, offline navigation to the start URL so that any service-worker fallback UI is shown and the audit can verify that the app works offline. Instead, the desktop site still loads, and every network request during the offline pass shows fromServiceWorker=false and fromDiskCache=false. In other words, Lighthouse never actually flip the network to offline, so it reports the start URL as failing to load offline even though the service worker does serve an offline page."
+    }
+}

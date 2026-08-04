@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Heatmap.js//Heatmap",
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer",
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Heatmap.js//constructor",
+            "src/ol/layer/Heatmap.js//createRenderer",
+            "src/ol/renderer/canvas/Layer.js//useContainer"
+        ],
+        "explanation": "1. Heatmap.constructor: this is where the options object (including className) is initially received and then passed to the parent VectorLayer via super(baseOptions). If className isn\u2019t properly stored or exposed, downstream code never sees it.\n\n2. Heatmap.createRenderer: returns a WebGLPointsLayerRenderer for heatmap layers. That renderer creates its own container (or delegates to CanvasLayerRenderer) but currently doesn\u2019t pick up the layer\u2019s className property, defaulting to 'ol-layer'.\n\n3. CanvasLayerRenderer.useContainer: this method reads layer.getClassName() and sets container.className to that value. In practice, for a Heatmap (which uses the WebGL renderer), useContainer may never be called or the renderer\u2019s own container logic overrides it, so the custom className is never used.\n\nBy fixing these points\u2014ensuring that Heatmap stores the className option, that WebGLPointsLayerRenderer (and/or CanvasLayerRenderer) reads layer.getClassName(), and that createRenderer delegates container creation to useContainer\u2014custom class names will be applied as intended.",
+        "bug_scenario": "The developer tried to customize the CSS class name of a Heatmap layer by passing a className option (for example, className: 'ol-layer-heatMap') to new HeatmapLayer({...}) in main.js. However, when the map renders, the container DIV still has only the default 'ol-layer' class, and the custom className is never applied. In the screenshot you can see the <div class=\"ol-layer\">\u2026</div> with no 'ol-layer-heatMap' class despite having passed that option."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/Heatmap.js//Heatmap",
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Heatmap.js//constructor",
+            "src/ol/renderer/canvas/Layer.js//useContainer"
+        ],
+        "explanation": "\u2022 Heatmap.constructor: this is where the options (including className) are passed up to the base VectorLayer via super(baseOptions). If className is dropped or misnamed here, the layer object will never return the correct getClassName() value and the renderer can\u2019t pick it up.  \n\u2022 CanvasLayerRenderer.useContainer: this method reads layer.getClassName() to set the container.className when creating the <div>. Since getClassName() is returning the wrong or empty value (the custom className never made it into the layer\u2019s properties), useContainer always falls back to the default ('ol-layer').  \n\nFixing the plumbing between the Heatmap constructor (passing className into the BaseObject) and the Layer.getClassName()/CanvasLayerRenderer.useContainer logic will restore the correct CSS class on the rendered heatmap layer.",
+        "bug_scenario": "The user sets a custom className on an ol.layer.Heatmap (e.g. className: 'ol-layer-heatMap') but when the layer is rendered, the container div always comes back with the default class name (ol-layer) and the custom class name is never applied. Even the default className ('ol-layer') is not present as an option on the Heatmap layer object, so the useContainer logic in the Canvas renderer never picks up the right className."
+    }
+}

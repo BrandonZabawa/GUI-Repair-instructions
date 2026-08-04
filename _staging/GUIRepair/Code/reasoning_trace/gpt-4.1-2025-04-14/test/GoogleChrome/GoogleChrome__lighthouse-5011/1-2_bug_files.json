@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/audits/uses-rel-preload.js",
+            "lighthouse-core/gather/computed/critical-request-chains.js",
+            "lighthouse-core/gather/computed/network-records.js"
+        ],
+        "explanation": "These files are directly involved in how Lighthouse identifies, audits, and reports 'Critical Request Chains' and 'rel=preload' resources: (1) 'lighthouse-core/audits/critical-request-chains.js' contains the core logic for detecting and auditing critical paths based on network request priorities; (2) 'lighthouse-core/audits/uses-rel-preload.js' is specific to how 'preload' resources are handled, and could contain logic (or biases) about their criticality; (3) 'lighthouse-core/gather/computed/critical-request-chains.js' is likely responsible for computing the underlying request chains that feed into the audits, determining which resources are flagged; (4) 'lighthouse-core/gather/computed/network-records.js' parses network logs and may (depending on implementation) be involved in interpreting the priority and critical-ness of each request. Reviewing and possibly updating how these modules classify and report preload-based async stylesheet loads will be necessary to ensure they do not inappropriately mark such resources as 'critical request chains.'",
+        "bug_scenario": "Lighthouse is flagging a stylesheet loaded via 'rel=preload' (with an onload handler that switches its rel to 'stylesheet' after it loads) as part of a 'critical request chain.' The report highlights that the stylesheet is fetched with high priority and is considered 'critical' by Lighthouse, even though, due to the async loading and script, it should not block rendering and, in the test case, contains no styles at all. The key question is why Lighthouse deems this a critical resource: is it because of the way 'preload' is prioritized, or an oversight in critical path detection code?"
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/gather/computed/critical-request-chains.js",
+            "lighthouse-core/gather/computed/network-records.js",
+            "lighthouse-core/gather/computed/network-analysis.js",
+            "lighthouse-core/audits/uses-rel-preload.js"
+        ],
+        "explanation": "These files are related because they govern Lighthouse's detection, analysis, and reporting of 'critical request chains' and the use of rel=preload resources. Specifically: (1) 'lighthouse-core/audits/critical-request-chains.js' is responsible for the audit logic and report of critical chains; (2) 'lighthouse-core/gather/computed/critical-request-chains.js' computes and determines the network chains considered critical; (3) 'lighthouse-core/gather/computed/network-records.js' and (4) 'network-analysis.js' collect and analyze network request priorities, types, and dependencies, influencing what is classified as 'critical'; (5) 'lighthouse-core/audits/uses-rel-preload.js' is specifically related to the audit of preload hints and might interact or contribute to this misclassification. Investigating and possibly updating logic in these files is key to resolving why async preloaded stylesheets are considered critical.",
+        "bug_scenario": "The bug scenario involves Lighthouse incorrectly classifying a stylesheet loaded via <link rel='preload'> (with deferred application using onload) as part of the page's critical request chain, despite it being non-blocking and not affecting the initial page render. The bug report raises questions about why Lighthouse considers such async stylesheets 'critical' and whether the identifier is based on preload priority. The attached image shows Lighthouse Diagnostic output, naming the preload stylesheet as part of the critical chain and listing its delay and tiny file size, highlighting it as a potentially misleading result for users who utilize this async loading pattern."
+    }
+}

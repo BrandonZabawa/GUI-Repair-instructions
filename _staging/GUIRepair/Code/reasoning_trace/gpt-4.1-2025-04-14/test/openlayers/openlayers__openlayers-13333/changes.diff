@@ -1,0 +1,28 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index ed48cc2a6b..5ad743e507 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -8,6 +8,7 @@ import TileState from '../../TileState.js';
+ import TileTexture from '../../webgl/TileTexture.js';
+ import WebGLArrayBuffer from '../../webgl/Buffer.js';
+ import WebGLLayerRenderer from './Layer.js';
++import {intersects} from '../../extent.js';
+ import {AttributeType} from '../../webgl/Helper.js';
+ import {ELEMENT_ARRAY_BUFFER, STATIC_DRAW} from '../../webgl.js';
+ import {
+@@ -323,6 +324,15 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     for (let x = tileRange.minX; x <= tileRange.maxX; ++x) {
+       for (let y = tileRange.minY; y <= tileRange.maxY; ++y) {
+         const tileCoord = createTileCoord(z, x, y, this.tempTileCoord_);
++
++        // --- PATCH: Only enqueue tiles whose extent intersects the source's extent ---
++        const tileExtent = tileGrid.getTileCoordExtent(tileCoord);
++        const sourceExtent = tileSource.getExtent && tileSource.getExtent();
++        if (sourceExtent && !intersects(tileExtent, sourceExtent)) {
++          continue;
++        }
++        // ------------------------------------------------------------------------------
++
+         const cacheKey = getCacheKey(tileSource, tileCoord);
+ 
+         /**

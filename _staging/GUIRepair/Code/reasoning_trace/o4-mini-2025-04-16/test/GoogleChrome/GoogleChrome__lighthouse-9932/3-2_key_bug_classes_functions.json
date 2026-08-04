@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//ConnectionPool"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//_initializeConnections"
+        ],
+        "explanation": "In connection-pool.js, ConnectionPool._initializeConnections groups records by origin and then reads serverResponseTimeByOrigin.get(origin) or falls back to DEFAULT_SERVER_RESPONSE_TIME (30 ms). Data URIs have a securityOrigin of 'data' and aren\u2019t added to serverResponseTimeByOrigin, so they receive the 30 ms default. To fix this, _initializeConnections must detect the 'data' scheme (or empty origin) and override responseTime to 0 for data URIs rather than using DEFAULT_SERVER_RESPONSE_TIME.",
+        "bug_scenario": "When you feed a data-URI resource into the Lighthouse network simulator, it still picks up the default serverResponseTime (\u224830 ms) even though data URIs are local and should never incur server latency. In the screenshot you can see additionalRtt is 0 (as expected) but responseTime is 30 for a data:image/png;base64\u2026 request."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//ConnectionPool",
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js//Simulator"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//_initializeConnections",
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//constructor",
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js//_initializeConnectionPool",
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js//getOptions"
+        ],
+        "explanation": "The bug stems from ConnectionPool._initializeConnections in connection-pool.js, which does `serverResponseTimeByOrigin.get(origin) || DEFAULT_SERVER_RESPONSE_TIME`. Since data URIs have a \u2018data\u2019 securityOrigin that\u2019s never populated in the options map, they always fall back to the 30 ms default. Those defaults themselves originate from Simulator.getOptions and are passed into _initializeConnectionPool (and ultimately ConnectionPool), so both the Simulator\u2019s option-building (getOptions/_initializeConnectionPool) and the ConnectionPool\u2019s default fallback logic need adjustment to special-case data URIs and set their serverResponseTime to zero.",
+        "bug_scenario": "When feeding a data-URI resource into the Lantern network simulator, it still picks up the default server response time (\u224830 ms) even though data URIs are local and should incur zero server latency. In the screenshot you can see additionalRtt is 0 (correct) but responseTime is 30 for a data:image/png;base64\u2026 request because the ConnectionPool code falls back to DEFAULT_SERVER_RESPONSE_TIME whenever an origin has no explicit entry in the serverResponseTimeByOrigin map."
+    }
+}

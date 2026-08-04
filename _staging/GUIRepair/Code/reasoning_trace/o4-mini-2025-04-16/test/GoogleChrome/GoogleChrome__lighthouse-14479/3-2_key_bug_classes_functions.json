@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "core/audits/dobetterweb/dom-size.js//DOMSize",
+            "core/lib/i18n/i18n.js//UIStrings"
+        ],
+        "bug_functions": [
+            "core/audits/dobetterweb/dom-size.js//static audit",
+            "core/lib/i18n/i18n.js//createIcuMessageFn"
+        ],
+        "explanation": "All of the integer metrics originate in DOMSize.audit (core/audits/dobetterweb/dom-size.js). In that method we build a details table with valueType:\"numeric\" and pass raw numeric values (e.g. stats.totalBodyElements). Under the hood, Audit.makeTableDetails and the ICU-based formatter (via createIcuMessageFn in core/lib/i18n/i18n.js) pick up the number formatting defaults\u2014which include one decimal place\u2014causing \u201c.0\u201d on every integer. To fix it, we need to override the numeric formatting for these table cells (either by passing formatting options into makeTableDetails or by adjusting createIcuMessageFn/Intl.NumberFormat defaults) so that whole numbers are formatted with zero decimal places.",
+        "bug_scenario": "In the Lighthouse DOM Size audit (audit id \u201cdom-size\u201d), all of the integer-valued metrics in the details table (Total DOM Elements, Maximum DOM Depth, Maximum Child Elements) are being displayed with one decimal place (e.g. \u201c2,008.0\u201d, \u201c23.0\u201d, \u201c81.0\u201d) even though they will always be whole numbers. The screenshot shows a table of three rows where the \u201cValue\u201d column has unwanted \u201c.0\u201d fractions on each metric."
+    },
+    "2": {
+        "bug_classes": [
+            "core/audits/dobetterweb/dom-size.js"
+        ],
+        "bug_functions": [
+            "DOMSize.audit",
+            "createIcuMessageFn"
+        ],
+        "explanation": "All of the unwanted \u201c.0\u201d decimals are introduced at render time when the audit builds its details table and hands raw numbers to Lighthouse\u2019s default numeric formatter.  \n\n\u2022 core/audits/dobetterweb/dom-size.js \u2192 class DOMSize, specifically its static audit() method, is where the integer stats (stats.totalBodyElements, stats.depth.max, stats.width.max) are collected into the details.items array. These values are passed as plain numbers and then formatted with default fraction digits = 1.  \n\n\u2022 core/lib/i18n/i18n.js \u2192 createIcuMessageFn is the entry point for Lighthouse\u2019s ICU-based formatting. The same Intl.NumberFormat defaults (including one decimal place) are applied unless overridden.  \n\nTo fix the bug you can either:\n  1. In DOMSize.audit(), convert the integer metrics into formatted strings (e.g. via an ICU skeleton that uses zero fraction digits) and change those cells to valueType: 'text'.  \n  2. Or, adjust the default number-formatting options in createIcuMessageFn (or the downstream formatMessage helper) to omit fraction digits for integer-only metrics.  \n\nEither change ensures that Total DOM Elements, DOM Depth, and Child Elements are displayed as whole numbers without a redundant \u201c.0.\u201d",
+        "bug_scenario": "In the Lighthouse DOM Size audit (audit id \u201cdom-size\u201d), the three integer-only metrics (Total DOM Elements, Maximum DOM Depth, Maximum Child Elements) are currently rendered with a \u201c.0\u201d decimal fraction in the details table (e.g. \u201c2,008.0\u201d). These values will always be whole numbers, so the trailing \u201c.0\u201d is unnecessary and misleading."
+    }
+}

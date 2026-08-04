@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-markdown/printer-markdown.js",
+            "src/language-markdown/options.js"
+        ],
+        "explanation": "1. src/language-markdown/printer-markdown.js \u2013 this is where Markdown tables are printed. It currently measures each cell\u2019s length and builds a separator of the same width (e.g. `:-------:`). We need to add logic here to detect HTML content or cell lengths exceeding a threshold and then skip width calculation, emitting the default three-dash `:---:` separators instead. 2. src/language-markdown/options.js \u2013 this file defines the Markdown-specific formatting options. If we want to make this behavior configurable (or add a flag like `disableTableNormalization`), we\u2019d declare it here so users can enable or disable the fallback. Changes in these two files implement the core detection and fallback behavior for Markdown table normalization.",
+        "bug_scenario": "When Prettier formats Markdown tables whose cells contain long HTML snippets (for example, all-contributors tables with avatar <img> tags and links), it still normalizes the separator row by filling it with enough dashes to match each column\u2019s maximum width. This produces extremely long separator lines (hundreds of characters) that defeat the purpose of the concise three-dash \u201c:---:\u201d pattern. The request is: detect when a table has very long or HTML-heavy cells, and in those cases disable width-based normalization, falling back to a minimal `| :---: | :---: |\u2026|` separator row."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-markdown/printer-markdown.js"
+        ],
+        "explanation": "The Markdown table-printing logic lives in src/language-markdown/printer-markdown.js. That module reads each row\u2019s cell content, computes the maximum width per column, and builds the separator row by repeating dashes to match that width. To fix the bug, we need to update this file to detect when the computed width is excessively large (or when cells contain HTML) and, in those cases, generate a fixed three-dash separator (`:---:`) rather than a long, normalized one.",
+        "bug_scenario": "When Prettier formats a Markdown table whose cells contain long HTML snippets (for example, an all-contributors table with embedded <img> tags), it measures the widest cell and generates a separator row of that width by repeating dashes. In practice this can produce a single separator line hundreds of characters long (865 in the example), ruining readability. We want to detect such cases (e.g. when a computed column width exceeds a reasonable threshold or contains HTML) and fall back to the standard three-dash (`:---:`) separators instead of normalizing to the full width."
+    }
+}

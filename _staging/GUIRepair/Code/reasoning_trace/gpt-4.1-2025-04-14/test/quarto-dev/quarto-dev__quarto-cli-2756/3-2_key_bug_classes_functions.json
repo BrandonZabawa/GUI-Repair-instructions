@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/crossref/theorems.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/crossref/theorems.lua//theorems",
+            "src/resources/filters/crossref/theorems.lua//preprocessTheorems"
+        ],
+        "explanation": "The issues originate from the processing of theorem/proof blocks and how their captions are constructed and inserted. The 'theorems' function in theorems.lua is responsible for building theorem/proof blocks, extracting the caption, and prepending it to the first content block (using tprepend). The error occurs when the first content block is missing or of an unexpected type (e.g., a code block or a list), leading to 'caption.content' being nil or not a table, which causes the Lua error. Additionally, when the first content block is a list, prepending the caption to 'caption.content' results in the caption being added as a list item, which is not the intended behavior. The 'preprocessTheorems' function is also related, as it walks through Div blocks and modifies headers, but the main logic error is in 'theorems'. Therefore, these functions in theorems.lua are the likely locations for the necessary fixes.",
+        "bug_scenario": "The bug scenario involves two issues with the handling of theorem and proof blocks in Quarto documents: (1) When a theorem or proof block contains only a code block and lacks a header/label, an error is thrown by the Lua filter (bad argument #1 to 'insert' (table expected, got nil)); (2) When a list (ordered or unordered) is used as the first block in a theorem, the theorem caption (heading) is erroneously included as the first item of the list, leading to incorrect rendering, as shown in the image where the theorem title is included as a bullet or numbered list item."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/crossref/theorems.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/crossref/theorems.lua//theorems",
+            "src/resources/filters/crossref/theorems.lua//preprocessTheorems"
+        ],
+        "explanation": "The bug report and the provided image both indicate that the issue originates from how theorem/proof environments are processed and rendered by the Lua filters. In 'theorems.lua', the 'theorems' function is responsible for constructing the output for theorem/proof blocks, including handling captions, content, and inserting them into the document. The 'preprocessTheorems' function is intended to mark embedded headers as unnumbered to avoid them being treated as standard document headings. However, a flaw in how the caption is extracted and inserted into the theorem environment content (especially as a prefix to the first block of content) can result in the caption being included as the first item of a list, as shown in the bug image. These two functions are directly responsible for the manipulation of theorem/proof blocks and are therefore the most likely places where the bug fix needs to occur.",
+        "bug_scenario": "The scenario involves an error in rendering theorems and proofs in Pandoc/Quarto documents when code blocks are present without a header/label, causing the Lua filter to fail. Additionally, there is a rendering bug where the theorem/proof heading is included as the first item inside a bullet or numbered list, making the heading appear as part of the list. The screenshot illustrates that the theorem heading (caption) is incorrectly treated as a list item, both in unordered and ordered lists within theorem environments."
+    }
+}

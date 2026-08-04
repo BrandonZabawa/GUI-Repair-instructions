@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-java.js//namespace pattern in Prism.languages.insertBefore('java','class-name')"
+        ],
+        "explanation": "The root of the problem is the \u2018namespace\u2019 regex in components/prism-java.js. It\u2019s defined as /(...\\s+)[a-z]\\w*(?:\\.[a-z]\\w*)+/, which requires at least one \u2018.\u2019 segment, so single-segment package names never match. Adjusting this pattern (for example by making the \u2018(?:\\.[a-z]\\w*)+\u2019 part optional with \u2018*\u2019 instead of \u2018+\u2019) will allow \u2018package baz;\u2019 to be recognized as a namespace and highlighted properly.",
+        "bug_scenario": "In the Java code snippet, the syntax highlighter correctly highlights multi\u2010segment package names (e.g. \u201cpackage baz.zap;\u201d) as a namespace but fails to highlight single\u2010segment package names (e.g. \u201cpackage baz;\u201d). The provided screenshot shows \u201cbaz.zap\u201d in yellow but \u201cbaz\u201d left unhighlighted."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-java.js//namespace",
+            "components/prism-java.min.js//namespace"
+        ],
+        "explanation": "Both the unminified and minified Java language definitions register a \"namespace\" token with a regex that requires at least one dot in the name (the pattern uses (?:\\.[a-z]\\w*)+). This excludes single-segment package names. To fix the bug, the regex should allow zero or more dot-segments (e.g. change + to *), so that single-package names like \u201cbaz\u201d are also matched and highlighted.",
+        "bug_scenario": "The Java syntax highlighter fails to recognize and highlight single-segment package names. In the screenshot, \u201cpackage baz;\u201d does not highlight \u201cbaz\u201d as a namespace token, while multi-segment names like \u201cpackage baz.zap;\u201d and imports such as \u201cimport foo.bar.Bar;\u201d are highlighted correctly."
+    }
+}

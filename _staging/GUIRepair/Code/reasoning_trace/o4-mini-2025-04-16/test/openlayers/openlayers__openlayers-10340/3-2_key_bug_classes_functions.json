@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/interaction/Draw.js//Draw",
+            "src/ol/geom/Circle.js//Circle"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Draw.js//modifyDrawing_",
+            "src/ol/interaction/Draw.js//createRegularPolygon",
+            "src/ol/interaction/Draw.js//createBox",
+            "src/ol/geom/flat/geodesic.js//greatCircleArc",
+            "src/ol/geom/flat/geodesic.js//meridian",
+            "src/ol/geom/flat/geodesic.js//parallel"
+        ],
+        "explanation": "The core Draw class (and in particular its private method modifyDrawing_) is responsible for updating the sketch geometry on pointer move but currently computes distances and interpolates points in a flat, Euclidean coordinate system even when useGeographic is enabled, leading to distortions in geographic (non-linear) projections. The factory functions createRegularPolygon and createBox build their vertices using simple planar math, so a \"square\" or \"box\" in geographic mode no longer corresponds to equal-angle or equal-distance shapes on the globe. The Circle class itself likewise uses a planar radius to compute extents and vertices. Conversely, the geodesic utilities (greatCircleArc, meridian, parallel) offer the correct spherical-or-geographic interpolations but are not currently plugged into the Draw pipeline. To fix the bug, modifyDrawing_, createRegularPolygon, and createBox should leverage the geodesic functions (greatCircleArc, meridian, parallel) or otherwise compute true geographic distances so that shapes remain regular and reach the pointer position under useGeographic.\u201d} Ende. (Note: geodesic utilities listed as bug functions because they provide the missing spherical logic.) }{@confidence=",
+        "bug_scenario": "When drawing circles or other custom geometries with the Draw interaction in useGeographic mode, the shapes are grossly distorted at high latitudes. A \"square\" drawn as a regular polygon appears skewed and non-regular (first screenshot), and a box drawn via createBox does not match the pointer bounds but instead produces a stretched or mis-positioned rectangle inside the projected circle outline (second screenshot)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/interaction/Draw.js//Draw",
+            "src/ol/geom/Circle.js//Circle"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Draw.js//createRegularPolygon",
+            "src/ol/interaction/Draw.js//createBox",
+            "src/ol/geom/Circle.js//setCenterAndRadius"
+        ],
+        "explanation": "The Draw class\u2019s exported geometryFunction generators (createRegularPolygon and createBox) build shapes assuming a flat (projected) coordinate system, so in geographic mode these Euclidean constructions become warped by the map projection at high latitudes. Likewise, the Circle geometry\u2019s setCenterAndRadius (and its reliance on a simple flat-coordinate radius calculation) does not account for geodesic distance, so drawn circles do not actually extend to the pointer. To fix the bug, these functions must be updated to use great-circle or other geodesic computations (for example, via the utilities in ol/geom/flat/geodesic.js) when useGeographic is enabled, ensuring shapes remain true to the user\u2019s pointer on the globe.",
+        "bug_scenario": "When the Draw interaction is used with useGeographic (i.e. geographic coordinates) turned on, shapes that should be perfect circles or regular polygons become distorted\u2014drawn circles often don\u2019t reach the pointer at high latitudes and boxes or polygons created via createBox/createRegularPolygon appear skewed or irregular."
+    }
+}

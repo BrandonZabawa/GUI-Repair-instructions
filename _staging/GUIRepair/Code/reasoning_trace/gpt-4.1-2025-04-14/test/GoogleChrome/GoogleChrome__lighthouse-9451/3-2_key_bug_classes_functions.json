@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/offline.js//Offline",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/offline.js//Offline.beforePass",
+            "lighthouse-core/gather/gatherers/offline.js//Offline.afterPass",
+            "lighthouse-core/gather/driver.js//Driver.goOffline",
+            "lighthouse-core/gather/driver.js//Driver.goOnline"
+        ],
+        "explanation": "The Offline gatherer class (lighthouse-core/gather/gatherers/offline.js) is explicitly responsible for managing the offline pass in Lighthouse. Its methods beforePass and afterPass handle toggling the network offline and online, respectively, and checking if the page was served by a Service Worker. If the offline state is not properly enforced, or the Service Worker is not being used correctly, the bug would manifest as described. The Driver class (lighthouse-core/gather/driver.js) provides the goOffline and goOnline methods that are called by the Offline gatherer to emulate network conditions. If these methods do not actually disable network requests or restore them as expected, the offline pass would not be genuine, leading to the bug. Therefore, these classes and methods are the key elements where the bug resides and where a fix would be applied.",
+        "bug_scenario": "The bug scenario is that when running Lighthouse on a specific URL (https://www.bhphotovideo.com/), the offline pass does not always truly emulate offline conditions. Lighthouse incorrectly reports that the start URL does not load offline, even though the current page does. The internals show that the network requests' 'fromServiceWorker' and 'fromDiskCache' flags are false, indicating that the page is loaded from the network, not from the Service Worker or cache, which should not be possible when the browser is supposed to be offline. The expected behavior is that Lighthouse should properly emulate offline, resulting in an offline error page (like the one shown in the image), not the normal desktop version of the site."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/offline.js//Offline",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/offline.js//Offline.beforePass",
+            "lighthouse-core/gather/gatherers/offline.js//Offline.afterPass",
+            "lighthouse-core/gather/driver.js//Driver.goOffline",
+            "lighthouse-core/gather/driver.js//Driver.goOnline"
+        ],
+        "explanation": "The Offline gatherer class and its methods (beforePass and afterPass) are directly responsible for simulating offline conditions and validating if a page loads offline. The beforePass method calls driver.goOffline, and afterPass checks network records and then calls driver.goOnline. The Driver class implements the logic for enabling/disabling network connectivity via the goOffline and goOnline methods. If the offline simulation is not working as intended, the issue is likely in how these methods are toggling network state or how the gatherer is interpreting network records for offline conditions. These classes and functions need to be inspected and potentially updated to ensure that the offline pass accurately reflects a true offline experience, as shown in the provided image.",
+        "bug_scenario": "The bug scenario involves Lighthouse's offline pass not properly simulating offline conditions. Instead of showing an offline error page (like the one in the attached image), the desktop version of the site loads and network requests are not marked as being served from the service worker or disk cache. This means the offline simulation is failing, resulting in incorrect audit results."
+    }
+}

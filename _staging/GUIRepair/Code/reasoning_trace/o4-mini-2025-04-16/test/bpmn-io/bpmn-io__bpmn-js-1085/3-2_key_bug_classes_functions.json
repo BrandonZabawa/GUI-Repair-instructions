@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//fixConnection",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//replaceReconnectedConnection",
+            "lib/features/modeling/BpmnUpdater.js//updateConnection",
+            "lib/features/modeling/BpmnUpdater.js//updateConnectionWaypoints"
+        ],
+        "explanation": "The ReplaceConnectionBehavior handlers (fixConnection and replaceReconnectedConnection) explicitly pass the raw Diagram-JS waypoint objects into modeling.connect, which ends up writing these JS objects to the BPMN businessObject. Since BpmnUpdater.updateConnection and updateConnectionWaypoints are empty stubs, the BPMN-DI isn\u2019t corrected (cropped or transformed) before serialization. As a result the raw waypoint array is dropped straight into the sequenceFlow\u2019s XML. To fix this, either strip out or transform the Diagram-JS waypoint objects in ReplaceConnectionBehavior (or in Modeling) and/or implement updateConnection/updateConnectionWaypoints in BpmnUpdater so that only proper BPMN-DI waypoint entries are produced.",
+        "bug_scenario": "In the animated scenario the user drags a task off an existing task to automatically re-connect the two with an orthogonal connector. As soon as the connector needs a \u201cbend\u201d in the middle (i.e. a segment with two waypoints), the XML export ends up with an illegal waypoints property on the sequenceFlow element \u2014 literally \u201c[object Object],[object Object],\u2026\u201d. This shows up as serialized marker text instead of proper BPMN-DI waypoint entries."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior",
+            "lib/features/modeling/Modeling.js//Modeling",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//fixConnection",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//replaceReconnectedConnection",
+            "lib/features/modeling/Modeling.js//connect",
+            "lib/features/modeling/BpmnUpdater.js//updateConnectionWaypoints"
+        ],
+        "explanation": "1. ReplaceConnectionBehavior (fixConnection & replaceReconnectedConnection): when a connection is replaced or reconnected, these handlers call `modeling.connect(..., { type, waypoints: connection.waypoints.slice() })`, passing the UI waypoint array into the new business object.  \n2. Modeling.prototype.connect: this API forwards the passed-in `attrs` (including `waypoints`) into the semantic element creation (`createConnection`), causing the BPMN element to gain a `waypoints` property.  \n3. BpmnUpdater.prototype.updateConnectionWaypoints: the updater should move routing points into the DI section and strip them from the semantic model, but this method is empty. As a result, no cleanup happens and the illegal `waypoints` attribute remains on the `<sequenceFlow>`.  \n\nTo fix the bug, waypoints must not be persisted on the BPMN semantic element. Instead, replaceConnection handlers should stop passing waypoints into `attrs`, or BpmnUpdater.updateConnectionWaypoints must properly extract and serialize waypoints into the DI and remove them from the business object.",
+        "bug_scenario": "After duplicating a task with a bent arrow (a sequenceFlow that has a middle segment), the exported BPMN XML contains an illegal `waypoints` attribute on the `<sequenceFlow>` element. Instead of storing routing information only in the DI (Diagram Interchange) section, the UI waypoints are carried over into the semantic BPMN element, resulting in:  \n\n  <sequenceFlow id=\"...\" sourceRef=\"...\" targetRef=\"...\" waypoints=\"[object Object],[object Object],\u2026\" />"
+    }
+}

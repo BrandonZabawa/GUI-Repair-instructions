@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/snapping/BpmnConnectSnapping.js//BpmnConnectSnapping",
+            "lib/features/rules/BpmnRules.js//BpmnRules"
+        ],
+        "bug_functions": [
+            "lib/features/snapping/BpmnConnectSnapping.js//snapInsideTarget",
+            "lib/features/snapping/BpmnConnectSnapping.js//snapToPosition",
+            "lib/features/rules/BpmnRules.js//canConnectMessageFlow"
+        ],
+        "explanation": "The snapping behavior for message flows is implemented in BpmnConnectSnapping: only generic snapping (snapInsideTarget) and explicit event snapping (snapToPosition) are applied for bpmn:MessageFlow, which doesn\u2019t cover pool\u2010boundary attachment inside a lane. Adjusting these helpers (and the message flow branch in BpmnConnectSnapping) is necessary to allow snapping anywhere on the pool border. Additionally, BpmnRules.canConnectMessageFlow enforces where message flows may attach; after lanes are added/removed the target parent context changes and the rule may disallow the connection inside the pool. Updating canConnectMessageFlow to recognize pool boundaries regardless of prior lane modifications is required to restore the expected behavior.",
+        "bug_scenario": "When connecting two pools with a message flow after adding and immediately removing a lane on one pool, the connector can only snap to the pool header. It no longer snaps to the rest of the pool boundary or inside the (now single) lane area as it did before."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/snapping/BpmnConnectSnapping.js//BpmnConnectSnapping",
+            "lib/features/rules/BpmnRules.js//canConnectMessageFlow"
+        ],
+        "bug_functions": [
+            "lib/features/snapping/BpmnConnectSnapping.js//snapInsideTarget",
+            "lib/features/rules/BpmnRules.js//canConnectMessageFlow",
+            "lib/features/snapping/BpmnSnappingUtil.js//getBoundaryAttachment"
+        ],
+        "explanation": "\u2022 BpmnConnectSnapping (default export in BpmnConnectSnapping.js) installs snapping logic for connectors and is responsible for keeping the connector within the target bounds. Its helper snapInsideTarget is invoked for all connection types, but the specialized branch for MessageFlow only positions connectors on BPMN events \u2013 it never treats a pool boundary as a valid snap target body. After adding/removing a lane the pool\u2019s internal shape changes, so the header-only fallback kicks in. \n\u2022 canConnectMessageFlow (in BpmnRules.js) enforces which elements may serve as source/target for message flows. Any misclassification of the pool body (e.g. after a transient lane) will silently block snapping inside the pool. \n\u2022 getBoundaryAttachment (in BpmnSnappingUtil.js) determines on which edge of the target shape a connector would attach; although not yet wired into BpmnConnectSnapping for MessageFlow, it provides the orientation logic required to detect and snap to the pool side rather than the header. These functions together govern both the rule and the visual feedback for attaching message flows to pool boundaries.",
+        "bug_scenario": "After adding then immediately removing a lane in one of two pools, connecting a message flow from one pool to the other no longer works as before: when you drag the message\u2010flow connector over the target pool\u2019s body, the connection only snaps to the pool header rather than to its side boundary. The GIF shows the connector being rejected at the pool body boundary and only accepted at the top band."
+    }
+}

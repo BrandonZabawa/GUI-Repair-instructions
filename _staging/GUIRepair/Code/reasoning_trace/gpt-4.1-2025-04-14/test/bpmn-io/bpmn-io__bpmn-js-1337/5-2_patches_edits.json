@@ -1,0 +1,75 @@
+{
+    "1/1": {
+        "lib/features/popup-menu/ReplaceMenuProvider.js": [
+            {
+                "SEARCH": [
+                    "// start events outside event sub processes",
+                    "if (is(businessObject, 'bpmn:StartEvent') && !isEventSubProcess(businessObject.$parent)) {",
+                    "",
+                    "entries = filter(replaceOptions.START_EVENT, differentType);",
+                    "",
+                    "return this._createEntries(element, entries);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  // start events outside event sub processes",
+                    "  if (is(businessObject, 'bpmn:StartEvent') && !isEventSubProcess(businessObject.$parent)) {",
+                    "",
+                    "    // If inside a subprocess (but not an event subprocess), only allow blank start event",
+                    "    if (is(businessObject.$parent, 'bpmn:SubProcess')) {",
+                    "      entries = filter(replaceOptions.START_EVENT, function(entry) {",
+                    "        // Only allow blank (untyped) start event",
+                    "        return !entry.target.eventDefinitionType && differentType(entry);",
+                    "      });",
+                    "    } else {",
+                    "      entries = filter(replaceOptions.START_EVENT, differentType);",
+                    "    }",
+                    "",
+                    "    return this._createEntries(element, entries);",
+                    "  }"
+                ]
+            }
+        ],
+        "lib/features/replace/BpmnReplace.js": [
+            {
+                "SEARCH": [
+                    "// initialize custom BPMN extensions",
+                    "if (target.eventDefinitionType) {",
+                    "",
+                    "// only initialize with new eventDefinition",
+                    "// if we did not set an event definition yet,",
+                    "// i.e. because we copied it",
+                    "if (!hasEventDefinition(newBusinessObject, target.eventDefinitionType)) {",
+                    "newElement.eventDefinitionType = target.eventDefinitionType;",
+                    "newElement.eventDefinitionAttrs = target.eventDefinitionAttrs;",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    // initialize custom BPMN extensions",
+                    "    // Disallow typed start events inside non-event subprocess",
+                    "    if (",
+                    "      target.eventDefinitionType &&",
+                    "      is(newBusinessObject, 'bpmn:StartEvent') &&",
+                    "      newBusinessObject.$parent &&",
+                    "      is(newBusinessObject.$parent, 'bpmn:SubProcess') &&",
+                    "      !isEventSubProcess(newBusinessObject.$parent)",
+                    "    ) {",
+                    "      // Do not set eventDefinitionType (force blank start event)",
+                    "      // Remove any event definitions",
+                    "      newBusinessObject.eventDefinitions = [];",
+                    "    } else if (target.eventDefinitionType) {",
+                    "",
+                    "      // only initialize with new eventDefinition",
+                    "      // if we did not set an event definition yet,",
+                    "      // i.e. because we copied it",
+                    "      if (!hasEventDefinition(newBusinessObject, target.eventDefinitionType)) {",
+                    "        newElement.eventDefinitionType = target.eventDefinitionType;",
+                    "        newElement.eventDefinitionAttrs = target.eventDefinitionAttrs;",
+                    "      }",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

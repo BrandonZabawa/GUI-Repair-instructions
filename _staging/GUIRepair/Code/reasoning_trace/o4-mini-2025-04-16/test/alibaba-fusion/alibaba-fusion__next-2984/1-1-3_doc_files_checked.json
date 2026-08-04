@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "cascader-select/index.md",
+            "cascader-select/adaptor/index.jsx",
+            "cascader/index.md",
+            "cascader/adaptor/index.jsx",
+            "cascader-select/demo/basic.md",
+            "cascader-select/demo/change-on-select.md"
+        ],
+        "explanation": "1. ``cascader-select/index.md`` \u2013 shows the public API for CascaderSelect, how options are passed in, and the prop definitions.\n2. ``cascader-select/adaptor/index.jsx`` \u2013 contains the adapter code that connects Fusion\u2019s CascaderSelect wrapper to the internal Cascader; this is where props get forwarded and mutated.\n3. ``cascader/index.md`` \u2013 documents the lower-level Cascader component\u2019s API (which CascaderSelect builds on), so you can understand how options flow through both layers.\n4. ``cascader/adaptor/index.jsx`` \u2013 this is the implementation of the Cascader component itself; it contains the cache-setting logic (the code paths around lines 190\u2013211 in cascader.js) that mutate the option objects.\n5. ``cascader-select/demo/basic.md`` and ``cascader-select/demo/change-on-select.md`` \u2013 these examples show typical usage patterns (basic and \u2018change-on-select\u2019) so you can reproduce the problem by freezing the sample data in those demos with Immer and verifying the error.",
+        "bug_scenario": "The user reports that when using the CascaderSelect component in conjunction with Immer (which freezes incoming props), the component internally mutates the option objects passed in through its props. In the provided screenshot you can see an \u201cUncaught TypeError: Cannot add property value, object is not extensible\u201d originating in cascader.js (lines 190\u2013211), where the internal cache setter walks the tree of options and writes back to the objects provided by the caller. Because Immer has made the prop tree non-extensible, the write attempt fails.\n\nIn short: CascaderSelect (and its underlying Cascader logic) directly mutates the objects in the `options` array passed by the user, which breaks when those objects are frozen by Immer."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/DataTable.js",
+            "packages/react/src/components/DataTable/TableSelectAll.js"
+        ],
+        "explanation": "The core of the selection logic lives in DataTable.js, which defines the `selectAll` action and the `getSelectionProps` prop getter. Currently, `selectAll` toggles selection on the entire set of rows (allRows) regardless of any active filters. TableSelectAll.js simply renders the header checkbox wired to that prop getter. To fix this issue, `selectAll` must be updated in DataTable.js to operate only on the currently visible (filtered) rows passed into the render prop, so that TableSelectAll toggles only those rows.",
+        "bug_scenario": "After using the toolbar search to filter the table down to one row (e.g. only \u201cLoad Balancer 1\u201d), clicking the \u201cSelect All\u201d checkbox in the header still selects all rows in the original data set (all 3 rows), rather than only the one row currently visible. The expected behavior is that \u201cSelect All\u201d only selects the filtered, visible rows."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/DataTable.js",
+            "packages/react/src/components/DataTable/TableSelectAll.js",
+            "packages/react/src/components/DataTable/TableSelectRow.js"
+        ],
+        "explanation": "All of the selection logic for DataTable lives in DataTable.js: it defines the `getSelectionProps` getter and the `selectAll` action that drives the header checkbox.  Currently `selectAll` loops over the full original rows array rather than the filtered subset, so it always picks up every row.  TableSelectAll.js and TableSelectRow.js consume those props to render the header and row-level checkboxes respectively, so although they only display correctly based on the getter\u2019s state, the underlying action is wrong.  Fixing this requires changing DataTable.js\u2019s selectAll logic (and its helper in getSelectionProps) to operate on the current, filtered `rows` array instead of the total `rows` prop.",
+        "bug_scenario": "When you use the DataTable\u2019s built-in search to filter down to a subset of rows, clicking the header \u201cSelect all\u201d checkbox selects every row in the original dataset rather than only the rows currently visible (i.e. the filtered rows).  In the example there are three total rows, you filter down to a single match and yet \u201cSelect all\u201d still checks all three."
+    }
+}

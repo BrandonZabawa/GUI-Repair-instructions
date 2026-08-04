@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/reproj/Tile.js//ReprojTile",
+            "src/ol/TileState.js//(enum TileState)"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/Tile.js//ReprojTile.load",
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_",
+            "src/ol/reproj/Tile.js//ReprojTile.disposeInternal"
+        ],
+        "explanation": "The heart of the bug is in ReprojTile: its constructor builds a list of sourceTiles_, then load() listens for READY states (LOADED, ERROR, EMPTY) but does not handle ABORTed tiles. In reproject_(), only tiles with state LOADED are collected\u2014once an ABORT state is reached, the tile is never included and is later disposed by disposeInternal(), so gaps appear in the stitched canvas. Fixing this requires changes in ReprojTile.load() or disposeInternal() to prevent valid tiles from entering ABORT prematurely (or handle ABORT similarly to EMPTY/ERROR), and adjusting reproject_() to include ABORT state tiles where appropriate.",
+        "bug_scenario": "When zooming and panning on a map with a reprojected tile layer, large white \u201choles\u201d appear in the canvas instead of the expected map imagery. The screenshot shows a curved white patch off the west coast of South America\u2014this happens because some source tiles are being disposed (entering the ABORT state) before the reprojection stitch, so they never get drawn into the target canvas."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_",
+            "src/ol/reproj/Tile.js//ReprojTile.load",
+            "src/ol/reproj/Tile.js//ReprojTile.disposeInternal"
+        ],
+        "explanation": "The core of the bug lives in the ReprojTile class in Tile.js. In the reproject_ method, only source tiles in the LOADED state are passed into renderReprojected. Tiles that have been disposed (via disposeInternal, which sets their state to ABORT) are removed and never included, resulting in white gaps. The load method drives tile loading and eventual calls to reproject_, and disposeInternal is what prematurely disposes of tiles still needed for stitching. Adjusting these methods (or including ABORTed tiles in the reprojection loop, or preventing premature disposal) is necessary to fix the missing map pieces.",
+        "bug_scenario": "When zooming and panning on a map with a reprojected tile layer, large white gaps appear. The screenshot shows blank, white \u201choles\u201d in the rendered map where tiles should be. This happens because some source tiles have been disposed (their state set to ABORT) before the reprojection loop runs, so they are filtered out of the stitching step in ReprojTile.reproject_ and never rendered."
+    }
+}

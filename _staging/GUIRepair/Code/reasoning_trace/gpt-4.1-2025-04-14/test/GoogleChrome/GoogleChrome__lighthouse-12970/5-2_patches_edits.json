@@ -1,0 +1,28 @@
+{
+    "1/1": {
+        "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js": [
+            {
+                "SEARCH": [
+                    "for (const resource of artifacts.TagsBlockingFirstPaint) {",
+                    "// Ignore any resources that finished after observed FCP (they're clearly not render-blocking)",
+                    "if (resource.endTime * 1000 > fcpTsInMs) continue;",
+                    "// TODO: beacon to Sentry, https://github.com/GoogleChrome/lighthouse/issues/7041",
+                    "if (!nodesByUrl[resource.tag.url]) continue;",
+                    "",
+                    "const {node, nodeTiming} = nodesByUrl[resource.tag.url];"
+                ],
+                "REPLACE": [
+                    "    for (const resource of artifacts.TagsBlockingFirstPaint) {",
+                    "      // Ignore any resources that finished after observed FCP (they're clearly not render-blocking)",
+                    "      if (resource.endTime * 1000 > fcpTsInMs) continue;",
+                    "      // Ignore local file resources (file://), which are not loaded by browsers and should not be flagged",
+                    "      if (resource.tag.url && resource.tag.url.startsWith('file://')) continue;",
+                    "      // TODO: beacon to Sentry, https://github.com/GoogleChrome/lighthouse/issues/7041",
+                    "      if (!nodesByUrl[resource.tag.url]) continue;",
+                    "",
+                    "      const {node, nodeTiming} = nodesByUrl[resource.tag.url];"
+                ]
+            }
+        ]
+    }
+}

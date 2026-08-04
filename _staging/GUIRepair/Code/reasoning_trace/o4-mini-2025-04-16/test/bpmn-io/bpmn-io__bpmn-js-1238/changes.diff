@@ -1,0 +1,42 @@
+diff --git a/lib/features/modeling/behavior/ReplaceConnectionBehavior.js b/lib/features/modeling/behavior/ReplaceConnectionBehavior.js
+index e3681230..38fea004 100644
+--- a/lib/features/modeling/behavior/ReplaceConnectionBehavior.js
++++ b/lib/features/modeling/behavior/ReplaceConnectionBehavior.js
+@@ -74,15 +74,35 @@ export default function ReplaceConnectionBehavior(eventBus, modeling, bpmnRules,
+     if (remove) {
+       modeling.removeConnection(connection);
+     }
+-
+     // replace SequenceFlow <> MessageFlow
+-
+     if (replacementType) {
+       modeling.connect(source, target, {
+         type: replacementType,
+         waypoints: connection.waypoints.slice()
+       });
+     }
+++
+++  // automatically re-parent associations when their endpoints
+++  // move out of the old subprocess/collaboration
+++  if (is(connection, 'bpmn:Association')) {
+++    // pick a new semantic parent (use source, or fall back to target)
+++    var newParent = source.parent || target.parent;
+++
+++    // if the connection is still valid and its current BPMN parent
+++    // differs from the shape‐parent of its endpoint, re-create it
+++    if (newParent && connection.parent !== newParent) {
+++      // remove the old association under the wrong parent
+++      modeling.removeConnection(connection);
+++
+++      // re-connect under the correct parent
+++      modeling.connect(source, target, {
+++        type: 'bpmn:Association',
+++        waypoints: connection.waypoints.slice()
+++      });
+++    }
+++  }
++      });
++    }
+   }
+ 
+   function replaceReconnectedConnection(event) {

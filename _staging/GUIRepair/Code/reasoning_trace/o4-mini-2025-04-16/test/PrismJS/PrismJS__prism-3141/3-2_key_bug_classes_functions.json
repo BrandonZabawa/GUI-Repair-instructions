@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-sql.js//Prism.languages.sql.string"
+        ],
+        "explanation": "In components/prism-sql.js, the Prism.languages.sql object defines a 'string' token whose pattern only matches single- and double-quoted text: /(^|[^@\\\\])(\"|'\u2026)*\\2/. Because backticks (`) are omitted from that character class, any text wrapped in backticks doesn\u2019t satisfy the regex and so isn\u2019t highlighted as a string. To fix the bug, you need to expand this regex to include backticks\u2014e.g. replace (\"|' ) with (\"|'|`)\u2014so that `\u2026` sequences are recognized and styled as strings. The same change will also propagate to the minified version (prism-sql.min.js).",
+        "bug_scenario": "The provided screenshot shows a SQL SELECT statement where table and column names are enclosed in backticks (`), but Prism\u2019s SQL highlighter isn\u2019t treating those backtick-wrapped identifiers as strings\u2014so they remain unstyled. When you wrap identifiers in `\u2026`, they should match the \"string\" token and receive string highlighting, but the current regex only handles single (') and double (\") quotes."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-sql.js",
+            "components/prism-sql.min.js"
+        ],
+        "bug_functions": [
+            "components/prism-sql.js//string",
+            "components/prism-sql.min.js//string"
+        ],
+        "explanation": "Both the unminified and minified SQL language definitions in Prism define a 'string' pattern that only matches double-quoted (\") or single-quoted (') text. It omits the backtick character (`). Since SQL uses backticks to quote identifiers, the regex must include ` as a valid delimiter. By updating the 'string' pattern in both files (components/prism-sql.js and prism-sql.min.js) to include the backtick alongside \" and ', the highlighter will correctly recognize and style backtick-quoted segments.",
+        "bug_scenario": "The SQL code uses backtick (`) delimiters around identifiers (e.g. `t`.`col1`, `test_table`) but Prism\u2019s SQL highlighter is not treating text inside `` as a string. In the screenshot the backtick\u2010quoted segments remain unstyled, whereas quoted strings with \" or ' are correctly highlighted. The expected behavior is that content inside backticks should be tokenized as a string."
+    }
+}

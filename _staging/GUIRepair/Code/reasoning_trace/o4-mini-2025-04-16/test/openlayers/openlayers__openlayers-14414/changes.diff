@@ -1,0 +1,31 @@
+diff --git a/src/ol/layer/WebGLTile.js b/src/ol/layer/WebGLTile.js
+index 2cf948e0ed..e701c844b5 100644
+--- a/src/ol/layer/WebGLTile.js
++++ b/src/ol/layer/WebGLTile.js
+@@ -514,6 +514,11 @@ class WebGLTileLayer extends BaseTileLayer {
+    */
+   updateStyleVariables(variables) {
+     Object.assign(this.styleVariables_, variables);
++    // make sure cached tiles are regenerated with the new uniforms
++    const renderer = this.getRenderer();
++    if (renderer && typeof renderer.clearCache === 'function') {
++      renderer.clearCache();
++    }
+     this.changed();
+   }
+ }
+diff --git a/src/ol/source/Raster.js b/src/ol/source/Raster.js
+index cf76586c9f..9e26e457e4 100644
+--- a/src/ol/source/Raster.js
++++ b/src/ol/source/Raster.js
+@@ -954,7 +954,9 @@ function getImageData(layer, frameState) {
+       throw new Error('Unsupported rendered element: ' + element);
+     }
+     if (element.width === width && element.height === height) {
+-      const context = element.getContext('2d');
++      // always request a "willReadFrequently" context so that we get true
++      // non-premultiplied RGBA values and avoid the console warning
++      const context = element.getContext('2d', { willReadFrequently: true });
+       return context.getImageData(0, 0, width, height);
+     }
+   }

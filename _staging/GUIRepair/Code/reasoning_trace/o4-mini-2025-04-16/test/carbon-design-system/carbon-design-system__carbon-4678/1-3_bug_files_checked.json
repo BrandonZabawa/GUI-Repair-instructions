@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/RadioButton/RadioButton.js",
+            "packages/react/src/components/RadioButton/RadioButton.Skeleton.js"
+        ],
+        "explanation": "Both RadioButton.js and its Skeleton variant contain the logic that renders the <label> and inner <span> for each radio input. In RadioButton.js the prop handling puts aria-label on the <label> instead of on the <input> (and drops the bx--radio-button__label-text class on the span), so assistive technology can\u2019t pick up the visible label. Updating these files to remove the misplaced aria-label or to correctly apply it (or to use htmlFor + span with the proper class) will restore accessibility in the React component.",
+        "bug_scenario": "When using the Carbon React RadioButton component with VoiceOver or JAWS, selecting a radio button only reads \u201cselected , radio button, 1 of X\u201d and completely drops the visible label text. In the vanilla HTML implementation the <label> wraps a <span class=\"bx--radio-button__label-text\">Radio button label</span> and screen readers correctly announce \u201cRadio button label\u201d. In the React implementation, however, the code injects an aria-label=\"Radio button label\" on the <label> element and renders the text inside a bare <span> (no class), which prevents the screen reader from associating the visible text with the input."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/RadioButton/RadioButton.js",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js",
+            "packages/react/src/components/RadioButton/RadioButton-test.js",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup-test.js"
+        ],
+        "explanation": "The root of the issue is in the React implementation of the RadioButton: RadioButton.js currently adds aria-label on the <label> wrapper even when the text label is visible, which overrides the native label-for association. Adjusting this file to remove the unnecessary aria-label (or only add it when the label is visually hidden) will restore correct screen reader output. Because RadioButtonGroup does similar logic for its group legend, its implementation file (RadioButtonGroup.js) also needs updating to ensure the group heading is exposed properly. Finally, the corresponding test files (RadioButton-test.js and RadioButtonGroup-test.js) must be updated so that assertions around aria props and label rendering reflect the new behavior.",
+        "bug_scenario": "When using Carbon\u2019s React RadioButton component with VoiceOver or JAWS the screen reader announces only \u201cselected, radio button, 1 of X\u201d and never reads the visible label text (\u201cRadio button label\u201d). In contrast the vanilla HTML version of the component correctly reads \u201cRadio button label, selected, radio button, 1 of X\u201d. Investigation shows that the React component is rendering an aria-label on the <label> element (aria-label=\"Radio button label\") instead of relying on the native <label for> mechanism and nested span, causing assistive tech to ignore the visible label text."
+    }
+}

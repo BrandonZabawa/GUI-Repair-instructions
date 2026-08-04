@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/source/GeoTIFF.js"
+        ],
+        "explanation": "\u2022 src/ol/webgl/TileTexture.js is where each tile\u2019s WebGL texture is configured (the calls to texParameteri). It currently hard-codes LINEAR filters and must be extended to read and apply the source\u2019s imageSmoothing flag (switching to NEAREST/NEAREST_MIPMAP_NEAREST when smoothing is disabled).\n\u2022 src/ol/renderer/webgl/TileLayer.js is responsible for creating TileTexture instances. It needs to pull the imageSmoothing setting off the tile source or tile object and pass it into TileTexture so that the texture can be initialized correctly.\n\u2022 src/ol/source/DataTile.js and src/ol/source/GeoTIFF.js both implement non-ImageTile sources but currently do not expose or forward an imageSmoothing option. If WebGL users ever want to turn off smoothing for raw pixel sources (DEM, GeoTIFF, etc.), these constructors must accept and store an imageSmoothing flag so that the renderer can read it.",
+        "bug_scenario": "In the WebGL sea-level example the renderer always applies linear filtering when uploading DEM tiles to the GPU, even if the tile source was created with imageSmoothing: false (which corresponds to nearest\u2010neighbor sampling). As a result, subtle pixel distortions (e.g. thin \u201csea\u201d lines along contours) appear when you zoom or pan. Unlike the 2D/Canvas prerender path (which respects imageSmoothing on TileImage sources), the WebGLTile renderer never reads the source\u2019s imageSmoothing flag and unconditionally uses gl.LINEAR for TEXTURE_MIN_FILTER and TEXTURE_MAG_FILTER. The bug manifests as unwanted smoothing (anti-aliasing) of elevation\u2010defined pixels and can even reveal artifact rows of pixels at tile boundaries when exaggerated sea-level values are used."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js"
+        ],
+        "explanation": "TileLayer.js is where WebGL tiles are created and bound; it must be updated to read the tile source\u2019s imageSmoothing option and pass it down when instantiating TileTexture. TileTexture.js is responsible for creating and configuring the GL texture; it currently hard-codes gl.LINEAR filters, so it needs to be enhanced to accept an imageSmoothing parameter and switch between gl.NEAREST and gl.LINEAR for both TEXTURE_MIN_FILTER and TEXTURE_MAG_FILTER.",
+        "bug_scenario": "When using the WebGLTile renderer on a raster source the map always uses linear interpolation (gl.LINEAR) when sampling tiles, regardless of the source\u2019s imageSmoothing setting. In the Sea Level example this causes \u201cbleeding\u201d at contour edges: thin lines of unintended color appear along some elevations when zoomed or panned (visible in Chrome/Edge around tile boundaries). The Canvas renderer respects imageSmoothing:false (rendering each DEM pixel as a hard block), but WebGL does not. The goal is to have the WebGLTile renderer read the source\u2019s imageSmoothing flag and configure its texture filters accordingly (gl.NEAREST when smoothing is disabled, gl.LINEAR when enabled)."
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/rules/BpmnRules.js"
+        ],
+        "explanation": "\u2022 BpmnUpdater.js contains updateDiParent/updateParent/updateSemanticParent methods that run during a shape replace and attempt to re-parent the newly created DI entry. In the case of replacing outside a pool, no DI parent exists, so parentDi is undefined and .get() throws.  \n\u2022 BpmnReplace.js is where DataStoreReference \u2192 DataObjectReference replacement is wired up and where a blank newElement.di object is created. It feeds into BpmnUpdater; it needs special handling for this shape when no pool exists.  \n\u2022 BpmnRules.js controls whether a given replace should be allowed. It currently doesn\u2019t prevent or guard this morph outside of a pool, so adding a rule here to disallow or route DataStoreReference morphs when there is no process container would avoid the invalid update in BpmnUpdater.",
+        "bug_scenario": "When the user adds a DataStoreReference element outside of any pool/collaboration (so no parent process container), then uses the replace (morph) palette to turn that DataStoreReference into a DataObjectReference, the library throws a TypeError in the console: BpmnUpdater.updateDiParent tries to call .get() on an undefined DI parent. The attached animation shows selecting the DataStoreReference outside any pool, morphing it, and immediately seeing the error in BpmnUpdater.js in the dev tools."
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/sql.js"
+        ],
+        "explanation": "All of SQL/T-SQL block parsing and string-literal rules live in src/languages/sql.js. This is where highlight.js defines how single-quoted strings (and their escape sequences) are recognized. Because it currently treats only simple backslash escapes or a single quote as the terminator, it doesn\u2019t handle the doubled single-quotes inside an N''\u2026'' T-SQL literal. Adjusting the string mode in this file (e.g. adding support for an \"N\" prefix and embedded doubled quotes) will resolve the escape-sequence highlighting break.",
+        "bug_scenario": "In the CodePen screenshot we can see that as soon as the code reaches the T-SQL Unicode string literal (the N''\u2026''; that wraps the DROP VIEW), highlight.js stops recognizing it correctly. The inner '', which in T-SQL represents an escaped single quote, causes the string mode to terminate too early. Everything that follows is then mis-highlighted, and the semicolon and code around it appear as plain text rather than part of the string or SQL keywords."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/sql.js"
+        ],
+        "explanation": "The root of the problem is in the SQL language definition (sql.js) shipped with highlight.js. That file uses the default QUOTE_STRING_MODE (which only understands backslash escapes) and does not recognize SQL\u2019s convention of escaping a single quote by doubling it. To fix the highlighting of T-SQL dynamic strings like N''...''; you need to update sql.js (and similarly pgsql.js if you want identical behavior in the PostgreSQL variant) to allow '' as a valid in-string escape sequence.",
+        "bug_scenario": "When highlighting a block of T-SQL that builds dynamic SQL via nested single-quoted strings (e.g. using N''DROP VIEW IF EXISTS ...'';), highlight.js breaks the string match at the doubled quotes and treats the rest of the block as invalid or plain text. In the screenshot you can see the code runs correctly in the database engine, but highlighting stops mid-string when it encounters the SQL-style escape sequence of two single quotes (\u2018\u2019\u2019\u2019)."
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js"
+        ],
+        "explanation": "The audit that implements \u201cServe images in next-gen formats\u201d is uses-webp-images.js; it currently only looks for JPEG and PNG images and does not include BMP (image/bmp or image/x-ms-bmp) in its filter. As a result, BMP files are never passed through its savings calculation. To fix the bug, uses-webp-images.js must be updated to recognize BMP MIME types and treat them as legacy images eligible for conversion. Corresponding unit tests in uses-webp-images-test.js also need to add a BMP test case so that the audit correctly flags BMP resources and reports potential savings.",
+        "bug_scenario": "When running Lighthouse against a page that embeds a BMP image (MIME type image/x-ms-bmp), the \u201cServe images in next-gen formats\u201d (uses-webp-images) audit does not flag that BMP resource as eligible for conversion to WebP or JPEG 2000. In the screenshot from the demo (feature-policy-demos.appspot.com/test), Lighthouse lists only jpg/png images under that audit, but silently skips the BMP at https://homepages.cae.wisc.edu/~ece533/images/sails.bmp, even though it is a legacy format that could be served more efficiently."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js"
+        ],
+        "explanation": "The file uses-webp-images.js implements the \u201cServe images in next-gen formats\u201d audit. It inspects the page\u2019s image resources by MIME type and currently only treats image/png, image/jpeg, and a small set of other legacy types as candidates for conversion. BMP images (whose MIME types are image/bmp or image/x-ms-bmp) are not included in its list of legacy formats, so they never appear in the audit\u2019s suggestions. By extending the MIME-type whitelist/grouping in this file to include BMP, the audit will flag those images correctly.",
+        "bug_scenario": "When running Lighthouse\u2019s \u201cServe images in next-gen formats\u201d audit on a page containing a BMP image (for example \u201csails.bmp\u201d at https://homepages.cae.wisc.edu/~ece533/images/sails.bmp), the audit does not flag the BMP as a legacy format that should be converted to a next-gen format. The UI only lists JPEG, PNG, and similar images, even though BMP is equally a non\u2013next-gen, poorly compressed format and should be called out."
+    }
+}

@@ -1,0 +1,113 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index ec85963a46..8f4646a193 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -337,7 +337,9 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+             viewState.projection
+           );
+           if (!tileTexture) {
+-            tileTexture = new TileTexture(tile, tileGrid, this.helper);
++            // Pass imageSmoothing option from the source if available
++            const imageSmoothing = typeof tileSource.getContextOptions === 'function' && tileSource.getContextOptions() && tileSource.getContextOptions().imageSmoothing === false ? false : true;
++            tileTexture = new TileTexture(tile, tileGrid, this.helper, imageSmoothing);
+             tileTextureCache.set(tileCoordKey, tileTexture);
+           } else {
+             if (this.isDrawableTile_(tile)) {
+diff --git a/src/ol/webgl/TileTexture.js b/src/ol/webgl/TileTexture.js
+index d67a804d9b..c2b09aa020 100644
+--- a/src/ol/webgl/TileTexture.js
++++ b/src/ol/webgl/TileTexture.js
+@@ -11,12 +11,17 @@ import WebGLArrayBuffer from './Buffer.js';
+ import {ARRAY_BUFFER, STATIC_DRAW} from '../webgl.js';
+ import {toSize} from '../size.js';
+ 
+-function bindAndConfigure(gl, texture) {
++function bindAndConfigure(gl, texture, imageSmoothing = true) {
+   gl.bindTexture(gl.TEXTURE_2D, texture);
+   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
++  if (imageSmoothing === false) {
++    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
++    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
++  } else {
++    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
++    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
++  }
+ }
+ 
+ /**
+@@ -24,8 +29,8 @@ function bindAndConfigure(gl, texture) {
+  * @param {WebGLTexture} texture The texture.
+  * @param {HTMLImageElement|HTMLCanvasElement|HTMLVideoElement} image The image.
+  */
+-function uploadImageTexture(gl, texture, image) {
+-  bindAndConfigure(gl, texture);
++function uploadImageTexture(gl, texture, image, imageSmoothing = true) {
++  bindAndConfigure(gl, texture, imageSmoothing);
+ 
+   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+ }
+@@ -37,9 +42,9 @@ function uploadImageTexture(gl, texture, image) {
+  * @param {import("../size.js").Size} size The pixel size.
+  * @param {number} bandCount The band count.
+  */
+-function uploadDataTexture(helper, texture, data, size, bandCount) {
++function uploadDataTexture(helper, texture, data, size, bandCount, imageSmoothing = true) {
+   const gl = helper.getGL();
+-  bindAndConfigure(gl, texture);
++  bindAndConfigure(gl, texture, imageSmoothing);
+ 
+   const bytesPerRow = data.byteLength / size[1];
+   let unpackAlignment = 1;
+@@ -108,8 +113,9 @@ class TileTexture extends EventTarget {
+    * @param {TileType} tile The tile.
+    * @param {import("../tilegrid/TileGrid.js").default} grid Tile grid.
+    * @param {import("../webgl/Helper.js").default} helper WebGL helper.
++   * @param {boolean} [imageSmoothing=true] Whether to use image smoothing (linear filtering).
+    */
+-  constructor(tile, grid, helper) {
++  constructor(tile, grid, helper, imageSmoothing = true) {
+     super();
+ 
+     /**
+@@ -129,6 +135,11 @@ class TileTexture extends EventTarget {
+ 
+     this.helper_ = helper;
+ 
++    /**
++     * @type {boolean}
++     */
++    this.imageSmoothing = imageSmoothing;
++
+     const coords = new WebGLArrayBuffer(ARRAY_BUFFER, STATIC_DRAW);
+     coords.fromArray([
+       0, // P0
+@@ -174,7 +185,7 @@ class TileTexture extends EventTarget {
+       const texture = gl.createTexture();
+       this.textures.push(texture);
+       this.bandCount = 4;
+-      uploadImageTexture(gl, texture, tile.getImage());
++      uploadImageTexture(gl, texture, tile.getImage(), this.imageSmoothing);
+       return;
+     }
+ 
+@@ -191,7 +202,7 @@ class TileTexture extends EventTarget {
+     if (textureCount === 1) {
+       const texture = gl.createTexture();
+       this.textures.push(texture);
+-      uploadDataTexture(helper, texture, data, this.size, this.bandCount);
++      uploadDataTexture(helper, texture, data, this.size, this.bandCount, this.imageSmoothing);
+       return;
+     }
+ 
+@@ -229,7 +240,7 @@ class TileTexture extends EventTarget {
+       const texture = this.textures[textureIndex];
+       const textureData = textureDataArrays[textureIndex];
+       const bandCount = textureData.length / pixelCount;
+-      uploadDataTexture(helper, texture, textureData, this.size, bandCount);
++      uploadDataTexture(helper, texture, textureData, this.size, bandCount, this.imageSmoothing);
+     }
+   }
+ 

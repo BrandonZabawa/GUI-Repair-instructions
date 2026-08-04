@@ -1,0 +1,43 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js",
+            "lighthouse-core/audits/metrics.js",
+            "lighthouse-core/computed/metrics/metric.js",
+            "lighthouse-core/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/computed/metrics/speed-index.js",
+            "lighthouse-core/computed/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/first-meaningful-paint.js",
+            "lighthouse-core/computed/metrics/first-cpu-idle.js",
+            "lighthouse-core/computed/metrics/total-blocking-time.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/audits/performance-budget.js",
+            "lighthouse-core/audits/resource-summary.js"
+        ],
+        "explanation": "The referenced files are relevant to the bug for the following reasons: 1) 'lighthouse-core/gather/gatherers/iframe-elements.js' is responsible for collecting iframe elements and is central to enabling full audit and metric gathering from iframes; 2) 'lighthouse-core/gather/gather-runner.js' orchestrates the gatherers' execution and would require changes to recursively or collectively gather data from iframes; 3) 'lighthouse-core/audits/metrics.js' and the various files in 'lighthouse-core/computed/metrics/' are where performance metrics are calculated. These metrics currently only consider the main document, not its iframes, and would need to aggregate or factor in iframe results; 4) 'lighthouse-core/audits/performance-budget.js' and 'lighthouse-core/audits/resource-summary.js' run performance-related audits that should integrate iframe data for accurate parent-page results. Modifications to these files are required to fix the misleading scoring issue by ensuring iframe performance is included in the parent page's reported metrics.",
+        "bug_scenario": "The bug scenario concerns Lighthouse's inability to account for the performance impact of slow-loading iframes embedded within a parent page. The provided image shows a clear discrepancy between the performance score for a parent page including a slow iframe (score of 71) and the iframe alone (score of 39). The expectation is that the parent page's score should reflect the performance degradation caused by the iframe, but currently, it does not. This leads to misleading results when evaluating real-world web architectures where iframes are used to include third-party or cross-domain services."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/audits/metrics/first-contentful-paint.js",
+            "lighthouse-core/audits/metrics/first-meaningful-paint.js",
+            "lighthouse-core/audits/metrics/speed-index.js",
+            "lighthouse-core/audits/metrics/interactive.js",
+            "lighthouse-core/audits/metrics/total-blocking-time.js",
+            "lighthouse-core/audits/metrics.js",
+            "lighthouse-core/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/computed/metrics/first-meaningful-paint.js",
+            "lighthouse-core/computed/metrics/speed-index.js",
+            "lighthouse-core/computed/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/total-blocking-time.js",
+            "lighthouse-core/computed/metrics.js",
+            "lighthouse-core/lib/network-recorder.js",
+            "lighthouse-core/lib/page-functions.js",
+            "lighthouse-core/audits/resource-summary.js"
+        ],
+        "explanation": "Files are related to how Lighthouse collects, computes, and audits performance metrics and resources. Specifically: (1) 'lighthouse-core/gather/gatherers/iframe-elements.js' likely handles iframe detection and data gathering; (2) 'lighthouse-core/gather/gather-runner.js' manages top-level gatherer logic, including possible frame aggregation; (3) metric-related files in audits/computed report paint, speed, and interactivity statistics\u2014all currently ignore or undercount iframe delays; (4) 'resource-summary.js' and related code aggregate network/resource costs; (5) 'network-recorder.js' and 'page-functions.js' perform low-level trace and page state collection. To fix the bug, these files would need modification so that iframe performance is properly evaluated, recursively audited, and included in the parent page's final metrics.",
+        "bug_scenario": "The bug scenario is that when auditing a parent page containing a slow-loading iframe using Lighthouse, the parent report shows a significantly better performance score than the direct audit of the iframe content (child report). This implies that the parent page's performance metrics do not properly reflect the negative impact of slow iframes, leading to misleading results."
+    }
+}

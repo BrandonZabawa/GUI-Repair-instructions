@@ -1,0 +1,144 @@
+{
+    "bug_classes": {
+        "1": {
+            "class_name": "ExternalAnchorsUseRelNoopenerAudit",
+            "file_path": "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js",
+            "class_details": [
+                {
+                    "name": "ExternalAnchorsUseRelNoopenerAudit",
+                    "start_line": 11,
+                    "end_line": 82,
+                    "methods": [
+                        {
+                            "name": "meta",
+                            "start_line": 15,
+                            "end_line": 25
+                        },
+                        {
+                            "name": "audit",
+                            "start_line": 31,
+                            "end_line": 81
+                        }
+                    ],
+                    "isExported": false
+                }
+            ],
+            "class_code": [
+                "class ExternalAnchorsUseRelNoopenerAudit extends Audit {",
+                "  /**",
+                "   * @return {!AuditMeta}",
+                "   */",
+                "  static get meta() {",
+                "    return {",
+                "      name: 'external-anchors-use-rel-noopener',",
+                "      description: 'Opens external anchors using `rel=\"noopener\"`',",
+                "      failureDescription: 'Does not open external anchors using `rel=\"noopener\"`',",
+                "      helpText: 'Open new tabs using `rel=\"noopener\"` to improve performance and ' +",
+                "          'prevent security vulnerabilities. ' +",
+                "          '[Learn more](https://developers.google.com/web/tools/lighthouse/audits/noopener).',",
+                "      requiredArtifacts: ['URL', 'AnchorsWithNoRelNoopener'],",
+                "    };",
+                "  }",
+                "",
+                "  /**",
+                "   * @param {!Artifacts} artifacts",
+                "   * @return {!AuditResult}",
+                "   */",
+                "  static audit(artifacts) {",
+                "    let debugString;",
+                "    const pageHost = new URL(artifacts.URL.finalUrl).host;",
+                "    // Filter usages to exclude anchors that are same origin",
+                "    // TODO: better extendedInfo for anchors with no href attribute:",
+                "    // https://github.com/GoogleChrome/lighthouse/issues/1233",
+                "    // https://github.com/GoogleChrome/lighthouse/issues/1345",
+                "    const failingAnchors = artifacts.AnchorsWithNoRelNoopener",
+                "      .filter(anchor => {",
+                "        try {",
+                "          return new URL(anchor.href).host !== pageHost;",
+                "        } catch (err) {",
+                "          debugString = 'Lighthouse was unable to determine the destination ' +",
+                "              'of some anchor tags. If they are not used as hyperlinks, ' +",
+                "              'consider removing the _blank target.';",
+                "          return true;",
+                "        }",
+                "      })",
+                "      .filter(anchor => {",
+                "        // Ignore href's that are not real links",
+                "        return !anchor.href || !anchor.href.toLowerCase().startsWith('javascript:');",
+                "      })",
+                "      .map(anchor => {",
+                "        return {",
+                "          href: anchor.href || 'Unknown',",
+                "          target: anchor.target || '',",
+                "          rel: anchor.rel || '',",
+                "          url: '<a' +",
+                "              (anchor.href ? ` href=\"${anchor.href}\"` : '') +",
+                "              (anchor.target ? ` target=\"${anchor.target}\"` : '') +",
+                "              (anchor.rel ? ` rel=\"${anchor.rel}\"` : '') + '>',",
+                "        };",
+                "      });",
+                "",
+                "    const headings = [",
+                "      {key: 'href', itemType: 'url', text: 'URL'},",
+                "      {key: 'target', itemType: 'text', text: 'Target'},",
+                "      {key: 'rel', itemType: 'text', text: 'Rel'},",
+                "    ];",
+                "",
+                "    const details = Audit.makeTableDetails(headings, failingAnchors);",
+                "",
+                "    return {",
+                "      rawValue: failingAnchors.length === 0,",
+                "      extendedInfo: {",
+                "        value: failingAnchors,",
+                "      },",
+                "      details,",
+                "      debugString,",
+                "    };",
+                "  }",
+                "}"
+            ]
+        },
+        "2": {
+            "class_name": "AnchorsWithNoRelNoopener",
+            "file_path": "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js",
+            "class_details": [
+                {
+                    "name": "AnchorsWithNoRelNoopener",
+                    "start_line": 11,
+                    "end_line": 30,
+                    "methods": [
+                        {
+                            "name": "afterPass",
+                            "start_line": 16,
+                            "end_line": 29
+                        }
+                    ],
+                    "isExported": false
+                }
+            ],
+            "class_code": [
+                "class AnchorsWithNoRelNoopener extends Gatherer {",
+                "  /**",
+                "   * @param {!Object} options",
+                "   * @return {!Promise<!Array<{href: string, rel: string, target: string}>>}",
+                "   */",
+                "  afterPass(options) {",
+                "    const expression = `(function() {",
+                "      ${DOMHelpers.getElementsInDocumentFnString}; // define function on page",
+                "      const selector = 'a[target=\"_blank\"]:not([rel~=\"noopener\"])';",
+                "      const elements = getElementsInDocument(selector);",
+                "      return elements.map(node => ({",
+                "        href: node.href,",
+                "        rel: node.getAttribute('rel'),",
+                "        target: node.getAttribute('target')",
+                "      }));",
+                "    })()`;",
+                "",
+                "    return options.driver.evaluateAsync(expression);",
+                "  }",
+                "}"
+            ]
+        }
+    },
+    "bug_functions": {}
+}

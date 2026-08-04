@@ -1,0 +1,75 @@
+{
+    "1/1": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "createRenderer() {",
+                    "const source = this.getSource();",
+                    "const parsedStyle = parseStyle(",
+                    "this.style_,",
+                    "'bandCount' in source ? source.bandCount : 4",
+                    ");",
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  createRenderer() {",
+                    "    const source = this.getSource();",
+                    "    const parsedStyle = parseStyle(",
+                    "      this.style_,",
+                    "      'bandCount' in source ? source.bandCount : 4",
+                    "    );",
+                    "    return new WebGLTileLayerRenderer(this, {",
+                    "      vertexShader: parsedStyle.vertexShader,",
+                    "      fragmentShader: parsedStyle.fragmentShader,",
+                    "      uniforms: parsedStyle.uniforms,",
+                    "      cacheSize: this.cacheSize_,",
+                    "      // read your new style.blend flag here and pass it down",
+                    "      blendWithOne: this.style_.blend === true,",
+                    "    });",
+                    "  }"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "  constructor(tileLayer, options) {",
+                    "    super(tileLayer, {",
+                    "      uniforms: options.uniforms,",
+                    "    });",
+                    "    /**",
+                    "     * @private",
+                    "     * If true, after the usual blend call we override to additive:",
+                    "     */",
+                    "    this.blendWithOne_ = options.blendWithOne;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.helper.useProgram(this.program_);",
+                    "this.helper.prepareDraw(frameState, !blend);"
+                ],
+                "REPLACE": [
+                    "    this.helper.useProgram(this.program_);",
+                    "    this.helper.prepareDraw(frameState, !blend);",
+                    "    // if the layer asked for purely additive blending, override here",
+                    "    if (this.blendWithOne_) {",
+                    "      gl.blendFunc(gl.ONE, gl.ONE);",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

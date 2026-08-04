@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/menu/view/group.jsx//Group",
+            "src/menu/view/sub-menu.jsx//SubMenu"
+        ],
+        "bug_functions": [
+            "src/menu/view/group.jsx//Group.render",
+            "src/menu/view/sub-menu.jsx//SubMenu.passParentToChildren"
+        ],
+        "explanation": "The Group component’s render method does children.map(child => { const {className} = child.props; … }) without filtering out non-element nodes. If a space is present before/after the <Item> tag, React treats it as a text child (string) with no props, so child.props is undefined. In SubMenu, passParentToChildren similarly maps and cloneElement on every child, including text nodes. Both need to ignore or filter out plain text children to avoid accessing undefined props.",
+        "bug_scenario": "When using <Nav><Group> (or Menu.Group) with whitespace around its children, the parser turns that space into a text node. In Group.render, children.map blindly iterates over all child nodes — including the text node — and tries to read child.props.className, causing “Cannot read property 'className' of undefined”. A similar issue exists in SubMenu.passParentToChildren, which calls cloneElement on non-element children."
+    },
+    "2": {
+        "bug_classes": [
+            "src/menu/view/group.jsx//Group",
+            "src/menu/view/sub-menu.jsx//SubMenu"
+        ],
+        "bug_functions": [
+            "src/menu/view/group.jsx//Group.render",
+            "src/menu/view/sub-menu.jsx//SubMenu.passParentToChildren"
+        ],
+        "explanation": "核心问题在于 Group 和 SubMenu 在遍历 children 时，没有过滤掉纯文本节点或空白节点：\n1. Group.render 中直接 children.map(child => child.props.className)，当 child 为 string 或 null 时，child.props 为 undefined。  \n2. SubMenu.passParentToChildren 调用 React.Children.map 与 cloneElement，遇到文本节点也会尝试 cloneElement，从而出错。  \n要修复需要对 children 进行过滤，只处理 React 元素节点（如通过 React.isValidElement 判断），或在 map 之前使用 React.Children.toArray 并过滤掉 string/undefined 节点。",
+        "bug_scenario": "在使用 Nav 或 Menu 的 Group/SubMenu 时，JSX 中标签与子元素之间的换行或空格被当做纯文本节点（string child）识别，导致 this.props.children 中包含文本节点。Group.render 中直接对 children 调用 map 并访问 child.props.className，引发文本节点没有 props 导致的 “Cannot read property 'className' of undefined” 错误；SubMenu.passParentToChildren 同样使用 cloneElement 报错。"
+    }
+}

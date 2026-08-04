@@ -1,0 +1,9 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js"
+        ],
+        "explanation": "The core of the problem lives in UpdateLabelHandler.js. In its helper `ensureInternalLabelDi` it sets `di.label = null` when the text is cleared, which leaves an explicit (null) property on the DI. In the same handler\u2019s `postExecute`, when an embedded label is deleted (`isEmptyText`), it calls `modeling.removeShape(label, { unsetLabel: false })`, so the DI label property is never removed. To fix the bug, this file needs to stop writing `label = null` (or explicitly delete the property) and/or call `removeShape` with `unsetLabel: true` so that the `di.label` property is fully removed rather than left as null.",
+        "bug_scenario": "When you clear a Task\u2019s name in the modeler, the underlying BPMN DI element still has a `label` property (set to null) instead of having that property removed. In the screenshot you see a Task with its name removed but the DI still carries `label:null`, which triggers lint errors (red \u201cx\u201d icons) even though the business object name is gone."
+    }
+}

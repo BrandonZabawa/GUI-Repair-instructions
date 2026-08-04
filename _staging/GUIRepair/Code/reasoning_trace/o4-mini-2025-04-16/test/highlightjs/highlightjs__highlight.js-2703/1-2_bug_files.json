@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/scala.js",
+            "src/languages/lib/ecmascript.js",
+            "src/languages/javascript.js"
+        ],
+        "explanation": "\u2022 src/languages/scala.js: This file defines the Scala grammar rules. The misclassification of the \u2018//\u2019 comment as a title token when the brace is on the next line indicates that the Scala class pattern or its comment sub\u2010mode is too greedy or mis\u2010ordered in this file.  \n\u2022 src/languages/lib/ecmascript.js: This shared ECMAScript definition declares comment modes and spans used by all JavaScript\u2010family languages. The fact that comments inside the parameter list aren\u2019t highlighted means the comment mode here may be excluded or overshadowed inside parentheses.  \n\u2022 src/languages/javascript.js: This file extends the ECMAScript modes for plain JavaScript. Any language-specific adjustments to comment placement (for arrow functions, parameter lists, etc.) would need to be made here so that comments nested in argument lists are picked up by the highlighter.",
+        "bug_scenario": "Two separate highlighting issues are reported. 1) In Scala code, a comment on a new line after the class declaration (when the opening brace is on the next line) is being parsed and rendered as part of the class title instead of as a comment. When the brace is on the same line, the comment is rendered correctly. 2) In JavaScript code, comment lines placed inside a multi\u2010parameter arrow function\u2019s parameter list are not being recognized or highlighted as comments."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/scala.js",
+            "src/languages/javascript.js",
+            "src/languages/c-like.js"
+        ],
+        "explanation": "\u2022 src/languages/scala.js \u2013 This is the Highlight.js Scala grammar. The bug report shows that comment tokens aren\u2019t being classified as comments if the opening brace is on the next line. The Scala grammar needs to be updated so that \u2018//\u2019-style comments are always recognized, not just when the brace follows on the same line.\n\u2022 src/languages/javascript.js \u2013 This is the JavaScript grammar definition. Its function/arrow function parameter mode does not include the comment rule in its \u201ccontains\u201d list, so comments inside multi-line parameter lists are skipped entirely.\n\u2022 src/languages/c-like.js \u2013 This file defines the generic C-style comment modes used by JavaScript (and other C-like languages). If comments are improperly scoped or excluded in the parameter sub-modes, updates here may be required to ensure that \u2018//\u2019 comments are always recognized, even when nested inside parentheses.",
+        "bug_scenario": "1. Scala: When a single-line comment follows a class declaration on its own line before the opening brace, every token in that comment (including the \u201c//\u201d) is being parsed as part of the class title. For example:\n\n    class A  // Something goes here\n    {\n    }\n\nis highlighted as if \u201c// Something goes here\u201d were class titles rather than comments. If the brace is moved up to the same line, the comment is correctly picked up as a comment.\n\n2. JavaScript: Inline comments placed immediately after function parameter lines within a multi-line arrow function signature are not recognized as comments at all. For example in:\n\n    f = (\n      [c,                // next digit\n          ...a],         // rest of digits\n      o = '',            // output string\n      S = new Set        // solution set\n    ) => \u2026\n\nnone of the \u201c//\u201d comments are being highlighted."
+    }
+}

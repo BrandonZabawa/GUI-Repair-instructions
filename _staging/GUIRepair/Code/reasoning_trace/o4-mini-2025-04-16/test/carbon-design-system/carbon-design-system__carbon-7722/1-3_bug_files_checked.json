@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js",
+            "packages/react/src/internal/wrapFocus.js",
+            "packages/react/src/components/ListBox/ListBox.js",
+            "packages/react/src/components/ListBox/ListBoxField.js"
+        ],
+        "explanation": "1.  FilterableMultiSelect.js is the component that wraps a ListBox as a filterable multi\u2013select and is where we apply the wrapFocus HOC.  It\u2019s responsible for forwarding refs and focus/blur handlers to the correct DOM element. \n2.  wrapFocus.js is the internal higher\u2013order component that watches for focus/blur so it can add the proper \u2018focus\u2019 state class to the outer wrapper.  It must be updated so it sees focus on the nested `<input>` (focusin) and toggles the parent\u2019s focused state correctly.\n3.  ListBox.js contains the top\u2013level wrapper markup for all list\u2013box variants (including filterable).  It needs to ensure it passes the focus and blur events down (or up) properly when in multi\u2013select mode.\n4.  ListBoxField.js renders the actual text `<input>` in filterable mode.  It must forward the onFocus and onBlur handlers it receives from its parent so that wrapFocus can pick them up.  Without those being passed through, clicking the input only draws the browser\u2019s default outline, not Carbon\u2019s wrapper outline.",
+        "bug_scenario": "When you open a filterable multi\u2013select and you\u2019ve already selected items, clicking directly into the text input only draws the blue outline around the `<input>` itself instead of highlighting the entire control wrapper.  You can still trigger the correct outline by clicking to the left of the input box (on the selected items area), but not when you click on the actual `<input>`.  This is a regression in how focus events are being handled in the filterable multi\u2013select."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js",
+            "packages/react/src/internal/wrapFocus.js"
+        ],
+        "explanation": "FilterableMultiSelect.js never wraps its root element in the wrapFocus higher-order component the way the non-filterable MultiSelect does, so focus remains on the native <input> instead of the outer wrapper. wrapFocus.js itself must also handle nested focus events correctly (e.g. use React\u2019s onFocus capture to treat child <input> focusing as wrapper focus). Finally, the SCSS in list-box.scss defines the blue outline on the .bx--list-box wrapper; it must be extended (or updated to use :focus-within) so that when the wrapper contains a focused <input> (as in the filterable variant), the full container gets the border style rather than just the <input> element.",
+        "bug_scenario": "When you click inside the filterable multiselect\u2019s text input (after you\u2019ve already selected one or more options), the focus ring shows up only around the native <input> element instead of the entire control. You can see in the first screenshot that clicking the input yields a narrow outline, whereas clicking just to the left of the input (same control) correctly draws the focus border around the full multiselect container."
+    }
+}

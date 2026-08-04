@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/TileWMS.js",
+            "src/ol/source/UrlTile.js",
+            "src/ol/source/XYZ.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/canvas/TileLayer.js"
+        ],
+        "explanation": "\u2022 src/ol/source/TileWMS.js: This is the only source today that implements a gutter option. It should serve as the model for adding gutter parameters to other sources. Also, the WebGL-specific gutter removal logic in this file (used by the WebGL renderer) must be updated so the buffer is preserved as a texture border instead of being cropped out.\n\u2022 src/ol/source/UrlTile.js: The base class for most XYZ-like sources. It needs to accept a gutter option and pass it down to its tile creation and loading routines.\n\u2022 src/ol/source/XYZ.js: As the default XYZ source, it currently offers no gutter setting. It must be extended to take a gutter value and forward it to its UrlTile superclass so that fetched tiles include the buffer pixels.\n\u2022 src/ol/source/DataTile.js: The DataTile source also lacks buffer support. To avoid edge artifacts when interpolating data tiles, it should be refactored to accept and handle a gutter parameter, mirroring TileWMS\u2019s behavior.\n\u2022 src/ol/renderer/webgl/TileLayer.js: This is where WebGL textures are created for tile layers. It currently strips off the gutter that TileWMS inserts, so the renderer must be changed to treat the gutter like a layer extent (preserving the extra pixels when uploading to the GPU).\n\u2022 src/ol/renderer/canvas/TileLayer.js: The Canvas renderer for tile layers draws image bitmaps into a canvas. To avoid seams in Canvas mode, it should respect the gutter on all tile sources and draw the buffered image region rather than cropping at the tile\u2019s nominal edge.",
+        "bug_scenario": "When rendering tiled layers (XYZ or DataTile sources) with WebGL or Canvas, the map shows visible seams or edge\u2010effects between tiles. OpenLayers currently supports a \u201cgutter\u201d (buffer) option only in TileWMS. Other tile sources (XYZ, DataTile, UrlTile) do not expose a gutter parameter, so tiles are fetched and stitched edge\u2010to\u2010edge. Moreover, the WebGL renderer for TileWMS strips out the gutter before creating the GPU texture, defeating its purpose. The result is interpolation artifacts at tile boundaries (visible in the provided screenshot)."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/TileWMS.js",
+            "src/ol/source/UrlTile.js",
+            "src/ol/source/XYZ.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/tilegrid/TileGrid.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "\n\u2022 src/ol/source/TileWMS.js: This is the only source today that supports a gutter option. It contains the logic for requesting and cropping the extra pixels. We will use it as the blueprint for other sources.\n\u2022 src/ol/source/UrlTile.js: The base class for URL-based tile sources (including XYZ). It needs to accept a gutter parameter and pass it into the tile grid and tile creation.\n\u2022 src/ol/source/XYZ.js: The standard XYZ tile source, which currently ignores gutter. It must be updated to read the gutter option, include it in its tile URL tile requests, and forward it into UrlTile\u2019s constructor.\n\u2022 src/ol/source/DataTile.js: DataTile sources (used for elevation/terrain) likewise have no gutter support. They need the same treatment as XYZ.\n\u2022 src/ol/reproj/Tile.js: Tile reprojection code needs to know about the gutter so that source images are cropped correctly after reprojection, preserving the extra boundary pixels.\n\u2022 src/ol/tilegrid/TileGrid.js: The tile-grid generator must account for an enlarged tile size when gutter > 0, so that the correct source extent and resolution calculations include the buffer.\n\u2022 src/ol/webgl/TileTexture.js: This is where WebGL textures are created from HTMLImageElements or canvases. Currently it always strips off the gutter from TileWMS before uploading. It must be revised to leave the gutter in place when a gutter parameter is present.\n\u2022 src/ol/renderer/webgl/TileLayer.js: The WebGL renderer for tile layers uses TileTexture. It must correctly bind and draw the full buffered texture, rather than relying on the cropped one, so that no seams appear in the shader output.",
+        "bug_scenario": "When using non-WMS tile sources (for example Nextzen XYZ terrain tiles or DataTile sources), there is currently no gutter (buffer) option to request extra pixels around each tile to avoid edge-interpolation artifacts. In the screenshot above you can see visible seams where adjacent tiles meet. Moreover, even for TileWMS\u2014which does support a gutter\u2014the WebGL rendering path will strip off the gutter before creating the GPU texture, so the extra pixels never make it into the shader and the edge artifact remains. The goal is to: 1) expose a gutter option on UrlTile, XYZ, DataTile, and other generic tile sources; 2) propagate the gutter through the reprojection and tile-grid machinery; and 3) apply the gutter correctly when uploading textures in the WebGL tile layer."
+    }
+}

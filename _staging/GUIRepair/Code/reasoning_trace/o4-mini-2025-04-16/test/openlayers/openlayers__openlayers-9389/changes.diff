@@ -1,0 +1,42 @@
+diff --git a/rendering/webpack.config.js b/rendering/webpack.config.js
+index 948ce5c151..ea82d9d60d 100644
+--- a/rendering/webpack.config.js
++++ b/rendering/webpack.config.js
+@@ -1,21 +1,23 @@
+ const fs = require('fs');
+ const path = require('path');
+ 
+-const cases = path.join(__dirname, 'cases');
+-
+-const caseDirs = fs.readdirSync(cases).filter(name => {
+-  let exists = true;
+-  try {
+-    fs.accessSync(path.join(cases, name, 'main.js'));
+-  } catch (err) {
+-    exists = false;
+-  }
+-  return exists;
+-});
+-
++/* Unify rendering tests: collect cases from both rendering/cases and test/rendering/cases */
+ const entry = {};
+-caseDirs.forEach(c => {
+-  entry[`cases/${c}/main`] = `./cases/${c}/main.js`;
++['cases', '../test/rendering/cases'].forEach(subdir => {
++  const dirPath = path.join(__dirname, subdir);
++  if (!fs.existsSync(dirPath)) {
++    return;
++  }
++  fs.readdirSync(dirPath).forEach(name => {
++    const filePath = path.join(dirPath, name, 'main.js');
++    if (!fs.existsSync(filePath)) {
++      return;
++    }
++    // normalize the key to drop any leading "../"
++    const entryKey = `${subdir}/${name}/main`.replace(/\.\.\//g, '');
++    const entryValue = `./${subdir}/${name}/main.js`;
++    entry[entryKey] = entryValue;
++  });
+ });
+ 
+ module.exports = {

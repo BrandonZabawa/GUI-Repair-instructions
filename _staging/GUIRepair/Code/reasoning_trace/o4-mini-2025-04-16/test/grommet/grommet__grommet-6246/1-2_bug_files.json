@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/DataChart/DataChart.js",
+            "src/js/components/DataChart/utils.js",
+            "src/js/components/DataChart/YAxis.js",
+            "src/js/components/DataChart/YGuide.js",
+            "src/js/components/Chart/Chart.js",
+            "src/js/components/Chart/utils.js"
+        ],
+        "explanation": "\u2022 DataChart.js is the orchestration layer that computes scales, axes, and passes props into the lower-level Chart. It builds the domain extents and would need logic to include zero in the domain when negatives appear, and to request a zero baseline guide by default. \n\u2022 utils.js under DataChart holds the routines that compute series extents, defaults for min/max values, and could be excluding or mishandling negative values when deriving the scale domain. \n\u2022 YAxis.js and YGuide.js render the vertical axis and its guide lines. They currently do not draw a zero line or tick if the data\u2019s min is negative, nor do they configure the scale to span zero. They must be updated to insert a zero tick/guide when negatives are present. \n\u2022 Chart.js is the core charting component that actually draws lines, points, or bars. If its shape generators filter out or cannot map negative values correctly, it will draw nothing \u2013 so it\u2019s worth auditing how Chart maps a negative-domain to pixel coordinates. \n\u2022 utils.js under Chart supports coordinate computations (scales, shape normalization, path generation) and could be discarding negative data or miscalculating pixel positions for negative values. That is why all these files are good starting points to fix negative-value rendering and default zero-line behavior.",
+        "bug_scenario": "When a DataChart is given a data set that includes negative values (for example amount: -2), nothing renders. In the screenshots you can see the same DataChart configuration used first with positive values (a line and star\u2010point chart) displays correctly with a zero baseline guide, but as soon as one data point is negative, the entire chart disappears. Instead of showing a zero line and plotting negative points or bars below it, no shapes or axes appear."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/DataChart/DataChart.js",
+            "src/js/components/DataChart/utils.js",
+            "src/js/components/DataChart/YGuide.js",
+            "src/js/components/Chart/utils.js",
+            "src/js/components/Chart/calcs.js"
+        ],
+        "explanation": "\u2022 DataChart.js is the top\u2010level component that assembles series, computes bounds, and passes domain and guides into the Chart. Its current logic never expands the domain below zero for negative values, so negative points get filtered out.\n\u2022 utils.js under DataChart contains the functions that derive value extents and axis bounds. They default the lower bound to zero and drop any negative minima, so the Chart never sees negative values.\n\u2022 YGuide.js is responsible for drawing guides such as the zero line. Because the domain never includes zero when negatives are present, YGuide doesn\u2019t render any guide line for the zero baseline.\n\u2022 Chart/utils.js contains helper functions used by the Chart component, including value scaling and domain normalization. It also enforces a minimum of zero for the lower bound by default.\n\u2022 Chart/calcs.js is where the Chart computes its domain extents (min and max) for each series. It currently clamps the domain start to zero, which prevents any negative values from being plotted.\n\nFixing these files involves adjusting the domain\u2010calculation logic to include the true minimum (when negative), updating the DataChart bound derivation to respect negative minima, and ensuring the zero guide in YGuide always appears when negatives exist (and can be styled separately for negative segments).",
+        "bug_scenario": "When the DataChart\u2019s data contains negative values (e.g. amount: -2), the chart renders completely blank rather than plotting the negative point or drawing a zero\u2010line guide. It appears that both the DataChart component\u2019s logic for computing value bounds and the underlying Chart utilities clamp the domain to [0, max], effectively excluding negative data."
+    }
+}

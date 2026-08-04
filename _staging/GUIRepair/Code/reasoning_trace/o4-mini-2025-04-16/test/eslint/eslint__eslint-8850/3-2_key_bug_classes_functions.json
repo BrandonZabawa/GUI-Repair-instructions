@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "lib/rules/indent.js//listener for BinaryExpression and LogicalExpression",
+            "lib/rules/indent.js//function that checks indentation of parenthesized values",
+            "lib/rules/indent.js//OffsetStorage.setDesiredOffset"
+        ],
+        "explanation": "The regression arises in the parts of indent.js that (1) add indentation for the right-hand side of binary/logical expressions and (2) handle parentheses pairs. The BinaryExpression/LogicalExpression listener is responsible for computing the extra indent for the RHS of `b && (\u2026)`, and the parenthesized-values function determines how tokens inside matching parentheses are offset or collapsed. Both rely on OffsetStorage.setDesiredOffset to record those offsets. Because the new algorithm doesn\u2019t collapse the offset across the wrapping parentheses correctly, it over-indents the JSX. Fixing those two functions (and/or how they invoke setDesiredOffset when parentheses surround a JSXExpr) will restore the expected behavior.",
+        "bug_scenario": "In a JSX-returning function, using a logical \u201c&&\u201d expression with extra parentheses around the JSX fragment causes the new indent rule (4.1.0) to miscompute indentation. In the example:\n\n    function A() {\n        return (\n            <div>\n                {\n                    b && (\n                        <div>\n                        </div>\n                    )\n                }\n            </div>\n        );\n    }\n\nESLint reports \u201cExpected 16 spaces but found 20\u201d on the inner `<div>` even though the code was considered correctly indented in ESLint 4.0.  Removing the parentheses or changing the expression form makes the indentation pass again."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "lib/rules/indent.js//<visitor for BinaryExpression and LogicalExpression> (\"Adds indentation for the right-hand side of binary/logical expressions\")",
+            "lib/rules/indent.js//<function checking parenthesized values> (\"Checks the indentation of parenthesized values, given a list of tokens in a program\")"
+        ],
+        "explanation": "The mis-indentation stems from the two parts of the new indent.js rule: the visitor for BinaryExpression/LogicalExpression, which computes an offset for the right-hand side, and the logic that handles arbitrary parenthesized expressions. Because the code adds one level of indent for the logical expression and then attempts to re-align the parentheses, it double-counts when the RHS is wrapped in parentheses. Fixing this requires adjusting the binary/logical expression handler so that, when the RHS is a grouped parenthesized expression (especially wrapping a JSX element), it doesn\u2019t add an extra indent beyond what the paren-handler already applies.",
+        "bug_scenario": "When a JSX element is wrapped in parentheses on the right-hand side of a logical (`&&`) expression inside a JSX return, the new 4.1.0 indent rule mis-computes the expected indentation. In the example:\n\n    b && (\n        <div>\n        </div>\n    )\n\neach of the lines inside the parens is indented too far (20 spaces instead of 16, or 16 instead of 12), because the rule that handles binary/logical expression indentation doesn\u2019t take the extra grouping parens into account."
+    }
+}

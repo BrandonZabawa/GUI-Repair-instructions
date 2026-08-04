@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/lib/lh-error.js",
+            "lighthouse-cli/run.js",
+            "lighthouse-cli/index.js",
+            "lighthouse-core/lib/i18n/i18n.js",
+            "lighthouse-core/lib/i18n/locales.js"
+        ],
+        "explanation": "The root of the bug is that text output during fatal CLI runs (particularly error messages and codes, as shown by the 'INVALID_URL' message from 'lh-error.js') are not passed through the i18n/text translation mechanism. 'lighthouse-core/lib/lh-error.js' is responsible for error handling and message production, so it's directly relevant. 'lighthouse-cli/run.js' and possibly 'lighthouse-cli/index.js' are in the call stack, and are responsible for catching, formatting, and outputting these errors to the user. Integration with i18n is likely missing in these places. 'lighthouse-core/lib/i18n/i18n.js' and 'lighthouse-core/lib/i18n/locales.js' are the main i18n utilities and translation files, and should be referenced to ensure proper error text rendering in the appropriate locale; they may also need editing to add these messages as translatable strings.",
+        "bug_scenario": "When running Lighthouse from the CLI with an invalid URL, a fatal error message is shown, but the error text (such as 'INVALID_URL') is not translated via i18n, even though i18n is integrated in the rest of the app. The screenshot displays an error from 'lighthouse-core/lib/lh-error.js' with a hardcoded error code ('INVALID_URL'), revealing the lack of internationalization on fatal CLI errors."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/lib/lh-error.js",
+            "lighthouse-cli/run.js",
+            "lighthouse-cli/index.js",
+            "lighthouse-core/lib/i18n/i18n.js",
+            "lighthouse-core/lib/i18n/locales.js"
+        ],
+        "explanation": "- 'lighthouse-core/lib/lh-error.js' is responsible for defining Lighthouse errors and their messages. Since the error type and untranslated message (e.g., 'urlInvalid') come from here, it must be updated to support i18n translations when errors are rendered in CLI output.\n- 'lighthouse-cli/run.js' and 'lighthouse-cli/index.js' are involved in catching and printing these errors to the CLI. These files determine how and when errors surface to users and whether localized messages are fetched or not, so they are relevant for ensuring i18n compliance during fatal errors.\n- 'lighthouse-core/lib/i18n/i18n.js' and 'lighthouse-core/lib/i18n/locales.js' deal with managing translations and locale resolution. Any error messaging should pass through these to obtain the correct translation for the user's locale.\n\nEnsuring these modules are interconnected and that error messages go through the i18n system is essential for fixing the missing translation in CLI fatal errors.",
+        "bug_scenario": "When running the Lighthouse CLI with an invalid URL or a URL that is not properly formed, an error is thrown ('LHError: INVALID_URL'). The error message shown in the CLI output is not being translated and instead appears in untranslated (likely as a raw internal message or code), failing the expected i18n (internationalization) support. The CLI output shows technical error codes and stack traces, not localized user-friendly messages."
+    }
+}

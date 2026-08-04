@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2.replaceStrings",
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2.generateReportHtml",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer.renderReport",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer._renderReportHeader"
+        ],
+        "explanation": "\u2022 ReportGeneratorV2.replaceStrings & generateReportHtml: These functions are responsible for inlining the JSON report (%%LIGHTHOUSE_JSON%%) and the renderer JS into the report-template.html.  A bug here (wrong replacement order, improper escaping or an unexpected token inserted) will corrupt the script block and leave no valid report object to pass to the front-end.\n\u2022 ReportRenderer.renderReport & _renderReportHeader: These consume the inlined report JSON.  Because the JSON never properly reached ReportRenderer (it\u2019s undefined), _renderReportHeader immediately blows up on report.generatedTime.  Fixing the injection logic in ReportGeneratorV2 will allow ReportRenderer.renderReport to receive a valid object and populate the page instead of remaining blank.",
+        "bug_scenario": "When Lighthouse generates a report (either via CLI or the browser extension) the result page shows up completely blank.  In the browser console you see two errors: \u201cUncaught SyntaxError: Invalid or unexpected token\u201d and \u201cUncaught TypeError: Cannot read property 'generatedTime' of undefined at ReportRenderer._renderReportHeader\u2026\u201d.  That indicates that the JSON payload never got parsed or passed into the ReportRenderer code, so the HTML page has no report data and ReportRenderer.report is undefined."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/report-generator.js//generateReportHtml",
+            "lighthouse-core/report/v2/report-generator.js//replaceStrings",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//renderReport",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//_renderReportHeader"
+        ],
+        "explanation": "The root of the blank page is invalid or missing report data in the HTML. That stems from ReportGeneratorV2.generateReportHtml (and its helper replaceStrings) incorrectly inlining the JSON and JS into the report-template, producing a syntax error in the final HTML. Because of that syntax error the ReportRenderer script never properly defines the `report` object, so when renderReport calls _renderReportHeader(report) it receives undefined and blows up on report.generatedTime. Fixing or replacing replaceStrings and generateReportHtml so that the placeholders (%%LIGHTHOUSE_JSON%%, %%LIGHTHOUSE_JAVASCRIPT%%, etc.) are safely and correctly injected will allow the ReportRenderer.renderReport and _renderReportHeader to receive a valid report object and populate the page.",
+        "bug_scenario": "When Lighthouse finishes running on the command-line or in the browser extension, it writes out a report HTML and then opens it. Instead of seeing the rendered scorecards and metrics, the page is completely blank. In the DevTools console you see two errors: first a \u201cSyntaxError: Invalid or unexpected token\u201d deep in the generated report HTML, and immediately afterward \u201cTypeError: Cannot read property \u2018generatedTime\u2019 of undefined\u201d inside ReportRenderer._renderReportHeader. This tells us that the JSON report data never made it into the renderer (it\u2019s undefined), and that malformed injection of the JSON/JS payload broke the parsing of the script block entirely."
+    }
+}

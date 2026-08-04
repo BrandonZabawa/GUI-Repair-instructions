@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/renderer/webgl/VectorTileLayer.js",
+            "src/ol/renderer/Composite.js"
+        ],
+        "explanation": "1. src/ol/layer/Group.js: This is where group-level opacity is propagated into each child\u2019s layerState via getLayerStatesArray (multiplying child opacity by group opacity). If this never reaches vector tile renderers, their labels won\u2019t fade.\n2. src/ol/renderer/canvas/VectorTileLayer.js: The canvas-based vector-tile renderer draws text symbols and images but does not apply the layerState.opacity (globalAlpha) when painting labels, so group opacity has no effect on those labels.\n3. src/ol/renderer/webgl/VectorTileLayer.js: The WebGL vector-tile renderer must take the layerState.opacity into account (via uniforms.GLOBAL_ALPHA) for text styling as well. If it\u2019s only applied to fill/stroke geometry but not to text symbols, vectortile labels stay fully opaque.\n4. src/ol/renderer/Composite.js: The composite renderer composes all layer canvases into a single DOM container. It relies on each layer\u2019s renderer to honor state.opacity. Ensuring group opacity is actually forwarded into the rendered canvas/WebGL draw calls here (or by adding a CSS opacity on the group container) is necessary so that all child layers (including vector-tile labels) participate correctly.",
+        "bug_scenario": "In the CodeSandbox demo, there are two layers in a layer group: a standard vector layer and a vector-tile layer with text labels. Dragging the \u201cvector\u201d or \u201cvectortile\u201d opacity sliders correctly fades in/out that layer\u2019s labels. However, dragging the \u201cgroup\u201d slider (which calls setOpacity on the layer group) only affects the standard vector layer\u2019s labels. The vector-tile labels (text symbols in canvas or WebGL) remain at full opacity, even though the group\u2019s overall opacity should be applied to all child layers."
+    }
+}

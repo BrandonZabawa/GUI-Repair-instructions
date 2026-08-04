@@ -1,0 +1,146 @@
+diff --git a/packages/react/src/components/Slider/Slider.js b/packages/react/src/components/Slider/Slider.js
+index 71192af2..43ef4cff 100644
+--- a/packages/react/src/components/Slider/Slider.js
++++ b/packages/react/src/components/Slider/Slider.js
+@@ -58,6 +58,11 @@ export default class Slider extends PureComponent {
+      */
+     disabled: PropTypes.bool,
+ 
++    /**
++     * `true` to make this slider read-only.
++     */
++    readOnly: PropTypes.bool,
++
+     /**
+      * The callback to format the label associated with the minimum/maximum value.
+      */
+@@ -170,6 +175,7 @@ export default class Slider extends PureComponent {
+     step: 1,
+     stepMultiplier: 4,
+     disabled: false,
++    readOnly: false,
+     minLabel: '',
+     maxLabel: '',
+     inputType: 'number',
+@@ -266,8 +272,8 @@ export default class Slider extends PureComponent {
+    * @param {Event} evt The event.
+    */
+   onDragStart = (evt) => {
+-    // Do nothing if component is disabled
+-    if (this.props.disabled) {
++    // Do nothing if component is disabled or readOnly
++    if (this.props.disabled || this.props.readOnly) {
+       return;
+     }
+ 
+@@ -291,8 +297,8 @@ export default class Slider extends PureComponent {
+    * indicating that the `onRelease` callback should be called.
+    */
+   onDragStop = () => {
+-    // Do nothing if component is disabled
+-    if (this.props.disabled) {
++    // Do nothing if component is disabled or readOnly
++    if (this.props.disabled || this.props.readOnly) {
+       return;
+     }
+ 
+@@ -317,8 +323,8 @@ export default class Slider extends PureComponent {
+    * @param {Event} evt The event.
+    */
+   _onDrag = (evt) => {
+-    // Do nothing if component is disabled or we have no event
+-    if (this.props.disabled || !evt) {
++    // Do nothing if component is disabled, readOnly, or we have no event
++    if (this.props.disabled || this.props.readOnly || !evt) {
+       return;
+     }
+ 
+@@ -356,8 +362,8 @@ export default class Slider extends PureComponent {
+    * @param {Event} evt The event.
+    */
+   onKeyDown = (evt) => {
+-    // Do nothing if component is disabled or we don't have a valid event
+-    if (this.props.disabled || !('which' in evt)) {
++    // Do nothing if component is disabled, readOnly, or we don't have a valid event
++    if (this.props.disabled || this.props.readOnly || !('which' in evt)) {
+       return;
+     }
+ 
+@@ -400,8 +406,8 @@ export default class Slider extends PureComponent {
+    */
+ 
+   onChange = (evt) => {
+-    // Do nothing if component is disabled
+-    if (this.props.disabled) {
++    // Do nothing if component is disabled or readOnly
++    if (this.props.disabled || this.props.readOnly) {
+       return;
+     }
+ 
+@@ -549,6 +555,7 @@ export default class Slider extends PureComponent {
+       inputType,
+       required,
+       disabled,
++      readOnly,
+       name,
+       light,
+       ...other
+@@ -577,6 +584,7 @@ export default class Slider extends PureComponent {
+           const sliderClasses = classNames(
+             `${prefix}--slider`,
+             { [`${prefix}--slider--disabled`]: disabled },
++            { [`${prefix}--slider--readonly`]: readOnly },
+             [enabled ? null : className]
+           );
+ 
+@@ -618,24 +626,26 @@ export default class Slider extends PureComponent {
+                   ref={(node) => {
+                     this.element = node;
+                   }}
+-                  onMouseDown={this.onDragStart}
+-                  onTouchStart={this.onDragStart}
+-                  onKeyDown={this.onKeyDown}
++                  onMouseDown={readOnly ? undefined : this.onDragStart}
++                  onTouchStart={readOnly ? undefined : this.onDragStart}
++                  onKeyDown={readOnly ? undefined : this.onKeyDown}
+                   role="presentation"
+                   tabIndex={-1}
+                   data-invalid={isValid ? null : true}
+                   {...other}>
+-                  <div
+-                    className={`${prefix}--slider__thumb`}
+-                    role="slider"
+-                    id={id}
+-                    tabIndex={0}
+-                    aria-valuemax={max}
+-                    aria-valuemin={min}
+-                    aria-valuenow={value}
+-                    style={thumbStyle}
+-                    aria-labelledby={labelId}
+-                  />
++                  {!readOnly && (
++                    <div
++                      className={`${prefix}--slider__thumb`}
++                      role="slider"
++                      id={id}
++                      tabIndex={0}
++                      aria-valuemax={max}
++                      aria-valuemin={min}
++                      aria-valuenow={value}
++                      style={thumbStyle}
++                      aria-labelledby={labelId}
++                    />
++                  )}
+                   <div
+                     className={`${prefix}--slider__track`}
+                     ref={(node) => {
+@@ -659,7 +669,8 @@ export default class Slider extends PureComponent {
+                   value={value}
+                   aria-labelledby={!ariaLabelInput ? labelId : null}
+                   aria-label={ariaLabelInput ? ariaLabelInput : null}
+-                  disabled={disabled}
++                  disabled={disabled || readOnly}
++                  readOnly={readOnly}
+                   required={required}
+                   min={min}
+                   max={max}

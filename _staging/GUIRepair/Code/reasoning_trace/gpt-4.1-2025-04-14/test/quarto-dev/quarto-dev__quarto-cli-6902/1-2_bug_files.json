@@ -1,0 +1,41 @@
+{
+    "1": {
+        "bug_files": [
+            "src/command/render/crossref.ts",
+            "src/command/render/filters.ts",
+            "src/command/render/layout.ts",
+            "src/command/render/output-tex.ts",
+            "src/command/render/constants.ts",
+            "src/command/editor-support/crossref.ts",
+            "resources/filters/common/figures.lua",
+            "resources/filters/common/crossref.lua",
+            "resources/filters/common/floats.lua",
+            "resources/filters/crossref/figures.lua",
+            "resources/filters/crossref/crossref.lua",
+            "resources/filters/crossref/refs.lua",
+            "resources/filters/common/layout.lua"
+        ],
+        "explanation": "These files are likely responsible for parsing figure/subfigure blocks, handling cross-references, and generating the LaTeX output: \n- 'src/command/render/crossref.ts', 'src/command/editor-support/crossref.ts', and 'resources/filters/crossref/': Likely the core logic managing cross-reference label generation, assignment, and resolution for figures and subfigures.\n- 'resources/filters/common/figures.lua', 'resources/filters/common/floats.lua', 'resources/filters/crossref/figures.lua': Involved in the general figure/subfigure rendering pipeline; control how subfigure groups are mapped to LaTeX.\n- 'src/command/render/output-tex.ts' and related renderer files: Responsible for LaTeX/PDF output specifics, which is where the bug manifests.\n- 'filters.ts', 'layout.ts', and related lua filter files: They orchestrate how document nodes (including floats and captions with/without crossrefs) are processed pre-output, enabling or preventing subfigure logic as appropriate.\nTheir combined function determines how Quarto detects floats, subfloats, and their references\u2014which is at the heart of this reported bug.",
+        "bug_scenario": "The bug affects cross-referencing of subfigures (subfloats) in Quarto-generated LaTeX/PDF outputs. When subfigures do not have explicit cross-reference labels, they are formatted incorrectly (as numbered standalone figures), instead of as subfigures/labeled subfloats within a single figure. The bug images show that, without labels, both elephants are labeled as separate figures (first image); with labels, they're properly subfigures (second image). The LaTeX output structure differs, revealing Quarto's missed generation of subfigure environments and cross-reference anchors when subfigure labels are absent."
+    },
+    "2": {
+        "bug_files": [
+            "src/command/render/crossref.ts",
+            "src/command/render/filters.ts",
+            "src/command/render/layout.ts",
+            "src/command/render/output-tex.ts",
+            "src/command/render/latexmk/latex.ts",
+            "src/command/render/latexmk/latexmk.ts",
+            "src/command/render/latexmk/parse-error.ts",
+            "resources/filters/common/figures.lua",
+            "resources/filters/common/floats.lua",
+            "resources/filters/common/crossref.lua",
+            "resources/filters/crossref/figures.lua",
+            "resources/filters/crossref/crossref.lua",
+            "resources/filters/crossref/refs.lua",
+            "resources/filters/common/latex.lua"
+        ],
+        "explanation": "Files were selected based on references to figure rendering, LaTeX/PDF output, float/subfloat handling, and (cross)reference generation in the repository structure. The core logic for rendering figures and handling cross-references occurs in the various Lua filters (under resources/filters/common and resources/filters/crossref) and in the TypeScript files (under src/command/render) responsible for orchestrating rendering, crossref resolution, and LaTeX output. Files such as 'crossref.ts', 'filters.ts', 'layout.ts', and the latex/latexmk/output-tex pipeline are all necessary for translating internal document structure to LaTeX code that respects subfigure labeling. The Lua filters (especially figures.lua, floats.lua, crossref.lua, and latex.lua) implement Pandoc AST processing for assigning refs/labels and formatting floats, subfloats, and their captions according to Quarto's reference logic. Lastly, parse-error.ts may be involved in error reporting when LaTeX output does not match expectations, and output-tex.ts is likely relevant for assembling final LaTeX. In summary, to fix the bug, these files must be examined and potentially edited to ensure subfloats are assigned appropriate cross-reference information regardless of whether explicit subfigure labels are supplied.",
+        "bug_scenario": "The bug concerns the incorrect or missing generation of cross-reference information for subfigures (subfloats) in PDF documents when using Quarto. Specifically, if subimages within a float (figure group) lack individual labels, the resulting LaTeX does not generate proper subfigure referencing (e.g., figure numbers or cross-reference anchors for each subfigure). The first image shows the incorrect scenario: subfigures lack labels and are referred as standard figures. The second image shows the correct scenario with explicit subfigure labels, where each subfigure receives proper labeling and can be referenced individually. The expectation is that Quarto should automatically handle this cross-reference information for subfigures, even if explicit labels are not provided, to ensure users always get correct cross-referencing for floats and subfloats."
+    }
+}

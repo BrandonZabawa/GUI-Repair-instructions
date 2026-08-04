@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/cascader-select/cascader-select.tsx//CascaderSelect"
+        ],
+        "bug_functions": [
+            "components/cascader-select/cascader-select.tsx//handleChange",
+            "components/cascader-select/cascader-select.tsx//filterItems",
+            "components/cascader-select/cascader-select.tsx//renderPopupContent",
+            "components/cascader-select/cascader-select.tsx//handleSearch"
+        ],
+        "explanation": "All of the selected methods participate in the component’s search-and-select lifecycle:\n\n• handleChange: contains the logic to clear the internal searchValue once all filtered items are selected, but it checks the wrong count (value.length === filterItems().length). Because filterItems() may include non-leaf or extra paths, the condition often never becomes true, so searchValue is not reset.\n\n• filterItems: computes the list of visible items under the current searchValue. Its implementation filters on all nodes (not just leaves) and returns path arrays. Relying on its length to detect “all items selected” can be inaccurate.\n\n• handleSearch: updates state.searchValue but doesn’t provide a callback path to reset the visual input or clear the dropdown once the searchValue is programmatically cleared in handleChange.\n\n• renderPopupContent: the intended clear search button was defined in an earlier version of this method, but a second definition (without the clear button) overrides it, so users never see a manual “Clear Search” control.\n\nFixing the bug requires adjusting handleChange to compare against the actual number of selectable leaf items (or dataSource children), ensuring filterItems only counts relevant items, restoring a single renderPopupContent with a clear-search button, and making handleSearch/handleChange coordinate to fully clear both state and the Select’s internal input when all items are selected.",
+        "bug_scenario": "In the multi-select + search mode of CascaderSelect, after typing a term (e.g. “厦门”) and selecting every item in the filtered result list, the dropdown remains stuck showing only the search results and does not automatically clear the search filter or restore the full list. There is neither an auto-clear mechanism nor a clear-search button in the dropdown to let the user return to the unfiltered list without closing and reopening."
+    },
+    "2": {
+        "bug_classes": [
+            "components/cascader-select/cascader-select.tsx//CascaderSelect"
+        ],
+        "bug_functions": [
+            "components/cascader-select/cascader-select.tsx//handleChange",
+            "components/cascader-select/cascader-select.tsx//renderPopupContent"
+        ],
+        "explanation": "1. handleChange 方法中已经有“当所有搜索结果被选中时自动清空 searchValue”逻辑（if (searchValue && multiple && value.length === this.filterItems().length) { st.searchValue = ''; }），但页面并未表现出来。 2. 在源码里存在两个同名的 renderPopupContent 方法，后者覆盖前者，使得原本带有“Clear Search”按钮的渲染逻辑失效，导致用户无法手动清除搜索。 3. 正确修复应当删除或合并重复的 renderPopupContent，保留带清除按钮的版本，并确保 handleChange 逻辑能够在选满后真正触发 setState 更新和下拉内容重渲染。",
+        "bug_scenario": "在 CascaderSelect 开启多选 + 搜索模式时，用户输入关键字搜索到一组结果并选中了所有列表项后，下拉框依旧停留在“搜索结果”页，没有自动回到完整列表，也没有展示“清除搜索”按钮。用户不得不通过点击弹窗外然后重新打开下拉框来才能看到完整列表。"
+    }
+}

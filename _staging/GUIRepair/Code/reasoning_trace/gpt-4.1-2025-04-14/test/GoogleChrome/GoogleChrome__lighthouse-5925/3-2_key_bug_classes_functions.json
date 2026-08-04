@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//UnminifiedJavaScript"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//UnminifiedJavaScript.computeWaste"
+        ],
+        "explanation": "The main logic for detecting unminified JavaScript and estimating potential savings resides in the UnminifiedJavaScript class, particularly its static computeWaste function. This function tokenizes the script content and estimates wasted bytes based on token length, which can be skewed by non-code content like copyright headers. The bug is caused by not accounting for special cases like legal notices that are intentionally not minified but do not represent actual optimization opportunities. Therefore, modifications in UnminifiedJavaScript, especially in computeWaste, are necessary to address this overestimation problem (e.g., by ignoring or discounting recognized legal headers).",
+        "bug_scenario": "The bug scenario involves Lighthouse incorrectly estimating the minification savings of JavaScript files, specifically flagging already minified files like amp-date-picker-0.1.js as not minified due to the presence of a copyright notice with carriage returns and whitespace. This causes Lighthouse to overestimate the potential savings, misleading users into thinking large optimizations are available when they are not. The screenshot shows the audit opportunity reporting high potential savings for a file that is, in practice, already minified except for the copyright header."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//UnminifiedJavaScript"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//UnminifiedJavaScript.computeWaste"
+        ],
+        "explanation": "The bug is rooted in the logic that estimates minification savings. The UnminifiedJavaScript class is responsible for this audit, and its computeWaste static function tokenizes the script and calculates the ratio of token length to total content length. When esprima fails (often due to complex or non-standard comment blocks), the function can throw or miscalculate, leading to inflated savings estimates. The problem is specifically with how computeWaste handles script content that includes large comment blocks (like copyright notices) that are required to remain unminified. Fixing the bug would involve making this logic more tolerant of such cases, perhaps by skipping or separately parsing leading comment blocks before running the minification estimate. No changes are needed in byte-efficiency-audit.js, as that file provides base logic and utilities, not the specific estimation that has the bug.",
+        "bug_scenario": "The bug scenario is that Lighthouse reports a large estimated JavaScript minification savings for a minified AMP script (amp-date-picker-0.1.js) due to the presence of a copyright notice in the file that contains whitespace and carriage returns. Lighthouse's audit overestimates the minification savings because its logic relies on tokenizing the script with esprima, which fails to recognize that the script is already minified except for the copyright comment. This leads to a misleading report suggesting significant optimizations are possible when in reality the file is already minified as much as possible due to external constraints on the copyright comment formatting."
+    }
+}

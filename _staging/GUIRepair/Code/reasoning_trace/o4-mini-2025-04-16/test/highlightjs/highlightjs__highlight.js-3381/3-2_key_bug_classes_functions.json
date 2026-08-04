@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/python.js"
+        ],
+        "bug_functions": [
+            "src/languages/python.js//IDENT_RE",
+            "src/languages/python.js//KEYWORDS"
+        ],
+        "explanation": "The root of the problem lies in how highlight.js decides which character sequences count as keywords versus ordinary identifiers. In python.js:\n\n\u2022 IDENT_RE (const IDENT_RE = /[\\p{XID_Start}_]\\p{XID_Continue}*/u) defines the full identifier pattern and correctly matches \u201c_undef\u201d as one token.  \n\u2022 KEYWORDS (const KEYWORDS = { $pattern: /[A-Za-z]\\w+|__\\w+__/, keyword: RESERVED_WORDS, \u2026 }) provides the regex used to pull out potential keywords. Because its $pattern does not allow an underscore at the start, it splits \u201c_undef\u201d into two pieces under the hood and then matches \u201cdef\u201d against the reserved\u2010words list, incorrectly marking it as a keyword.\n\nTo fix this, the $pattern for KEYWORDS must be broadened (for example to include leading underscores) so that \u201c_undef\u201d is never subdivided and its internal \u201cdef\u201d cannot be reinterpreted as the standalone keyword.",
+        "bug_scenario": "In the Python snippet \u201cfoo = _undef\nbar\u201d the identifier \u201c_undef\u201d is being split so that the trailing \u201cdef\u201d is treated as the Python keyword \u201cdef\u201d (and gets the keyword highlight), even though it is part of a single identifier. The screenshot shows only the \u201cdef\u201d in \u201c_undef\u201d wrapped in <span class=\"hljs-keyword\">, which is incorrect."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/python.js//IDENT_RE",
+            "src/languages/python.js//KEYWORDS"
+        ],
+        "bug_functions": [
+            "src/lib/compile_keywords.js//compileKeywords"
+        ],
+        "explanation": "The root of the problem lives in src/languages/python.js. IDENT_RE correctly defines what a valid Python identifier is (including leading underscores), but the keyword matcher (the KEYWORDS object) uses its own $pattern (/[A-Za-z]\\w+|__\\w+__/) that doesn\u2019t allow a leading underscore. That mismatch lets \u201c_undef\u201d be broken at the \u2018def\u2019 substring and triggers the reserved-word styling. Additionally, compileKeywords in src/lib/compile_keywords.js assembles the final keyword lookup table from the raw lists\u2014because compileKeywords never enforces word-boundary checks around keywords, it amplifies the split. Fixing this requires aligning the KEYWORDS.$pattern with IDENT_RE (so keywords only match full identifiers or are bounded by word breaks) and/or adjusting compileKeywords to respect the full identifier regex rather than matching substrings.",
+        "bug_scenario": "When highlighting this Python snippet in highlight.js v11.x+:\n\n    foo = _undef\n    bar\n\nthe identifier \u201c_undef\u201d gets split into \u201c_un\u201d (plain text) and \u201cdef\u201d (highlighted as a Python keyword). In other words, the engine sees \u201c_undef\u201d as ending with the keyword \u201cdef\u201d and incorrectly re-tokenizes it, so that \u201cdef\u201d is styled as if it were the function-definition keyword."
+    }
+}

@@ -1,0 +1,118 @@
+diff --git a/src/ol/reproj/DataTile.js b/src/ol/reproj/DataTile.js
+index 3d427e110c..0bab8701ca 100644
+--- a/src/ol/reproj/DataTile.js
++++ b/src/ol/reproj/DataTile.js
+@@ -321,17 +321,35 @@ class ReprojDataTile extends DataTile {
+     } else {
+       const z = this.wrappedTileCoord_[0];
+       const size = this.targetTileGrid_.getTileSize(z);
+-      const targetWidth = typeof size === 'number' ? size : size[0];
+-      const targetHeight = typeof size === 'number' ? size : size[1];
++      const targetExtent = this.targetTileGrid_.getTileCoordExtent(
++        this.wrappedTileCoord_
++      );
++
++      // Calculate output width/height so that the number of output pixels matches the number of source pixels
++      // Use the first loaded data source as reference
++      let refSource = null;
++      for (let i = 0; i < dataSources.length; ++i) {
++        if (dataSources[i] && dataSources[i].pixelSize) {
++          refSource = dataSources[i];
++          break;
++        }
++      }
++      let targetWidth, targetHeight;
++      if (refSource && refSource.pixelSize) {
++        const sourceExtent = refSource.extent;
++        const sourceWidth = refSource.pixelSize[0];
++        const sourceHeight = refSource.pixelSize[1];
++        targetWidth = Math.round(getWidth(targetExtent) / (getWidth(sourceExtent) / sourceWidth));
++        targetHeight = Math.round(getHeight(targetExtent) / (getHeight(sourceExtent) / sourceHeight));
++      } else {
++        targetWidth = typeof size === 'number' ? size : size[0];
++        targetHeight = typeof size === 'number' ? size : size[1];
++      }
+       const targetResolution = this.targetTileGrid_.getResolution(z);
+       const sourceResolution = this.sourceTileGrid_.getResolution(
+         this.sourceZ_
+       );
+ 
+-      const targetExtent = this.targetTileGrid_.getTileCoordExtent(
+-        this.wrappedTileCoord_
+-      );
+-
+       let dataR, dataU;
+ 
+       const bytesPerPixel = dataSources[0].bytesPerPixel;
+diff --git a/src/ol/reproj/Image.js b/src/ol/reproj/Image.js
+index 58e96905ae..63f25553af 100644
+--- a/src/ol/reproj/Image.js
++++ b/src/ol/reproj/Image.js
+@@ -186,11 +186,16 @@ class ReprojImage extends ImageWrapper {
+   reproject_() {
+     const sourceState = this.sourceImage_.getState();
+     if (sourceState == ImageState.LOADED) {
+-      const width = getWidth(this.targetExtent_) / this.targetResolution_;
+-      const height = getHeight(this.targetExtent_) / this.targetResolution_;
++      // Calculate output width/height so that the number of output pixels matches the number of source pixels
++      const sourceExtent = this.sourceImage_.getExtent();
++      const sourceImage = this.sourceImage_.getImage();
++      const sourceWidth = sourceImage.width;
++      const sourceHeight = sourceImage.height;
++      const targetWidth = Math.round(getWidth(this.targetExtent_) / (getWidth(sourceExtent) / sourceWidth));
++      const targetHeight = Math.round(getHeight(this.targetExtent_) / (getHeight(sourceExtent) / sourceHeight));
+       this.canvas_ = renderReprojected(
+-        width,
+-        height,
++        targetWidth,
++        targetHeight,
+         this.sourcePixelRatio_,
+         fromResolutionLike(this.sourceImage_.getResolution()),
+         this.maxSourceExtent_,
+diff --git a/src/ol/reproj/Tile.js b/src/ol/reproj/Tile.js
+index 32f0d35b39..60ed4e3ecc 100644
+--- a/src/ol/reproj/Tile.js
++++ b/src/ol/reproj/Tile.js
+@@ -256,17 +256,36 @@ class ReprojTile extends Tile {
+     } else {
+       const z = this.wrappedTileCoord_[0];
+       const size = this.targetTileGrid_.getTileSize(z);
+-      const width = typeof size === 'number' ? size : size[0];
+-      const height = typeof size === 'number' ? size : size[1];
++      const targetExtent = this.targetTileGrid_.getTileCoordExtent(
++        this.wrappedTileCoord_
++      );
++
++      // Calculate output width/height so that the number of output pixels matches the number of source pixels
++      // Use the first loaded source tile as reference
++      let refTile = null;
++      for (let i = 0; i < sources.length; ++i) {
++        if (sources[i] && sources[i].image) {
++          refTile = sources[i];
++          break;
++        }
++      }
++      let width, height;
++      if (refTile && refTile.image) {
++        const sourceExtent = refTile.extent;
++        const sourceWidth = refTile.image.width;
++        const sourceHeight = refTile.image.height;
++        width = Math.round(getWidth(targetExtent) / (getWidth(sourceExtent) / sourceWidth));
++        height = Math.round(getHeight(targetExtent) / (getHeight(sourceExtent) / sourceHeight));
++      } else {
++        width = typeof size === 'number' ? size : size[0];
++        height = typeof size === 'number' ? size : size[1];
++      }
++
+       const targetResolution = this.targetTileGrid_.getResolution(z);
+       const sourceResolution = this.sourceTileGrid_.getResolution(
+         this.sourceZ_
+       );
+ 
+-      const targetExtent = this.targetTileGrid_.getTileCoordExtent(
+-        this.wrappedTileCoord_
+-      );
+-
+       this.canvas_ = renderReprojected(
+         width,
+         height,

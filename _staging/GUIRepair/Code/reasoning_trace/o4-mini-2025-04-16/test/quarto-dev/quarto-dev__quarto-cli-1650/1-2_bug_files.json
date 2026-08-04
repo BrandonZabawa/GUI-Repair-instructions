@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/core/handlers/mermaid.ts",
+            "src/core/handlers/dot.ts",
+            "src/core/handlers/handlers.ts"
+        ],
+        "explanation": "The mermaid and dot handlers are responsible for taking the diagram source, optionally echoing it (either inline or in a fenced block), and then invoking the diagram renderer. In `mermaid.ts` and `dot.ts` each handler constructs a snippet of markdown or HTML that includes the source. In doing so they prepend a newline unconditionally, resulting in the unwanted blank line. The generic handlers loader (`handlers.ts`) also passes through the echo option to these two engines, so any logic there that normalizes or sanitizes the returned content can exacerbate the issue. Fixing it will require trimming or suppressing the leading newline in the mermaid and dot handlers (and verifying there\u2019s no extra newline added upstream in `handlers.ts`).",
+        "bug_scenario": "When a Quarto document contains mermaid or dot code chunks with the chunk option `echo: true` or `echo: fenced`, the rendered HTML shows an extra blank line at the top of the code block (just above the actual source). This only occurs for the mermaid and dot engines, not for plain code or other languages. In the screenshots, you can see a one-line vertical gap before the first line of the diagram source is displayed. It happens consistently with both \u201ctrue\u201d (inline echo) and \u201cfenced\u201d echo styles."
+    },
+    "2": {
+        "bug_files": [
+            "src/core/handlers/mermaid.ts",
+            "src/core/handlers/dot.ts"
+        ],
+        "explanation": "The handlers in src/core/handlers/mermaid.ts and src/core/handlers/dot.ts are responsible for taking the raw chunk literal and turning it into the web component plus (when echo is enabled) a code block of the same source. They receive the chunk literal directly (including any leading newlines) and pass it through to the code-block renderer. Because they don\u2019t trim a leading newline when echoing, any blank line the user left after the options marker appears in the output. Fixing this bug requires adjusting these two handlers to strip a single leading newline (or all leading whitespace) from data.literal before emitting the echoed code block.",
+        "bug_scenario": "When a Mermaid or Dot chunk is marked with \u201cecho: true\u201d (or \u201cecho: fenced\u201d), Quarto\u2019s handler emits the rendered diagram _and_ echoes the original source in a code block above. If the user leaves a blank line after the chunk options marker (as in the repro), that extra newline ends up as a leading blank line in the echoed code. In other words, the literal passed to the handler starts with \u201c\\nflowchart\u2026\u201d, so the code\u2010block renderer faithfully preserves that blank line at the top.\n\nThe screenshots show exactly that: an unwanted empty line before the first line of the echoed code block, both in \u201ctrue\u201d and \u201cfenced\u201d echo modes, for both Mermaid and Dot chunks."
+    }
+}

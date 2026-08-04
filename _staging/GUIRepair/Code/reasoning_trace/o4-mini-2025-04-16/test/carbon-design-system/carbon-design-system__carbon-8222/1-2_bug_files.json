@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DangerButton/DangerButton.js",
+            "packages/react/src/components/DangerButton/DangerButton-test.js",
+            "packages/react/src/components/Button/Button.js",
+            "packages/react/src/components/Button/Button.mdx"
+        ],
+        "explanation": "\u2022 DangerButton.js: this file defines the built-in <DangerButton> wrapper; it needs to render a visually hidden span (with a unique id) and add an aria-describedby prop to the button so screen readers announce \u201cDanger!\u201d automatically.  \n\u2022 DangerButton-test.js: the unit tests for DangerButton must be updated (or new tests added) to verify that the aria-describedBy attribute and hidden span are rendered correctly.  \n\u2022 Button.js: the underlying <Button> component must be capable of accepting and forwarding the aria-describedby attribute (and any extra props) to the native <button> element; if it currently filters out unknown ARIA props it must be updated.  \n\u2022 Button.mdx: the documentation for the Button component should include guidance and code examples for the danger variant\u2019s ARIA support (showing the hidden span and aria-describedBy usage) so that consumers know the correct pattern.",
+        "bug_scenario": "The Carbon \u201cdanger\u201d button variants (primary, tertiary, and ghost) only convey their destructive status visually (red styling and border) but don\u2019t announce that danger to screen\u2010reader users. The repro code shows manually adding an aria\u2010describedBy reference to a visually hidden \u201cDanger!\u201d span inside a custom DangerButton wrapper\u2014and in the screenshot of the actual rendered HTML you can see the aria\u2010describedBy on the button and the hidden span\u2014but the built-in Carbon DangerButton component doesn\u2019t ship with that markup out of the box. As a result, screen\u2013reader users will only hear \u201cbutton\u201d or the button label, but not \u201cdanger\u201d or \u201cdestructive action.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DangerButton/DangerButton.js",
+            "packages/react/src/components/DangerButton/DangerButton-test.js",
+            "packages/react/src/components/Button/Button.js",
+            "packages/react/src/components/Button/Button-test.js",
+            "packages/react/src/components/Button/Button.mdx"
+        ],
+        "explanation": "1. DangerButton.js: the wrapper for kind=\"danger\" never adds a visually hidden \u201cDanger!\u201d <span> and aria-describedBy reference, so screen readers gain no warning. We need to inject something like:\n   <Button kind=\"danger\" aria-describedby={spanId} {...props}>\n     {children}\n     <span id={spanId} className=\"bx--visually-hidden\">Danger!</span>\n   </Button>\n\n2. DangerButton-test.js: add/modify tests to assert that the hidden span is rendered and aria-describedBy is set on the <button> for accessibility.\n\n3. Button.js: ensure it forwards unknown aria attributes (aria-describedBy) through the <button> element and doesn\u2019t filter them out. If necessary adjust prop destructuring to include ...rest and spread on the host element.\n\n4. Button-test.js: add a test case that passes aria-describedBy and verifies the DOM output, ensuring that our Button component doesn\u2019t strip essential ARIA props when used in other contexts.\n\n5. Button.mdx: update the documentation under \u201cDanger Buttons\u201d in the Button docs to describe the new a11y pattern (the hidden span + aria-describedBy) so consumers learn how to use or override it properly.",
+        "bug_scenario": "When rendering a \u201cdanger\u201d button (primary, tertiary or ghost), the visual red styling conveys high-risk, destructive action\u2014but that \u201cdanger\u201d state isn\u2019t exposed to screen readers. In the repro you can see a `<button>` with `aria-describedby=\"danger-info\"` pointing to a visually hidden `<span id=\"danger-info\">Danger!</span>`, but in our shipped Carbon components the DangerButton wrapper never injects that hidden text nor wires up aria-describedby. As a result screen reader users only hear \u201cbutton\u201d or the button label, with no indication that it is a destructive (danger) control."
+    }
+}

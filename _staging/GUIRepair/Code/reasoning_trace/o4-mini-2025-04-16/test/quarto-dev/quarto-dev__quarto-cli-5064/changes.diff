@@ -1,0 +1,35 @@
+diff --git a/src/resources/filters/quarto-pre/code-annotation.lua b/src/resources/filters/quarto-pre/code-annotation.lua
+index 72941488b..83fb5a4e3 100644
+--- a/src/resources/filters/quarto-pre/code-annotation.lua
++++ b/src/resources/filters/quarto-pre/code-annotation.lua
+@@ -160,12 +160,24 @@ end
+ -- Finds annotations in a code cell and returns 
+ -- the annotations as well as a code cell that
+ -- removes the annotations
+-local function resolveCellAnnotes(codeBlockEl, processAnnotation) 
+-
+-  -- collect any annotations on this code cell
+-  local lang = codeBlockEl.attr.classes[1]  
+-  local annotationProvider = annoteProvider(lang)
+-  if annotationProvider ~= nil then
++  local function resolveCellAnnotes(codeBlockEl, processAnnotation) 
++
++    -- determine language for annotation lookup (handles both
++    -- “language-xyz” and bare “xyz” classes)
++    local lang
++    for _, c in ipairs(codeBlockEl.attr.classes) do
++      local cnorm = c
++      -- strip leading "language-"
++      if c:match("^language%-") then
++        cnorm = c:sub(#"language-" + 1)
++      end
++      if kLangCommentChars[cnorm] then
++        lang = cnorm
++        break
++      end
++    end
++    local annotationProvider = annoteProvider(lang)
++    if annotationProvider ~= nil then
+     local annotations = {}
+     local code = codeBlockEl.text
+     

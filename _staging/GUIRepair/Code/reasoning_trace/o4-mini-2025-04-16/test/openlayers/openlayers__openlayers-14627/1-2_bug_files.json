@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/extent.js",
+            "src/ol/proj/epsg3857.js"
+        ],
+        "explanation": "1) src/ol/extent.js defines createEmpty() (which returns an infinite extent) and applyTransform(), which blindly passes Infinity values to the projection transform.  2) src/ol/proj/epsg3857.js implements fromEPSG4326(), the function returned by getTransform('EPSG:4326','EPSG:3857'). It uses Math.tan on input latitude values; when given Infinity from an empty extent, Math.tan(Infinity) yields NaN, so the transformed extent contains NaN. Fixing the guard against infinite input in fromEPSG4326 (or short-circuiting empty extents in applyTransform) will prevent NaNs from entering view.fit().",
+        "bug_scenario": "When you call fit() on an empty extent (created via createEmpty()), the extent is initialized to [Infinity, Infinity, -Infinity, -Infinity]. Passing that empty extent into applyTransform with getTransform('EPSG:4326','EPSG:3857') causes the mercator\u2010conversion function (fromEPSG4326) to run Math.tan(Math.PI*(\u00b1Infinity+90)/360) \u2192 NaN, so your extent array becomes [Infinity, Infinity, NaN, NaN]. Feeding those NaNs into view.fit() blows up deeper in the WebGL tile renderer (e.g. \u201cCannot read properties of undefined (reading 'length')\u201d)."
+    },
+    "2": {
+        "bug_files": [
+            "src/extent.js",
+            "src/ol/proj/transforms.js"
+        ],
+        "explanation": "1) src/extent.js defines createEmpty() which returns [Infinity, Infinity, -Infinity, -Infinity] and applyTransform() which applies any coordinate transform over an extent array. It doesn\u2019t special-case empty extents, so it hands the infinite values through to the reprojection. 2) src/ol/proj/transforms.js implements fromEPSG4326(), the EPSG:4326\u2192EPSG:3857 transform. It computes y via RADIUS * log(tan(...)) without guarding against infinite inputs, so tan(Infinity)\u2192NaN and the clamp to MAX_SAFE_Y never triggers. Those NaNs end up in the projected extent. Both files need updates: transforms.js must detect infinite lats (or NaN results) and clamp to \u00b1MAX_SAFE_Y, or extent.js must short-circuit empty extents to avoid projecting them.",
+        "bug_scenario": "When you call applyTransform on an empty extent (which is [Infinity, Infinity, -Infinity, -Infinity]) using the EPSG:4326 \u2192 EPSG:3857 transform, the projected y\u2010values become NaN (because Math.tan(Infinity) \u2192 NaN, then Math.log(NaN) \u2192 NaN). Passing that NaN\u2010filled extent to view.fit(...) throws \u201cCannot read properties of undefined (reading 'length')\u201d."
+    }
+}

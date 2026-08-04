@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//FilterableMultiSelect"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//FilterableMultiSelect.render",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField",
+            "packages/react/src/components/ListBox/ListBox.js//ListBox"
+        ],
+        "explanation": "The focus outline behavior is controlled by where Downshift\u2019s focus props (getToggleButtonProps, getInputProps) are attached in FilterableMultiSelect.render: right now they end up on the <input> only when there are tokens, so clicking on that input only highlights the input box. To get the outline around the full widget, the focus/tabIndex handlers need to be applied to the outer ListBox container (the ListBox component) or the ListBoxField wrapper instead of \u2014 or in addition to \u2014 the inner <input>. Adjusting FilterableMultiSelect.render to spread the focus props on ListBox (forwarded via mapDownshiftProps) and ensuring that ListBoxField and ListBox are focusable (tabIndex and onFocus) will restore a consistent outline around the entire control.",
+        "bug_scenario": "In the FilterableMultiSelect control, when one or more items are selected and you click into the filter <input> at the right of the token list, the browser\u2019s focus outline only appears around the <input> element itself. The desired behavior is that the focus outline surround the entire ListBox control (the light gray container), matching the outline you get if you click slightly to the left (on the token area) or in an empty filter. The two images show this inconsistent focus ring placement."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//FilterableMultiSelect",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//render",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField"
+        ],
+        "explanation": "The FilterableMultiSelect.render method renders both the pills and the <input> inside of a wrapper that is supposed to receive the focus styling. However, because the native <input> is getting focus directly, the wrapper never receives focus, and the outline is applied only to the input. ListBoxField is the component that renders that wrapper and currently only styles itself when it has focus; it does not react to focus events on its child input. To fix this, you need to update FilterableMultiSelect.render (or the getInputProps call) to forward input focus to the wrapper, or update ListBoxField to use CSS :focus-within or an onFocus handler so that when its child input is focused, the entire wrapper gains the blue outline.",
+        "bug_scenario": "When a user clicks the text input portion of the filterable MultiSelect (to the right of the selected pills), the browser\u2019s focus ring lands only on the <input> element itself\u2014showing the blue outline just around the text box\u2014instead of on the entire ListBox control. When you click further left (on the wrapper), the outline correctly surrounds the whole control."
+    }
+}

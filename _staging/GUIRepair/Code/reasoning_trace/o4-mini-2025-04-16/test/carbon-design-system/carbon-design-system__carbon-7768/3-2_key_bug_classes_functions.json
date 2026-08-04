@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//(items.map \u2192 <ListBox.MenuItem>)",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "explanation": "The duplication stems from Dropdown.js passing a title prop to each ListBox.MenuItem (title={itemToString(item)}). That title attribute is rendered on the same element whose visible text is already the item label, causing VoiceOver to read it twice. Dropdown.js\u2019s items.map callback is where title is injected, and ListBoxMenuItem simply forwards that title to the DOM. Removing or replacing the title attribute here (for example, using aria-label only or dropping it entirely) will eliminate the double announcement.",
+        "bug_scenario": "When navigating the open Dropdown with VoiceOver on macOS, each option\u2019s text is announced twice. For example, focusing \u201cOption 4\u201d yields: \u201cOption 4\u201d (inner text) and then again \u201cOption 4\u201d (from the title attribute), followed by the selected-count announcement (\u201cselected (5 of 6)\u201d). The attached screenshot shows VoiceOver reading the same label twice."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//(items.map callback rendering ListBox.MenuItem with title)"
+        ],
+        "explanation": "In Dropdown.js, each dropdown option is rendered with both inner text and a \"title\" prop: \n\n    <ListBox.MenuItem\n      ...\n      title={itemToString(item)}\n      {...itemProps}\n    >\n      {itemToString(item)}\n    </ListBox.MenuItem>\n\nBecause ListBoxMenuItem (in ListBoxMenuItem.js) spreads that title prop onto the DOM node, VoiceOver picks up both the visible text and the title attribute and reads them separately. Removing or changing the title attribute (for example using aria-label or omitting title entirely) will prevent the duplicate announcement.",
+        "bug_scenario": "When using VoiceOver on Mac to navigate through a Carbon React Dropdown, each list item is announced twice. VoiceOver reads the item text from the DOM node and then immediately reads the same text again from the element\u2019s title attribute (and also reads the \u201cselected (x of y)\u201d state), causing a confusing duplicate announcement."
+    }
+}

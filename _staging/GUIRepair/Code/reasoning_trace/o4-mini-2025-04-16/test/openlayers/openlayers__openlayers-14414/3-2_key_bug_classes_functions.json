@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/source/Raster.js//RasterSource"
+        ],
+        "bug_functions": [
+            "WebGLTileLayer.updateStyleVariables",
+            "RasterSource.getImage",
+            "getImageData",
+            "RasterSource.processSources_"
+        ],
+        "explanation": "\u2022 WebGLTileLayer.updateStyleVariables only updates the WebGL style and re-renders the tile in the WebGL layer; it does not notify the RasterSource above it that its input image has changed, so the raster operation never re-runs when the slider goes down.  \n\u2022 RasterSource.getImage (which calls getImageData) grabs the pixels after styling rather than the raw elevation band values, so floodRegion sees only painted white/transparent pixels (and logs R=0) instead of the true elevation.  \n\u2022 RasterSource.processSources_ only fires once per frame, so without an explicit raster.changed() or a hook inside updateStyleVariables, lowering the threshold never re-triggers the operation.  \nTo fix this, updateStyleVariables in WebGLTileLayer should call raster.changed(), or RasterSource should listen for style variable updates and re-enqueue its image operation.  Also getImageData should be updated (for example by passing {willReadFrequently:true} to the 2D context) to ensure correct pixel readback.",
+        "bug_scenario": "The user is styling a GeoTIFF elevation layer with a WebGLTileLayer (marking pixels below a threshold in white) and then running a RasterSource \u201cimage\u201d operation (floodRegion) on top of that styled layer. When they drag the threshold slider up, white areas appear correctly; when they drag it back down, the white pixels never go away. In addition, inside the floodRegion operation the R value of the clicked pixel always logs as 0, showing they\u2019re reading the wrong pixel data."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/Raster.js//RasterSource",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/source/Raster.js//getImageData",
+            "src/ol/source/Raster.js//processSources_",
+            "src/ol/layer/WebGLTile.js//updateStyleVariables"
+        ],
+        "explanation": "1. RasterSource (src/ol/source/Raster.js):\n   - The `getImageData` helper is responsible for drawing the WebGLTile layer into an offscreen 2D canvas and calling `getImageData` to read back RGBA pixels. Because the context is created without `{willReadFrequently: true}`, the browser may optimize away or zero out the readback buffer, causing every pixel to read as 0.  Changing this to use a `'2d'` context with `willReadFrequently: true` and verifying that the canvas is properly cleared and repainted will restore correct pixel values.\n   - The `processSources_` method manages the dispatch of the raster operation when the underlying tile or its style changes. Currently style\u2010variable updates on the WebGLTileLayer do not mark the RasterSource as dirty for a new operation on slider decreases. Ensuring that `processSources_` is triggered on every style update (not only on increases) will allow the raster operation to recompute the pixel buffer and let white pixels revert when the threshold is lowered.\n\n2. WebGLTileLayer (src/ol/layer/WebGLTile.js):\n   - The `updateStyleVariables` method updates the GLSL uniforms for the threshold (`level`) but does not currently notify downstream consumers (the RasterSource) that the tile output has changed. It must call the layer\u2019s `changed()` or its source\u2019s `refresh()` so that the RasterSource picks up the new styled tile on every slider input (both up and down).\n\nBy fixing these two areas\u2014using a read\u2010friendly 2D context for `getImageData`, and propagating style\u2010variable changes from WebGLTileLayer into RasterSource\u2019s processing\u2014the slider will correctly update in both directions and pixel reads in `floodRegion` will return the expected nonzero values.",
+        "bug_scenario": "The user is loading a GeoTIFF elevation layer via WebGLTileLayer and styling it with a threshold (sea level) slider. A RasterSource is then used to read back the styled tile pixels (via a custom `floodRegion` operation) and to perform a region\u2010growing flood fill when the user clicks. Raising the slider correctly turns all pixels below the threshold white, but lowering the slider does not revert those pixels, and manually logging the pixel R value in `floodRegion` always yields 0 (even though the tile clearly has non\u2010zero data). The console also shows a warning that multiple getImageData readbacks would be faster with `willReadFrequently` enabled."
+    }
+}

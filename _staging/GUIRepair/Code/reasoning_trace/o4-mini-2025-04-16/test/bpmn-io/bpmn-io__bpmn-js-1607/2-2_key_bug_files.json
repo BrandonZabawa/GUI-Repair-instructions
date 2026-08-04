@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/GroupBehavior.js",
+            "lib/features/modeling/behavior/util/CategoryUtil.js",
+            "lib/import/BpmnImporter.js",
+            "lib/features/modeling/behavior/SubProcessPlaneBehavior.js"
+        ],
+        "explanation": "\u2022 GroupBehavior.js: this is where new CategoryValue instances are created on group.create. Its getDefinitions() call returns the wrong parent when you\u2019re inside a collapsed subprocess plane, so the created category isn\u2019t added to the global Definitions._\n\u2022 CategoryUtil.js: the createCategoryValue() helper actually adds your new Category/CategoryValue under the Definitions you pass in. If you hand it the wrong Definitions, nothing ends up in rootElements and the importer later can\u2019t resolve the reference._\n\u2022 BpmnImporter.js: this is where unresolved references are detected and logged. The _getElement() lookup fails for your stray CategoryValue and triggers the warning you see._\n\u2022 SubProcessPlaneBehavior.js: this behavior sets up the \u201csubprocess plane\u201d root element when you drill down into a collapsed subprocess. Because it wires a different rootElement into canvas, GroupBehavior.getDefinitions() picks up the plane\u2019s businessObject instead of the actual Definitions, causing the misplaced category._",
+        "bug_scenario": "When you drill into a collapsed subprocess and add a Group shape there, on save the GroupBehavior creates a new bpmn:CategoryValue and hooks it up to the Group, but\u2014because you\u2019re working inside a subprocess plane\u2014the new Category (and its CategoryValue) don\u2019t end up in the right Definitions rootElements. On re-import, the importer can\u2019t find that CategoryValue by ID and emits \u201cunresolved reference <CategoryValue_\u2026>\u201d."
+    }
+}

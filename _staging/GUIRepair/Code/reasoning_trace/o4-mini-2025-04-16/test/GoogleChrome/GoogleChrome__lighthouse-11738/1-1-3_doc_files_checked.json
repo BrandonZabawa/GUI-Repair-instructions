@@ -1,0 +1,9 @@
+{
+    "1": {
+        "documents": [
+            "computed/load-simulator-test.js"
+        ],
+        "explanation": "1. computed/load-simulator.js & test: this is the core module that simulates network and CPU under throttlingMethod=simulate; if it stops too early, late\u2010loading elements (and their layout shifts) are never captured.  \n2. lib/emulation.js: applies DevTools emulation settings for CPU and network throttling; critical to understand how simulate is implemented.  \n3. config/default-config.js: defines the default throttlingMethod and simulation settings used by the runner.  \n4. computed/metrics/cumulative-layout-shift.js & cumulative-layout-shift-all-frames.js: implement CLS calculation by accumulating layout shifts across frames\u2014if frames stop early, CLS remains zero.  \n\nTogether, these files reveal where the simulate throttle timing is configured, how it drives the page trace, and where CLS is computed, which is essential to reproduce and fix the bug where Lighthouse stops too soon under simulate and misses late layout shifts.",
+        "bug_scenario": "The user ran Lighthouse CLI against a slow\u2010loading PWA page (develop.pwa-venia.com/venia-bottoms.html) with throttlingMethod=simulate. The screenshot thumbnails at the bottom show a long series of blank frames followed by the final content, indicating that images and layout elements (text, buttons, images) load late and cause visible reflow/shift. Despite this, the Performance panel reports Cumulative Layout Shift = 0, because Lighthouse\u2019s load simulator gave up before late\u2010loading resources arrived, so no shifts were ever recorded. Key elements in the scenario are the sequence of screenshots, the timing of resource loads under throttlingMethod=simulate, and the CLS metric computation."
+    }
+}

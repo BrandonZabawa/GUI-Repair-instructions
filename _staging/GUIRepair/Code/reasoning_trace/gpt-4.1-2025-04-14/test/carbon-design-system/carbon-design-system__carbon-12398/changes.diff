@@ -1,0 +1,106 @@
+diff --git a/packages/react/src/components/Checkbox/Checkbox.stories.js b/packages/react/src/components/Checkbox/Checkbox.stories.js
+index c4b90689..60a04af9 100644
+--- a/packages/react/src/components/Checkbox/Checkbox.stories.js
++++ b/packages/react/src/components/Checkbox/Checkbox.stories.js
+@@ -34,6 +34,16 @@ export const Default = () => {
+   );
+ };
+ 
++export const ReadOnly = () => {
++  return (
++    <fieldset className={`${prefix}--fieldset`}>
++      <legend className={`${prefix}--label`}>Read-only group</legend>
++      <Checkbox labelText={`Checkbox label`} id="checkbox-readonly-1" readOnly checked />
++      <Checkbox labelText={`Checkbox label`} id="checkbox-readonly-2" readOnly />
++    </fieldset>
++  );
++};
++
+ export const Skeleton = () => <CheckboxSkeleton />;
+ 
+ export const Playground = (args) => (
+@@ -44,6 +54,14 @@ export const Playground = (args) => (
+   </fieldset>
+ );
+ 
++Playground.argTypes = {
++  readOnly: {
++    control: 'boolean',
++    defaultValue: false,
++    description: 'Set the checkbox to read-only state',
++  },
++};
++
+ Playground.argTypes = {
+   checked: {
+     control: {
+diff --git a/packages/react/src/components/Checkbox/Checkbox.tsx b/packages/react/src/components/Checkbox/Checkbox.tsx
+index 6c2e55de..3e162590 100644
+--- a/packages/react/src/components/Checkbox/Checkbox.tsx
++++ b/packages/react/src/components/Checkbox/Checkbox.tsx
+@@ -39,6 +39,11 @@ export interface CheckboxProps
+    */
+   disabled?: boolean;
+ 
++  /**
++   * Specify whether the Checkbox should be read-only
++   */
++  readOnly?: boolean;
++
+   /**
+    * Specify whether the label should be hidden, or not
+    */
+@@ -70,6 +75,7 @@ const Checkbox = React.forwardRef(
+       indeterminate,
+       hideLabel,
+       title = '',
++      readOnly = false,
+       ...other
+     }: CheckboxProps,
+     ref
+@@ -83,6 +89,9 @@ const Checkbox = React.forwardRef(
+     const innerLabelClasses = classNames(`${prefix}--checkbox-label-text`, {
+       [`${prefix}--visually-hidden`]: hideLabel,
+     });
++    const checkboxClasses = classNames(`${prefix}--checkbox`, {
++      [`${prefix}--checkbox--readonly`]: readOnly,
++    });
+ 
+     return (
+       <div className={wrapperClasses}>
+@@ -90,9 +99,11 @@ const Checkbox = React.forwardRef(
+           {...other}
+           type="checkbox"
+           onChange={(evt) => {
+-            onChange && onChange(evt, { checked: evt.target.checked, id });
++            if (!readOnly) {
++              onChange && onChange(evt, { checked: evt.target.checked, id });
++            }
+           }}
+-          className={`${prefix}--checkbox`}
++          className={checkboxClasses}
+           id={id}
+           ref={(el) => {
+             if (el && indeterminate) {
+@@ -104,6 +115,9 @@ const Checkbox = React.forwardRef(
+               ref.current = el;
+             }
+           }}
++          readOnly={readOnly}
++          tabIndex={readOnly ? -1 : undefined}
++          aria-readonly={readOnly || undefined}
+         />
+         <label
+           htmlFor={id}
+@@ -137,6 +151,11 @@ Checkbox.propTypes = {
+    */
+   disabled: PropTypes.bool,
+ 
++  /**
++   * Specify whether the Checkbox should be read-only
++   */
++  readOnly: PropTypes.bool,
++
+   /**
+    * Specify whether the label should be hidden, or not
+    */

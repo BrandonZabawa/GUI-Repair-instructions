@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/webgl/PointsLayer.js",
+            "src/ol/webgl/styleparser.js",
+            "src/ol/webgl/Helper.js"
+        ],
+        "explanation": "\u2022 src/ol/renderer/webgl/PointsLayer.js: This renderer builds quads for each icon in screen space using transforms and per-vertex offsets. If the aspect ratio of x vs. y pixels is not accounted for properly here, rotating the view will stretch or compress the quad geometry, causing icon distortion.\n\u2022 src/ol/webgl/styleparser.js: The parseIconProperties function computes icon size, tex-coords, and uniforms for the fragment and vertex shaders. Incorrect handling of the viewport\u2019s non-square pixel aspect when converting icon pixel dimensions into shader uniforms will lead to non-uniform scaling of the icon image.\n\u2022 src/ol/webgl/Helper.js: The makeProjectionTransform (and related viewport preparation in prepareDraw) constructs the projection from world to normalized device coordinates. If it uses only a single scale factor or swaps width/height incorrectly for the two axes, icons will be distorted when the canvas aspect ratio is not 1:1. Fixing these transforms to account for independent x and y scales restores square icons under any viewport shape.",
+        "bug_scenario": "When rendering a WebGLPointsLayer with icon-rotate-with-view set to true in a non-square viewport (canvas width \u2260 height) and a rotated view (e.g. rotation = \u03c0/2), the square icon images are drawn as stretched or squashed rectangles instead of remaining square. The distortion only appears when the viewport aspect ratio is not 1:1."
+    }
+}

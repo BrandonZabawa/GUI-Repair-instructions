@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/tilegrid/WMTS.js//WMTSTileGrid"
+        ],
+        "bug_functions": [
+            "src/ol/proj/proj4.js//register",
+            "src/ol/tilegrid/WMTS.js//createFromCapabilitiesMatrixSet"
+        ],
+        "explanation": "\u2022 register (src/ol/proj/proj4.js): this function reads the proj4 `def.axis` string and stores it as the Projection\u2019s `axisOrientation`. proj4js 2.6.1 changed the default axis codes, so OL\u2019s Projection instances get a different `axisOrientation` than before.\n\u2022 createFromCapabilitiesMatrixSet (src/ol/tilegrid/WMTS.js): here OL checks `projection.getAxisOrientation().substr(0,2) === 'ne'` to decide whether to swap the X/Y origin. Since proj4js v2.6.1 uses different axis codes (e.g. 'enu' instead of 'ne'), this branch no longer triggers when it should, so the tile grid origin isn\u2019t swapped correctly, causing the WMTS tile set to appear rotated.\n\u2022 WMTSTileGrid (src/ol/tilegrid/WMTS.js): its constructor ultimately receives the (possibly swapped) origin values for each zoom level. Because `createFromCapabilitiesMatrixSet` is now passing un\u2010swapped origins, WMTSTileGrid uses the wrong origin geometry and tiles are misaligned/rotated.",
+        "bug_scenario": "When upgrading proj4js from v2.6.0 to v2.6.1 (which changed the interpretation and default of `defs()[].axis`), OpenLayers\u2019 WMTS tiling becomes rotated. With Mercator view and an EPSG:2180 WMTS layer the layer is skewed/rotated. Conversely, when viewing EPSG:2180, the OSM Mercator layer is rotated. The screenshots show correct rendering with proj4js 2.6.0 and rotation errors with 2.6.1."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/tilegrid/WMTS.js//WMTSTileGrid"
+        ],
+        "bug_functions": [
+            "src/ol/proj/proj4.js//register",
+            "src/ol/tilegrid/WMTS.js//createFromCapabilitiesMatrixSet"
+        ],
+        "explanation": "proj4js 2.6.1 changed how it reports the axis order (def.axis) for projections like EPSG:2180. In OpenLayers we take that axisOrientation through proj4.js\u2019s register() and later use it in WMTS.js to decide whether to swap the X and Y origins (switchOriginXY). Because the new proj4js def.axis value is different, OL still thinks EPSG:2180 has \u2018ne\u2019 vs \u2018en\u2019 ordering (or vice versa), so the tile grid origin gets swapped incorrectly and the WMTS tiles end up rotated. The fix will involve updating register() or the switchOriginXY logic in createFromCapabilitiesMatrixSet() so that axisOrientation from proj4js 2.6.1 is handled correctly.",
+        "bug_scenario": "When upgrading to proj4js 2.6.1 OpenLayers WMTS layers using EPSG:2180 show up rotated by 90\u00b0. In the screenshots we see: with proj4js 2.6.0 and OL 6.3.2-dev the Polish WMTS orthophoto overlays correctly both on a Web Mercator view and on an EPSG:2180 view. After switching to proj4js 2.6.1 the WMTS layer is rotated in the Mercator view, and likewise the OSM layer is rotated on the EPSG:2180 view. This points to an axis\u2010order interpretation change in proj4js 2.6.1 that OL\u2019s WMTS grid code doesn\u2019t pick up correctly."
+    }
+}

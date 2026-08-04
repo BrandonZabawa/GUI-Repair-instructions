@@ -1,0 +1,64 @@
+{
+    "1/1": {
+        "src/language-js/needs-parens.js": [
+            {
+                "SEARCH": [
+                    "if (",
+                    "node.type === \"ObjectExpression\" ||",
+                    "node.type === \"FunctionExpression\" ||",
+                    "node.type === \"ClassExpression\" ||",
+                    "node.type === \"DoExpression\"",
+                    ") {",
+                    "const expression = path.findAncestor(",
+                    "(node) => node.type === \"ExpressionStatement\"",
+                    ")?.expression;",
+                    "if (",
+                    "expression &&",
+                    "startsWithNoLookaheadToken(",
+                    "expression,",
+                    "(leftmostNode) => leftmostNode === node",
+                    ")",
+                    ") {",
+                    "return true;",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  if (",
+                    "    node.type === \"ObjectExpression\" ||",
+                    "    node.type === \"FunctionExpression\" ||",
+                    "    node.type === \"ClassExpression\" ||",
+                    "    node.type === \"DoExpression\"",
+                    "  ) {",
+                    "    // --- PATCH START ---",
+                    "    // Always preserve parens for object literals immediately following a JSDoc @satisfies annotation",
+                    "    const comments = path.getComments && path.getComments();",
+                    "    if (comments && comments.length > 0) {",
+                    "      for (const comment of comments) {",
+                    "        if (",
+                    "          comment.type === \"CommentBlock\" &&",
+                    "          /@satisfies\\b/.test(comment.value)",
+                    "        ) {",
+                    "          return true;",
+                    "        }",
+                    "      }",
+                    "    }",
+                    "    // --- PATCH END ---",
+                    "    const expression = path.findAncestor(",
+                    "      (node) => node.type === \"ExpressionStatement\"",
+                    "    )?.expression;",
+                    "    if (",
+                    "      expression &&",
+                    "      startsWithNoLookaheadToken(",
+                    "        expression,",
+                    "        (leftmostNode) => leftmostNode === node",
+                    "      )",
+                    "    ) {",
+                    "      return true;",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

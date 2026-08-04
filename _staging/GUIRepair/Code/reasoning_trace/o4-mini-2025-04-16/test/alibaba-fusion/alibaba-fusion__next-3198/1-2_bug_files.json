@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/date-picker2/panels/time-panel.jsx",
+            "src/date-picker2/util.js",
+            "src/date-picker2/picker.jsx",
+            "src/date-picker2/prop-types.js"
+        ],
+        "explanation": "All of these files participate in handling and rendering the timePanelProps.defaultValue for DatePicker2:\n\n• src/date-picker2/panels/time-panel.jsx – This component initializes its internal hour/minute/second values by calling dayjs(defaultValue, format, strict) unconditionally. It never checks if defaultValue is already a Dayjs object, so strict parsing fails and produces an invalid date.\n\n• src/date-picker2/util.js – Contains shared helpers (e.g. parsing or normalizing prop values) used by the picker and panels. The default parser here treats every defaultValue as raw data to parse, rather than passing through existing Dayjs instances.\n\n• src/date-picker2/picker.jsx – Passes the user’s timePanelProps (including defaultValue) down to the TimePanel. It doesn’t transform or guard the defaultValue, so any Dayjs instance winds up in the strict‐parsing code path.\n\n• src/date-picker2/prop-types.js – Declares the allowed types for timePanelProps.defaultValue. The typing mismatch here (e.g. not enforcing Dayjs vs string) contributes to the panel always interpreting the value as a string to parse.  These four files must be updated so that when defaultValue is already a Dayjs instance, the code skips the strict string parse and uses the instance directly.",
+        "bug_scenario": "In DatePicker2 when you enable showTime and supply a Dayjs instance via timePanelProps.defaultValue, the time‐panel header renders “Invalid Date” and all columns default to zeros. Under the hood, the panel’s code always calls dayjs(input, format, strict) even when the input is already a Dayjs object—which fails strict parsing and yields an invalid date. The screenshot shows the calendar on the left and the time‐picker on the right with header “Invalid Date” and zeroed columns."
+    },
+    "2": {
+        "bug_files": [
+            "src/date-picker2/panels/time-panel.jsx",
+            "src/date-picker2/util.js",
+            "src/date-picker2/picker.jsx"
+        ],
+        "explanation": "1. src/date-picker2/panels/time-panel.jsx：TimePanel 组件直接从 timePanelProps 拿到 defaultValue，并调用 dayjs(defaultValue, format) 生成内部初始时间，未判断 defaultValue 已经是 Dayjs 实例的场景。\n2. src/date-picker2/util.js：封装了各种日期/时间的 parse、format helper，里面对 defaultValue、value 的统一处理也没有区分 Dayjs 实例与字符串，导致最终都走了 customParseFormat 的路径。需要在这里增加 isDayjs(value) 的判断并直接 clone instance。\n3. src/date-picker2/picker.jsx：作为最顶层的逻辑，负责把 showTime 相关的 timePanelProps 透传给 panels/time-panel.jsx，其中对 defaultValue 的结构化或者默认值填充也需要配合 util.js 一起修复，确保上游不会把原本正确的 Dayjs 实例覆盖或重写。",
+        "bug_scenario": "用户在使用 DatePicker2 时，如果给 showTime 模式下的 timePanelProps.defaultValue 传入一个 Dayjs 对象，那么面板中就会显示 “Invalid Date”。从截图可以看到时间面板的默认值列被渲染成了 “Invalid Date”，这是因为组件内部直接把 defaultValue 交给 dayjs( value, format ) 去 parse，当 value 已经是 Dayjs 实例时，customParseFormat 插件的行为会导致解析失败。"
+    }
+}

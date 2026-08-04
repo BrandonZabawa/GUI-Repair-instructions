@@ -1,0 +1,598 @@
+{
+    "1/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileSourceKey = getUid(tileSource);",
+                    "if (!(tileSourceKey in frameState.wantedTiles)) {",
+                    "frameState.wantedTiles[tileSourceKey] = {};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const tileSourceKey = getUid(tileSource);",
+                    "if (!(tileSourceKey in frameState.wantedTiles)) {",
+                    "frameState.wantedTiles[tileSourceKey] = {};",
+                    "// Clear the tile texture cache when the source or projection changes",
+                    "this.tileTextureCache_.clear();",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "// Clear the tile cache when the source key changes",
+                    "this.clear();",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "...",
+                    "/**",
+                    "* Clean up.",
+                    "*/",
+                    "disposeInternal() {",
+                    "const helper = this.helper;",
+                    "if (helper) {",
+                    "const gl = helper.getGL();",
+                    "gl.deleteProgram(this.program_);",
+                    "delete this.program_;",
+                    "",
+                    "helper.deleteBuffer(this.indices_);",
+                    "}",
+                    "",
+                    "super.disposeInternal();",
+                    "",
+                    "delete this.indices_;",
+                    "delete this.tileTextureCache_;",
+                    "delete this.frameState_;",
+                    "}",
+                    "}",
+                    "..."
+                ],
+                "REPLACE": [
+                    "...",
+                    "setSource(source) {",
+                    "super.setSource(source);",
+                    "this.clearTileTextureCache_(); // Clear cache when source is reset",
+                    "}",
+                    "",
+                    "setViewProjection(projection) {",
+                    "super.setViewProjection(projection);",
+                    "this.clearTileTextureCache_(); // Clear cache when projection changes",
+                    "}",
+                    "",
+                    "/**",
+                    "* Clear the tile texture cache",
+                    "* @private",
+                    "*/",
+                    "clearTileTextureCache_() {",
+                    "const tileTextureCache = this.tileTextureCache_;",
+                    "tileTextureCache.forEach(tileTexture => tileTexture.dispose());",
+                    "tileTextureCache.clear();",
+                    "}",
+                    "",
+                    "/**",
+                    "* Clean up.",
+                    "*/",
+                    "disposeInternal() {",
+                    "const helper = this.helper;",
+                    "if (helper) {",
+                    "const gl = helper.getGL();",
+                    "gl.deleteProgram(this.program_);",
+                    "delete this.program_;",
+                    "",
+                    "helper.deleteBuffer(this.indices_);",
+                    "}",
+                    "",
+                    "super.disposeInternal();",
+                    "",
+                    "delete this.indices_;",
+                    "delete this.tileTextureCache_;",
+                    "delete this.frameState_;",
+                    "}",
+                    "}",
+                    "..."
+                ]
+            }
+        ],
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "...",
+                    "/**",
+                    "* Remove all cached tiles from the source. The next render cycle will fetch new tiles.",
+                    "* @api",
+                    "*/",
+                    "clear() {",
+                    "this.tileCache.clear();",
+                    "}",
+                    "",
+                    "refresh() {",
+                    "this.clear();",
+                    "super.refresh();",
+                    "}",
+                    "..."
+                ],
+                "REPLACE": [
+                    "...",
+                    "/**",
+                    "* Set a new tile source.",
+                    "* Also clears the tile cache.",
+                    "* @param {Options} options Source options to reset",
+                    "*/",
+                    "setSourceOptions(options) {",
+                    "this.clear();",
+                    "// Call the existing constructor logic with new options",
+                    "this.constructor(options);",
+                    "}",
+                    "",
+                    "/**",
+                    "* Remove all cached tiles from the source. The next render cycle will fetch new tiles.",
+                    "* @api",
+                    "*/",
+                    "clear() {",
+                    "this.tileCache.clear();",
+                    "}",
+                    "",
+                    "refresh() {",
+                    "this.clear();",
+                    "super.refresh();",
+                    "}",
+                    "..."
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "setSource(newSource) {",
+                    "this.source_ = newSource;",
+                    "this.setKey(newSource.getKey());",
+                    "}",
+                    "",
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setSource(newSource) {",
+                    "this.source_ = newSource;",
+                    "this.setKey(newSource.getKey());",
+                    "this.clearCache();",
+                    "}",
+                    "",
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "this.clearCache();",
+                    "}",
+                    "}",
+                    "",
+                    "/**",
+                    "* Clears the tile cache when source or projection is changed.",
+                    "*/",
+                    "clearCache() {",
+                    "this.tileCache.clear();",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "enqueueTiles(frameState, extent, initialZ, tileTexturesByZ) {",
+                    "const viewState = frameState.viewState;",
+                    "const tileLayer = this.getLayer();",
+                    "const tileSource = tileLayer.getRenderSource();",
+                    "const tileGrid = tileSource.getTileGridForProjection(viewState.projection);"
+                ],
+                "REPLACE": [
+                    "enqueueTiles(frameState, extent, initialZ, tileTexturesByZ) {",
+                    "this.tileTextureCache_.clear(); // Clear texture cache on source or projection change.",
+                    "",
+                    "const viewState = frameState.viewState;",
+                    "const tileLayer = this.getLayer();",
+                    "const tileSource = tileLayer.getRenderSource();",
+                    "const tileGrid = tileSource.getTileGridForProjection(viewState.projection);"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/TileCache.js": [
+            {
+                "SEARCH": [
+                    "clear() {",
+                    "while (this.getCount() > 0) {",
+                    "this.pop().release();",
+                    "}",
+                    "super.clear();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "clear() {",
+                    "// Ensure that all textures are fully cleared",
+                    "while (this.getCount() > 0) {",
+                    "const tile = this.pop();",
+                    "if (tile) {",
+                    "tile.release();",
+                    "}",
+                    "}",
+                    "super.clear();",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.tileCache.clear(); // Ensure cache is cleared when key changes",
+                    "this.changed();",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const postRenderFunction = function (map, frameState) {",
+                    "tileSource.updateCacheSize(0.1, frameState.viewState.projection);",
+                    "tileSource.expireCache(frameState.viewState.projection, empty);",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const postRenderFunction = function (map, frameState) {",
+                    "tileSource.updateCacheSize(0.1, frameState.viewState.projection);",
+                    "// Clear tile source cache to ensure no stale tiles are rendered",
+                    "tileSource.clear();",
+                    "tileSource.expireCache(frameState.viewState.projection, empty);",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* Set the value to be used as the key for all tiles in the source.",
+                    "* @param {string} key The key for tiles.",
+                    "* @protected",
+                    "*/",
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}",
+                    "",
+                    "// Add the following method"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* Set the value to be used as the key for all tiles in the source.",
+                    "* @param {string} key The key for tiles.",
+                    "* @protected",
+                    "*/",
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}",
+                    "",
+                    "/**",
+                    "* Set a new source and clear the cache.",
+                    "* @param {string} source The new source.",
+                    "*/",
+                    "setSource(source) {",
+                    "this.clear(); // Clear the tile cache",
+                    "// Logic to set a new source",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "frameState.postRenderFunctions.push(postRenderFunction);",
+                    "",
+                    "this.postRender(gl, frameState);",
+                    "return canvas;"
+                ],
+                "REPLACE": [
+                    "frameState.postRenderFunctions.push(postRenderFunction);",
+                    "",
+                    "// Clear renderer cache when source key changes",
+                    "const currentSourceKey = tileSource.getKey();",
+                    "if (this.previousSourceKey_ !== currentSourceKey) {",
+                    "this.tileTextureCache_.clear();",
+                    "this.previousSourceKey_ = currentSourceKey;",
+                    "}",
+                    "",
+                    "this.postRender(gl, frameState);",
+                    "return canvas;"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}",
+                    "",
+                    "/** ... other methods ... */",
+                    "",
+                    "refresh() {",
+                    "this.clear();"
+                ],
+                "REPLACE": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.clear(); // Clear the cache when key/source changes",
+                    "this.changed();",
+                    "}",
+                    "}",
+                    "",
+                    "/** ... other methods ... */",
+                    "",
+                    "refresh() {",
+                    "this.clear();"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const postRenderFunction = function (map, frameState) {",
+                    "tileSource.updateCacheSize(0.1, frameState.viewState.projection);",
+                    "tileSource.expireCache(frameState.viewState.projection, empty);",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const postRenderFunction = function (map, frameState) {",
+                    "tileSource.clear(); // Ensure cache is cleared on significant changes",
+                    "tileSource.updateCacheSize(0.1, frameState.viewState.projection);",
+                    "tileSource.expireCache(frameState.viewState.projection, empty);",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "this.clear(); // Clear the cache when the key/source changes",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "postRenderFunction = function (map, frameState) {",
+                    "tileSource.updateCacheSize(0.1, frameState.viewState.projection);",
+                    "tileSource.expireCache(frameState.viewState.projection, empty);",
+                    "};"
+                ],
+                "REPLACE": [
+                    "postRenderFunction = function (map, frameState) {",
+                    "tileSource.updateCacheSize(0.1, frameState.viewState.projection);",
+                    "if(tileSource.getProjection() !== frameState.viewState.projection){",
+                    "tileSource.clear(); // Clear the cache when projection changes",
+                    "}",
+                    "tileSource.expireCache(frameState.viewState.projection, empty);",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.clear(); // Clear the tile cache when the key changes, ensuring cache consistency with the new key",
+                    "this.changed();",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "if (!source) {",
+                    "return false;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (!source) {",
+                    "this.tileTextureCache_.clear(); // Clearing texture cache when there's no source to prevent using outdated data",
+                    "return false;",
+                    "}",
+                    "",
+                    "// Clear texture cache when source key changes",
+                    "if (this.tileSourceKey_ !== getUid(source)) {",
+                    "this.tileSourceKey_ = getUid(source);",
+                    "this.tileTextureCache_.clear();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.changed();",
+                    "}",
+                    "}",
+                    "",
+                    "...",
+                    "",
+                    "clear() {",
+                    "this.tileCache.clear();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setKey(key) {",
+                    "if (this.key_ !== key) {",
+                    "this.key_ = key;",
+                    "this.clear(); // New line added to ensure cache is cleared when source key is set",
+                    "this.changed();",
+                    "}",
+                    "}",
+                    "",
+                    "...",
+                    "",
+                    "clear() {",
+                    "this.tileCache.clear();",
+                    "this.changed(); // Notify that a change has occurred after clearing cache",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const postRenderFunction = function (map, frameState) {",
+                    "tileSource.updateCacheSize(0.1, frameState.viewState.projection);",
+                    "tileSource.expireCache(frameState.viewState.projection, empty);",
+                    "};",
+                    "",
+                    "frameState.postRenderFunctions.push(postRenderFunction);"
+                ],
+                "REPLACE": [
+                    "const postRenderFunction = function (map, frameState) {",
+                    "tileSource.updateCacheSize(0.1, frameState.viewState.projection);",
+                    "tileSource.expireCache(frameState.viewState.projection, empty);",
+                    "tileSource.clear();  // New line added to clear source cache post-render",
+                    "};",
+                    "",
+                    "frameState.postRenderFunctions.push(postRenderFunction);"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/source/Tile.js": [
+            {
+                "SEARCH": [
+                    "this.key_ = options.key || '';",
+                    "",
+                    "/** @protected */",
+                    "this.tileCache = new TileCache(options.cacheSize || 0);"
+                ],
+                "REPLACE": [
+                    "this.key_ = options.key || '';",
+                    "",
+                    "/** @protected */",
+                    "this.tileCache = new TileCache(options.cacheSize || 0);",
+                    "",
+                    "// Clear the tile cache when the source is set or projection changes",
+                    "this.on('change', this.clear.bind(this));"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileSource = tileLayer.getRenderSource();",
+                    "",
+                    "if (isEmpty(getRenderExtent(frameState, frameState.extent))) {",
+                    "return false;",
+                    "}",
+                    "return source.getState() === 'ready';"
+                ],
+                "REPLACE": [
+                    "const tileSource = tileLayer.getRenderSource();",
+                    "",
+                    "if (isEmpty(getRenderExtent(frameState, frameState.extent))) {",
+                    "return false;",
+                    "}",
+                    "",
+                    "// Invalidate cache if source key has changed",
+                    "if (tileTextureCache.get('tileSourceKey') !== tileSource.getKey()) {",
+                    "this.tileTextureCache.clear();",
+                    "tileTextureCache.set('tileSourceKey', tileSource.getKey());",
+                    "}",
+                    "",
+                    "return source.getState() === 'ready';"
+                ]
+            }
+        ]
+    }
+}

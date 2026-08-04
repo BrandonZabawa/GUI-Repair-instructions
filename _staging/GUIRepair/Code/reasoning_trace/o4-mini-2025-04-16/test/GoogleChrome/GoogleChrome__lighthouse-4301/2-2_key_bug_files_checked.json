@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js"
+        ],
+        "explanation": "1. lighthouse-core/gather/driver.js is responsible for navigating to a page (gotoURL) and then waiting for its load event and subsequent CPU and network quiet periods (_waitForFullyLoaded). However the static getter MAX_WAIT_FOR_FULLY_LOADED is empty (returns undefined), so the final fallback timeout never fires and the promise never resolves or rejects\u2014resulting in an infinite hang.  \n2. lighthouse-core/gather/gather-runner.js invokes Driver.gotoURL via loadPage and relies on those timeouts to tear down page\u2010load waiting. Because driver.js never times out, loadPage will never complete. Fixing the missing timeout definition in driver.js restores progress and lets gather-runner loadPage resolve (or reject) instead of hanging forever.",
+        "bug_scenario": "When you run Lighthouse (either as the Chrome DevTools native audit or via the Lighthouse extension) on the URL https://nicolas-hoizey.com/2017/01/how-much-data-should-my-service-worker-put-upfront-in-the-offline-cache.html with only the \u201cProgressive Web App\u201d category enabled, the audit UI spins indefinitely at the \u201cLoading page & waiting for onload\u201d step without ever timing out or moving forward, and never throws an error."
+    }
+}

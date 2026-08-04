@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "src/command/render/latexmk/latex.ts",
+            "src/command/render/output-tex.ts",
+            "src/command/render/crossref.ts",
+            "src/resources/filters/crossref/theorems.lua",
+            "src/resources/filters/layout/latex.lua"
+        ],
+        "explanation": "These files are likely related to the bug based on the repository structure and problem description:\n\n1. 'src/command/render/latexmk/latex.ts': Responsible for invoking/controlling LaTeX PDF builds and may influence TeX output formatting or pre-processing for definitions/theorems.\n\n2. 'src/command/render/output-tex.ts': Handles the generation and modification of LaTeX (.tex) output, providing a central point for insertion of commands like '\\leavevmode\\vadjust pre{...}'.\n\n3. 'src/command/render/crossref.ts': Relevant for cross-referencing environments (definitions, theorems, etc.), which is directly related to the insertion of hyperref anchors (\\hypertarget), thus likely touches the code point adding vertical space.\n\n4. 'resources/filters/crossref/theorems.lua': A Lua filter handling theorem/definition/etc environments for cross-reference, likely inserting both the hyertarget and any custom formatting before these blocks; a probable source of the unwanted code.\n\n5. 'resources/filters/layout/latex.lua': A Lua filter likely responsible for final formatting tweaks for LaTeX environments, and may participate in adding layout/anchor code, spacing, or post-processing around environments, affecting vertical space.\n\nModifications in these files are necessary to stop automatic insertion of the extraneous '\\leavevmode\\vadjust pre{\\hypertarget{...}{}}' before environments and to handle precise line formatting inside environments to prevent unwanted spacing (like before the QED symbol in proofs).",
+        "bug_scenario": "The bug scenario, illustrated by the images and described in the report, is excessive vertical space before definition/theorem/etc environments in LaTeX output from Quarto. The problematic output adds extra space (see first image) before environments like Definitions or Theorems, as compared to a more compact version (second image) expected from handwritten LaTeX. The bug arises from inserting '\\leavevmode\\vadjust pre{\\hypertarget{...}{}}' before environment definitions, and (in the Proof environment) including a final empty line before '\\end{proof}', both of which add undesired vertical spacing and affect the placement of the QED symbol. Removing these bits in the TeX output yields the correct look."
+    },
+    "2": {
+        "bug_files": [
+            "src/command/render/output-tex.ts",
+            "src/command/render/output.ts",
+            "src/command/render/filters.ts",
+            "src/resources/filters/common/layout.lua",
+            "src/resources/filters/common/latex.lua",
+            "src/resources/filters/common/theorems.lua",
+            "src/resources/filters/crossref/theorems.lua",
+            "src/resources/filters/quarto-post/latexdiv.lua"
+        ],
+        "explanation": "These files are likely bug related because: 1) Files under src/command/render such as output-tex.ts, output.ts, and filters.ts are responsible for generating/crafting the tex output from markdown or other source formats, so any extra code inserted (like \\leavevmode\\vadjust pre{\\hypertarget{...}{}}) is likely generated there. 2) The Lua filter files under resources/filters/common and crossref, such as layout.lua, latex.lua, theorems.lua, and resources/filters/quarto-post/latexdiv.lua, typically handle the transformation of bookdown-style markdown into LaTeX or other formats and may inject extra latex code before environments or manage things like theorem/proof blocks and cross-referencing. Fixing the bug will likely require editing these files to prevent unnecessary vertical space and to control placement of inserted markup.",
+        "bug_scenario": "The bug scenario is that when rendering definition, theorem, and similar environments in LaTeX output (using Quarto), there is excessive vertical space before these environments compared to hand-written LaTeX. Additionally, the position of the QED symbol in proofs is incorrect, appearing lower than expected. The root cause appears to be extra code (e.g., \\leavevmode\\vadjust pre{\\hypertarget{...}{}}) prepended before these blocks and possibly the presence of an empty line before \\end{proof}. The images visually illustrate the issue: the Quarto-generated output has visibly more vertical space above environments than the corresponding hand-written LaTeX, and the QED symbol in proofs is misplaced."
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/themes/src/white.js",
+            "packages/themes/src/g10.js",
+            "packages/themes/src/g100.js",
+            "packages/themes/src/tokens.js"
+        ],
+        "bug_functions": [],
+        "explanation": "To support the new inverse hover/active link states we need to:  1) Add `export const linkInverseHover` and `export const linkInverseActive` with the correct color values to each theme module (white.js, g10.js, g100.js).  2) Add the token names 'linkInverseHover' and 'linkInverseActive' to the `colors` and/or interactive token lists in packages/themes/src/tokens.js so that formatTokenName and the generated CSS variables (`--cds-link-hover-inverse`, `--cds-link-inverse-active`) will be registered. Without these additions the React UI cannot reference those CSS variables and the link hover/active colors on inverse backgrounds remain incorrect.",
+        "bug_scenario": "When rendering tooltips, pop-overs, and notifications on an inverse (dark/high-contrast) surface, the hover and active colors for inline links are coming out wrong (or falling back) because the new inverse interactive tokens \u2014 $link-inverse-hover and $link-inverse-active \u2014 haven\u2019t been added to our theme modules or to the tokens registry. In the screenshot you can see that on light inverse surfaces (white and g10) hover should be blue-30 (#a6c8ff) and active gray-10 (#f4f4f4), and on dark inverse surfaces (g90/g100) hover should be blue-70 (#0043ce) and active gray-100 (#161616). Those CSS custom properties (--cds-link-hover-inverse, --cds-link-inverse-active) simply don\u2019t exist yet."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/themes/src/g10.js",
+            "packages/themes/src/g100.js",
+            "packages/themes/src/white.js",
+            "packages/themes/src/tokens.js"
+        ],
+        "bug_functions": [
+            "packages/themes/src/tokens.js//formatTokenName",
+            "packages/themes/src/tokens.js//tokens"
+        ],
+        "explanation": "The theme files (g10.js, g100.js, white.js) currently only export `inverseLink` but lack dedicated exports for inverse\u2010link hover and active states (e.g. `linkInverseHover`, `linkInverseActive`). Without those constants, the CSS custom properties `--cds-link-hover-inverse` and `--cds-link-inverse-active` aren\u2019t generated. In tokens.js, the `colors` array and the `tokens` export drive which properties are emitted to CSS, and `formatTokenName` controls their naming. Because the inverse\u2010hover and inverse\u2010active link tokens aren\u2019t listed there, no CSS variables exist for them. Adding the new token names to the `colors` array and exporting matching constants in each theme file (and letting `formatTokenName` generate their dashed names) will define `--cds-link-hover-inverse` and `--cds-link-inverse-active` so the interactive link colors render correctly in both light and dark inverse contexts.",
+        "bug_scenario": "In the inverse theme (g10, g100, white) tooltip/pop-over examples the interactive \u201cLearn more\u201d link is using undefined or fallback CSS variables\u2014`--cds-link-hover-inverse` and `--cds-link-inverse-active`\u2014so on hover and active the link color is incorrect (e.g. wrong blue or gray). The images show that hover in light theme should be Blue 30 (#a6c8ff) and in dark theme Blue 70 (#0043ce), and active in light theme Gray 10 (#f4f4f4) and in dark theme Gray 100 (#161616), but those tokens don\u2019t exist yet."
+    }
+}

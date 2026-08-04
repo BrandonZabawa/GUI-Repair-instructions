@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js",
+            "lighthouse-core/gather/gatherers/css-usage.js",
+            "lighthouse-core/gather/gatherers/response-compression.js",
+            "lighthouse-core/lib/statistics.js",
+            "lighthouse-core/computed/network-records.js"
+        ],
+        "explanation": "1. 'lighthouse-core/audits/byte-efficiency/unused-css-rules.js': This file runs the audit that checks for unused CSS rules on the page, and is responsible for the calculations of bytes used, potential savings, and rendering of the audit info shown in the report/image.\n2. 'lighthouse-core/gather/gatherers/css-usage.js': This gatherer collects CSS usage information from the page (including those injected via <style> tags), which directly feeds into the audit's calculations. Any bugs in how it treats inline/injected CSS or determines source size can impact the results.\n3. 'lighthouse-core/gather/gatherers/response-compression.js': Since the bug is about gzipped resources and compression ratios, this gatherer (which examines compression of fetched resources) may not treat JSON-fetched-then-injected CSS correctly, or may need awareness of 'virtual' stylesheets.\n4. 'lighthouse-core/lib/statistics.js': This utility provides estimation functions for compression ratios (gzip and others). If the CSS audit uses a generic or pessimistic default instead of per-resource actual data, it's likely from here.\n5. 'lighthouse-core/computed/network-records.js': This module supplies info about the network resources fetched, including actual transfer sizes. If the audit is not using the true gzipped size from network records (instead using calculated/estimated size), adjustments may be needed here or in how it's queried.",
+        "bug_scenario": "The bug scenario involves Lighthouse/Pagespeed reporting an incorrect (pessimistic) size and potential savings for CSS that is fetched as gzipped JSON and then injected into the DOM via a <style> tag. The tool apparently does not base potential savings on the gzipped resource size but rather on the uncompressed size of the CSS found in the DOM, causing a large estimated potential savings (80KB reported, 70KB potential savings), even though the real network payload is about 20KB gzipped. The screenshot shows the report in Dutch, asking to defer unused CSS and listing the huge apparent cost."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js",
+            "lighthouse-core/gather/gatherers/css-usage.js"
+        ],
+        "explanation": "These files are responsible for the collection, analysis, and reporting of unused CSS rules and their byte efficiency impact in Lighthouse. The audit logic in 'unused-css-rules.js' estimates savings based on either transferred or in-DOM bytes. 'byte-efficiency-audit.js' implements byte-savings logic common to related audits. 'css-usage.js' gathers the relevant data about CSS usage on a page, including inline and external stylesheets. Any adjustment to reflect more accurate savings for gzipped (and particularly dynamically inlined) CSS would require changes to how these components measure, interpret, and report byte savings, ensuring the metrics match actual network-used resources and not the DOM representation.",
+        "bug_scenario": "The bug report and attached image show that Lighthouse/Pagespeed is overestimating the potential CSS savings because it pessimistically assumes a higher size for gzipped inline CSS (in this scenario, CSS included via an in-DOM style tag after being loaded as gzipped JSON). Pagespeed reports 80 KB usage with potential 70 KB savings, but the actual gzipped payload fetched is about 20 KB. The savings are calculated from the in-DOM (uncompressed) representation, rather than the actual gzipped resource, resulting in misleading recommendations."
+    }
+}

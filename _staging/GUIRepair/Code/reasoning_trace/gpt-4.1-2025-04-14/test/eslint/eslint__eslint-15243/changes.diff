@@ -1,0 +1,36 @@
+diff --git a/lib/cli.js b/lib/cli.js
+index 477310da5..f09d143d2 100644
+--- a/lib/cli.js
++++ b/lib/cli.js
+@@ -178,7 +178,7 @@ async function printResults(engine, results, format, outputFile) {
+         return false;
+     }
+ 
+-    const output = formatter.format(results);
++    const output = await formatter.format(results);
+ 
+     if (output) {
+         if (outputFile) {
+diff --git a/lib/eslint/eslint.js b/lib/eslint/eslint.js
+index 8886d45ab..263d6727c 100644
+--- a/lib/eslint/eslint.js
++++ b/lib/eslint/eslint.js
+@@ -629,14 +629,15 @@ class ESLint {
+             /**
+              * The main formatter method.
+              * @param {LintResults[]} results The lint results to format.
+-             * @returns {string} The formatted lint results.
++             * @returns {Promise<string>} The formatted lint results.
+              */
+-            format(results) {
++            async format(results) {
+                 let rulesMeta = null;
+ 
+                 results.sort(compareResultsByFilePath);
+ 
+-                return formatter(results, {
++                // Support both sync and async formatters
++                return await formatter(results, {
+                     get rulesMeta() {
+                         if (!rulesMeta) {
+                             rulesMeta = createRulesMeta(cliEngine.getRules());

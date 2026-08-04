@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/computed/trace-of-tab.js//TraceOfTab",
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/computed/trace-of-tab.js//TraceOfTab.compute_",
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint.audit",
+            "lighthouse-core/audits/first-meaningful-paint.js//FirstMeaningfulPaint.calculateScore"
+        ],
+        "explanation": "The root of the error is that one of the trace events (navigationStart or firstMeaningfulPaint) is undefined in the data returned by TraceOfTab.compute_ when run in the extension environment. In compute_ we filter and pick key events by name and frame, but under certain trace shapes (as emitted by the extension) startedInPageEvt or navigationStartEvt may not be found and are left undefined. That undefined value then flows into FirstMeaningfulPaint.audit and ultimately into calculateScore, where a property access like evt.ts or evts.navigationStart.ts is attempted on undefined, throwing the \u2018ts of undefined\u2019 error. To fix this, compute_ must more robustly guard against missing events or the audit/calculateScore methods must check for missing timestamps before accessing .ts and surface a clear fallback or error message.",
+        "bug_scenario": "When running the Lighthouse Chrome extension to generate a report, the \u201cFirst meaningful paint\u201d audit fails and shows the error \u201cCannot read property 'ts' of undefined.\u201d The user does not see this error when running Lighthouse in the browser. The screenshot shows the audit card for First meaningful paint rendered with a -1 score and the red error message below it."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/computed/trace-of-tab.js//TraceOfTab"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/computed/trace-of-tab.js//compute_"
+        ],
+        "explanation": "The compute_ method in TraceOfTab filters for a firstPaint event but never verifies it was found before later doing firstPaint.ts inside subsequent filters. If firstPaint is undefined, accessing firstPaint.ts throws \u201cCannot read property 'ts' of undefined.\u201d  Fixing this requires adding a guard (or fallback) around the firstPaint lookup in compute_ so the code doesn\u2019t try to read .ts on an undefined event.",
+        "bug_scenario": "After updating the Chrome extension, every time a report is generated the First Meaningful Paint audit fails with \u201cCannot read property 'ts' of undefined.\u201d  The screenshot shows the audit tile in the report with a red \u201cCannot read property 'ts' of undefined\u201d message beneath \u201cFirst meaningful paint measures when the primary content of a page is visible.\u201d  This indicates that somewhere in the trace\u2010processing pipeline a trace event is missing (likely the initial paint) and the code is still attempting to read its .ts timestamp."
+    }
+}

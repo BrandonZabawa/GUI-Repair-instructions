@@ -1,0 +1,98 @@
+diff --git a/src/ol/style/Icon.js b/src/ol/style/Icon.js
+index 4ab59049f9..0e18823fb9 100644
+--- a/src/ol/style/Icon.js
++++ b/src/ol/style/Icon.js
+@@ -70,6 +70,20 @@ class Icon extends ImageStyle {
+   constructor(options) {
+     options = options || {};
+ 
++    /**
++     * @private
++     * @type {boolean}
++     * Track if width was set by user.
++     */
++    this.userSetWidth_ = options.width !== undefined;
++
++    /**
++     * @private
++     * @type {boolean}
++     * Track if height was set by user.
++     */
++    this.userSetHeight_ = options.height !== undefined;
++
+     /**
+      * @type {number}
+      */
+@@ -236,7 +250,7 @@ class Icon extends ImageStyle {
+     /**
+      * Recalculate the scale if width or height were given.
+      */
+-    if (this.width_ !== undefined || this.height_ !== undefined) {
++    if (this.userSetWidth_ || this.userSetHeight_) {
+       const image = this.getImage(1);
+       const setScale = () => {
+         this.updateScaleFromWidthAndHeight(this.width_, this.height_);
+@@ -257,11 +271,8 @@ class Icon extends ImageStyle {
+   clone() {
+     let scale = this.getScale();
+     scale = Array.isArray(scale) ? scale.slice() : scale;
+-    // if either width or height are defined, do not pass scale.
+-    if (this.width_ !== undefined || this.height_ !== undefined) {
+-      scale = undefined;
+-    }
+-    return new Icon({
++    // Only pass width/height if they were set by the user, otherwise leave undefined.
++    const options = {
+       anchor: this.anchor_.slice(),
+       anchorOrigin: this.anchorOrigin_,
+       anchorXUnits: this.anchorXUnits_,
+@@ -282,9 +293,18 @@ class Icon extends ImageStyle {
+       src: this.getSrc(),
+       displacement: this.getDisplacement().slice(),
+       declutterMode: this.getDeclutterMode(),
+-      width: this.width_,
+-      height: this.height_,
+-    });
++    };
++    if (this.userSetWidth_) {
++      options.width = this.width_;
++    }
++    if (this.userSetHeight_) {
++      options.height = this.height_;
++    }
++    // If either width or height are set by user, do not pass scale (handled by constructor assertion)
++    if (this.userSetWidth_ || this.userSetHeight_) {
++      options.scale = undefined;
++    }
++    return new Icon(options);
+   }
+ 
+   /**
+@@ -529,15 +549,18 @@ class Icon extends ImageStyle {
+    */
+   setScale(scale) {
+     super.setScale(scale);
+-    const image = this.getImage(1);
+-    if (image) {
+-      const widthScale = Array.isArray(scale) ? scale[0] : scale;
+-      if (widthScale !== undefined) {
+-        this.width_ = widthScale * image.width;
+-      }
+-      const heightScale = Array.isArray(scale) ? scale[1] : scale;
+-      if (heightScale !== undefined) {
+-        this.height_ = heightScale * image.height;
++    // Only update width_ and height_ if they were set by the user
++    if (this.userSetWidth_ || this.userSetHeight_) {
++      const image = this.getImage(1);
++      if (image) {
++        const widthScale = Array.isArray(scale) ? scale[0] : scale;
++        if (this.userSetWidth_ && widthScale !== undefined) {
++          this.width_ = widthScale * image.width;
++        }
++        const heightScale = Array.isArray(scale) ? scale[1] : scale;
++        if (this.userSetHeight_ && heightScale !== undefined) {
++          this.height_ = heightScale * image.height;
++        }
+       }
+     }
+   }

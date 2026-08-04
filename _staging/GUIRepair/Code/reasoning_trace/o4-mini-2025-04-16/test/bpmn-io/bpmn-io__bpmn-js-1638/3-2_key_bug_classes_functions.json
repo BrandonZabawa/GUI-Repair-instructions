@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//ensureInternalLabelDi"
+        ],
+        "explanation": "The core of the problem lives in the `UpdateLabelHandler` module, specifically in the `ensureInternalLabelDi` helper. When text is removed (`!text && di.label`), the code sets `di.label = null` instead of deleting the property. This leaves an empty `label` key on the DI, which downstream code sees and tries to process, causing lint errors. Adjusting or replacing this assignment to remove the property entirely (e.g. `delete di.label`) will prevent the null placeholder from persisting.",
+        "bug_scenario": "When the user clears the label of a BPMN Task (i.e. deletes the text completely), the underlying DI (diagram interchange) entry for that element still retains a `label` property set to `null`. In the screenshot/video, when the label text is removed, you can see in the developer console that `di.label` still exists (with value `null`) instead of being removed entirely, which then causes downstream tools (such as BPMN linting integrations) to error out."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//ensureInternalLabelDi"
+        ],
+        "explanation": "The core of the issue lies in the `ensureInternalLabelDi` helper within `UpdateLabelHandler`. When the new text is empty, the code sets `di.label = null` rather than deleting the property altogether. As a result, `di.label` continues to exist (albeit null), causing lint and validation tools to treat it as an unexpected attribute. Fixing this requires updating `ensureInternalLabelDi` so that on empty text it removes the `label` field (e.g. `delete di.label`) instead of assigning `null`. This change ensures `di.label` truly does not exist after clearing the label.",
+        "bug_scenario": "In the provided animation the user removes the text label from a BPMN Task. Visually the label disappears as expected, but the underlying DI (diagram interchange) element still retains a `label` property set to `null`. This residual `null` property triggers linting errors and other downstream tool failures because `di.label` should be fully removed rather than left as `null`."
+    }
+}

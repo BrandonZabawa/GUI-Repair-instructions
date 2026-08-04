@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/computed/network-records.js"
+        ],
+        "explanation": "1) iframe-elements.js: Currently only captures DOM properties of <iframe> nodes but never ties any network or timing data back into the overall artifacts.\n2) gather-runner.js: Orchestrates all gatherer phases and flattens devtools logs into artifacts; it doesn\u2019t merge in the sub-target (iframe) network trace or timing data.\n3) driver.js: Although it attaches to subtargets and can receive iframe network events, it only records Page and Network domains for the main target\u2019s devtoolsLog\u2014and doesn\u2019t aggregate subtarget events into that log.\n4) network-records.js: Computes networkRecords from the devtoolsLog, but since the log lacks iframe requests, no iframe costs ever show up in the dependency graph or simulated metrics.\n\nTogether these files are responsible for capturing, aggregating, and processing network and timing data. To include iframe performance in the parent report, we\u2019ll need to extend iframe-elements.js (or write a new gatherer) to collect iframe-specific devtoolsLog segments, update driver.js to merge subtarget logs, adjust gather-runner.js to retain and pass those merged logs into artifacts, and finally ensure network-records.js pulls in the combined log so that all computed artifacts (page-dependency-graph, load-simulator, and metrics) properly account for iframe costs.",
+        "bug_scenario": "The screenshot shows two Lighthouse performance runs: on the left, auditing the parent page with a slow, large-DOM iframe yields a high performance score (~71) and fast metrics (FCP 0.6 s, SI 4.9 s, TTI 6.6 s, etc.). On the right, auditing the iframe page itself yields a much slower score (~39) and degraded metrics (FCP 3.2 s, SI 8.5 s, TTI 8.8 s, etc.). In other words, Lighthouse is completely ignoring the network and rendering costs of the iframe when it runs against the parent page, leading to a misleadingly good parent score."
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/reproj/Tile.js",
+            "src/ol/reproj/common.js",
+            "src/ol/source/Tile.js"
+        ],
+        "explanation": "1. src/ol/reproj/Tile.js implements the core reprojection logic for tiles. It loops over a window of source tiles and skips any tile in ABORT or EMPTY states. Those ABORTed tiles have often already been disposed and so never contribute to the reprojection canvas \u2013 causing the white holes.\\n2. src/ol/reproj/common.js provides helper routines used by reproj/Tile.js to fetch and composite source tiles. Any change to how ABORTed or disposed tiles are handled will need adjustment in these helpers.\\n3. src/ol/source/Tile.js holds the code that sets a tile to ABORT state and disposes it when it is no longer needed. Preventing premature dispose or re-requesting an ABORTed tile will require changes here.",
+        "bug_scenario": "When you zoom and pan a map that uses a reprojected Tile layer, you sometimes see large white gaps in the view (see the screenshot). Under the hood, OpenLayers builds a \"source canvas\" for reprojection by stitching together individual Tile objects in various states. When a tile is zoomed out of view or takes too long to load it gets marked ABORT (and then disposed), so it never reaches the reprojection-stitching loop. The missing tiles are thus left out of the reprojection source canvas, resulting in blank (white) swaths on the displayed map."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/reproj/Tile.js",
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Triangulation.js",
+            "src/ol/TileState.js"
+        ],
+        "explanation": "\u2022 src/ol/reproj/Tile.js is the core of the reprojection workflow for tiles: it requests source tiles, waits for their load state, and then stitches them together. The bug report points directly at the loop in this file skipping tiles in the ABORT state (and disposing them early), which causes holes.\n\u2022 src/ol/reproj/common.js contains helper routines used by reproj/Tile.js to figure out which source tiles cover the target tile extent. Any mistake here in selecting or retaining tiles can lead to missing coverage.\n\u2022 src/ol/reproj/Triangulation.js builds the mesh (triangle grid) used to interpolate between source and target pixels. If a source tile is dropped before reprojection, its triangles never get drawn.\n\u2022 src/ol/TileState.js defines the life\u2010cycle states of a tile (IDLE, LOADING, LOADED, EMPTY, ERROR, ABORT). The reprojection code makes state decisions based on these values, so changes to how ABORT or LOADING states are treated must be reflected here.",
+        "bug_scenario": "When a tile\u2010based layer is reprojected (for example, from EPSG:3857 to another projection), holes (white patches) appear intermittently as you pan and zoom. Inspection shows that during the reprojection stitching process the underlying source tiles have already been disposed (or are in the ABORT state) and are therefore skipped when composing the reprojected canvas. As a result, parts of the map never get drawn and you see blank areas."
+    }
+}

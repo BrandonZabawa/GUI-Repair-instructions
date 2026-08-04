@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/Modify.js",
+            "src/ol/geom/GeometryCollection.js"
+        ],
+        "explanation": "1. src/ol/interaction/Modify.js is the core of the modify-interaction: it computes all segments and handles pointer events to update coordinates. It currently treats a GeometryCollection as a monolithic set of nested coordinate arrays and never correctly splits out sub-geometries or reapplies updates to each child geometry.\n2. src/ol/geom/GeometryCollection.js defines how a GeometryCollection exposes its coordinates and (critically) its setCoordinates method is stubbed out (throws an assertion). That means the modify logic can\u2019t write back any coordinate changes into the individual polygon geometries inside the collection. To fix the bug, you need to update Modify.js to iterate over each child geometry in a GeometryCollection when building segments and to implement GeometryCollection.setCoordinates so that updated vertex positions are written back into the correct child geometry.",
+        "bug_scenario": "When you load a single feature whose geometry is a GeometryCollection of two polygons sharing a common edge and try to drag their shared vertex, nothing happens (or only one polygon moves). In contrast, if you give those two polygons to separate features inside a FeatureCollection, dragging works correctly. The animation shows that clicking and dragging the interior vertex of the GeometryCollection does not update the geometry at all."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/interaction/Modify.js",
+            "src/ol/interaction/Snap.js",
+            "src/ol/geom/GeometryCollection.js"
+        ],
+        "explanation": "\u2022 src/ol/interaction/Modify.js is where vertex detection, hit-testing, and coordinate updates happen. It enumerates segments by type (Polygon, LineString, etc.) but doesn\u2019t recurse into GeometryCollection members, so no draggable handles are created for those inner geometries.\n\u2022 src/ol/interaction/Snap.js builds on the segment data provided by Modify to snap pointers to vertex segments. Because Modify never registers segments for GeometryCollection, Snap has nothing to work with either.\n\u2022 src/ol/geom/GeometryCollection.js defines how a collection of geometries is structured but does not expose a forEachSegment or similar traversal that Modify/Snap can call. Fixing this likely means adding a method or extending Modify/Snap to walk the array of sub-geometries in GeometryCollection so shared vertices can be picked up and updated.",
+        "bug_scenario": "In the live example two rectangles share a common edge and are stored as a single GeometryCollection on one feature. When you try to drag the midpoint of that shared edge, nothing moves\u2014the modify interaction never picks up or updates that vertex. If you instead put each polygon into its own feature and wrap those in a FeatureCollection, dragging the shared vertex works as expected. In short, Modify doesn\u2019t handle nested geometries inside a GeometryCollection."
+    }
+}

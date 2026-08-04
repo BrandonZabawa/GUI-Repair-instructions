@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/menu/view/group.jsx",
+            "src/menu/view/sub-menu.jsx"
+        ],
+        "explanation": "Both group.jsx and sub-menu.jsx walk through this.props.children and call React.cloneElement (or read child.props) on every item, without filtering out text nodes. Any extra whitespace between tag boundaries becomes a string child and causes child.props to be undefined. These two files need to be changed to filter React.Children.toArray(children).filter(React.isValidElement) (or skip non-elements) before mapping/cloning.",
+        "bug_scenario": "When you give a <Menu.Group> (or inline <Menu.SubMenu>) a \u2018label\u2019 and then put its <Item> children on the same line separated by a space, that space is parsed as a text node child. In Group.render (and similarly in SubMenu.render), the code blindly does React.Children.map over all children, and for each child it tries to read child.props.className (or cloneElement expecting a React element). Since the first child is actually a plain string (\" \"), child.props is undefined and you get \u201cCannot read property 'className' of undefined\u201d."
+    },
+    "2": {
+        "bug_files": [
+            "src/nav/group.jsx",
+            "src/nav/sub-nav.jsx"
+        ],
+        "explanation": "Both src/nav/group.jsx and src/nav/sub-nav.jsx are responsible for rendering Nav.Group and Nav.SubNav children. In each file the code iterates over this.props.children and expects every child to be a React element with a props.className. Whitespace-only text nodes or other non-element children have no props object, so accessing props.className blows up. These are the files to update (by filtering out text children or guarding child.props) to fix the bug.",
+        "bug_scenario": "In the reproduction code the user is rendering a Nav with a Group wrapper around an Item. Because of the literal newline/space characters between the Group tags and the Item tag, React is inserting text nodes (whitespace) into Group\u2019s children array. Inside src/nav/group.jsx, the Group.render method blindly maps over all children and immediately does child.props.className (and similar) without checking for non-element nodes. When it encounters a text node, child.props is undefined, so accessing className throws \u201cCannot read property 'className' of undefined.\u201d"
+    }
+}

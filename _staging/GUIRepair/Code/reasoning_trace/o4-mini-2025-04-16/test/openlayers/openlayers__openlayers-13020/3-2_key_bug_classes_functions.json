@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//parseStyle",
+            "src/ol/layer/WebGLTile.js//createRenderer",
+            "src/ol/layer/WebGLTile.js//updateStyleVariables"
+        ],
+        "explanation": "WebGLTileLayer is the only layer class that holds and applies a Style object (style_, styleVariables_) but lacks a public setter for the Style. parseStyle(style, bandCount) transforms the Style into GLSL shaders and uniforms; createRenderer() calls parseStyle using the stored style_ to build a WebGLTileLayerRenderer; updateStyleVariables only updates numeric variables inside an existing style, but does not allow swapping out the color/contrast/exposure/gamma expressions themselves. To implement a setStyle method, you would need to update style_, clear or rebuild the renderer (re\u2010invoke parseStyle and rebind shaders), and trigger a layer change. Those three functions define where and how style data is processed and therefore are the key points for the fix.",
+        "bug_scenario": "Users cannot change the visualization of an existing WebGLTileLayer (e.g. its color, brightness, contrast, gamma, etc.) at runtime without removing and re-adding the layer. There is a convenience method for updating style variables (updateStyleVariables), but no top-level setter to replace the entire style object (e.g. setStyle). The bug scenario image shows a GeoTIFF rendered via WebGLTileLayer; the user wants to change its color/contrast on the fly without tearing down the layer."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//parseStyle",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.createRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.updateStyleVariables"
+        ],
+        "explanation": "The heart of the bug is in WebGLTileLayer (ol/layer/WebGLTile.js). parseStyle builds vertex/fragment shaders from the style object only when the renderer is first created (createRenderer). updateStyleVariables only tweaks numeric variables within an existing style, but there is no API to replace the Style object or rebuild the shaders at runtime. To support dynamic recoloring or entirely new expression-based styles without recreating the layer, you need to add a setStyle method in WebGLTileLayer that updates this.style_, re-parses the style (calling parseStyle), and triggers the renderer to rebuild its shaders/uniforms. You may also need to extend WebGLTileLayerRenderer to accept new shaders or to recreate its WebGLHelper when the style changes.",
+        "bug_scenario": "The WebGLTileLayer class in ol/layer/WebGLTile.js currently lets you change only numeric style variables via updateStyleVariables, but there is no setStyle method to replace the entire Style object (color, brightness, contrast, gamma or expression-based visualizations) on an existing layer. As a result, users who want to change the style expressions must tear down and recreate the layer (losing cached raster data), rather than dynamically updating the shaders and uniforms in place."
+    }
+}

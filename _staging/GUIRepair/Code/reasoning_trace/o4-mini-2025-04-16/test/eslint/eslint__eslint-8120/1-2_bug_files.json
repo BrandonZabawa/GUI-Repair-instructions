@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/rules/no-unused-vars.js",
+            "tests/lib/rules/no-unused-vars.js"
+        ],
+        "explanation": "The logic for ignoreRestSiblings lives in lib/rules/no-unused-vars.js \u2013 it checks for RestElement siblings only in VariableDeclarator patterns, not in function parameters. To fix this, that rule file must be updated to treat ObjectPattern parameters with a RestElement the same way (ignoring the sibling properties). Additionally, tests in tests/lib/rules/no-unused-vars.js should be extended to cover the function-parameter destructuring scenario so that future regressions are caught.",
+        "bug_scenario": "When using the \u201cignoreRestSiblings\u201d option on the no-unused-vars rule, it correctly suppresses \u201cunused\u201d warnings for siblings in a variable destructuring assignment (e.g. const { x, ...rest } = obj), but it does not suppress the warning when the destructuring appears in a function parameter. In code like\n\n  const MyComp = ({ children, ...props }) => {\n    return <OtherComp {...props} />;\n  };\n\nESLint still warns \u201c'children' is defined but never used,\u201d even though ignoreRestSiblings was set to true."
+    },
+    "2": {
+        "bug_files": [
+            "lib/rules/no-unused-vars.js",
+            "tests/lib/rules/no-unused-vars.js",
+            "docs/rules/no-unused-vars.md"
+        ],
+        "explanation": "\u2022 lib/rules/no-unused-vars.js contains the core logic for reporting unused variables. It currently only omits unused siblings of a RestElement in VariableDeclarator patterns and does not apply the same filter when the pattern appears in function parameters. \n\n\u2022 tests/lib/rules/no-unused-vars.js is the unit-test suite for this rule. It has coverage for ignoreRestSiblings in variable declarations but lacks any tests for function parameter rest patterns, so this case slips through. \n\n\u2022 docs/rules/no-unused-vars.md documents the ignoreRestSiblings option and examples only in the context of variable declarations. It needs updating to clarify and illustrate support for function parameters once the implementation is fixed.",
+        "bug_scenario": "When using object rest/destructuring in function parameters with the ESLint \u201cno-unused-vars\u201d rule and the \u201cignoreRestSiblings\u201d option enabled, sibling properties of a RestElement (for example, the \u201cchildren\u201d parameter in `({ children, ...props }) => {}`) are still reported as unused even though they should be ignored. In other words, `ignoreRestSiblings: true` works for variable declarations but not for function argument patterns."
+    }
+}

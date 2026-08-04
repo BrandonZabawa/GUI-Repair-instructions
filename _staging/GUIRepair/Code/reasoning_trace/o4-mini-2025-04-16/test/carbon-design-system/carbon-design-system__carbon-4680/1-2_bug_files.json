@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/UIShell/HeaderMenu.js",
+            "packages/react/src/components/UIShell/SideNavMenu.js"
+        ],
+        "explanation": "Both HeaderMenu.js and SideNavMenu.js export their components via React.forwardRef without assigning a displayName.  React Dev Tools falls back to \u201cAnonymous\u201d because the inner functions are unnamed arrows.  By setting, for example, HeaderMenu.displayName = 'HeaderMenu' (and likewise for SideNavMenu) immediately after the forwardRef call, you restore meaningful names in the Dev Tools tree.",
+        "bug_scenario": "When inspecting the UIShell in React Dev Tools both the HeaderMenu and SideNavMenu components (and their rendered list\u2010item wrappers) show up simply as \u201cAnonymous\u201d (ForwardRef) instead of their actual names.  That\u2019s because each is implemented via React.forwardRef using an anonymous (arrow) function and no displayName is assigned.  As a result it\u2019s hard to tell which menu you\u2019re looking at when debugging."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/UIShell/HeaderMenu.js",
+            "packages/react/src/components/UIShell/SideNavMenu.js"
+        ],
+        "explanation": "Both HeaderMenu.js and SideNavMenu.js in the React package define their components using React.forwardRef but never assign a displayName on the resulting component (nor on any inner defaultRenderMenuContent forwardRef helper function). That omission is exactly why DevTools shows them all as \u201cAnonymous.\u201d Adding lines like HeaderMenu.displayName = 'HeaderMenu' and SideNavMenu.displayName = 'SideNavMenu' (and similarly naming any internal forwardRef helper) in these two files will resolve the issue.",
+        "bug_scenario": "When using the Carbon UIShell in React, the HeaderMenu and SideNavMenu sub\u2010components are implemented via React.forwardRef but never have their displayName property set. In React DevTools (or other inspector tools) they all appear simply as \u201cAnonymous\u201d nodes in the component tree (see screenshots), making it impossible to distinguish which menu is which. To fix this, the forwardRef wrappers in the React implementation for HeaderMenu and SideNavMenu need to be given explicit displayName values."
+    }
+}

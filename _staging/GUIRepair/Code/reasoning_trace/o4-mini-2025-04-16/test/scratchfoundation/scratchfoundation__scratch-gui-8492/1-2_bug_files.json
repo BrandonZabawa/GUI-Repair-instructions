@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_files": [
+            "src/components/modal/modal.jsx",
+            "src/containers/modal.jsx",
+            "src/components/record-modal/record-modal.jsx",
+            "src/containers/record-modal.jsx",
+            "src/components/audio-trimmer/audio-trimmer.jsx",
+            "src/components/audio-trimmer/selection-handle.jsx",
+            "src/containers/audio-trimmer.jsx"
+        ],
+        "explanation": "All of the above files participate in rendering the Record Sound modal and managing click/drag behavior inside it, and together they allow the modal to close when a mouseUp/click is detected outside of its content area.\n\n\u2022 src/components/modal/modal.jsx & src/containers/modal.jsx define the shared Modal wrapper (based on react-modal), including the default shouldCloseOnOverlayClick behavior that closes the modal when the user clicks outside.\n\n\u2022 src/components/record-modal/record-modal.jsx & src/containers/record-modal.jsx instantiate that Modal specifically for the sound-recording workflow. They don\u2019t override the overlay-click behavior, so any mouseUp outside the dialog triggers onRequestClose.\n\n\u2022 src/components/audio-trimmer/audio-trimmer.jsx, src/components/audio-trimmer/selection-handle.jsx & src/containers/audio-trimmer.jsx render the waveform and draggable handles. They manage mousedown/mousemove/mouseup events, but don\u2019t stop propagation of the final mouseUp when the pointer leaves the modal content. That mouseUp bubbles up to the Modal overlay, which closes the dialog.\n\nTo fix the bug you can either:\n 1. Update the react-modal version (as suggested) to one that properly guards against mouseUps outside during drag operations, or\n 2. Override shouldCloseOnOverlayClick to false (or temporarily disable it during handle drags) in the Record Sound modal wrapper so that dragging never accidentally closes the dialog.",
+        "bug_scenario": "When a user clicks down on one of the purple sound\u2010selection handles in the Record Sound modal, then drags their mouse pointer slightly outside the modal\u2019s bounding box (for example, when dragging to the very end of the waveform), the modal\u2019s overlay treats that mouseUp/click as a clickOutside and immediately closes the modal, discarding the user\u2019s in-progress changes."
+    },
+    "2": {
+        "bug_files": [
+            "src/components/modal/modal.jsx",
+            "src/containers/modal.jsx",
+            "src/components/record-modal/record-modal.jsx",
+            "src/containers/record-modal.jsx",
+            "src/components/audio-trimmer/audio-trimmer.jsx",
+            "src/components/audio-trimmer/selection-handle.jsx",
+            "src/containers/audio-trimmer.jsx"
+        ],
+        "explanation": "These files form the two interacting pieces of functionality that trigger the bug.  \n1) The modal implementation (components/modal.jsx and containers/modal.jsx) uses ReactModal\u2019s default settings, which close the modal on any click or mouseup outside the modal content.  \n2) The record\u2010modal (components/record-modal.jsx and containers/record-modal.jsx) mounts the waveform/drag handles into that modal without overriding shouldCloseOnOverlayClick.  \n3) The audio\u2010trimmer (components/audio-trimmer/audio-trimmer.jsx and selection-handle.jsx, plus its container) starts a drag on mousedown and listens for mousemove/mouseup on window. When the cursor moves outside the overlay, the modal overlay receives the mouseup and closes the dialog.  \nFixing this requires disabling or intercepting overlay clicks while dragging (for example by passing shouldCloseOnOverlayClick={false} for the record modal or upgrading react-modal to a version that respects active drags).",
+        "bug_scenario": "In the \u201cRecord Sound\u201d modal the user can click and drag the left/right selection\u2010handles on the waveform to adjust the trimmed region. If during that drag the mouse momentarily leaves the modal overlay, the modal\u2019s default overlay\u2010click handler fires and closes the dialog, losing the user\u2019s work."
+    }
+}

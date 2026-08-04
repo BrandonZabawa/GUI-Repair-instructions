@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/TextRenderer.js",
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/label-editing/LabelUtil.js"
+        ],
+        "explanation": "\u2022 lib/draw/BpmnRenderer.js: contains the overridden shape\u2010drawing logic for events and gateways. A recent change here uses computed label bounds to drive the overall shape size, so feeding it zero\u2010sized bounds collapses the shape.\n\u2022 lib/draw/TextRenderer.js: responsible for measuring and laying out text during direct editing. Measuring an empty string here returns minimal dimensions, which then propagate back into the shape size.\n\u2022 lib/features/label-editing/LabelEditingProvider.js: defines when and how direct editing is triggered (in this case on single\u2010click for external labels), so clicking on an unlabeled event/gateway immediately invokes the empty\u2010text update.\n\u2022 lib/features/label-editing/cmd/UpdateLabelHandler.js: applies the new label text and bounds to the model (including the DI), taking the tiny bounds from the empty text and writing them into the diagram interchange, thereby shrinking the element.\n\u2022 lib/features/label-editing/LabelUtil.js: computes external label position and size. When fed an empty text measurement, it returns minimal default bounds, which upstream consumers (renderer and update handler) pick up and misapply to the main shape.",
+        "bug_scenario": "When clicking (selecting) an event or gateway that has an external label but no text, the element immediately fires off a direct\u2010edit/label\u2010update cycle with an empty string. As soon as the direct edit is \u201ccompleted\u201d with an empty label, the label\u2010update handler measures the empty text (resulting in the minimal possible bounds) and then applies those bounds not only to the label itself but (due to an earlier change in the render logic) also inadvertently to the shape. The result is that circles (events) shrink to almost nothing and diamond gateways disappear entirely whenever you single\u2010click to select them."
+    },
+    "2": {
+        "bug_files": [
+            "lib/draw/TextRenderer.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/label-editing/LabelUtil.js",
+            "lib/features/auto-resize/BpmnAutoResizeProvider.js",
+            "lib/features/auto-resize/BpmnAutoResize.js",
+            "lib/features/modeling/behavior/util/ResizeUtil.js"
+        ],
+        "explanation": "\u2022 draw/TextRenderer.js  \u2013 computes the bounding box of external labels. When text is empty, it returns minimal dimensions, which later drives a resize of the shape.  \n\u2022 draw/BpmnRenderer.js  \u2013 renders the BPMN shapes (circle for events, diamond for gateways) and relies on the bounds provided by ResizeUtil and label calculations. The shape ends up drawing at the tiny bounds.  \n\u2022 features/label-editing/cmd/UpdateLabelHandler.js  \u2013 after completing direct editing it updates both the business object\u2019s name and the graphical bounds of the label target. It unconditionally applies the new (too small) label bounds when the text is empty.  \n\u2022 features/label-editing/LabelUtil.js  \u2013 helps position/size external labels and is involved in computing the new target bounds passed back into UpdateLabelHandler.  \n\u2022 features/auto-resize/BpmnAutoResizeProvider.js & BpmnAutoResize.js  \u2013 this module watches for label and element changes and automatically resizes the hosting shape to fit the label. It picks up the empty\u2010label bounds and resizes the host (event or gateway) to min size on click.  \n\u2022 modeling/behavior/util/ResizeUtil.js  \u2013 contains logic for minimal allowable shape dimensions and for translating label bounds into shape bounds. It applies the minimal constraints that result in the shrunken shape when the label bounds are tiny.  \n\nTogether these files participate in a pipeline: finishing direct editing (UpdateLabelHandler) \u2192 computing new label bounds (TextRenderer + LabelUtil) \u2192 applying minimal bounds (ResizeUtil) \u2192 re\u2010rendering the shape at the smaller size (BpmnRenderer). Even just selecting an element triggers the auto-resize logic (BpmnAutoResize), causing the same shrink on click.",
+        "bug_scenario": "When you click (\u201cselect\u201d) an event or gateway (or finish an empty direct\u2010edit label), the shape\u2019s bounds are reset to the absolute minimum. In the first scenario, finishing direct editing with an empty label causes the element (circle, diamond, etc.) to be resized to the smallest possible box. In the second, merely clicking on a start/end event or an exclusive gateway triggers the same minimal\u2010bounds resize, making the shape shrink (or disappear entirely)."
+    }
+}

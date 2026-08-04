@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/lib/ecmascript.js",
+            "src/languages/javascript.js",
+            "src/languages/typescript.js"
+        ],
+        "explanation": "\u2022 src/languages/lib/ecmascript.js defines the core comment rules (including block comments) for all ECMAScript-family languages. Our empty-comment edge case lives here.\n\u2022 src/languages/javascript.js imports and configures that ECMA grammar specifically for plain JavaScript.\n\u2022 src/languages/typescript.js does the same for TypeScript (which re-uses the block/comment modes from ecmascript.js).\n\nAll three files participate in recognizing and ending `/*\u2026*/`-style comments. Because the bug manifests whenever an immediately closed block comment appears, you have to revise the comment mode in ecmascript.js and ensure both its JavaScript and TypeScript wrappers honor the fixed behavior.",
+        "bug_scenario": "When you sprinkle empty block comments (/**/) around JavaScript code \u2014 for example `/**/console.log(\"Hello, World!\")/**/` \u2014 the highlighter recognizes the first empty comment, highlights the `console.log` call correctly, then eats the trailing empty comment and never switches back into JavaScript mode. Everything after that point appears un\u00adstyled. In other words, an empty `/* \u2026 */` comment resets the parser state but doesn\u2019t restore the JS mode, so the rest of the line (and any following code) is left plain."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/javascript.js",
+            "src/languages/typescript.js",
+            "src/lib/mode_compiler.js"
+        ],
+        "explanation": "\u2022 src/languages/javascript.js: This file defines the JavaScript grammar and explicitly includes the C_BLOCK_COMMENT_MODE (the rule that matches /**\u2026*/). The empty comment case manifests here.  \n\u2022 src/languages/typescript.js: TypeScript reuses the JavaScript comment rules (and extends them), so it is equally affected by an empty /**/ block.  \n\u2022 src/lib/mode_compiler.js: This module contains the core COMMENT helper (COMMENT(begin,end,options)) and compiles the begin/end regexes. Handling of zero-length block comments is implemented here; a fix is required so that an empty \u2018/*\u2026*/\u2019 still advances the parser without breaking the highlight stream.",
+        "bug_scenario": "An empty JavaScript block-comment \u201c/**/\u201d at the start (or end) of a snippet causes Highlight.js\u2019s JavaScript/TypeScript grammar to stop tokenizing further code. In the first screenshot the leading \u201c/**/\u201d is parsed as an empty comment, but the very next \u201cconsole.log(\u2026)\u201d and the trailing \u201c/**/\u201d are left un-highlighted. The expected behavior is that both console.log and the trailing comment should be highlighted normally."
+    }
+}

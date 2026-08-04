@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableExpandHeader.js",
+            "packages/react/src/components/DataTable/TableExpandRow.js"
+        ],
+        "explanation": "TableExpandHeader.js is responsible for rendering the <th> that should receive the id prop. It currently drops any id you pass, so there\u2019s no matching <th id=\"expand\">. TableExpandRow.js then emits headers=\"expand\" on each <td>, expecting that <th> to exist. Fixing TableExpandHeader to forward the id onto its rendered <th> (and ensuring TableExpandRow\u2019s headers prop matches) repairs the link between cells and header for accessibility.",
+        "bug_scenario": "When you drop an expansion column into your DataTable (via TableExpandHeader and TableExpandRow) and give it an id (for example id=\"expand\"), the table body cells get a headers=\"expand\" attribute but the header cell itself never renders that id on its <th>. The IBM Equal Access checker then complains \u201cThe 'headers' attribute value \"expand\" does not reference a valid 'id' in this document.\u201d In short, TableExpandHeader is not emitting the id you pass in, so the cell-to-header link is broken."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableExpandHeader.js",
+            "packages/react/src/components/DataTable/TableExpandRow.js",
+            "packages/react/src/components/DataTable/DataTable.js"
+        ],
+        "explanation": "All of the expansion logic lives in DataTable and two subcomponents: \u2022 TableExpandHeader.js renders the <th> placeholder for the expand/collapse control, but currently ignores or doesn\u2019t apply the id prop. \u2022 TableExpandRow.js writes <td headers={expandHeader}>, so it relies on a <th id=\"\u2026\"> being present. \u2022 DataTable.js\u2019s getExpandHeaderProps helper never adds an id itself, so even when using the render prop you end up with a non-matching headers reference. By updating getExpandHeaderProps (or TableExpandHeader) to generate or forward an id, and ensuring TableExpandHeader places it on the DOM, the headers attributes will point to a real <th id>, resolving the accessibility violation.",
+        "bug_scenario": "In the expandable DataTable (e.g. the \u201cExpansion\u201d story), each data row renders a first <td> with a headers attribute pointing at \u201cexpand\u201d:\n\n  <td headers=\"expand\" class=\"cds--table-expand\">\u2026</td>\n\nbut there is no matching <th id=\"expand\"> in the table header. TableExpandHeader doesn\u2019t forward the id prop onto its <th> (and getExpandHeaderProps never generates one), so the cell-level headers reference is invalid. The IBM Equal Access checker flags \u201cThe \u2018headers\u2019 attribute value \u2018expand\u2019 does not reference a valid \u2018id\u2019 in this document.\u201d"
+    }
+}

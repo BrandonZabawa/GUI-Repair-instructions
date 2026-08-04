@@ -1,0 +1,71 @@
+diff --git a/src/js/components/Data/Data.js b/src/js/components/Data/Data.js
+index 8cc31e106..17b8c462a 100644
+--- a/src/js/components/Data/Data.js
++++ b/src/js/components/Data/Data.js
+@@ -137,11 +137,31 @@ export const Data = ({
+ 
+   let toolbarContent;
+   if (toolbar) {
++    // Determine if any filters/search/view are active
++    const hasActiveFilters =
++      (view && (
++        (view.search && view.search.length > 0) ||
++        (view.filters && Object.keys(view.filters).length > 0) ||
++        (view.sort && Object.keys(view.sort).length > 0)
++      )) ||
++      false;
++
+     toolbarContent = [
+       <Toolbar key="toolbar">
+         {(toolbar === true || toolbar === 'search') && <DataSearch />}
+         {(toolbar === true || toolbar === 'view') && <DataView />}
+         {(toolbar === true || toolbar === 'filters') && <DataFilters drop />}
++        {hasActiveFilters && (
++          <Box flex={false} margin={{ start: 'small' }}>
++            <Button
++              label={format({
++                id: 'dataFilters.clear',
++                messages: messages?.dataFilters,
++              })}
++              onClick={contextValue.clearFilters}
++            />
++          </Box>
++        )}
+       </Toolbar>,
+       <DataSummary key="summary" />,
+     ];
+diff --git a/src/js/components/DataFilters/DataFilters.js b/src/js/components/DataFilters/DataFilters.js
+index 204c708d5..cf38f0a70 100644
+--- a/src/js/components/DataFilters/DataFilters.js
++++ b/src/js/components/DataFilters/DataFilters.js
+@@ -48,20 +48,8 @@ export const DataFilters = ({ drop, children, heading, layer, ...rest }) => {
+     [controlled, touched],
+   );
+ 
+-  const clearControl = badge && (
+-    <Box flex={false} margin={{ start: 'small' }}>
+-      <Button
+-        label={format({
+-          id: 'dataFilters.clear',
+-          messages: messages?.dataFilters,
+-        })}
+-        onClick={() => {
+-          setTouched({});
+-          clearFilters();
+-        }}
+-      />
+-    </Box>
+-  );
++  // Remove clearControl from top-level, as it is now handled in Data.js toolbar
++  const clearControl = null;
+ 
+   let content = children;
+   if (Children.count(children) === 0) {
+@@ -168,7 +156,6 @@ export const DataFilters = ({ drop, children, heading, layer, ...rest }) => {
+   return (
+     <Box flex={false} direction="row" {...rest}>
+       {control}
+-      {clearControl}
+       {layer && showContent && (
+         <Layer
+           id={`${dataId}--filters-layer`}

@@ -1,0 +1,19 @@
+diff --git a/src/language-markdown/printer-markdown.js b/src/language-markdown/printer-markdown.js
+index 4b7b03fb9..9cf138976 100644
+--- a/src/language-markdown/printer-markdown.js
++++ b/src/language-markdown/printer-markdown.js
+@@ -210,6 +210,14 @@ function genericPrint(path, options, print) {
+       return concat(["+++", hardline, node.value, hardline, "+++"]);
+     case "html": {
+       const parentNode = path.getParentNode();
++      // Prevent repeated indentation of raw HTML blocks inside lists/listItems
++      if (
++        parentNode &&
++        (parentNode.type === "listItem" || parentNode.type === "list")
++      ) {
++        // Align the HTML block to the left, preserving its original indentation
++        return align(0, node.value.trimRight ? node.value.trimRight() : node.value);
++      }
+       return parentNode.type === "root" &&
+         privateUtil.getLast(parentNode.children) === node
+         ? node.value.trimRight()

@@ -1,0 +1,232 @@
+{
+    "1/5": {
+        "lib/linter/code-path-analysis/code-path-analyzer.js": [
+            {
+                "SEARCH": [
+                    "case \"LogicalExpression\":",
+                    "if (",
+                    "parent.right === node &&",
+                    "isHandledLogicalOperator(parent.operator)",
+                    ") {",
+                    "state.makeLogicalRight();",
+                    "}",
+                    "break;"
+                ],
+                "REPLACE": [
+                    "case \"LogicalExpression\":",
+                    "if (parent.right === node) {",
+                    "if (parent.operator === \"&&\") {",
+                    "state.forkPath();",
+                    "}",
+                    "if (isHandledLogicalOperator(parent.operator)) {",
+                    "state.makeLogicalRight();",
+                    "}",
+                    "}",
+                    "break;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "case \"LogicalExpression\":",
+                    "if (isHandledLogicalOperator(node.operator)) {",
+                    "state.pushChoiceContext(",
+                    "node.operator,",
+                    "isForkingByTrueOrFalse(node)",
+                    ");",
+                    "}",
+                    "break;"
+                ],
+                "REPLACE": [
+                    "case \"LogicalExpression\":",
+                    "if (isHandledLogicalOperator(node.operator)) {",
+                    "if (node.operator === \"&&\") {",
+                    "state.pushChoiceContext(\"&&\", true);",
+                    "} else {",
+                    "state.pushChoiceContext(",
+                    "node.operator,",
+                    "isForkingByTrueOrFalse(node)",
+                    ");",
+                    "}",
+                    "}",
+                    "break;"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "lib/linter/code-path-analysis/code-path-analyzer.js": [
+            {
+                "SEARCH": [
+                    "case \"LogicalExpression\":",
+                    "if (",
+                    "parent.right === node &&",
+                    "isHandledLogicalOperator(parent.operator)",
+                    ") {",
+                    "state.makeLogicalRight();",
+                    "}",
+                    "break;"
+                ],
+                "REPLACE": [
+                    "case \"LogicalExpression\":",
+                    "if (",
+                    "parent.right === node &&",
+                    "isHandledLogicalOperator(parent.operator)",
+                    ") {",
+                    "state.makeLogicalRight();",
+                    "",
+                    "// Handle the case where && precedes the ?? operator",
+                    "if (parent.operator === \"&&\" && node.operator === \"??\") {",
+                    "state.makeOptionalRight();",
+                    "}",
+                    "}",
+                    "break;"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "lib/linter/code-path-analysis/code-path-analyzer.js": [
+            {
+                "SEARCH": [
+                    "function preprocess(analyzer, node) {",
+                    "const codePath = analyzer.codePath;",
+                    "const state = CodePath.getState(codePath);",
+                    "const parent = node.parent;",
+                    "",
+                    "switch (parent.type) {",
+                    "...",
+                    "case \"LogicalExpression\":",
+                    "if (",
+                    "parent.right === node &&",
+                    "isHandledLogicalOperator(parent.operator)",
+                    ") {",
+                    "state.makeLogicalRight();",
+                    "}",
+                    "break;",
+                    "..."
+                ],
+                "REPLACE": [
+                    "function preprocess(analyzer, node) {",
+                    "const codePath = analyzer.codePath;",
+                    "const state = CodePath.getState(codePath);",
+                    "const parent = node.parent;",
+                    "",
+                    "switch (parent.type) {",
+                    "...",
+                    "case \"LogicalExpression\":",
+                    "if (",
+                    "parent.right === node &&",
+                    "isHandledLogicalOperator(parent.operator)",
+                    ") {",
+                    "if (parent.operator === \"&&\" && parent.parent?.operator === \"??\") {",
+                    "state.makeLogicalRightBypass();",
+                    "} else {",
+                    "state.makeLogicalRight();",
+                    "}",
+                    "}",
+                    "break;",
+                    "..."
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "lib/linter/code-path-analysis/code-path-analyzer.js": [
+            {
+                "SEARCH": [
+                    "isHandledLogicalOperator(node.operator)"
+                ],
+                "REPLACE": [
+                    "node.operator === \"??\"",
+                    "? state.pushChoiceContext(node.operator, false)",
+                    ": state.pushChoiceContext(node.operator, isForkingByTrueOrFalse(node));"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "state.popChoiceContext();"
+                ],
+                "REPLACE": [
+                    "if (node.operator !== \"??\") {",
+                    "state.popChoiceContext();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "lib/linter/code-path-analysis/code-path-analyzer.js": [
+            {
+                "SEARCH": [
+                    "case \"LogicalExpression\":",
+                    "if (",
+                    "parent.right === node &&",
+                    "isHandledLogicalOperator(parent.operator)",
+                    ") {",
+                    "state.makeLogicalRight();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "case \"LogicalExpression\":",
+                    "if (",
+                    "parent.operator === \"&&\" &&",
+                    "parent.right === node &&",
+                    "parent.parent &&",
+                    "parent.parent.operator === \"??\"",
+                    ") {",
+                    "// Allow a direct path if 'a' is falsy in (a && b) ?? c",
+                    "state.forkPathSkip();",
+                    "} else if (",
+                    "parent.right === node &&",
+                    "isHandledLogicalOperator(parent.operator)",
+                    ") {",
+                    "state.makeLogicalRight();",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "switch (node.type) {",
+                    "case \"LogicalExpression\":",
+                    "if (isHandledLogicalOperator(node.operator)) {",
+                    "state.pushChoiceContext(",
+                    "node.operator,",
+                    "isForkingByTrueOrFalse(node)",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "switch (node.type) {",
+                    "case \"LogicalExpression\":",
+                    "if (node.operator === \"&&\" && node.parent && node.parent.operator === \"??\") {",
+                    "state.pushChoiceContext(",
+                    "\"&& ??\",",
+                    "isForkingByTrueOrFalse(node)",
+                    ");",
+                    "} else if (isHandledLogicalOperator(node.operator)) {",
+                    "state.pushChoiceContext(",
+                    "node.operator,",
+                    "isForkingByTrueOrFalse(node)",
+                    ");",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "case \"LogicalExpression\":",
+                    "if (isHandledLogicalOperator(node.operator)) {",
+                    "state.popChoiceContext();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "case \"LogicalExpression\":",
+                    "if (node.operator === \"&&\" && node.parent && node.parent.operator === \"??\") {",
+                    "state.popChoiceContext();",
+                    "} else if (isHandledLogicalOperator(node.operator)) {",
+                    "state.popChoiceContext();",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

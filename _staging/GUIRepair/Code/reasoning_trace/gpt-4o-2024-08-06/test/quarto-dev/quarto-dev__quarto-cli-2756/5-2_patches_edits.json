@@ -1,0 +1,166 @@
+{
+    "1/5": {
+        "src/resources/filters/crossref/theorems.lua": [
+            {
+                "SEARCH": [
+                    "-- prepend the prefix",
+                    "local caption = el.content[1]",
+                    "tprepend(caption.content, {",
+                    "pandoc.Span(",
+                    "pandoc.Strong(prefix),",
+                    "pandoc.Attr(\"\", { \"theorem-title\" })",
+                    ")",
+                    "})"
+                ],
+                "REPLACE": [
+                    "          -- prepend the prefix",
+                    "          local caption = el.content[1]",
+                    "          if caption.t == \"Para\" then",
+                    "            tprepend(caption.content, { ",
+                    "              pandoc.Span(",
+                    "                pandoc.Strong(prefix), ",
+                    "                pandoc.Attr(\"\", { \"theorem-title\" })",
+                    "              )",
+                    "            })",
+                    "          else",
+                    "            table.insert(el.content, 1, pandoc.Para({",
+                    "              pandoc.Span(",
+                    "                pandoc.Strong(prefix), ",
+                    "                pandoc.Attr(\"\", { \"theorem-title\" })",
+                    "              )",
+                    "            }))",
+                    "          end"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/resources/filters/crossref/theorems.lua": [
+            {
+                "SEARCH": [
+                    "tprepend(caption.content, {",
+                    "pandoc.Span(",
+                    "pandoc.Strong(prefix),",
+                    "pandoc.Attr(\"\", { \"theorem-title\" })",
+                    ")",
+                    "})"
+                ],
+                "REPLACE": [
+                    "          -- Correct insertion to avoid caption being treated as list item",
+                    "          if caption.content[1] and caption.content[1].t == \"Plain\" then",
+                    "            tprepend(caption.content[1], { ",
+                    "              pandoc.Span(",
+                    "                pandoc.Strong(prefix), ",
+                    "                pandoc.Attr(\"\", { \"theorem-title\" })",
+                    "              )",
+                    "            })",
+                    "          else",
+                    "            tprepend(caption.content, { ",
+                    "              pandoc.Para(pandoc.Strong(prefix),",
+                    "                pandoc.Attr(\"\", { \"theorem-title\" })",
+                    "              )",
+                    "            })",
+                    "          end"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/resources/filters/crossref/theorems.lua": [
+            {
+                "SEARCH": [
+                    "el.classes:insert(\"unnumbered\")",
+                    "return el",
+                    "end",
+                    "})"
+                ],
+                "REPLACE": [
+                    "            el.classes:insert(\"unnumbered\")",
+                    "            if el.level == 1 then",
+                    "              table.insert(el.classes, \"not-a-list\")",
+                    "            end",
+                    "            return el",
+                    "          end",
+                    "        },",
+                    "        BulletList = function(list)",
+                    "          if list[1][1].t == \"Header\" then",
+                    "            return pandoc.Plain(list:remove(1))",
+                    "          end",
+                    "        end,",
+                    "        OrderedList = function(list)",
+                    "          if list[1][1].t == \"Header\" then",
+                    "            return pandoc.Plain(list:remove(1))",
+                    "          end",
+                    "        end"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/resources/filters/crossref/theorems.lua": [
+            {
+                "SEARCH": [
+                    "function preprocessTheorems()",
+                    "local types = theoremTypes",
+                    "return {",
+                    "Div = function(el)",
+                    "local type = refType(el.attr.identifier)",
+                    "if types[type] ~= nil or proofType(el) ~= nil then",
+                    "return pandoc.walk_block(el, {",
+                    "Header = function(el)",
+                    "el.classes:insert(\"unnumbered\")",
+                    "return el",
+                    "end",
+                    "})",
+                    "end",
+                    "",
+                    "end",
+                    "}",
+                    "end"
+                ],
+                "REPLACE": [
+                    "function preprocessTheorems()",
+                    "  local types = theoremTypes",
+                    "  return {",
+                    "    Div = function(el)",
+                    "      local type = refType(el.attr.identifier)",
+                    "      if types[type] ~= nil or proofType(el) ~= nil then",
+                    "        return pandoc.walk_block(el, {",
+                    "          Header = function(el)",
+                    "            el.classes:insert(\"unnumbered\")",
+                    "            -- Ensure headers are not part of list items",
+                    "            pandoc.ListBlock({})",
+                    "            return el",
+                    "          end",
+                    "        })",
+                    "      end",
+                    "",
+                    "    end",
+                    "  }",
+                    "end"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/resources/filters/crossref/theorems.lua": [
+            {
+                "SEARCH": [
+                    "local type = refType(el.attr.identifier)",
+                    "if types[type] ~= nil or proofType(el) ~= nil then",
+                    "return pandoc.walk_block(el, {"
+                ],
+                "REPLACE": [
+                    "      if el.t == \"Div\" and (types[refType(el.attr.identifier)] ~= nil or proofType(el) ~= nil) then",
+                    "        local function isHeading(_, el)",
+                    "          if el.t == 'Header' then",
+                    "            el.classes:insert('unnumbered')",
+                    "            return el",
+                    "          end",
+                    "        end",
+                    "        return pandoc.walk_block(el, { Header = isHeading, List = isHeading })"
+                ]
+            }
+        ]
+    }
+}

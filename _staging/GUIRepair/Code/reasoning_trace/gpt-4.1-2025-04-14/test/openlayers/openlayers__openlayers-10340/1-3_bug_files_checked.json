@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/Draw.js",
+            "src/ol/geom/Circle.js",
+            "src/ol/geom/Polygon.js",
+            "src/ol/geom/flat/geodesic.js",
+            "src/ol/geom/flat/transform.js",
+            "src/ol/proj/projections.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/geom/flat/center.js"
+        ],
+        "explanation": "The bug is specifically about drawing and shape-creation in 'useGeographic' mode, where projections and geometry creation functions are key: 1) 'src/ol/interaction/Draw.js' contains the logic for user drawing interactions, including the algorithms for shape placement and pointer-tracking; it's directly responsible for translating user input into map coordinates and shapes. 2) 'src/ol/geom/Circle.js' and 'src/ol/geom/Polygon.js' handle core geometry construction for circles, squares, and polygons. If geographic distortion occurs, fixes or checks may be needed here to account for projection. 3) 'src/ol/geom/flat/geodesic.js' likely has utilities for constructing shapes that respect geodetic (earth surface) distances and may need to be applied/adjusted for useGeographic mode. 4) 'src/ol/geom/flat/transform.js' and 'src/ol/geom/flat/center.js' are involved in transforming and centering geometries, which is critical in projection-aware contexts. 5) 'src/ol/proj/Projection.js' and 'src/ol/proj/projections.js' define projection behavior and contain methods for switching between geographic and projected coordinates, which is central to correct geometry creation and display in 'useGeographic' mode. Fixes will likely involve improved handling of distance and angle calculations under geographic projection.",
+        "bug_scenario": "The bug scenario involves inaccurate rendering of geometric shapes (such as circles, squares, and regular polygons) when using 'useGeographic' projection mode, especially at higher latitudes. The screenshots show that expected regular shapes (boxes and circles) are distorted in the map when drawing or using functions like createRegularPolygon or createBox. Instead of preserving shape and size relative to the earth's surface, these geometries become skewed or non-regular because the projection and geographic calculations are not handled correctly. The problem does not occur in non-geographic modes, indicating an issue with how geographic coordinates and map projections interact during geometric constructions in drawing interactions."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/interaction/Draw.js",
+            "src/ol/geom/flat/geodesic.js",
+            "src/ol/geom/Circle.js",
+            "src/ol/geom/Polygon.js",
+            "src/ol/proj/transforms.js",
+            "src/ol/geom/flat/transform.js"
+        ],
+        "explanation": "These files are closely related to the bug for the following reasons: 1) 'src/ol/interaction/Draw.js': This file handles user interactions for drawing geometries; the underlying problem with projection handling and shape creation in 'useGeographic' is likely implemented or can be worked around here. 2) 'src/ol/geom/flat/geodesic.js': Handles geodesic calculations for rendering geometric shapes (e.g., accurate circles in geographic coordinates), which are essential for shape correctness on the sphere/ellipsoid at all latitudes. 3) 'src/ol/geom/Circle.js' and 'src/ol/geom/Polygon.js': These implement circles and polygons, whose rendering/creation needs to consider projection and geographic distortion. 4) 'src/ol/proj/projection.js' and 'src/ol/proj/transforms.js': These files manage the math and logic for projections and coordinate transforms, which directly affect how shapes appear in different projections and at different latitudes. 5) 'src/ol/geom/flat/transform.js': Handles coordinate transformations at the geometry level, possibly involved in applying the correct math when drawing shapes with 'useGeographic'. Fixing the bug will almost certainly require reviewing and possibly editing these files to ensure shape generation correctly accounts for projections, especially geographic ones like EPSG:4326.",
+        "bug_scenario": "The bug scenario concerns issues with drawing shapes (especially circles, squares, and regular polygons) on maps when the 'useGeographic' mode is active (typically EPSG:4326 projection). In this mode, user-drawn circles do not appear circular and pointer-aligned, particularly at high latitudes, and regular polygons are visually distorted. The images show significant shape deformation far from the equator (e.g., in Northern Canada/Arctic areas), with what should be squares or circles appearing as skewed or stretched shapes."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableToolbar.js",
+            "packages/react/src/components/DataTable/TableToolbarAction.js",
+            "packages/react/src/components/DataTable/TableToolbarMenu.js",
+            "packages/react/src/components/DataTable/TableToolbarSearch.js",
+            "packages/react/src/components/DataTable/TableToolbarContent.js"
+        ],
+        "explanation": "All of these files participate in rendering the DataTable toolbar and its buttons:  \n\u2022 TableToolbar.js defines the <section> wrapper for the toolbar and assigns landmarks and aria-labels. If its heading/role doesn\u2019t match the visible toolbar title, it will fail the \u2018sectioning or landmark\u2019 check.  \n\u2022 TableToolbarAction.js is responsible for rendering each action button. It takes an icon or renderIcon but wires up aria-labels (via iconDescription) in a way that can be out of sync when you inject an OverflowMenu.  \n\u2022 TableToolbarMenu.js wraps the OverflowMenu component and sets default aria-labels (\u2018Menu\u2019) and titles (\u2018Settings\u2019) that conflict when the visible icon and tooltip text differ.  \n\u2022 TableToolbarSearch.js builds the expandable search container and applies roles (e.g. role=\u201csearch\u201d) and aria attributes without exposing the visible label to assistive technology.  \n\u2022 TableToolbarContent.js orchestrates placement of actions and search inside the toolbar; mismatches here can cascade into their children.  \n\nFixing the violation requires aligning the aria-label/iconDescription/title props in these components so that the accessible name always contains (or matches) the visible label text, and ensuring the toolbar section and search region use appropriate roles and labels.",
+        "bug_scenario": "When you add a toolbar to a DataTable and render an OverflowMenu inside a TableToolbarAction via the renderIcon API, the generated button ends up with an aria-label of \u201cMenu\u201d (coming from OverflowMenu) but uses a settings gear icon (and a title of \u201cSettings\u201d). The visible label (\u201cSettings\u201d) doesn\u2019t match the accessible name (\u201cMenu\u201d), which triggers the IBM 2.5.3 \u201cLabel in name\u201d violation. In addition, the toolbar\u2019s <section> and the search container use landmark roles and aria attributes that aren\u2019t aligned with their visible labels."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableToolbar.js",
+            "packages/react/src/components/DataTable/TableToolbarAction.js",
+            "packages/react/src/components/DataTable/stories/with-toolbar.js"
+        ],
+        "explanation": "\u2022 TableToolbar.js defines the toolbar container as a bare <section aria-label=\"\u2026\"> without also providing a role, so automated checks complain that its content isn\u2019t in a valid ARIA landmark/region. We need to add role=\"toolbar\" or role=\"region\" (and ensure the aria-label matches).  \n\u2022 TableToolbarAction.js (and the with-toolbar story) render an OverflowMenu button with aria-label=\"Menu\" and title=\"Settings\", but the visible label presented to users is \u201cSettings.\u201d IBM 2.5.3 requires that the accessible name must match or contain the visible text. We should sync aria-label (or use iconDescription) so that it matches \u201cSettings,\u201d or reverse the labels so they agree.  \n\u2022 The with-toolbar.js story file is where these two components are used together; updating it ensures our examples stay a11y-compliant and demonstrates the correct pattern for consumers.",
+        "bug_scenario": "When you render a DataTable with a toolbar (e.g. the \"with-toolbar\" story), DAP flags three IBM 2.5.3 Label in Name violations and a section landmark violation.  \n\n1. The OverflowMenu icon button in the TableToolbar uses aria-label=\"Menu\" but the visible title text (tooltip) is \u201cSettings,\u201d so the accessible name doesn\u2019t match the visible label.  \n2. The <section> wrapper in TableToolbar has an aria-label but no ARIA role (e.g. role=\"toolbar\" or role=\"region\"), so the content isn\u2019t recognized as a valid landmark or labelled region.  \n3. The default DataTable story code in with-toolbar.js is driving these two problems."
+    }
+}

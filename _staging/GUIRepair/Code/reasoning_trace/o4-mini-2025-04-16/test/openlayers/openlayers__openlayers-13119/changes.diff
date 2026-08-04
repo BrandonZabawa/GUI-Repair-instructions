@@ -1,0 +1,57 @@
+diff --git a/src/ol/layer/WebGLTile.js b/src/ol/layer/WebGLTile.js
+index d801be00a6..f699f4c6aa 100644
+--- a/src/ol/layer/WebGLTile.js
++++ b/src/ol/layer/WebGLTile.js
+@@ -298,20 +298,22 @@ class WebGLTileLayer extends BaseTileLayer {
+      * @private
+      */
+     this.styleVariables_ = this.style_.variables || {};
+-  }
+-
+   createRenderer() {
+     const source = this.getSource();
+     const parsedStyle = parseStyle(
+       this.style_,
+       'bandCount' in source ? source.bandCount : 4
+     );
+-
+     return new WebGLTileLayerRenderer(this, {
+       vertexShader: parsedStyle.vertexShader,
+       fragmentShader: parsedStyle.fragmentShader,
+       uniforms: parsedStyle.uniforms,
+       cacheSize: this.cacheSize_,
++      // read your new style.blend flag here and pass it down
++      blendWithOne: this.style_.blend === true,
++    });
++  }
++      cacheSize: this.cacheSize_,
+     });
+   }
+ 
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index b94618be2f..bb73f1b8ed 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -136,6 +136,11 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     super(tileLayer, {
+       uniforms: options.uniforms,
+     });
++    /**
++     * @private
++     * If true, after the usual blend call we override to additive:
++     */
++    this.blendWithOne_ = options.blendWithOne;
+ 
+     /**
+      * This transform converts tile i, j coordinates to screen coordinates.
+@@ -455,6 +460,10 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+ 
+     this.helper.useProgram(this.program_);
+     this.helper.prepareDraw(frameState, !blend);
++    // if the layer asked for purely additive blending, override here
++    if (this.blendWithOne_) {
++      gl.blendFunc(gl.ONE, gl.ONE);
++    }
+ 
+     const zs = Object.keys(tileTexturesByZ)
+       .map(Number)

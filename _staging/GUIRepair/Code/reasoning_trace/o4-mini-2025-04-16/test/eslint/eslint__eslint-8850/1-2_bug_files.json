@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/rules/indent.js",
+            "lib/rules/indent-legacy.js"
+        ],
+        "explanation": "The core of ESLint\u2019s indent rule lives in lib/rules/indent.js. That file contains the logic for computing expected indentation levels for nested expressions, including logical operators and parenthesized sub-expressions. In version 4.1.0 this logic was changed and no longer accounts properly for the combination of parentheses and JSX tokens within a binary expression, which causes the offset error. The legacy implementation in lib/rules/indent-legacy.js follows a similar computation and also needs adjustment for consistency or as a reference fallback. Both files must be updated so that parenthesized JSX expressions in logical contexts get the same base indentation as unwrapped JSX expressions.",
+        "bug_scenario": "When you use a parenthesized JSX element on the right side of a logical binary expression inside JSX (for example b && (<div>\u2026)), ESLint\u2019s new 4.1.0 indent rule miscalculates the expected column. It applies an extra indent level to the opening <div> inside the parentheses so you see errors like \u201cExpected indentation of 16 spaces but found 20.\u201d If you remove the parentheses or don\u2019t use JSX there, the indentation is correct."
+    },
+    "2": {
+        "bug_files": [
+            "lib/rules/indent.js",
+            "lib/rules/indent-legacy.js"
+        ],
+        "explanation": "Both lib/rules/indent.js and its companion lib/rules/indent-legacy.js implement the core logic of ESLint\u2019s indent rule, including handling of multi-line expressions, nested blocks, and JSX. The regression manifests only when a binary expression is parenthesized around JSX. Those two files contain the code paths that calculate expected indentation offsets for parenthesized expressions and JSX elements, so they must be updated to correctly account for the extra layer of parentheses around the JSX in that scenario.",
+        "bug_scenario": "When using ESLint\u2019s built-in indent rule (version 4.1.1) on JSX code that contains a binary expression wrapped in parentheses (e.g. b && ( <div> \u2026 )), the rule erroneously computes the wrong indent level for the lines inside the parentheses. In ESLint 4.0 intact, the code indented correctly, but in 4.1.0 it reports \u201cExpected indentation of 16 spaces but found 20,\u201d etc. Removing the parentheses or unwrapping the JSX out of the binary expression causes the rule to pass again."
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/ImageLayer.js"
+        ],
+        "explanation": "The sole file responsible for drawing ImageStatic sources to the canvas is src/ol/renderer/canvas/ImageLayer.js. In its composeFrame (or drawFrame) method it calculates dw and dh for drawImage with Math.ceil(width * scaleX) and Math.ceil(height * scaleY). Those always-up rounding calls are exactly what causes the image to be drawn slightly larger\u2014and therefore stretched\u2014when scaleX or scaleY are just over an integer due to floating-point arithmetic. Replacing those ceil calls (for example with Math.round or a nearest-integer algorithm) will eliminate the unwanted stretch and restore pixel-perfect fitting.",
+        "bug_scenario": "When you add a perfectly square static image (via ImageStatic) to a map and ask OpenLayers to fit it exactly into its declared extent, the canvas renderer measures the pixel dimensions of that extent and always rounds them up (using Math.ceil). Because of tiny floating-point errors this often produces width and/or height one pixel too large, so your square image gets slightly stretched. In other words, instead of rounding to the nearest pixel you always round up, losing detail and introducing an unintended aspect change."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/ImageCanvas.js",
+            "src/ol/reproj/Image.js"
+        ],
+        "explanation": "Both of these modules calculate the target canvas width and height by taking the extent size divided by resolution (times pixelRatio) and passing the result through Math.ceil. That rounding\u2010up guarantees no zero-dimension canvas but also forces an extra pixel whenever the floating-point result isn\u2019t exactly an integer. To fix the unintended stretching, these Math.ceil calls should be replaced with a nearest-pixel rounding (e.g. Math.round) so that small fp errors don\u2019t always grow the image.",
+        "bug_scenario": "When a perfectly square image is displayed using an ImageStatic source and fitted into a square tile extent, tiny floating-point imprecisions in the extent/resolution calculation lead to a non-integer pixel size (e.g. 256.0000001). Because the code always calls Math.ceil when computing the canvas dimensions, the image is stretched by one extra pixel (257\u00d7257 instead of 256\u00d7256) and loses sharpness. The same over-ceiling occurs in the reprojection path, so reproj\u2019d images can also be one pixel too large."
+    }
+}

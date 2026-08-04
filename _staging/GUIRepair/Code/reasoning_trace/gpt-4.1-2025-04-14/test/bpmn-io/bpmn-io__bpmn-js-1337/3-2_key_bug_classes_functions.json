@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/popup-menu/ReplaceMenuProvider.js"
+        ],
+        "bug_functions": [
+            "lib/features/replace/BpmnReplace.js//replaceElement",
+            "lib/features/rules/BpmnRules.js//canReplace",
+            "lib/features/rules/BpmnRules.js//canDrop",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//getEntries"
+        ],
+        "explanation": "The bug is about disallowing typed Start Events in non-event based (regular) Sub Processes. The relevant logic for enforcing or relaxing what can be created, morphed, or moved is typically handled in:\n\n- lib/features/replace/BpmnReplace.js//replaceElement: This function manages replacing BPMN elements, including event morphing. It needs to ensure that when replacing/moving a Start Event into a subprocess, the event is made untyped if necessary.\n- lib/features/rules/BpmnRules.js//canReplace: This function determines if certain elements can be replaced with others. It should be updated to disallow morphing a Start Event to a typed event inside a non-event based subprocess.\n- lib/features/rules/BpmnRules.js//canDrop: This function controls what can be dropped/moved into subprocesses and should reject typed start events in non-event based subprocesses.\n- lib/features/popup-menu/ReplaceMenuProvider.js//getEntries: This function provides the list of replace options in the popup menu. It should filter out typed start events from the menu when the parent is a non-event based subprocess.\n\nThese are the key places where the business rule must be enforced to prevent users from creating or morphing into a typed start event inside non-event based subprocesses.",
+        "bug_scenario": "The image and report describe a BPMN modeling scenario where a user attempts to add or morph a 'typed' Start Event (e.g., Message Start Event) inside a non-event based Sub Process. The popup menu on the right shows the available event types, including a typed event (message), which should not be allowed inside such subprocesses. The expected behavior is to disallow typed start events (allow only untyped/blank start events) in non-event based subprocesses, both for morphing and while moving elements into subprocesses."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/popup-menu/ReplaceMenuProvider.js"
+        ],
+        "bug_functions": [
+            "lib/features/popup-menu/ReplaceMenuProvider.js//ReplaceMenuProvider.prototype.getEntries",
+            "lib/features/rules/BpmnRules.js//canReplace",
+            "lib/features/replace/BpmnReplace.js//replaceElement"
+        ],
+        "explanation": "These classes and functions are directly involved in the bug: \n- ReplaceMenuProvider.js//ReplaceMenuProvider.prototype.getEntries is responsible for generating the popup menu's replacement options, which should filter out typed Start Events when inside a non-event-based Sub Process.\n- BpmnRules.js//canReplace is critical for enforcing BPMN rules on which morphing/replacement options are valid given the containment context (i.e., preventing typed Start Events inside Sub Processes).\n- BpmnReplace.js//replaceElement is responsible for handling the actual replacement/morphing of BPMN elements; it must ensure that, when a typed Start Event is being replaced inside a Sub Process, the event type is dropped or morphing is disallowed.\n\nEdits to these functions/classes are required to enforce the BPMN rule that typed Start Events are not allowed inside non-event-based Sub Processes, thus resolving the reported issue.",
+        "bug_scenario": "The image shows an attempt to add or morph a typed (e.g., message) Start Event inside a Sub Process boundary. The bug report details that typed Start Events (such as Message, Timer, etc.) are not allowed inside non-event-based Sub Processes according to BPMN rules. The scenario depicted is likely allowing a user to create or morph such a start event, which should be disallowed. The popup menu provides replace/morph options that incorrectly include typed Start Events when the context is inside a Sub Process."
+    }
+}

@@ -1,0 +1,53 @@
+diff --git a/src/tab/tabs/nav.jsx b/src/tab/tabs/nav.jsx
+index 22a1dd4e4..783e150bd 100644
+--- a/src/tab/tabs/nav.jsx
++++ b/src/tab/tabs/nav.jsx
+@@ -425,6 +425,33 @@ class Nav extends React.Component {
+         }, 100);
+     };
+ 
++    // ------------------------------------------------------------------------
++    // Add wheel support so users can scroll the tabs with the mouse wheel
++    onWheel = (e) => {
++        e.preventDefault();
++        const { tabPosition } = this.props;
++        // horizontal tabs = deltaX, vertical tabs = deltaY
++        const delta = (tabPosition === 'top' || tabPosition === 'bottom') ? e.deltaX : e.deltaY;
++        // invert wheel direction so it feels natural
++        this.setOffset(this.offset - delta, true, false);
++    };
++
++    // Add arrow key support so users can navigate with left/right (or up/down)
++    onContainerKeyDown = (e) => {
++        // 37 = left, 38 = up, 39 = right, 40 = down
++        if (e.keyCode === KEYCODE.LEFT || e.keyCode === KEYCODE.UP) {
++            e.preventDefault();
++            this.onPrevClick();
++        } else if (e.keyCode === KEYCODE.RIGHT || e.keyCode === KEYCODE.DOWN) {
++            e.preventDefault();
++            this.onNextClick();
++        }
++        // still invoke any consumer-provided handler
++        if (this.props.onKeyDown) {
++            this.props.onKeyDown(e);
++        }
++    };
++
+     getIcon(type) {
+         const { prefix, icons, rtl } = this.props;
+         const iconType = iconTypeMap[type];
+@@ -555,7 +582,13 @@ class Nav extends React.Component {
+         const tabList = this.renderTabList(this.props);
+ 
+         const container = (
+-            <div className={containerCls} onKeyDown={onKeyDown} key="nav-container">
++            <div
++                className={containerCls}
++                // bind our new wheel + keyboard handlers
++                onWheel={this.onWheel}
++                onKeyDown={this.onContainerKeyDown}
++                key="nav-container"
++            >
+                 <div className={`${prefix}tabs-nav-wrap`} ref={this.wrapperRefHandler}>
+                     <div className={`${prefix}tabs-nav-scroll`}>
+                         {animation ? (

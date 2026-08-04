@@ -1,0 +1,35 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/draw/PathMap.js//PathMap",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer",
+            "lib/draw/BpmnRenderUtil.js//(module)",
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider"
+        ],
+        "bug_functions": [
+            "lib/draw/PathMap.js//pathMap.DATA_OBJECT_COLLECTION_PATH",
+            "lib/draw/PathMap.js//pathMap.DATA_OBJECT_PATH",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer.prototype.drawShape (\"/* collection path */ drawPath\")",
+            "lib/draw/BpmnRenderUtil.js//isCollection",
+            "lib/features/context-pad/ContextPadProvider.js//getContextPadEntries"
+        ],
+        "explanation": "1. PathMap (lib/draw/PathMap.js) defines the two SVG paths DATA_OBJECT_PATH (single) and DATA_OBJECT_COLLECTION_PATH (three bars) used by the renderer. 2. BpmnRenderer (lib/draw/BpmnRenderer.js) calls drawPath for the \u201ccollection path\u201d when element.isCollection is true. This is where the marker is actually drawn in the SVG. 3. isCollection (lib/draw/BpmnRenderUtil.js) encapsulates the logic to detect element.businessObject.isCollection (or DI override), and BpmnRenderer relies on this to decide which path to render. 4. ContextPadProvider.getContextPadEntries (lib/features/context-pad/ContextPadProvider.js) controls which buttons appear for DataObjectReference/DataStoreReference. It currently never offers a \u201ctoggle collection\u201d action, so the user cannot flip element.isCollection. To fix the bug, one must extend getContextPadEntries to add a new button that executes a modeling command toggling businessObject.isCollection, causing BpmnRenderer to switch between DATA_OBJECT_PATH and DATA_OBJECT_COLLECTION_PATH.",
+        "bug_scenario": "According to the BPMN 2.0 spec, DataObjectReferences may be marked as a collection (three\u2010bar marker). The user can see the three\u2010bar marker on the diagram (figure 10.53) but there is no toggle in the context\u2010pad to flip a DataObjectReference between single and collection. They expect a button in the context pad (similar to the multiple/ad-hoc modifiers on tasks) to set businessObject.isCollection = true/false, and have the renderer draw or remove the DATA_OBJECT_COLLECTION_PATH."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/draw/PathMap.js//PathMap",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer",
+            "lib/draw/BpmnRenderUtil.js//(module)",
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider"
+        ],
+        "bug_functions": [
+            "lib/draw/PathMap.js//this.pathMap.DATA_OBJECT_COLLECTION_PATH",
+            "lib/draw/BpmnRenderUtil.js//isCollection",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer.prototype.drawShape",
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider.prototype.getContextPadEntries"
+        ],
+        "explanation": "\n- PathMap (PathMap.js) defines the SVG paths for all BPMN markers. It already contains a DATA_OBJECT_COLLECTION_PATH entry, but no code hooks it up.  \n- BpmnRenderUtil.isCollection (BpmnRenderUtil.js) is the helper that reads element.isCollection or businessObject.dataObjectRef.isCollection to decide whether the collection marker should be drawn.  \n- BpmnRenderer.prototype.drawShape (BpmnRenderer.js) is responsible for rendering shapes; it needs to call drawPath with the DATA_OBJECT_COLLECTION_PATH when isCollection(element) returns true.  \n- ContextPadProvider.prototype.getContextPadEntries (ContextPadProvider.js) builds the context-pad actions. It currently does not include an entry to toggle the isCollection flag on DataObjectReference/DataStoreReference elements.  \n\nThese four places\u2014defining the path, deciding if an element is a collection, actually drawing the marker, and exposing a context-pad toggle\u2014are the key elements that must be updated to fully implement the isCollection feature.",
+        "bug_scenario": "The user wants to be able to mark Data Object References (and Data Store References) as collections, in line with BPMN 2.0 (Figure 10.53 shows a small \u201c|||\u201d marker on a DataObject to indicate a collection). In the existing modeling tool the context-pad for a Data Object does not offer a \u201ctoggle collection\u201d button, and the renderer never draws the collection marker even if the businessObject.isCollection flag is set."
+    }
+}

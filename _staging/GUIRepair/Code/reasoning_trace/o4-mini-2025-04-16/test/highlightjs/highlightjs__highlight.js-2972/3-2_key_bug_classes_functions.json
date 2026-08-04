@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/python.js//export default function(hljs)",
+            "src/languages/python.js//PARAMS",
+            "src/languages/python.js//arrow\u2010return\u2010type variant"
+        ],
+        "explanation": "All of the highlighting rules for Python live in src/languages/python.js inside the function exported by default(hljs). Within that function the PARAMS constant only matches parentheses, numbers, strings and hash\u2010comments but does not recognize \": TypeName\" hints inside argument lists. Right after PARAMS, the anonymous object with begin:/->/ only matches the arrow token itself and stops, so the actual return type (e.g. List[float]) is never highlighted. There is also no pattern at all for PEP\u2009484 type comments (\"# type: ...\"). To add full support for modern Python type annotations, we must extend PARAMS to consume colon\u2010type grammar, enrich the arrow\u2010return\u2010type variant to include the following type expression, and introduce a new pattern for \"# type:\" comments (and for generic brackets in types). This is why edits to these parts of python.js are required.",
+        "bug_scenario": "In the screenshot we see a Python source file open in an editor. It contains several modern Python constructs that are not properly highlighted by highlight.js\u2019s current Python grammar: type\u2010comment annotations (e.g. \u201c# type: Dict[int, Any]\u201d), PEP\u2009484 style parameter hints (e.g. \u201croot: TreeNode\u201d), PEP\u2009484 return\u2010type arrows (e.g. \u201c-> List[float]\u201d), async/await definitions with annotations (e.g. \u201casync def coroutine(db: aio_db.DatabaseConnection) -> List[str]\u201d) and decorator lines. None of these type\u2010hinted tokens receive the special styling they should, so they appear as plain text rather than as structured types."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/python.js"
+        ],
+        "bug_functions": [
+            "src/languages/python.js//PARAMS",
+            "src/languages/python.js//function def/class rule",
+            "src/languages/python.js//return-type annotation rule"
+        ],
+        "explanation": "All of the type-hinting constructs appear inside the \u2018function\u2019 rule in python.js, which uses PARAMS to capture parameters and a simple /->/ rule for return types. \n\n\u2022 PARAMS only contains keywords, numbers, strings and comments\u2014it knows nothing of colon-annotated parameters, identifier types and the \u2018[ ]\u2019 generic syntax. \n\u2022 The function-definition block is declared illegal on characters like \u2018=\u2019, \u2018,\u2019, and \u2018;\u2019, which prevents default values and comma-separated type annotations from being parsed inside the signature. \n\u2022 The return-type rule simply matches an arrow and treats only \u2018None\u2019 as a keyword, so arbitrary type expressions after \u2018->\u2019 aren\u2019t highlighted. \n\nTo fix PEP 484 highlighting, these rules must be extended to recognize colon-style annotations (including nested generic brackets), permit \u2018=\u2019 and commas in parameter lists, and tokenize bracketed type names and built-in typing constructs in both parameters and return types.",
+        "bug_scenario": "The screenshot shows a Python file in a text editor where modern PEP 484 style type hints\u2014parameter annotations like \u201cdb: aio_db.DatabaseConnection\u201d, inline \u201c# type: Dict[int, Any]\u201d comments, and return-type arrows \u201c-> List[str]\u201d\u2014are not being syntax-highlighted. Names of types, square-bracketed generics and the arrow annotations are rendered as plain text rather than receiving their own scopes."
+    }
+}

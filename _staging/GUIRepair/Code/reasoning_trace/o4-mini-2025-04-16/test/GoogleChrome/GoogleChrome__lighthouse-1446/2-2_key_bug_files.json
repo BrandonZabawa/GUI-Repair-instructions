@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/third_party/traceviewer-js/extras/importer/trace_event_importer.js",
+            "lighthouse-core/third_party/traceviewer-js/model/x_marker_annotation.js",
+            "lighthouse-core/third_party/traceviewer-js/ui/annotations/x_marker_annotation_view.js"
+        ],
+        "explanation": "1. trace_event_importer.js: This is the importer that reads all trace events. It currently treats phase 'R' events as instant duration slices (via processInstantEvent \u2192 processDurationEvent), so the fake Lighthouse metrics show up as zero-duration slices instead of annotations.\n2. x_marker_annotation.js: Defines the XMarkerAnnotation model class (i.e. the intended point-in-time marker), but it\u2019s never instantiated by the importer for 'R' events, so these markers never get used.\n3. x_marker_annotation_view.js: Renders XMarkerAnnotation objects as thin vertical lines. Because the importer never creates XMarkerAnnotation instances, this view is never invoked and the 'R' events default to slice rendering.",
+        "bug_scenario": "In the DevTools Timeline pane you should see thin vertical markers at the exact timestamps for each Lighthouse metric (First Contentful Paint, First Meaningful Paint, etc.). Instead, in the provided screenshot the synthetic \"lighthouse\" events are rendered as long, wide slices in the \u201cInteractions\u201d lane\u2014just like normal duration slices\u2014rather than as zero-width, point-in-time markers. This makes it hard to correlate the metrics precisely against the other timeline data."
+    }
+}

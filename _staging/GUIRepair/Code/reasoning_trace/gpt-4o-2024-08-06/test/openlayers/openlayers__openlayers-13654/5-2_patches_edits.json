@@ -1,0 +1,468 @@
+{
+    "1/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourceResolution = calculateSourceResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "getCenter(limitedTargetExtent),",
+                    "targetResolution",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/reproj/Image.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "targetCenter,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourceResolution = calculateSourceResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "getCenter(limitedTargetExtent),",
+                    "targetResolution",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourceResolution = calculateSourceResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/reproj/Image.js": [
+            {
+                "SEARCH": [
+                    "const triangulation = new Triangulation(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "maxSourceExtent,",
+                    "sourceResolution * errorThresholdInPixels,",
+                    "targetResolution",
+                    ");",
+                    "",
+                    "const sourceExtent = triangulation.calculateSourceExtent();",
+                    "const sourceImage = getImageFunction(",
+                    "sourceExtent,",
+                    "sourceResolution,",
+                    "pixelRatio",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const triangulation = new Triangulation(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "maxSourceExtent,",
+                    "sourceResolution * errorThresholdInPixels,",
+                    "targetResolution",
+                    ");",
+                    "",
+                    "const sourceExtent = triangulation.calculateSourceExtent();",
+                    "const correctedSourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "const sourceImage = getImageFunction(",
+                    "correctedSourceExtent,",
+                    "sourceResolution,",
+                    "pixelRatio",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourceResolution = calculateSourceResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/reproj/Image.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "targetCenter,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "targetExtent,",
+                    "targetResolution",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/proj.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* Ensure projections transformations are set correctly between UTM and other CRS.",
+                    "*/"
+                ],
+                "REPLACE": [
+                    "// Use definitions from Proj4 to ensure transformations are set between UTM and map CRS",
+                    "proj4.defs(\"EPSG:32636\", \"+proj=utm +zone=36 +datum=WGS84 +units=m +no_defs\");",
+                    "addCoordinateTransforms('EPSG:32636', 'EPSG:3857', proj4, proj4.inverse);",
+                    "addCoordinateTransforms('EPSG:32636', 'EPSG:4326', proj4, proj4.inverse);",
+                    "addCoordinateTransforms('EPSG:3857', 'EPSG:4326', proj4, proj4.inverse);"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const sourceCoord = tileCoord;"
+                ],
+                "REPLACE": [
+                    "const sourceCoord = transform(tileCoord, sourceProj, targetProj);"
+                ]
+            }
+        ],
+        "src/ol/reproj/Image.js": [
+            {
+                "SEARCH": [
+                    "const sourceImage = getImageFunction(",
+                    "sourceExtent,",
+                    "sourceResolution,",
+                    "pixelRatio",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourceImage = getImageFunction(",
+                    "transformExtent(sourceExtent, sourceProj, targetProj),",
+                    "sourceResolution,",
+                    "pixelRatio",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/proj.js": [
+            {
+                "SEARCH": [
+                    "export function transform(coordinate, source, destination) {",
+                    "const transformFunc = getTransform(source, destination);",
+                    "return transformFunc(coordinate, undefined, coordinate.length);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function transform(coordinate, source, destination) {",
+                    "registerProjections(source, destination);",
+                    "const transformFunc = getTransform(source, destination);",
+                    "return transformFunc(coordinate, undefined, coordinate.length);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "const source = new ol.source.GeoTIFF({",
+                    "sources: [",
+                    "{",
+                    "url: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/2020/S2A_36QWD_20200701_0_L2A/TCI.tif',",
+                    "}",
+                    "],",
+                    "// projection: cogProj",
+                    "});"
+                ],
+                "REPLACE": [
+                    "const source = new ol.source.GeoTIFF({",
+                    "sources: [",
+                    "{",
+                    "url: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/2020/S2A_36QWD_20200701_0_L2A/TCI.tif',",
+                    "}",
+                    "],",
+                    "projection: cogProj",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const targetResolution = targetTileGrid.getResolution(",
+                    "this.wrappedTileCoord_[0]",
+                    ");",
+                    "",
+                    "const sourceResolution = calculateSourceExtentResolution("
+                ],
+                "REPLACE": [
+                    "const targetResolution = targetTileGrid.getResolution(",
+                    "this.wrappedTileCoord_[0]",
+                    ");",
+                    "",
+                    "const sourceResolution = calculateSourceResolution("
+                ]
+            }
+        ],
+        "src/ol/proj.js": [
+            {
+                "SEARCH": [
+                    "export function transform(coordinate, source, destination) {",
+                    "const transformFunc = getTransform(source, destination);",
+                    "return transformFunc(coordinate, undefined, coordinate.length);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function transform(coordinate, source, destination) {",
+                    "const transformFunc = getTransform(source, destination);",
+                    "if (!transformFunc) {",
+                    "throw new Error(`Transformation from ${source} to ${destination} not found.`);",
+                    "}",
+                    "return transformFunc(coordinate, undefined, coordinate.length);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "class GeoTIFF extends BaseTileImage {",
+                    "constructor(options) {",
+                    "const sourceOptions = Object.assign({}, options);",
+                    "super(sourceOptions);",
+                    "",
+                    "...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "class GeoTIFF extends BaseTileImage {",
+                    "constructor(options) {",
+                    "const sourceOptions = Object.assign({}, options);",
+                    "super(sourceOptions);",
+                    "",
+                    "// Check if a reprojection to targetProj is required",
+                    "if (sourceOptions.sources && sourceOptions.sources[0].projection) {",
+                    "sourceOptions.projection = sourceOptions.sources[0].projection;",
+                    "} else {",
+                    "sourceOptions.projection = 'EPSG:3857'; // Default projection",
+                    "}",
+                    "",
+                    "...",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/proj.js": [
+            {
+                "SEARCH": [
+                    "export function getTransform(source, destination) {",
+                    "const sourceProjection = get(source);",
+                    "const destinationProjection = get(destination);",
+                    "return getTransformFromProjections(sourceProjection, destinationProjection);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function getTransform(source, destination) {",
+                    "const sourceProjection = get(source);",
+                    "const destinationProjection = get(destination);",
+                    "if (!sourceProjection || !destinationProjection) {",
+                    "throw new Error('Invalid projections provided');",
+                    "}",
+                    "return getTransformFromProjections(sourceProjection, destinationProjection);",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "class ReprojTile extends Tile {",
+                    "// Existing constructor code...",
+                    "constructor(",
+                    "sourceProj,",
+                    "sourceTileGrid,",
+                    "targetProj,",
+                    "targetTileGrid,",
+                    "tileCoord,",
+                    "wrappedTileCoord,",
+                    "pixelRatio,",
+                    "gutter,",
+                    "getTileFunction,",
+                    "errorThreshold,",
+                    "renderEdges,",
+                    "interpolate",
+                    ") {"
+                ],
+                "REPLACE": [
+                    "class ReprojTile extends Tile {",
+                    "// Existing constructor code...",
+                    "constructor(",
+                    "sourceProj,",
+                    "sourceTileGrid,",
+                    "targetProj,",
+                    "targetTileGrid,",
+                    "tileCoord,",
+                    "wrappedTileCoord,",
+                    "pixelRatio,",
+                    "gutter,",
+                    "getTileFunction,",
+                    "errorThreshold,",
+                    "renderEdges,",
+                    "interpolate",
+                    ") {",
+                    "if (sourceProj !== targetProj) {",
+                    "this.reproject_();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const maxSourceExtent = this.sourceTileGrid_.getExtent();"
+                ],
+                "REPLACE": [
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();"
+                ]
+            }
+        ],
+        "src/ol/reproj/Image.js": [
+            {
+                "SEARCH": [
+                    "const maxSourceExtent = sourceProj.getExtent();"
+                ],
+                "REPLACE": [
+                    "let maxSourceExtent = sourceProj.getExtent();"
+                ]
+            }
+        ],
+        "src/ol/proj.js": [
+            {
+                "SEARCH": [
+                    "export function transform(coordinate, source, destination) {"
+                ],
+                "REPLACE": [
+                    "export function transform(coordinate, source, destination, opt_extent) {"
+                ]
+            }
+        ],
+        "index.html": [
+            {
+                "SEARCH": [
+                    "//    projection: cogProj"
+                ],
+                "REPLACE": [
+                    "projection: cogProj"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");",
+                    "",
+                    "if (sourceProj.getCode() === 'EPSG:4326' || sourceProj.getCode().startsWith('EPSG:326')) {",
+                    "// Direct handling of UTM to geographic projections for COG reprojection",
+                    "sourceExtent = sourceProj.getExtent();",
+                    "sourceResolution = targetResolution / (ol.proj.getPointResolution('EPSG:4326', targetResolution, ol.proj.transform([(sourceExtent[0] + sourceExtent[2]) / 2, (sourceExtent[1] + sourceExtent[3]) / 2], sourceProj, 'EPSG:4326')));",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/reproj/Image.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "targetCenter,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "let sourceResolution = calculateSourceResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "targetCenter,",
+                    "targetResolution",
+                    ");",
+                    "",
+                    "if (sourceProj.getCode().startsWith('EPSG:326') && targetProj.getCode() === 'EPSG:4326') {",
+                    "// Custom resolution calculation for UTM to WGS84 transformation",
+                    "const temp = sourceProj.getExtent();",
+                    "sourceResolution = targetResolution * ol.proj.getPointResolution(sourceProj, temp[2] - temp[0], ol.proj.transform(targetCenter, targetProj, sourceProj));",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

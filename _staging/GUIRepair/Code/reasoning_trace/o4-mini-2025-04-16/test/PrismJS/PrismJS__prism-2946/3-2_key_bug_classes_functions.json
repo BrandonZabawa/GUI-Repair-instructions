@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-rest.js//Prism.languages.rest.inline",
+            "components/prism-rest.js//Prism.languages.rest.link"
+        ],
+        "explanation": "Prism processes the rules in the order they are declared. The `inline` rule (which includes patterns for backtick\u2010delimited text, italics, bold, inline literals, etc.) comes before the `link` rule, so a backtick\u2010wrapped hyperlink target is consumed entirely by `inline` and never reaches the `link` matcher. As a result, links like `<https://\u2026>`_ are never detected. Moving or refining the `link` patterns to run before\u2014or give precedence over\u2014the general `inline` pattern will allow explicit hyperlink targets to be tokenized correctly.",
+        "bug_scenario": "In Prism\u2019s reST language plugin, an inline code snippet combining backtick\u2010delimited text and an explicit hyperlink target\u2014``` `ALTER ROLE <https://\u2026>`_ ```\u2014is not being tokenized as a link followed by an inline\u2010literal. Instead, the entire snippet is treated as italic text. When separated onto two lines, the link and the literal are highlighted correctly, but on one line the \u201cinline\u201d rule greedily matches the whole backtick\u2010delimited segment, preventing the \u201clink\u201d rule from ever running."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-rest.js//Prism.languages.rest"
+        ],
+        "bug_functions": [
+            "components/prism-rest.js//Prism.languages.rest.inline",
+            "components/prism-rest.js//Prism.languages.rest.link"
+        ],
+        "explanation": "All of the reST inline markup is driven by the regex token definitions inside Prism.languages.rest. In particular:\n\n- The \"inline\" token\u2019s big regex is too greedy and absorbs the `<\u2026>` link syntax (and the trailing underscore) before the separate link\u2010recognition patterns can run.\n\n- The \"link\" token array, which should detect backtick\u2010delimited interpreted\u2010text followed by an underscore, is never reached when the inline regex has already matched.\n\nTo fix the bug, the inline and link regexes in components/prism-rest.js must be adjusted so that link syntax (`\u2026`_ ) and inline\u2010literal syntax (``\u2026``) are recognized first, before falling back to italic/bold matches.",
+        "bug_scenario": "When a reST inline link and inline\u2010literal appear on the same line\u2014e.g.\n\n  `ALTER ROLE <https://www.postgresql.org/docs/12/sql-alterrole.html>`_ or ``ALTER_ROLE``\n\nPrism\u2019s rest definition fails to recognize the link and the double\u2010backtick literal, and instead treats the whole span as italic. When the same markup is split across two lines it highlights correctly."
+    }
+}

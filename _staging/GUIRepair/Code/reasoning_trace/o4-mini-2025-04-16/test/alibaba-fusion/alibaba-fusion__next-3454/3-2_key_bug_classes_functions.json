@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/number-picker/number-picker.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/number-picker/number-picker.jsx//static getDerivedStateFromProps",
+            "src/number-picker/number-picker.jsx//withinMinMax",
+            "src/number-picker/number-picker.jsx//correctBoundary",
+            "src/number-picker/number-picker.jsx//onBlur",
+            "src/number-picker/number-picker.jsx//setValue"
+        ],
+        "explanation": "NumberPicker 的边界（max/min）变化不触发组件状态更新，核心在于 getDerivedStateFromProps 未对 props.max/props.min 的变更做处理，而后续负责边界校验和修正的 withinMinMax、correctBoundary、onBlur、setValue 等函数也因此无法拿到最新的上下限。这些方法共同控制组件如何根据边界限制值的展示与内部状态同步，需要在 getDerivedStateFromProps 中监听 max/min 变化，并在合适时机调用 boundary 相关方法来更新 displayValue 和实际值，从而实现对动态边界的实时响应。",
+        "bug_scenario": "在 NumberPicker 组件中，当父组件动态修改最大值（max）或最小值（min）后，NumberPicker 并未在 UI 上实时感知并更新新的边界值。例如，初始 max 为 13，点击“max +1”后 max 变为 14，但 NumberPicker 内部状态仍保持旧的边界，导致输入框中值的合法性校验或渲染逻辑未及时更新。"
+    },
+    "2": {
+        "bug_classes": [
+            "src/number-picker/number-picker.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/number-picker/number-picker.jsx//static getDerivedStateFromProps",
+            "src/number-picker/number-picker.jsx//correctBoundary",
+            "src/number-picker/number-picker.jsx//withinMinMax"
+        ],
+        "explanation": "\n1. NumberPicker 是整个组件的主体，所有关于最小值/最大值的校验、state 维护都在它内部完成。\n2. static getDerivedStateFromProps 用于在受控模式下根据新的 props（包含 min/max）同步内部 state；如果它没有正确检测到 max 或 min 的变化，就不会重新计算和校正当前值。\n3. correctBoundary 负责将当前值限定在 [min, max] 范围内；当 max 发生变化时，需要通过这段逻辑将超出新上限的值截取到边界。\n4. withinMinMax 用于判断一个值是否在当前 min/max 范围内；在校验用户输入或触发 onChange 时，这段逻辑必须基于最新的 props 来判断否超界，否则无法实时生效。\n\n因此，要修复“最大值变化不生效”问题，需要在 getDerivedStateFromProps 中检测到 props.max/props.min 的变化，并调用 correctBoundary 或相关逻辑（比如 withinMinMax）去更新 state.displayValue 或 currentValue。",
+        "bug_scenario": "用户在父组件中通过点击“max + 1”改变 NumberPicker 的最大值，但 NumberPicker 并没有实时感知到最大值的变化，输入框仍然允许输入超过新最大值的数字，并且组件内部 state 没有相应更新。"
+    }
+}

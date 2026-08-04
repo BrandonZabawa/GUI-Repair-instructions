@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_files": [
+            "src/format/pdf/format-pdf.ts",
+            "src/resources/filters/quarto-pre/code-annotation.lua",
+            "src/resources/filters/quarto-post/tikz.lua",
+            "src/command/render/output-tex.ts"
+        ],
+        "explanation": "The root cause is likely that the PDF/LaTeX pipeline does not include or configure the 'tikz' package and the '\\circled' annotation macro, which are necessary for correct rendering of code annotations in PDF/LaTeX output. The most relevant files are: (1) 'src/format/pdf/format-pdf.ts' sets up the PDF format pipeline and may control which LaTeX/PDF features, packages, or filters are included; (2) 'resources/filters/quarto-pre/code-annotation.lua' is responsible for pre-processing code annotations and could affect how they are marked up in LaTeX; (3) 'resources/filters/quarto-post/tikz.lua' likely handles the insertion or configuration of TikZ/LaTeX commands needed for annotation; (4) 'src/render/output-tex.ts' is involved in emitting TeX/LaTeX output and could control package inclusion or macro definitions. Edits will likely be needed to ensure that both TikZ and the circled command are always included when code annotation is enabled for PDF output.",
+        "bug_scenario": "The user reports that in Quarto version 1.3.336, code annotation in PDF output does not work correctly: the 'tikz' LaTeX package is not being included, and the '\\circled' command used for annotation references (e.g., circled numbers matching code lines and annotated list items) is not defined. As a result, the output misses circled numbers both inside code blocks and in corresponding annotation lists. The attached image confirms that while the code block syntax highlighting works, the intended circled annotations are missing from the code block and the list below it."
+    },
+    "2": {
+        "bug_files": [
+            "src/format/pdf/format-pdf.ts",
+            "src/command/render/latexmk/latex.ts",
+            "src/command/render/latexmk/latexmk.ts",
+            "src/command/render/filters.ts",
+            "src/command/render/codetools.ts",
+            "src/command/render/output-tex.ts",
+            "src/command/render/output.ts",
+            "src/command/render/render.ts",
+            "src/command/render/constants.ts",
+            "src/config/pdf.ts",
+            "src/resources/filters/quarto-pre/code-annotation.lua",
+            "src/resources/filters/quarto-post/tikz.lua",
+            "src/resources/filters/common/latex.lua"
+        ],
+        "explanation": "The files are bug related based on how Quarto PDF rendering and annotation work: 1) format-pdf.ts contains logic specific to PDF formatting and could be responsible for injecting or omitting LaTeX package dependencies. 2) The latex.ts and latexmk.ts modules manage the workflow for LaTeX compilation and may control preamble additions, including package insertion. 3) filters.ts, codetools.ts, output-tex.ts, and related render pipeline files help determine how annotations and LaTeX are processed. 4) code-annotation.lua is the Lua filter that actually implements code annotation behavior; a missing tikz or \\circled macro inclusion would likely originate here. 5) tikz.lua and latex.lua are involved in LaTeX post-processing and package handling. 6) pdf.ts (in config) might define necessary PDF config and dependencies. Fixing the bug likely means ensuring that whenever code annotation is used in a PDF, tikz is loaded and \\circled is defined, both for inline markers and list explanations.",
+        "bug_scenario": "The bug scenario involves failed code annotation in rendered PDFs in Quarto v1.3.336. Specifically, code annotation markers (such as circled numbers shown besides code lines) don't render because the tikz LaTeX package is not included, and the required \\circled command is undefined. Although a user tried to define \\circled in the document preamble, this only fixed annotation in the code block but not in the corresponding annotated list elements below. The problem is observed in PDFs generated from Quarto markdown, affecting both code block markers and their explanations."
+    }
+}

@@ -1,0 +1,195 @@
+diff --git a/src/ol/source/DataTile.js b/src/ol/source/DataTile.js
+index 3836457d7a..b8bfb6d6e4 100644
+--- a/src/ol/source/DataTile.js
++++ b/src/ol/source/DataTile.js
+@@ -18,61 +18,17 @@ import {toPromise} from '../functions.js';
+  * @typedef {function(number, number, number) : (import("../DataTile.js").Data|Promise<import("../DataTile.js").Data>)} Loader
+  */
+ 
+-/**
+- * @typedef {Object} Options
+- * @property {Loader} [loader] Data loader.  Called with z, x, and y tile coordinates.
+- * Returns {@link import("../DataTile.js").Data data} for a tile or a promise for the same.
+- * @property {import("./Source.js").AttributionLike} [attributions] Attributions.
+- * @property {boolean} [attributionsCollapsible=true] Attributions are collapsible.
+- * @property {number} [maxZoom=42] Optional max zoom level. Not used if `tileGrid` is provided.
+- * @property {number} [minZoom=0] Optional min zoom level. Not used if `tileGrid` is provided.
+- * @property {number|import("../size.js").Size} [tileSize=[256, 256]] The pixel width and height of the tiles.
+- * @property {number} [maxResolution] Optional tile grid resolution at level zero. Not used if `tileGrid` is provided.
+- * @property {import("../proj.js").ProjectionLike} [projection='EPSG:3857'] Tile projection.
+- * @property {import("../tilegrid/TileGrid.js").default} [tileGrid] Tile grid.
+- * @property {boolean} [opaque=false] Whether the layer is opaque.
+- * @property {import("./State.js").default} [state] The source state.
+- * @property {number} [tilePixelRatio] Tile pixel ratio.
+- * @property {boolean} [wrapX=false] Render tiles beyond the antimeridian.
+- * @property {number} [transition] Transition time when fading in new tiles (in miliseconds).
+- * @property {number} [bandCount=4] Number of bands represented in the data.
+- * @property {boolean} [interpolate=false] Use interpolated values when resampling.  By default,
+- * the nearest neighbor is used when resampling.
+- */
+-
+-/**
+- * @classdesc
+- * A source for typed array data tiles.
+- *
+- * @fires import("./Tile.js").TileSourceEvent
+- * @api
+- */
+-class DataTileSource extends TileSource {
+-  /**
+    * @param {Options} options Image tile options.
+-   */
++   */  
+   constructor(options) {
+++   // gutter around each tile  
+++   this.gutter_ = options.gutter !== undefined ? options.gutter : 0;
+++
+     const projection =
+       options.projection === undefined ? 'EPSG:3857' : options.projection;
+ 
+     let tileGrid = options.tileGrid;
+     if (tileGrid === undefined && projection) {
+-      tileGrid = createXYZ({
+-        extent: extentFromProjection(projection),
+-        maxResolution: options.maxResolution,
+-        maxZoom: options.maxZoom,
+-        minZoom: options.minZoom,
+-        tileSize: options.tileSize,
+-      });
+-    }
+-
+-    super({
+-      cacheSize: 0.1, // don't cache on the source
+-      attributions: options.attributions,
+-      attributionsCollapsible: options.attributionsCollapsible,
+-      projection: projection,
+-      tileGrid: tileGrid,
+-      opaque: options.opaque,
+       state: options.state,
+       tilePixelRatio: options.tilePixelRatio,
+       wrapX: options.wrapX,
+diff --git a/src/ol/source/XYZ.js b/src/ol/source/XYZ.js
+index 15b11cb380..f58a5938a8 100644
+--- a/src/ol/source/XYZ.js
++++ b/src/ol/source/XYZ.js
+@@ -4,22 +4,11 @@
+ 
+ import TileImage from './TileImage.js';
+ import {createXYZ, extentFromProjection} from '../tilegrid.js';
+-
+-/**
+- * @typedef {Object} Options
+- * @property {import("./Source.js").AttributionLike} [attributions] Attributions.
+- * @property {boolean} [attributionsCollapsible=true] Attributions are collapsible.
+- * @property {number} [cacheSize] Initial tile cache size. Will auto-grow to hold at least the number of tiles in the viewport.
+- * @property {null|string} [crossOrigin] The `crossOrigin` attribute for loaded images.  Note that
+- * you must provide a `crossOrigin` value if you want to access pixel data with the Canvas renderer.
+- * See https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image for more detail.
+- * @property {boolean} [imageSmoothing=true] Deprecated.  Use the `interpolate` option instead.
+- * @property {boolean} [interpolate=true] Use interpolated values when resampling.  By default,
+- * linear interpolation is used when resampling.  Set to false to use the nearest neighbor instead.
+- * @property {boolean} [opaque=false] Whether the layer is opaque.
+- * @property {import("../proj.js").ProjectionLike} [projection='EPSG:3857'] Projection.
+- * @property {number} [reprojectionErrorThreshold=0.5] Maximum allowed reprojection error (in pixels).
+- * Higher values can increase reprojection performance, but decrease precision.
++  * @property {import("../proj.js").ProjectionLike} [projection='EPSG:3857'] Projection.
++  * @property {number} [reprojectionErrorThreshold=0.5] Maximum allowed reprojection error (in pixels).
++  * Higher values can increase reprojection performance, but decrease precision.
++  * @property {number} [maxZoom=42] Optional max zoom level. Not used if `tileGrid` is provided.
++  * @property {number} [gutter=0] Gutter (buffer) in pixels around each tile.
+  * @property {number} [maxZoom=42] Optional max zoom level. Not used if `tileGrid` is provided.
+  * @property {number} [minZoom=0] Optional min zoom level. Not used if `tileGrid` is provided.
+  * @property {number} [maxResolution] Optional tile grid resolution at level zero. Not used if `tileGrid` is provided.
+@@ -84,6 +73,9 @@ class XYZ extends TileImage {
+     const projection =
+       options.projection !== undefined ? options.projection : 'EPSG:3857';
+ 
+++   // gutter around each tile (in pixels)
+++   const gutter = options.gutter !== undefined ? options.gutter : 0;
++
+     const tileGrid =
+       options.tileGrid !== undefined
+         ? options.tileGrid
+@@ -110,6 +102,7 @@ class XYZ extends TileImage {
+       url: options.url,
+       urls: options.urls,
+       wrapX: options.wrapX !== undefined ? options.wrapX : true,
+++     gutter: gutter,
+       transition: options.transition,
+       attributionsCollapsible: options.attributionsCollapsible,
+       zDirection: options.zDirection,
+diff --git a/src/ol/webgl/TileTexture.js b/src/ol/webgl/TileTexture.js
+index 8c457639bf..de02748088 100644
+--- a/src/ol/webgl/TileTexture.js
++++ b/src/ol/webgl/TileTexture.js
+@@ -242,35 +242,42 @@ class TileTexture extends EventTarget {
+     const gl = helper.getGL();
+     const tile = this.tile;
+ 
+-    if (tile instanceof ImageTile || tile instanceof ReprojTile) {
+-      let image = tile.getImage();
+-      if (this.gutter_ !== 0) {
+-        const gutter = this.tilePixelRatio_ * this.gutter_;
+-        const width = Math.round(image.width - 2 * gutter);
+-        const height = Math.round(image.height - 2 * gutter);
+-        const context = createCanvasContext2D(width, height);
+-        if (!tile.interpolate) {
+-          assign(context, IMAGE_SMOOTHING_DISABLED);
+-        }
+-        context.drawImage(
+-          image,
+-          gutter,
+-          gutter,
+-          width,
+-          height,
+-          0,
+-          0,
+-          width,
+-          height
+-        );
+-        image = context.canvas;
++      if (tile instanceof ImageTile || tile instanceof ReprojTile) {
++-        let image = tile.getImage();
++-        if (this.gutter_ !== 0) {
++-          const gutter = this.tilePixelRatio_ * this.gutter_;
++-          const width = Math.round(image.width - 2 * gutter);
++-          const height = Math.round(image.height - 2 * gutter);
++-          const context = createCanvasContext2D(width, height);
++-          if (!tile.interpolate) {
++-            assign(context, IMAGE_SMOOTHING_DISABLED);
++-          }
++-          context.drawImage(
++-            image,
++-            gutter,
++-            gutter,
++-            width,
++-            height,
++-            0,
++-            0,
++-            width,
++-            height
++-          );
++-          image = context.canvas;
++-        }
++-        const texture = gl.createTexture();
++-        this.textures.push(texture);
++-        this.bandCount = 4;
++-        uploadImageTexture(gl, texture, image, tile.interpolate);
++-        return;
+++        // No pre‐cropping: upload full image and let the renderer handle gutter as an extent
+++        const image = tile.getImage();
+++        const texture = gl.createTexture();
+++        this.textures.push(texture);
+++        this.bandCount = 4;
+++        uploadImageTexture(gl, texture, image, tile.interpolate);
+++        return;
+       }
+-      const texture = gl.createTexture();
+-      this.textures.push(texture);
+-      this.bandCount = 4;
+-      uploadImageTexture(gl, texture, image, tile.interpolate);
+-      return;
+-    }
+ 
+     const pixelSize = [
+       this.size[0] * this.tilePixelRatio_,

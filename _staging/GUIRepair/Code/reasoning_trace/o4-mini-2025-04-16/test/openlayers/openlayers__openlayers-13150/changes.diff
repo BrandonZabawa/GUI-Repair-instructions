@@ -1,0 +1,44 @@
+diff --git a/src/ol/layer/Heatmap.js b/src/ol/layer/Heatmap.js
+index 2b41e56d37..4c7a9dcf9b 100644
+--- a/src/ol/layer/Heatmap.js
++++ b/src/ol/layer/Heatmap.js
+@@ -276,23 +276,22 @@ class Heatmap extends BaseVector {
+           return (
+             this.get(Property.RADIUS) / Math.max(1, this.get(Property.BLUR))
+           );
+-        }.bind(this),
+-      },
+       postProcesses: [
+         {
+           fragmentShader: `
+             precision mediump float;
+-
+             uniform sampler2D u_image;
+             uniform sampler2D u_gradientTexture;
+-
++            uniform float u_opacity;
+             varying vec2 v_texCoord;
+-
+             void main() {
+               vec4 color = texture2D(u_image, v_texCoord);
++              // compute base alpha & color from gradient
+               gl_FragColor.a = color.a;
+               gl_FragColor.rgb = texture2D(u_gradientTexture, vec2(0.5, color.a)).rgb;
+               gl_FragColor.rgb *= gl_FragColor.a;
++              // apply layer opacity
++              gl_FragColor *= u_opacity;
+             }`,
+           uniforms: {
+             u_gradientTexture: function () {
+@@ -300,6 +299,11 @@ class Heatmap extends BaseVector {
+             }.bind(this),
+           },
+         },
++      ],
++              return this.gradient_;
++            }.bind(this),
++          },
++        },
+       ],
+     });
+   }

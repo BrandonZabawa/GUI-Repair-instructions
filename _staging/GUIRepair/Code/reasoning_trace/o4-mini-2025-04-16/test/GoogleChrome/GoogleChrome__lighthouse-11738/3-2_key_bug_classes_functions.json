@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/computed/load-simulator.js//LoadSimulator",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/computed/load-simulator.js//LoadSimulator.compute_",
+            "lighthouse-core/gather/driver.js//Driver.setThrottling"
+        ],
+        "explanation": "1) LoadSimulator.compute_ builds the Lantern simulation model for the \u201csimulate\u201d throttlingMethod, but it never sets layoutTaskMultiplier (so layout tasks run at full speed) and relies on a post-hoc simulation rather than shaping the browser\u2019s actual load timing.  Without layoutTaskMultiplier and real throttling, simulation ends too early and CLS metric is computed over too short a window.  \n\n2) Driver.setThrottling is responsible for applying network and CPU throttling in the Chrome DevTools Protocol, but it skips any emulation when throttlingMethod==='simulate'. Because the page is not actually throttled at runtime, networkQuiet and cpuIdle fire quickly, closing out the load pass prematurely.  \n\nFixing these requires (a) honoring simulate settings at the protocol level (so the browser really slows down under simulate) or (b) extending the pass\u2019s end conditions based on the Lantern simulation timeline (e.g. use computed simulation durations to delay pass completion).",
+        "bug_scenario": "When running Lighthouse with throttlingMethod \u201csimulate\u201d on the PWA Venia bottoms page, the real Chrome page is not actually network- or CPU-throttled, so the browser\u2019s network-idle and CPU-idle checks fire almost immediately (at full speed) and Lighthouse concludes the \u201cload\u201d pass long before late-arriving images and overlays complete. As a result, Cumulative Layout Shift (CLS) remains reported as 0 even though the live page continues to shift after the simulation window closes."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//Driver.gotoURL",
+            "lighthouse-core/gather/driver.js//Driver.setThrottling",
+            "lighthouse-core/gather/driver.js//Driver.registerRequestIdleCallbackWrap",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.setupPassNetwork"
+        ],
+        "explanation": "These are the pieces that determine how long Lighthouse waits for page load, FCP, network quiet and CPU idle when using simulated throttling.  Driver.gotoURL currently uses hard-coded timeouts and ignores the user\u2019s maxWaitForLoad/maxWaitForFcp flags.  Driver.setThrottling does not special-case \u201csimulate\u201d to register the RequestIdleCallback shim (registerRequestIdleCallbackWrap), so the CPU-idle detector fires far too quickly.  GatherRunner.loadPage and setupPassNetwork are responsible for wiring those driver methods into the gather pass (including propagating settings.throttlingMethod and settings.maxWaitFor*), so changes there are required to honor longer wait times under simulate and capture late-arriving layout shifts.",
+        "bug_scenario": "When running Lighthouse with throttlingMethod \u201csimulate\u201d (the lantern-based simulator) on a page that continues to load and shift content after Chrome thinks it\u2019s \u201cdone,\u201d Lighthouse quits its trace and gather pass too early.  In practice that means late-loading images or overlays that cause layout shifts never get observed, so the Cumulative Layout Shift metric stays at 0 even though the real page continues to shift past the simulated \u201cload\u201d event."
+    }
+}

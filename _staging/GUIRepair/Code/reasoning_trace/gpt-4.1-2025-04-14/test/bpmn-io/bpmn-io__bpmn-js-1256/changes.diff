@@ -1,0 +1,81 @@
+diff --git a/lib/features/modeling/behavior/DeleteLaneBehavior.js b/lib/features/modeling/behavior/DeleteLaneBehavior.js
+index 53bd506a..b6552790 100644
+--- a/lib/features/modeling/behavior/DeleteLaneBehavior.js
++++ b/lib/features/modeling/behavior/DeleteLaneBehavior.js
+@@ -28,53 +28,28 @@ export default function DeleteLaneBehavior(eventBus, modeling, spaceTool) {
+ 
+     var siblings = getChildLanes(oldParent);
+ 
+-    var topAffected = [];
+-    var bottomAffected = [];
+-
+-    eachElement(siblings, function(element) {
+-
+-      if (element.y > shape.y) {
+-        bottomAffected.push(element);
+-      } else {
+-        topAffected.push(element);
+-      }
+-
+-      return element.children;
+-    });
+-
+     if (!siblings.length) {
+       return;
+     }
+ 
+-    var offset;
+-
+-    if (bottomAffected.length && topAffected.length) {
+-      offset = shape.height / 2;
+-    } else {
+-      offset = shape.height;
+-    }
+-
+-    var topAdjustments,
+-        bottomAdjustments;
++    // Find the lane directly above or below the deleted lane
++    var adjacentLane = null;
++    var minDelta = Infinity;
+ 
+-    if (topAffected.length) {
+-      topAdjustments = spaceTool.calculateAdjustments(
+-        topAffected, 'y', offset, shape.y - 10);
+-
+-      spaceTool.makeSpace(
+-        topAdjustments.movingShapes,
+-        topAdjustments.resizingShapes,
+-        { x: 0, y: offset }, 's');
+-    }
+-
+-    if (bottomAffected.length) {
+-      bottomAdjustments = spaceTool.calculateAdjustments(
+-        bottomAffected, 'y', -offset, shape.y + shape.height + 10);
++    siblings.forEach(function(sibling) {
++      if (sibling === shape) return;
++      var delta = Math.abs(sibling.y - shape.y);
++      if (delta < minDelta) {
++        minDelta = delta;
++        adjacentLane = sibling;
++      }
++    });
+ 
+-      spaceTool.makeSpace(
+-        bottomAdjustments.movingShapes,
+-        bottomAdjustments.resizingShapes,
+-        { x: 0, y: -offset }, 'n');
++    if (adjacentLane) {
++      // Resize the adjacent lane to fill the space of the deleted lane
++      var newY = Math.min(adjacentLane.y, shape.y);
++      var newHeight = adjacentLane.height + shape.height;
++      modeling.resizeShape(adjacentLane, { x: adjacentLane.x, y: newY, width: adjacentLane.width, height: newHeight });
+     }
+   }
+ 
+@@ -109,4 +84,4 @@ DeleteLaneBehavior.$inject = [
+   'spaceTool'
+ ];
+ 
+-inherits(DeleteLaneBehavior, CommandInterceptor);
+\ No newline at end of file
++inherits(DeleteLaneBehavior, CommandInterceptor);

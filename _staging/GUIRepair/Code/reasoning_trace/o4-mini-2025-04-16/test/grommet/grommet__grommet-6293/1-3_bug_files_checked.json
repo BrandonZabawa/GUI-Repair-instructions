@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Meter/Circle.js",
+            "src/js/components/Meter/utils.js",
+            "src/js/components/Meter/Meter.js"
+        ],
+        "explanation": "The regression lives in the code that drives the circular meter: \u2022 Circle.js contains the React component that maps each data value onto an SVG path segment and renders the slices. \u2022 utils.js computes the angles, offsets, and path commands for each slice. \u2022 Meter.js orchestrates handling of multiple values and delegates to Circle.js when type=\"circle\". A change in one of these files in v2.25.0 broke the loop or overridden previous segments, so only the final value is actually drawn.",
+        "bug_scenario": "In v2.25.0 the \u201ccircle\u201d type Meter no longer splits the ring into one segment per value. Instead of rendering all five colored arcs, only the last value\u2019s arc is drawn. In v2.24.0 each value produced its own slice around the circle; after the upgrade all preceding slices are missing and only the final value is shown."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/Meter/Circle.js",
+            "src/js/components/Meter/utils.js",
+            "src/js/components/Meter/Meter.js",
+            "src/js/components/Meter/StyledMeter.js"
+        ],
+        "explanation": "The circle-type Meter implementation lives in Circle.js, which iterates over the values array and draws each arc. In v2.25.0 a change to the arc-drawing logic caused it to overwrite previous arcs, so only the last segment shows. The geometry for each segment is calculated in utils.js (start/end angles, radius, dash arrays). Meter.js is the entry point that dispatches to Circle.js for the circle type, so any change in circle-mode behavior or value-mapping may reside there. StyledMeter.js applies styling (stroke, thickness, rotation) to each path, and incorrect ordering or styling rules can hide earlier segments behind the last. These files collectively control how multiple values are broken into arcs and rendered for circle meters, so they must be examined and corrected to restore multi-segment rendering.",
+        "bug_scenario": "When upgrading from Grommet v2.24.0 to v2.25.1, a <Meter type=\"circle\" /> with multiple values no longer renders each segment around the circle. Instead it draws only the last value as a full-circle arc. In v2.24.0 you would see a multi-colored segmented circle (one arc per value), but in v2.25.1 you only see a single arc corresponding to the final value in the values array."
+    }
+}

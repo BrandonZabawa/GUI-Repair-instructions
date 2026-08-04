@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js",
+            "lighthouse-core/lib/stack-collector.js",
+            "lighthouse-core/lib/stack-packs.js",
+            "lighthouse-core/audits/dobetterweb/js-libraries.js"
+        ],
+        "explanation": "These files are most related to the underlying bug:\n- 'lighthouse-core/audits/byte-efficiency/unminified-javascript.js' implements the 'Minify JavaScript' audit and is where stack packs are attached to audit results.\n- 'lighthouse-core/lib/stack-collector.js' processes JavaScript stack traces and collects library (stack pack) information; the current 'superloose coupling' for identifying and merging stack packs is specifically referenced in the bug report.\n- 'lighthouse-core/lib/stack-packs.js' defines and manages the stack pack data and resolution logic; it might need enhancements to prevent or deduplicate multiple entries of the same stack pack.\n- 'lighthouse-core/audits/dobetterweb/js-libraries.js' runs the best practices audit and would surface the new 'React (Fast Path)' experimental entries, potentially exposing UI bugs around stack packs.\nThese files should be examined and potentially updated to ensure stack packs are identified with unique IDs (see bug report comment) and properly deduplicated or filtered, especially for user-facing output.",
+        "bug_scenario": "The bug scenario displayed in the images involves a duplicate display of the \"React\" stack pack advice message for the 'Minify JavaScript' audit in Lighthouse. The rendered report shows two identical pieces of advice, both tied to the same React indication, creating redundancy for the user. The underlying JSON result for the audit contains a `stackPacks` array with two virtually identical entries, both for React, highlighting the source of the duplication problem. This is caused by the integration of a new fast path check in the JS library detector, which Lighthouse incorporated, resulting in duplicated stack packs instead of properly deduplicating or reconciling them."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/do-betterweb/js-libraries.js",
+            "lighthouse-core/lib/stack-collector.js",
+            "lighthouse-core/lib/stack-packs.js",
+            "stack-packs/packs/react.js"
+        ],
+        "explanation": "These files are related to the detection and inclusion of JavaScript library stack packs in Lighthouse audits: (1) 'lighthouse-core/audits/do-betterweb/js-libraries.js' contains the audit logic for detecting JS libraries and applying stack packs; (2) 'lighthouse-core/lib/stack-collector.js' is referenced in the bug report as an area with loose coupling, and is likely responsible for collecting and associating stacks/packs; (3) 'lighthouse-core/lib/stack-packs.js' manages stack packs logic including registration and deduplication; and (4) 'stack-packs/packs/react.js' defines the React stack pack and may need adjustment if new properties (like unique IDs) are to be added for correct identification and de-duplication. Changes in these files are likely required to de-duplicate stack packs and prevent experimental/fast-path entries from surfacing to users unexpectedly.",
+        "bug_scenario": "The bug causes duplicated stack pack recommendations in the Lighthouse report, specifically for the React stack. The audit and the accompanying screenshots show that the same recommendation (with the same React icon and message) appears twice in the 'Minify JavaScript' section. The JSON output in the browser console confirms the duplication in the stackPacks array, both having an id of 'react'. This happens because of new 'Fast Path' checks in js-lib-detector that were rolled into Lighthouse, resulting in duplicate stack pack detection but without unique IDs or deduplication."
+    }
+}

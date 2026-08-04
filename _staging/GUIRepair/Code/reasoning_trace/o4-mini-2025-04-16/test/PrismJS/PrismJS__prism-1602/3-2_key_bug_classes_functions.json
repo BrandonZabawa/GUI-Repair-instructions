@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-yaml.js//Prism.languages.yaml.string",
+            "components/prism-yaml.min.js//Prism.languages.yaml.string"
+        ],
+        "explanation": "Both the unminified and minified YAML definition files define a \u201cstring\u201d pattern whose lookahead only permits end-of-line, comma, or closing bracket/brace after the closing quote. That prevents the regex from matching strings with trailing comments. To fix the highlighting, the lookahead must be extended to allow a '#' (comment) token after the closing quote so Prism still recognizes the string before the comment.",
+        "bug_scenario": "In YAML code blocks, when a quoted string is followed by an inline comment (e.g. - \"world\" # test), Prism\u2019s YAML grammar fails to recognize the string token because its regex lookahead doesn\u2019t allow comments after the closing quote. As a result, the string and the comment are both unhighlighted (greyed out) instead of the string being highlighted."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-yaml.js//Prism.languages.yaml"
+        ],
+        "bug_functions": [
+            "components/prism-yaml.js//string",
+            "components/prism-yaml.js//comment"
+        ],
+        "explanation": "The YAML definition in prism-yaml.js declares both a 'string' token and a 'comment' token. The 'comment' pattern (/#.*/ ) indiscriminately grabs any '#' and everything after it, so when a comment appears on the same line as a string literal, the comment rule runs first and swallows the quotes. Meanwhile, the 'string' pattern only matches if the quoted content is immediately followed by end-of-line or structural punctuation\u2014not a '#'. To fix this, the string regex or its placement needs adjusting (for example, using a greedy pattern or reordering so that 'string' is tested before 'comment'), ensuring that quoted strings are recognized even when a comment follows on the same line.",
+        "bug_scenario": "In the provided HTML snippet with a YAML code block, a quoted string that has a comment on the same line (e.g. \"world\" # test) is not being highlighted as a string. Instead, once the parser hits the \u201c#\u201d, the rest of the line (including the quoted string) is treated as a comment, so the string never gets its own highlighting."
+    }
+}

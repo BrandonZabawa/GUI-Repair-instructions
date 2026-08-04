@@ -1,0 +1,471 @@
+{
+    "1/10": {
+        "src/ol/renderer/canvas/vectorlayer.js": [
+            {
+                "SEARCH": [
+                    "var replayGroup = new ol.render.canvas.ReplayGroup(",
+                    "ol.renderer.vector.getTolerance(resolution, pixelRatio), extent, resolution,",
+                    "pixelRatio, vectorSource.getOverlaps(), this.declutterTree_, vectorLayer.getRenderBuffer());",
+                    "vectorSource.loadFeatures(extent, resolution, projection);"
+                ],
+                "REPLACE": [
+                    "var replayGroup = new ol.render.canvas.ReplayGroup(",
+                    "ol.renderer.vector.getTolerance(resolution, pixelRatio), extent, resolution,",
+                    "pixelRatio, vectorSource.getOverlaps(), this.declutterTree_, vectorLayer.getRenderBuffer());",
+                    "vectorSource.loadFeatures(extent, resolution, projection);",
+                    "",
+                    "// Optimize feature processing by batching",
+                    "var features = [];",
+                    "vectorSource.forEachFeatureInExtent(extent, function(feature) {",
+                    "features.push(feature);",
+                    "});",
+                    "features.forEach(function(feature) {",
+                    "renderFeature(feature);",
+                    "});"
+                ]
+            }
+        ],
+        "src/ol/source/imagevector.js": [
+            {
+                "SEARCH": [
+                    "this.source_.forEachFeatureInExtent(extent,",
+                    "function(feature) {",
+                    "loading = loading ||",
+                    "this.renderFeature_(feature, resolution, pixelRatio, replayGroup);",
+                    "}, this);"
+                ],
+                "REPLACE": [
+                    "var features = [];",
+                    "this.source_.forEachFeatureInExtent(extent, function(feature) {",
+                    "features.push(feature);",
+                    "}, this);",
+                    "features.forEach(function(feature) {",
+                    "loading = loading || this.renderFeature_(feature, resolution, pixelRatio, replayGroup);",
+                    "}, this);"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/renderer/canvas/vectorlayer.js": [
+            {
+                "SEARCH": [
+                    "var replayGroup = new ol.render.canvas.ReplayGroup(",
+                    "ol.renderer.vector.getTolerance(resolution, pixelRatio), extent, resolution,",
+                    "pixelRatio, vectorSource.getOverlaps(), this.declutterTree_, vectorLayer.getRenderBuffer());",
+                    "vectorSource.loadFeatures(extent, resolution, projection);"
+                ],
+                "REPLACE": [
+                    "var replayGroup = this.replayGroup_;",
+                    "if (!replayGroup || this.dirty_) {",
+                    "replayGroup = new ol.render.canvas.ReplayGroup(",
+                    "ol.renderer.vector.getTolerance(resolution, pixelRatio), extent, resolution,",
+                    "pixelRatio, vectorSource.getOverlaps(), this.declutterTree_, vectorLayer.getRenderBuffer());",
+                    "vectorSource.loadFeatures(extent, resolution, projection);",
+                    "this.replayGroup_ = replayGroup; // Cache the replay group for future frames",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/imagevector.js": [
+            {
+                "SEARCH": [
+                    "if (this.canvasSize_[0] != size[0] || this.canvasSize_[1] != size[1]) {",
+                    "this.canvasContext_.canvas.width = size[0];",
+                    "this.canvasContext_.canvas.height = size[1];",
+                    "this.canvasSize_[0] = size[0];",
+                    "this.canvasSize_[1] = size[1];",
+                    "} else {",
+                    "this.canvasContext_.clearRect(0, 0, size[0], size[1]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (this.canvasSize_[0] !== size[0] || this.canvasSize_[1] !== size[1]) {",
+                    "this.canvasContext_.canvas.width = size[0];",
+                    "this.canvasContext_.canvas.height = size[1];",
+                    "this.canvasSize_[0] = size[0];",
+                    "this.canvasSize_[1] = size[1];",
+                    "this.canvasContext_.clearRect(0, 0, size[0], size[1]); // Ensure canvas is always cleared correctly",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/renderer/canvas/vectorlayer.js": [
+            {
+                "SEARCH": [
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids);"
+                ],
+                "REPLACE": [
+                    "// Optimize replay by reducing unnecessary operations",
+                    "// Handle declutter scenarios effectively",
+                    "if (this.declutterTree_) {",
+                    "this.declutterTree_.clear();",
+                    "}",
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids, {",
+                    "declutter: this.declutterTree_",
+                    "});"
+                ]
+            }
+        ],
+        "src/ol/source/imagevector.js": [
+            {
+                "SEARCH": [
+                    "if (loading) {",
+                    "return null;",
+                    "}",
+                    "if (this.canvasSize_[0] != size[0] || this.canvasSize_[1] != size[1]) {",
+                    "this.canvasContext_.canvas.width = size[0];",
+                    "this.canvasContext_.canvas.height = size[1];",
+                    "this.canvasSize_[0] = size[0];",
+                    "this.canvasSize_[1] = size[1];",
+                    "} else {",
+                    "this.canvasContext_.clearRect(0, 0, size[0], size[1]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (loading) {",
+                    "return null;",
+                    "}",
+                    "",
+                    "// Avoid unnecessary canvas resizing",
+                    "if (this.canvasSize_[0] !== size[0] || this.canvasSize_[1] !== size[1]) {",
+                    "this.canvasContext_.canvas.width = size[0];",
+                    "this.canvasContext_.canvas.height = size[1];",
+                    "this.canvasSize_[0] = size[0];",
+                    "this.canvasSize_[1] = size[1];",
+                    "}",
+                    "// Efficiently clear the canvas if already sized correctly",
+                    "else {",
+                    "this.canvasContext_.clearRect(0, 0, size[0], size[1]);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/source/imagevector.js": [
+            {
+                "SEARCH": [
+                    "var replayGroup = new ol.render.canvas.ReplayGroup(",
+                    "ol.renderer.vector.getTolerance(resolution, pixelRatio), extent,",
+                    "resolution, pixelRatio, this.source_.getOverlaps(), this.declutterTree_, this.renderBuffer_);",
+                    "this.source_.loadFeatures(extent, resolution, projection);",
+                    "",
+                    "var loading = false;",
+                    "this.source_.forEachFeatureInExtent(extent,"
+                ],
+                "REPLACE": [
+                    "const replayGroup = new ol.render.canvas.ReplayGroup(",
+                    "ol.renderer.vector.getTolerance(resolution, pixelRatio),",
+                    "extent, resolution, pixelRatio,",
+                    "this.source_.getOverlaps(),",
+                    "this.declutterTree_,",
+                    "this.renderBuffer_);",
+                    "",
+                    "let loading = false;",
+                    "this.source_.loadFeatures(extent, resolution, projection, function(feature) {"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/vectorlayer.js": [
+            {
+                "SEARCH": [
+                    "this.context.canvas.width = drawWidth;",
+                    "this.context.canvas.height = drawHeight;",
+                    "replayContext = this.context;"
+                ],
+                "REPLACE": [
+                    "if (!transparentLayer) {",
+                    "this.context.canvas.width = drawWidth;",
+                    "this.context.canvas.height = drawHeight;",
+                    "replayContext = this.context;",
+                    "} else {",
+                    "replayContext = context;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/renderer/canvas/vectorlayer.js": [
+            {
+                "SEARCH": [
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids);",
+                    "if (vectorSource.getWrapX() && projection.canWrapX() &&",
+                    "!ol.extent.containsExtent(projectionExtent, extent)) {",
+                    "var startX = extent[0];",
+                    "var worldWidth = ol.extent.getWidth(projectionExtent);",
+                    "var world = 0;",
+                    "var offsetX;",
+                    "while (startX < projectionExtent[0]) {",
+                    "--world;",
+                    "offsetX = worldWidth * world;",
+                    "transform = this.getTransform(frameState, offsetX);",
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids);",
+                    "startX += worldWidth;",
+                    "}",
+                    "world = 0;",
+                    "startX = extent[2];",
+                    "while (startX > projectionExtent[2]) {",
+                    "++world;",
+                    "offsetX = worldWidth * world;",
+                    "transform = this.getTransform(frameState, offsetX);",
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids);",
+                    "startX -= worldWidth;",
+                    "}",
+                    "// restore original transform for render and compose events",
+                    "transform = this.getTransform(frameState, 0);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids);",
+                    "",
+                    "function renderWrappedReplays(replayContext, extent, startX, worldWidth, offsetXCalculator) {",
+                    "var offsetX;",
+                    "var transform;",
+                    "var world = 0;",
+                    "while (startX < projectionExtent[0] || startX > projectionExtent[2]) {",
+                    "offsetX = offsetXCalculator(world);",
+                    "transform = this.getTransform(frameState, offsetX);",
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids);",
+                    "startX = (startX < projectionExtent[0]) ? (startX + worldWidth) : (startX - worldWidth);",
+                    "world += (startX < projectionExtent[0]) ? 1 : -1;",
+                    "}",
+                    "}",
+                    "",
+                    "if (vectorSource.getWrapX() && projection.canWrapX() &&",
+                    "!ol.extent.containsExtent(projectionExtent, extent)) {",
+                    "var worldWidth = ol.extent.getWidth(projectionExtent);",
+                    "renderWrappedReplays(",
+                    "replayContext, extent, extent[0], worldWidth, function(world) {",
+                    "return worldWidth * world;",
+                    "});",
+                    "renderWrappedReplays(",
+                    "replayContext, extent, extent[2], -worldWidth, function(world) {",
+                    "return worldWidth * world;",
+                    "});",
+                    "transform = this.getTransform(frameState, 0);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/source/imagevector.js": [
+            {
+                "SEARCH": [
+                    "ol.source.ImageVector = function(options) {",
+                    "",
+                    "this.source_ = options.source;",
+                    "",
+                    "this.transform_ = ol.transform.create();",
+                    "",
+                    "this.canvasContext_ = ol.dom.createCanvasContext2D();",
+                    "",
+                    "this.canvasSize_ = [0, 0];",
+                    "",
+                    "this.declutterTree_ = ol.ext.rbush(9);",
+                    "",
+                    "this.renderBuffer_ = options.renderBuffer == undefined ? 100 : options.renderBuffer;",
+                    "",
+                    "this.replayGroup_ = null;",
+                    "",
+                    "ol.source.ImageCanvas.call(this, {",
+                    "attributions: options.attributions,",
+                    "canvasFunction: this.canvasFunctionInternal_.bind(this),",
+                    "logo: options.logo,",
+                    "projection: options.projection,",
+                    "ratio: options.ratio,",
+                    "resolutions: options.resolutions,",
+                    "state: this.source_.getState()",
+                    "});",
+                    "",
+                    "this.style_ = null;",
+                    "",
+                    "this.styleFunction_ = undefined;",
+                    "",
+                    "this.setStyle(options.style);",
+                    "",
+                    "ol.events.listen(this.source_, ol.events.EventType.CHANGE,",
+                    "this.handleSourceChange_, this);",
+                    "",
+                    "};",
+                    "ol.inherits(ol.source.ImageVector, ol.source.ImageCanvas);"
+                ],
+                "REPLACE": [
+                    "// Using ol.layer.Vector with renderMode: 'image'",
+                    "const vectorLayer = new ol.layer.Vector({",
+                    "source: options.source,",
+                    "renderMode: 'image',",
+                    "style: options.style",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/renderer/canvas/vectorlayer.js": [
+            {
+                "SEARCH": [
+                    "ol.renderer.canvas.VectorLayer.prototype.composeFrame = function(frameState, layerState, context) {",
+                    "...",
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids);",
+                    "..."
+                ],
+                "REPLACE": [
+                    "ol.renderer.canvas.VectorLayer.prototype.composeFrame = function(frameState, layerState, context) {",
+                    "...",
+                    "replayContext.save(); // Optimized performance by saving and restoring the context state",
+                    "replayGroup.replay(replayContext, transform, rotation, skippedFeatureUids);",
+                    "replayContext.restore();",
+                    "..."
+                ]
+            }
+        ],
+        "src/ol/interaction/draw.js": [
+            {
+                "SEARCH": [
+                    "ol.interaction.Draw.prototype.addToDrawing_ = function(event) {",
+                    "...",
+                    "this.updateSketchFeatures_();",
+                    "if (done) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "..."
+                ],
+                "REPLACE": [
+                    "ol.interaction.Draw.prototype.addToDrawing_ = function(event) {",
+                    "...",
+                    "if (this.drawBuffer_ && !this.freehand_) {",
+                    "return; // Skip redundant updates for increased performance",
+                    "}",
+                    "this.updateSketchFeatures_();",
+                    "if (done) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "..."
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/source/imagevector.js": [
+            {
+                "SEARCH": [
+                    "if (this.canvasSize_[0] != size[0] || this.canvasSize_[1] != size[1]) {",
+                    "this.canvasContext_.canvas.width = size[0];",
+                    "this.canvasContext_.canvas.height = size[1];",
+                    "this.canvasSize_[0] = size[0];",
+                    "this.canvasSize_[1] = size[1];",
+                    "} else {",
+                    "this.canvasContext_.clearRect(0, 0, size[0], size[1]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (this.canvasSize_[0] != size[0] || this.canvasSize_[1] != size[1]) {",
+                    "this.canvasContext_.canvas.width = size[0];",
+                    "this.canvasContext_.canvas.height = size[1];",
+                    "this.canvasSize_[0] = size[0];",
+                    "this.canvasSize_[1] = size[1];",
+                    "} else if (!loading) { // Avoid clearing canvas if still loading",
+                    "this.canvasContext_.clearRect(0, 0, size[0], size[1]);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/source/imagevector.js": [
+            {
+                "SEARCH": [
+                    "/** @private */",
+                    "this.renderBuffer_ = options.renderBuffer == undefined ? 100 : options.renderBuffer;",
+                    "",
+                    "/** @private @type {ol.render.canvas.ReplayGroup} */",
+                    "this.replayGroup_ = null;"
+                ],
+                "REPLACE": [
+                    "/** @private */",
+                    "this.renderBuffer_ = options.renderBuffer == undefined ? 150 : options.renderBuffer;  // Optimized render buffer size",
+                    "",
+                    "/** @private @type {ol.render.canvas.ReplayGroup} */",
+                    "this.replayGroup_ = null;"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/vectorlayer.js": [
+            {
+                "SEARCH": [
+                    "if (!transparentLayer) {",
+                    "replayContext.globalAlpha = layerState.opacity;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (!transparentLayer) {",
+                    "// Efficiently manage replay group rendering to reduce operation counts",
+                    "replayContext.globalAlpha = layerState.opacity;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/source/imagevector.js": [
+            {
+                "SEARCH": [
+                    "this.replayGroup_ = replayGroup;",
+                    "return this.canvasContext_.canvas;"
+                ],
+                "REPLACE": [
+                    "this.replayGroup_ = replayGroup;",
+                    "",
+                    "// Adjust logic for minimal render calls",
+                    "if (!this.dirty_ && replayGroup.isEmpty()) {",
+                    "return null;",
+                    "}",
+                    "",
+                    "if (this.canvasSize_[0] != size[0] || this.canvasSize_[1] != size[1]) {",
+                    "this.canvasContext_.canvas.width = size[0];",
+                    "this.canvasContext_.canvas.height = size[1];",
+                    "this.canvasSize_[0] = size[0];",
+                    "this.canvasSize_[1] = size[1];",
+                    "} else {",
+                    "this.canvasContext_.clearRect(0, 0, size[0], size[1]);",
+                    "}",
+                    "",
+                    "this.declutterTree_.clear();",
+                    "var transform = this.getTransform_(ol.extent.getCenter(extent),",
+                    "resolution, pixelRatio, size);",
+                    "replayGroup.replay(this.canvasContext_, transform, 0, {});",
+                    "",
+                    "return this.canvasContext_.canvas;"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/vectorlayer.js": [
+            {
+                "SEARCH": [
+                    "if (!this.dirty_ &&",
+                    "this.renderedResolution_ == resolution &&",
+                    "this.renderedRevision_ == vectorLayerRevision &&",
+                    "this.renderedRenderOrder_ == vectorLayerRenderOrder &&",
+                    "ol.extent.containsExtent(this.renderedExtent_, extent)) {",
+                    "return true;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (!this.dirty_ &&",
+                    "this.renderedResolution_ == resolution &&",
+                    "this.renderedRevision_ == vectorLayerRevision &&",
+                    "this.renderedRenderOrder_ == vectorLayerRenderOrder &&",
+                    "ol.extent.containsExtent(this.renderedExtent_, extent) &&",
+                    "this.replayGroup_ && !this.replayGroup_.isEmpty()) {",
+                    "return true;",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,62 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    ".then(_ => {",
+                    "// These can 'race' and that's OK.",
+                    "// We don't want to wait for Page.navigate's resolution, as it can now",
+                    "// happen _after_ onload: https://crbug.com/768961",
+                    "this.sendCommand('Page.enable');",
+                    "this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});",
+                    "this.sendCommand('Page.navigate', {url});",
+                    "})",
+                    ".then(_ => waitForLoad && this._waitForFullyLoaded(pauseAfterLoadMs,",
+                    "networkQuietThresholdMs, cpuQuietThresholdMs, maxWaitMs))",
+                    ".then(_ => this._endNetworkStatusMonitoring());"
+                ],
+                "REPLACE": [
+                    "      .then(_ => {",
+                    "        // We _do_ want to ensure the navigation instruction has been received",
+                    "        // before we start our onload timers.  Otherwise the onload event may",
+                    "        // fire before our timers are hooked up.",
+                    "        this.sendCommand('Page.enable');",
+                    "        this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});",
+                    "        // WAIT for the navigation command itself before starting the next phase.",
+                    "        return this.sendCommand('Page.navigate', {url});",
+                    "      })",
+                    "      .then(_ => waitForLoad && this._waitForFullyLoaded(",
+                    "          pauseAfterLoadMs, networkQuietThresholdMs, cpuQuietThresholdMs, maxWaitMs))",
+                    "      .then(_ => this._endNetworkStatusMonitoring());"
+                ]
+            }
+        ],
+        "lighthouse-core/gather/gather-runner.js": [
+            {
+                "SEARCH": [
+                    ".then(_ => recordTrace && driver.beginTrace(options.flags))",
+                    "// Navigate.",
+                    ".then(_ => GatherRunner.loadPage(driver, options))",
+                    ".then(_ => log.log('statusEnd', status));"
+                ],
+                "REPLACE": [
+                    "      .then(_ => recordTrace && driver.beginTrace(options.flags))",
+                    "      // Navigate, but guard against a never-firing loadEventFired by",
+                    "      // racing against the same MAX_WAIT_FOR_FULLY_LOADED timeout (45 s).",
+                    "      .then(_ => {",
+                    "        const loadPromise = GatherRunner.loadPage(driver, options);",
+                    "        const timeoutPromise = new Promise(resolve => {",
+                    "          setTimeout(() => {",
+                    "            log.warn('GatherRunner',",
+                    "              `loadPage did not signal onload within ${Driver.MAX_WAIT_FOR_FULLY_LOADED}ms \u2014 continuing.`);",
+                    "            resolve();",
+                    "          }, Driver.MAX_WAIT_FOR_FULLY_LOADED);",
+                    "        });",
+                    "        return Promise.race([loadPromise, timeoutPromise]);",
+                    "      })",
+                    "      .then(_ => log.log('statusEnd', status));"
+                ]
+            }
+        ]
+    }
+}

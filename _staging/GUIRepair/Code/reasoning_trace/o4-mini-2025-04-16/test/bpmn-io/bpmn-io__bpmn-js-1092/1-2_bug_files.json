@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/snapping/BpmnConnectSnapping.js",
+            "lib/features/snapping/BpmnSnappingUtil.js",
+            "lib/features/grid-snapping/BpmnGridSnapping.js",
+            "lib/features/grid-snapping/behavior/LayoutConnectionBehavior.js"
+        ],
+        "explanation": "All of these files participate in deciding where and how connection endpoints snap during the create-connection interaction:  \n\n\u2022 BpmnConnectSnapping.js implements BPMN-specific connection snapping (including center-to-center heuristics) and is directly responsible for calculating ideal attachment points on task shapes.  \n\u2022 BpmnSnappingUtil.js provides the low\u2010level utilities (e.g. distance calculations, prioritized anchor searches) used by BpmnConnectSnapping; if the preview/grid logic overrides these utilities, center snapping will be lost.  \n\u2022 BpmnGridSnapping.js wires in the new grid-snapping feature, which now takes over endpoint positioning during connection creation. It must be updated to defer to BpmnConnectSnapping when snapping to the exact center of a gateway or task.  \n\u2022 LayoutConnectionBehavior.js hooks into the connection creation lifecycle and applies grid constraints; it needs to be adjusted so that when a user is dragging a connection to align center-to-center, grid snapping does not override the BPMN center snap.  \n\nTogether, these files control the snapping pipeline. A fix will need to coordinate between the grid layer and the BPMN-specific layer so that the \u201cmost common (happy path)\u201d center-to-center case still wins out.",
+        "bug_scenario": "When creating a sequence flow between two parallel tasks, the editor no longer snaps the connection endpoints to the exact center of each task. Instead, the endpoint \u201csticks\u201d to an offset preview grid or to other docking points (e.g. boundary/participant edges), preventing the expected center-to-center connection. The two GIFs illustrate that the old behavior would snap neatly to each task\u2019s vertical center; the new behavior either misses that snap or shows only a preview outline at a non-center position."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/grid-snapping/BpmnGridSnapping.js",
+            "lib/features/grid-snapping/behavior/LayoutConnectionBehavior.js",
+            "lib/features/grid-snapping/behavior/index.js",
+            "lib/features/snapping/BpmnConnectSnapping.js",
+            "lib/features/snapping/BpmnSnappingUtil.js"
+        ],
+        "explanation": "The grid-snapping feature (BpmnGridSnapping.js and its behavior modules) now intercepts connection moves and forces the cursor to grid intersections, preventing a direct center-to-center connection. LayoutConnectionBehavior.js applies snapping on connection layout. The snapping module (BpmnConnectSnapping.js and BpmnSnappingUtil.js) handles precise connection anchor adjustments based on snap logic. Together they override the old pure center-to-center anchor computation, causing the bug. These files need to be adjusted so that when both source and target anchors are centers, the grid and snapping logic is bypassed to preserve straight center-to-center connections.",
+        "bug_scenario": "When initiating a connection from the center of one BPMN Task to the center of another Task the connector no longer snaps directly center-to-center. After the grid-snapping and new connection preview code landed the \u201chappy-path\u201d of drawing a straight line between the exact centers is lost. The first (before) GIF shows a neat center-to-center connection, the second (after) GIF shows the connector snapping to a grid offset and failing to hit the target center anchor."
+    }
+}

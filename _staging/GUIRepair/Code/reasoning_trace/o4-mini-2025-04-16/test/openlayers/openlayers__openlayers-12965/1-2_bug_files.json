@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/Layer.js",
+            "src/ol/webgl/Helper.js",
+            "src/ol/webgl.js"
+        ],
+        "explanation": "All of the listed files participate in creating and managing WebGL contexts for TileLayers. In TileLayer.js and its base class Layer.js under renderer/webgl, each layer instance calls into the WebGL helper to obtain a fresh context. The helper itself (src/ol/webgl/Helper.js) and the top-level webgl entry point (src/ol/webgl.js) contain the logic for context creation, attribute management, and capability checks. To reduce the number of contexts, this is where shared-context pooling or singleton logic should be introduced so that multiple TileLayer instances reuse one WebGLRenderingContext instead of each allocating their own.",
+        "bug_scenario": "When an application adds more than a handful of WebGL-based TileLayers (for example, separate GeoTIFF sources that cannot be merged because they differ in extent or dimensions), each TileLayer constructor allocates its own WebGLRenderingContext. Browsers cap the total number of live contexts (typically around 16), so once you exceed that limit older contexts are forcibly lost and rendering breaks on those layers. The user sees missing or garbled tiles on layers added early as new layers continue to spin up new contexts."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/webgl/Layer.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl.js",
+            "src/ol/PluggableMap.js"
+        ],
+        "explanation": "\u2022 src/ol/renderer/webgl/Layer.js is the base class where each WebGL layer currently calls into the WebGL helper to create its own rendering context. \n\u2022 src/ol/renderer/webgl/TileLayer.js constructs WebGL TileLayers and relies on Layer.js\u2019s context\u2013producing logic, so it indirectly triggers one context per layer.\n\u2022 src/ol/webgl.js contains the helper functions to create and manage WebGLRenderingContexts; this is where we can introduce a shared\u2010context cache keyed by map instance.\n\u2022 src/ol/PluggableMap.js instantiates and coordinates layer renderers; it should pass a single shared WebGL context down to all WebGL layer renderers instead of letting each create its own. \n\nBy updating these files, we can centralize context creation in webgl.js (e.g., using a map-scoped cache), modify Layer.js to request the shared context, adjust TileLayer.js use accordingly, and have PluggableMap bind that context to every WebGL layer renderer.",
+        "bug_scenario": "An application using multiple WebGL TileLayers (for example, one per GeoTIFFSource) ends up creating a separate WebGLRenderingContext for each layer. Since browsers impose a hard limit (often 16) on concurrent WebGL contexts, loading more layers causes older contexts to be evicted. This results in unseen or broken maps when the context limit is exceeded. The goal is to share a single WebGL context across all WebGL TileLayers in a single map to avoid exhausting the browser\u2019s context pool."
+    }
+}

@@ -1,0 +1,42 @@
+diff --git a/lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js b/lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js
+index 792cd8c84..e859336ac 100644
+--- a/lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js
++++ b/lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js
+@@ -78,6 +78,9 @@ class UnusedBytes extends Audit {
+     } else if (networkRecord.resourceType === resourceType) {
+       // This was a regular standalone asset, just use the transfer size.
+       return networkRecord.transferSize || 0;
++    } else if (networkRecord.transferSize && networkRecord.resourceType !== resourceType) {
++      // If the resource was inlined or injected (e.g., CSS from JSON), use the actual transfer size.
++      return networkRecord.transferSize;
+     } else {
+       // This was an asset that was inlined in a different resource type (e.g. HTML document).
+       // Use the compression ratio of the resource to estimate the total transferred bytes.
+diff --git a/lighthouse-core/audits/byte-efficiency/unused-css-rules.js b/lighthouse-core/audits/byte-efficiency/unused-css-rules.js
+index 475d8657a..9caa83760 100644
+--- a/lighthouse-core/audits/byte-efficiency/unused-css-rules.js
++++ b/lighthouse-core/audits/byte-efficiency/unused-css-rules.js
+@@ -90,8 +90,21 @@ class UnusedCSSRules extends ByteEfficiencyAudit {
+       usedUncompressedBytes += usedRule.endOffset - usedRule.startOffset;
+     }
+ 
+-    const totalTransferredBytes = ByteEfficiencyAudit.estimateTransferSize(
+-        stylesheetInfo.networkRecord, totalUncompressedBytes, 'Stylesheet');
++    // If the stylesheet was injected (e.g., via JS from a JSON payload), and a networkRecord exists,
++    // use the actual transfer size of the network record, regardless of resource type.
++    let totalTransferredBytes;
++    if (
++      stylesheetInfo.networkRecord &&
++      stylesheetInfo.header &&
++      stylesheetInfo.header.isInline &&
++      stylesheetInfo.networkRecord.transferSize
++    ) {
++      totalTransferredBytes = stylesheetInfo.networkRecord.transferSize;
++    } else {
++      totalTransferredBytes = ByteEfficiencyAudit.estimateTransferSize(
++        stylesheetInfo.networkRecord, totalUncompressedBytes, 'Stylesheet'
++      );
++    }
+     const percentUnused = (totalUncompressedBytes - usedUncompressedBytes) / totalUncompressedBytes;
+     const wastedBytes = Math.round(percentUnused * totalTransferredBytes);
+ 

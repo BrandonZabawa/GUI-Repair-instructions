@@ -1,0 +1,62 @@
+diff --git a/lib/rules/key-spacing.js b/lib/rules/key-spacing.js
+index 994c35627..ce6e05966 100644
+--- a/lib/rules/key-spacing.js
++++ b/lib/rules/key-spacing.js
+@@ -625,27 +625,41 @@ module.exports = {
+         //--------------------------------------------------------------------------
+         // Public API
+         //--------------------------------------------------------------------------
++if (alignmentOptions) { // Verify vertical alignment
+ 
+-        if (alignmentOptions) { // Verify vertical alignment
++    return {
++        ObjectExpression(node) {
++            // Skip object literals inside JSX attributes (e.g. style={{…}})
++            if (node.parent && node.parent.type === "JSXExpressionContainer") {
++                return;
++            }
+ 
+-            return {
+-                ObjectExpression(node) {
+-                    if (isSingleLine(node)) {
+-                        verifyListSpacing(node.properties.filter(isKeyValueProperty));
+-                    } else {
+-                        verifyAlignment(node);
+-                    }
+-                }
+-            };
++            if (isSingleLine(node)) {
++                verifyListSpacing(node.properties.filter(isKeyValueProperty));
++            } else {
++                verifyAlignment(node);
++            }
++        }
++    };
++}
+ 
+         }
+ 
+-        // Obey beforeColon and afterColon in each property as configured
+-        return {
+-            Property(node) {
+-                verifySpacing(node, isSingleLine(node.parent) ? singleLineOptions : multiLineOptions);
+-            }
+-        };
++  // Obey beforeColon and afterColon in each property as configured
++  return {
++      Property(node) {
++          // Skip properties in object literals inside JSX attributes
++          if (
++              node.parent &&
++              node.parent.type === "ObjectExpression" &&
++              node.parent.parent &&
++              node.parent.parent.type === "JSXExpressionContainer"
++          ) {
++              return;
++          }
++          verifySpacing(node, isSingleLine(node.parent) ? singleLineOptions : multiLineOptions);
++      }
++  };
+ 
+ 
+     }

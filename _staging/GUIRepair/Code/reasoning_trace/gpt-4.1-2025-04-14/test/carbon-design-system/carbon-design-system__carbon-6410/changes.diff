@@ -1,0 +1,266 @@
+diff --git a/packages/components/src/components/tabs/tabs.js b/packages/components/src/components/tabs/tabs.js
+index a0930828..883245f6 100644
+--- a/packages/components/src/components/tabs/tabs.js
++++ b/packages/components/src/components/tabs/tabs.js
+@@ -18,10 +18,7 @@ class Tab extends ContentSwitcher {
+    * @extends ContentSwitcher
+    * @param {HTMLElement} element The element working as a container of tabs.
+    * @param {object} [options] The component options.
+-   * @param {string} [options.selectorMenu] The CSS selector to find the drop down menu used in narrow mode.
+-   * @param {string} [options.selectorTrigger] The CSS selector to find the button to open the drop down menu used in narrow mode.
+-   * @param {string} [options.selectorTriggerText]
+-   *   The CSS selector to find the element used in narrow mode showing the selected tab item.
++   * (Removed dropdown-related options)
+    * @param {string} [options.selectorButton] The CSS selector to find tab containers.
+    * @param {string} [options.selectorButtonSelected] The CSS selector to find the selected tab.
+    * @param {string} [options.selectorLink] The CSS selector to find the links in tabs.
+@@ -40,18 +37,7 @@ class Tab extends ContentSwitcher {
+         this._handleKeyDown(event);
+       })
+     );
+-    this.manage(
+-      on(this.element.ownerDocument, 'click', (event) => {
+-        this._handleDocumentClick(event);
+-      })
+-    );
+-
+-    const selected = this.element.querySelector(
+-      this.options.selectorButtonSelected
+-    );
+-    if (selected) {
+-      this._updateTriggerText(selected);
+-    }
++    // Remove dropdown trigger and document click logic
+   }
+ 
+   /**
+@@ -62,12 +48,7 @@ class Tab extends ContentSwitcher {
+    * @param {Function} callback Callback called when change in state completes.
+    */
+   _changeState(detail, callback) {
+-    super._changeState(detail, (error, ...data) => {
+-      if (!error) {
+-        this._updateTriggerText(detail.item);
+-      }
+-      callback(error, ...data);
+-    });
++    super._changeState(detail, callback);
+   }
+ 
+   /**
+@@ -78,16 +59,11 @@ class Tab extends ContentSwitcher {
+    */
+   _handleClick(event) {
+     const button = eventMatches(event, this.options.selectorButton);
+-    const trigger = eventMatches(event, this.options.selectorTrigger);
+     if (
+       button &&
+       !button.classList.contains(this.options.classButtonDisabled)
+     ) {
+       super._handleClick(event);
+-      this._updateMenuState(false);
+-    }
+-    if (trigger) {
+-      this._updateMenuState();
+     }
+   }
+ 
+@@ -96,14 +72,7 @@ class Tab extends ContentSwitcher {
+    * @param {Event} event The triggering event.
+    * @private
+    */
+-  _handleDocumentClick(event) {
+-    const { element } = this;
+-    const isOfSelf = element.contains(event.target);
+-    if (isOfSelf) {
+-      return;
+-    }
+-    this._updateMenuState(false);
+-  }
++  // Removed _handleDocumentClick, not needed anymore
+ 
+   /**
+    * Handles arrow keys on tab container.
+@@ -112,14 +81,6 @@ class Tab extends ContentSwitcher {
+    * @param {Event} event The event triggering this method.
+    */
+   _handleKeyDown(event) {
+-    const triggerNode = eventMatches(event, this.options.selectorTrigger);
+-    if (triggerNode) {
+-      if (event.which === 13) {
+-        this._updateMenuState();
+-      }
+-      return;
+-    }
+-
+     const direction = {
+       37: this.constructor.NAVIGATE.BACKWARD,
+       39: this.constructor.NAVIGATE.FORWARD,
+@@ -156,34 +117,13 @@ class Tab extends ContentSwitcher {
+    * Shows/hides the drop down menu used in narrow mode.
+    * @param {boolean} [force] `true` to show the menu, `false` to hide the menu, otherwise toggles the menu.
+    */
+-  _updateMenuState(force) {
+-    const menu = this.element.querySelector(this.options.selectorMenu);
+-    const trigger = this.element.querySelector(this.options.selectorTrigger);
+-    if (menu) {
+-      menu.classList.toggle(
+-        this.options.classHidden,
+-        typeof force === 'undefined' ? force : !force
+-      );
+-      if (menu.classList.contains(this.options.classHidden)) {
+-        trigger.classList.remove(this.options.classOpen);
+-      } else {
+-        trigger.classList.add(this.options.classOpen);
+-      }
+-    }
+-  }
++  // Removed _updateMenuState, not needed anymore
+ 
+   /**
+    * Updates the text indicating the currently selected tab item.
+    * @param {HTMLElement} target The newly selected tab item.
+    */
+-  _updateTriggerText(target) {
+-    const triggerText = this.element.querySelector(
+-      this.options.selectorTriggerText
+-    );
+-    if (triggerText) {
+-      triggerText.textContent = target.textContent;
+-    }
+-  }
++  // Removed _updateTriggerText, not needed anymore
+ 
+   /**
+    * The map associating DOM element and tab container instance.
+@@ -217,16 +157,11 @@ class Tab extends ContentSwitcher {
+     const { prefix } = settings;
+     return Object.assign(Object.create(ContentSwitcher.options), {
+       selectorInit: '[data-tabs]',
+-      selectorMenu: `.${prefix}--tabs__nav`,
+-      selectorTrigger: `.${prefix}--tabs-trigger`,
+-      selectorTriggerText: `.${prefix}--tabs-trigger-text`,
+       selectorButton: `.${prefix}--tabs__nav-item`,
+       selectorButtonEnabled: `.${prefix}--tabs__nav-item:not(.${prefix}--tabs__nav-item--disabled)`,
+       selectorButtonSelected: `.${prefix}--tabs__nav-item--selected`,
+       selectorLink: `.${prefix}--tabs__nav-link`,
+       classActive: `${prefix}--tabs__nav-item--selected`,
+-      classHidden: `${prefix}--tabs__nav--hidden`,
+-      classOpen: `${prefix}--tabs-trigger--open`,
+       classButtonDisabled: `${prefix}--tabs__nav-item--disabled`,
+       eventBeforeSelected: 'tab-beingselected',
+       eventAfterSelected: 'tab-selected',
+diff --git a/packages/react/src/components/Tabs/Tabs.js b/packages/react/src/components/Tabs/Tabs.js
+index 7c3774e2..cc7fb4cb 100644
+--- a/packages/react/src/components/Tabs/Tabs.js
++++ b/packages/react/src/components/Tabs/Tabs.js
+@@ -106,9 +106,7 @@ export default class Tabs extends React.Component {
+     selectionMode: 'automatic',
+   };
+ 
+-  state = {
+-    dropdownHidden: true,
+-  };
++  // Remove dropdownHidden state, not needed anymore
+ 
+   static getDerivedStateFromProps({ selected }, state) {
+     const { prevSelected } = state;
+@@ -147,9 +145,6 @@ export default class Tabs extends React.Component {
+       evt.preventDefault();
+ 
+       this.selectTabAt(index, onSelectionChange);
+-      this.setState({
+-        dropdownHidden: true,
+-      });
+     };
+   };
+ 
+@@ -180,32 +175,23 @@ export default class Tabs extends React.Component {
+     return (index, evt) => {
+       if (matches(evt, [keys.Enter, keys.Space])) {
+         this.selectTabAt(index, onSelectionChange);
+-        this.setState({
+-          dropdownHidden: true,
+-        });
+       }
+ 
+-      if (window.matchMedia('(min-width: 42rem)').matches) {
+-        const nextIndex = this.getNextIndex(index, this.getDirection(evt));
+-        const tab = this.getTabAt(nextIndex);
+-        if (tab && matches(evt, [keys.ArrowLeft, keys.ArrowRight])) {
+-          evt.preventDefault();
+-          if (this.props.selectionMode !== 'manual') {
+-            this.selectTabAt(nextIndex, onSelectionChange);
+-          }
+-          if (tab.tabAnchor) {
+-            tab.tabAnchor.focus();
+-          }
++      const nextIndex = this.getNextIndex(index, this.getDirection(evt));
++      const tab = this.getTabAt(nextIndex);
++      if (tab && matches(evt, [keys.ArrowLeft, keys.ArrowRight])) {
++        evt.preventDefault();
++        if (this.props.selectionMode !== 'manual') {
++          this.selectTabAt(nextIndex, onSelectionChange);
++        }
++        if (tab.tabAnchor) {
++          tab.tabAnchor.focus();
+         }
+       }
+     };
+   };
+ 
+-  handleDropdownClick = () => {
+-    this.setState({
+-      dropdownHidden: !this.state.dropdownHidden,
+-    });
+-  };
++  // Removed handleDropdownClick, not needed anymore
+ 
+   selectTabAt = (index, onSelectionChange) => {
+     if (this.state.selected !== index) {
+@@ -246,7 +232,7 @@ export default class Tabs extends React.Component {
+      */
+     const tabsWithProps = this.getTabs().map((tab, index) => {
+       const tabPanelIndex = index === this.state.selected ? 0 : -1;
+-      const tabIndex = !this.state.dropdownHidden ? 0 : tabPanelIndex;
++      const tabIndex = tabPanelIndex;
+       const newTab = React.cloneElement(tab, {
+         index,
+         selected: index === this.state.selected,
+@@ -286,35 +272,14 @@ export default class Tabs extends React.Component {
+       tabs: classNames(`${prefix}--tabs`, className, {
+         [`${prefix}--tabs--container`]: type === 'container',
+       }),
+-      tablist: classNames(`${prefix}--tabs__nav`, {
+-        [`${prefix}--tabs__nav--hidden`]: this.state.dropdownHidden,
+-      }),
++      tablist: classNames(`${prefix}--tabs__nav`),
+     };
+ 
+     const selectedTab = this.getTabAt(this.state.selected, true);
+-    const selectedLabel = selectedTab ? selectedTab.props.label : '';
+ 
+     return (
+       <>
+         <div {...other} className={classes.tabs} role={role}>
+-          <div
+-            role="listbox"
+-            aria-label={ariaLabel}
+-            tabIndex={0}
+-            className={`${prefix}--tabs-trigger`}
+-            onClick={this.handleDropdownClick}
+-            onKeyPress={this.handleDropdownClick}>
+-            <a
+-              tabIndex={-1}
+-              className={`${prefix}--tabs-trigger-text`}
+-              href={triggerHref}
+-              onClick={this.handleDropdownClick}>
+-              {selectedLabel}
+-            </a>
+-            <ChevronDown16 aria-hidden="true">
+-              {iconDescription && <title>{iconDescription}</title>}
+-            </ChevronDown16>
+-          </div>
+           <ul role="tablist" className={classes.tablist}>
+             {tabsWithProps}
+           </ul>

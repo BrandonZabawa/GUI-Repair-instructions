@@ -1,0 +1,80 @@
+{
+    "bug_classes": {},
+    "bug_functions": {
+        "1": {
+            "function_name": "module.exports",
+            "file_path": "components/index.js",
+            "function_details": [
+                {
+                    "name": "module.exports",
+                    "start_line": 79,
+                    "end_line": 82
+                }
+            ],
+            "function_code": [
+                "module.exports = function (arr) {",
+                "\t// Don't expose withoutDependencies",
+                "\tloadLanguages(arr);",
+                "};"
+            ]
+        },
+        "2": {
+            "function_name": "loadLanguages",
+            "file_path": "components/index.js",
+            "function_details": [
+                {
+                    "name": "loadLanguages",
+                    "start_line": 33,
+                    "end_line": 77
+                }
+            ],
+            "function_code": [
+                "function loadLanguages(arr, withoutDependencies) {",
+                "\t// If no argument is passed, load all components",
+                "\tif (!arr) {",
+                "\t\tarr = Object.keys(components.languages).filter(function (language) {",
+                "\t\t\treturn language !== 'meta';",
+                "\t\t});",
+                "\t}",
+                "\tif (arr && !arr.length) {",
+                "\t\treturn;",
+                "\t}",
+                "",
+                "\tif (!Array.isArray(arr)) {",
+                "\t\tarr = [arr];",
+                "\t}",
+                "",
+                "\tarr.forEach(function (language) {",
+                "\t\tif (!components.languages[language]) {",
+                "\t\t\tconsole.warn('Language does not exist ' + language);",
+                "\t\t\treturn;",
+                "\t\t}",
+                "\t\t// Load dependencies first",
+                "\t\tif (!withoutDependencies && components.languages[language].require) {",
+                "\t\t\tloadLanguages(components.languages[language].require);",
+                "\t\t}",
+                "",
+                "\t\tvar pathToLanguage = './prism-' + language;",
+                "\t\tdelete require.cache[require.resolve(pathToLanguage)];",
+                "\t\tdelete Prism.languages[language];",
+                "\t\trequire(pathToLanguage);",
+                "",
+                "\t\t// Reload dependents",
+                "\t\tvar dependents = getPeerDependents(language).filter(function (dependent) {",
+                "\t\t\t// If dependent language was already loaded,",
+                "\t\t\t// we want to reload it.",
+                "\t\t\tif (Prism.languages[dependent]) {",
+                "\t\t\t\tdelete Prism.languages[dependent];",
+                "\t\t\t\treturn true;",
+                "\t\t\t}",
+                "\t\t\treturn false;",
+                "\t\t});",
+                "\t\tif (dependents.length) {",
+                "\t\t\tloadLanguages(dependents, true);",
+                "\t\t}",
+                "\t});",
+                "}"
+            ]
+        }
+    }
+}

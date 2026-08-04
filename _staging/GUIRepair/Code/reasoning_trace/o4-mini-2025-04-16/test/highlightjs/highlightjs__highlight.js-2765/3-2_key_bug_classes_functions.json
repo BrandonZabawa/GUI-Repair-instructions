@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/handlebars.js"
+        ],
+        "bug_functions": [
+            "src/languages/handlebars.js//export default function(hljs)"
+        ],
+        "explanation": "All of the Handlebars highlighting logic lives inside the default\u2010exported function in src/languages/handlebars.js. Within its returned `contains` array there\u2019s a mode object intended to match `{{else}}` blocks (using begin: /\\{\\{(?=else\\}\\})/). Because that regex only matches `{{else}}` immedi\u00adately followed by `}}`, it never sees `{{else if \u2026}}` and so the branch isn\u2019t tokenized as a template tag. Tweaking that mode (or adding a separate one for `else if`) inside the export default function will fix the broken rendering.",
+        "bug_scenario": "The screenshot shows a Handlebars block `{{#if this.userData.isLoaded}}\u2026{{else if this.userData.isError}}\u2026{{/if}}` where the `else if` branch is not being recognized or highlighted correctly. The highlighter only picks up the opening `#if` and closing `{/if}` but fails to treat `{{else if \u2026}}` as a template-tag, so keywords and values inside that branch aren\u2019t styled distinctively."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/handlebars.js//default",
+            "src/languages/htmlbars.js//default"
+        ],
+        "explanation": "Both of these default-export functions build the Highlight.js grammar for Handlebars/HTMLBars. The main Handlebars definition (in src/languages/handlebars.js) contains the keyword lists (BUILT_INS) and block-opening rules (OPENING_BLOCK_MUSTACHE_CONTENTS and the special \u201celse\u201d rule) that control how \u201cif\u201d and \u201celse if\u201d are recognized and colored. Because \u201celse if\u201d isn\u2019t matched by the existing /{{(?=else\\}\\})/ rule and \u2018else\u2019 isn\u2019t in the BUILT_INS, the conditional branches and path segments fall back to the generic template-variable mode. Any fix must update this grammar\u2014adding \u201celse\u201d (and \u201celse if\u201d) to the keyword lists or expanding the block-opening regex\u2014in src/languages/handlebars.js. The htmlbars.js stub then reuses that definition, so its default export also needs to pick up the corrected grammar.",
+        "bug_scenario": "The screenshot shows a Handlebars/HTMLBars template with a standard block \u201cif/else if\u201d statement not being highlighted correctly. The \u201c#if\u201d and \u201c/if\u201d delimiters get one color, but the \u201celse if\u201d line and the path expressions (e.g. this.userData.isLoaded, this.userData.value.userName, this.userData.isError) are rendered inconsistently\u2014with keywords, helper names, and values all using the same or wrong styles instead of distinguishing \u2018if/else\u2019 keywords from property paths."
+    }
+}

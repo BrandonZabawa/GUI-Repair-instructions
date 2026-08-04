@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js"
+        ],
+        "explanation": "1. lib/features/replace/BpmnReplace.js \u2013 this is the core replacement handler; it builds a new business object when you change from parallel to sequential and applies only a whitelist of properties. The filter for \u2018loopCharacteristics\u2019 is generic and doesn\u2019t preserve existing multi-instance sub-properties, so your loop cardinality and other settings get dropped when toggling.\n\n2. lib/features/replace/ReplaceOptions.js \u2013 this defines the replace menu entries for parallel vs. sequential multi-instance. Its options set only the top-level instantiate/isSequential flags on the businessObject, but never carry forward the user-configured loopCharacteristics (e.g. loopCardinality), so BpmnReplace never sees them to copy.\n\n3. lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js \u2013 this command is used when toggling properties via the properties panel. It writes new values onto the moddle element, but because the replacement path creates a brand-new loopCharacteristics element (or sets only one field), it effectively overwrites or replaces the entire loopCharacteristics, wiping out other nested settings.",
+        "bug_scenario": "The user configures a subprocess (or task) as a parallel multi-instance by setting loop cardinality and then flips the toggle to sequential multi-instance. Immediately after switching, all of the previously configured multi-instance settings (e.g. loop cardinality) vanish, so the element loses its loopCharacteristics."
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Image.js",
+            "src/ol/style/Text.js",
+            "src/ol/style/Style.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/render/canvas/style.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "These files are most relevant because:\n- src/ol/style/Image.js and src/ol/style/Text.js: These are the core style files where options like 'ignorePlacement' and the new declutterMode API would be defined and interpreted. Logic to honor the new options is likely to go here.\n- src/ol/style/Style.js: Top-level style handling, which needs to wire options down to image/text and integrate with decluttering.\n- src/ol/renderer/canvas/VectorLayer.js and src/ol/renderer/canvas/VectorTileLayer.js: These are responsible for rendering vector data, including declutter logic for vector features. They would need to check and honor the new declutter modes and options during the rendering pipeline.\n- src/ol/render/canvas/style.js, src/ol/render/canvas/TextBuilder.js, src/ol/render/canvas/ImageBuilder.js: These files handle the actual staging of text and images into the rendering pipeline, manage declutter groups, and implement decluttering decisions (whether to skip or show items). They need to support new declutter modes and conditions such as 'ignorePlacement', and handle rendering order changes.\nOther files such as higher-level layer or map files, or unrelated formats or sources, would not directly manage styling, declutter, or rendering of image-text pairs, and thus are not 'bug related' for this specific issue.",
+        "bug_scenario": "The bug is about enhancing OpenLayers' rendering system to support more granular control over decluttering of images (such as markers) and labels (text). Currently, with decluttering enabled, image+label pairs can be improperly decluttered, e.g., an image with a label may not be rendered together as intended if they overlap. The desired behavior is to make decluttering more flexible by allowing options such as decluttering only text, only geometry, both, or none - instead of a simple boolean. This would entail new declutter modes, potentially new or changed options in style objects (like ol.style.Image, ol.style.Text), and changes in the rendering and style pipeline so that image and text are handled according to the chosen declutterMode. There is also a mention of adding an 'ignorePlacement' option to ol.style.Image and ol.style.Text."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Style.js",
+            "src/ol/style/Image.js",
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/style.js",
+            "src/ol/render/canvas/Builder.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js"
+        ],
+        "explanation": "The files selected are closely tied to how styles (including images and text) are rendered, managed, and decluttered in OpenLayers. 'src/ol/style/Style.js' orchestrates feature styling, including declaring both image and text styles. 'src/ol/style/Image.js' and 'src/ol/style/Text.js' represent the core classes for marker images and labels, and must handle the new 'ignorePlacement' property. The rendering and decluttering logic is found in 'src/ol/render/canvas/style.js', 'src/ol/render/canvas/Builder.js', and the 'ImageBuilder.js'/'TextBuilder.js' for rendering each type. 'src/ol/renderer/canvas/VectorLayer.js' and 'VectorTileLayer.js' are responsible for invoking these drawing routines and applying declutterMode at the layer level, and may also need updates to accept 'declutterMode' as a non-boolean. All these files are potential touchpoints for both declaring, using, and processing the new selective declutterModes, as well as supporting the ignorePlacement option for finer-grained control.",
+        "bug_scenario": "The bug relates to the rendering of styles in OpenLayers when using the 'declutter' option. Specifically, if a feature style returns both imagery (like point markers) and text (labels), the current implementation only allows for blanket decluttering, not selective (just text or just images). The enhancement proposes to change the 'declutter' boolean to allow different modes like 'none', 'text', 'geometry', and 'both', enabling more granular declutter control. Additionally, the report mentions adding a boolean ignorePlacement option to ol.style.Image and ol.style.Text, suggesting low-level style class changes are needed. The fix aims to allow more flexible declutter strategies without breaking existing rendering tests for order and declutter mode."
+    }
+}

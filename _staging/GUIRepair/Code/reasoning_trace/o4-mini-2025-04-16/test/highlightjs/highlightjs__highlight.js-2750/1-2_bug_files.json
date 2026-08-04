@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/lib/ecmascript.js",
+            "src/languages/javascript.js",
+            "src/languages/typescript.js"
+        ],
+        "explanation": "The core of template\u2010literal parsing lives in ecmascript.js (under lib), which defines how `${\u2026}` substitutions begin and end. javascript.js and typescript.js import or extend that rule to support tagged templates and nested template literals. Because the existing end condition in the `subst` rule simply looks for the first `}`, it doesn\u2019t account for nested braces or nested template literals inside the expression, so the highlighter thinks the substitution ends too soon. Fixing this requires updating the grammar in ecmascript.js (and ensuring javascript.js/typescript.js use the corrected rule) to handle nested delimiters properly.",
+        "bug_scenario": "When highlighting JavaScript or TypeScript code containing template literals with nested expressions\u2014especially those that include object literals or nested template literals\u2014the highlighter prematurely closes the expression at the first `}`. Everything after that brace is treated as a string, instead of remaining inside the expression until the matching closing `${...}`. This breaks correct syntax coloring for usages like CSS-in-JS (styled-components) callbacks inside template literals."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/lib/ecmascript.js",
+            "src/languages/javascript.js",
+            "src/languages/typescript.js"
+        ],
+        "explanation": "The core of the issue lies in the ECMA grammar definition (src/languages/lib/ecmascript.js) where the substitution mode is defined with a begin of /\\${/ and a simple end of /}/. This unconditionally ends the mode on the first right brace, ignoring nested { } pairs or inner template literals. Both the JavaScript (src/languages/javascript.js) and TypeScript (src/languages/typescript.js) language modules import and use this ECMA substitution mode, so they also exhibit the bug. To fix it, the substitution rule must be extended to track nested braces (or use a recursive mode) so that only the matching closing brace for the ${\u2026} is treated as the end of the substitution.",
+        "bug_scenario": "In JavaScript/TypeScript tagged template literals, when a right curly brace \u201c}\u201d appears inside the expression (especially inside a nested object literal or arrow function) the highlighter\u2019s simple \u201cend on first }\u201d rule for ${\u2026} substitutions closes the expression too early. As a result, the remainder of the expression (and any following nested template literals) is treated as plain string content and mis-highlighted. The screenshots show that after a nested \u201c}\u201d the coloring reverts to string mode incorrectly, whereas VS Code\u2019s built-in highlighter correctly balances all braces and continues highlighting the expression."
+    }
+}

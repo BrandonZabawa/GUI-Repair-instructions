@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-visual-basic.js//comment",
+            "components/prism-vbnet.js//comment"
+        ],
+        "bug_functions": [],
+        "explanation": "The root of the problem lies in the definition of the comment tokens in the Visual Basic grammars. In both prism-visual-basic.js and prism-vbnet.js, the 'comment' patterns only match a single line (using \\/(?:['\u2018\u2019]|REM\\\\b).*/i or similar) and do not account for the underscore line-continuation syntax. As a result, the grammar never consumes the trailing underscore as part of the comment token, so the next line falls outside the comment and is not highlighted correctly. To fix this bug, the comment token definitions in these files must be updated (for example by making them greedy and including the `_` continuation pattern) so that comments with trailing underscores span across lines as a single token.",
+        "bug_scenario": "The user is editing VB code that uses a comment (starting with a single quote) and a line-continuation underscore at the end of the commented line. In the screenshot, the first line (with the comment and trailing underscore) is highlighted as a comment, but the continuation line (the next line after the underscore) is tokenized normally rather than as part of the comment. The expected behavior is that the line-continuation underscore in a comment should join the next line into the same comment token, so both lines remain highlighted as a comment."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-visual-basic.js//Prism.languages['visual-basic']",
+            "components/prism-visual-basic.js//Prism.languages.vb",
+            "components/prism-vbnet.js//Prism.languages.vbnet"
+        ],
+        "bug_functions": [
+            "components/prism-visual-basic.js//comment.pattern",
+            "components/prism-visual-basic.js//operator[1].pattern",
+            "components/prism-vbnet.js//comment[0].pattern",
+            "components/prism-vbnet.js//comment[1].pattern"
+        ],
+        "explanation": "The core of the bug is that the Visual Basic grammar\u2019s comment rule (/(:?['\u2018\u2019]|REM\\b).*/i) only matches until the end of the line, and the underscore operator rule captures the trailing '_' as an operator, breaking the comment. To fix this, the comment.pattern in prism-visual-basic.js (and similarly in prism-vbnet.js) must be extended to include the underscore and the following newline so that the entire continued line remains part of the comment token. At the same time, the operator[1].pattern that matches end-of-line underscores may need to be adjusted or scoped so it does not interrupt the comment rule.",
+        "bug_scenario": "In Visual Basic code, a commented line ending with the line-continuation character \"_\" should continue the comment onto the next line. In the screenshot, the first line (starting with a single quote) is correctly highlighted as a comment, but because of the trailing underscore the next line is treated as regular code. The intended behavior is for Prism to treat the underscore-terminated comment as a single multi-line comment token, highlighting both lines as comment."
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/ImageWMS.js//ImageWMS",
+            "src/ol/source/TileWMS.js//TileWMS",
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/source/ImageWMS.js//getImageInternal",
+            "src/ol/source/ImageWMS.js//getRequestUrl_",
+            "src/ol/source/TileWMS.js//tileUrlFunction",
+            "src/ol/source/TileWMS.js//getRequestUrl_",
+            "src/ol/renderer/canvas/ImageLayer.js//renderFrame"
+        ],
+        "explanation": "ImageWMS and TileWMS compute requested image dimensions using ceil/round on floating point sizes influenced by the ratio and viewport extent, and then generate BBOX and WIDTH/HEIGHT parameters in getRequestUrl_. When ratio or map dimensions are not whole numbers, the requested image size does not exactly match the canvas drawing size. CanvasImageLayerRenderer\u2019s renderFrame then resizes the fetched image (via drawImage) to the canvas using Math.round for the canvas dimensions and imageSmoothingEnabled by default, causing interpolation blurriness. These methods are responsible for size calculations, URL parameterization, and final drawing, and thus are the core places to adjust how dimensions are rounded or disable smoothing to achieve a sharp, pixel\u2010perfect map render.",
+        "bug_scenario": "When viewing a WMS-based map with a non\u2010integer ratio or an odd map width/height, the fetched image is slightly scaled when drawn on the canvas, resulting in a blurry appearance rather than a pixel\u2010perfect render."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/ImageWMS.js//ImageWMS",
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/source/ImageWMS.js//getImageInternal",
+            "src/ol/source/ImageWMS.js//getRequestUrl_",
+            "src/ol/renderer/canvas/ImageLayer.js//renderFrame"
+        ],
+        "explanation": "The ImageWMS.getImageInternal method computes requestWidth and requestHeight by multiplying the viewport size by a possibly non-integer ratio and then applying ceil. These width/height values may still be floats, causing the WMS server to return an image slightly larger than the canvas. Later, CanvasImageLayerRenderer.renderFrame draws that image onto a canvas of a different size using a non-integer scaling factor. Because the default imageSmoothingEnabled is true, drawImage interpolation produces a blurry result. The getRequestUrl_ function is where the (possibly fractional) WIDTH and HEIGHT parameters are set, so ensuring those are integer and/or disabling smoothing in renderFrame is key to restoring pixel-perfect rendering.",
+        "bug_scenario": "When displaying a single\u2010image WMS layer with a non\u2010integer `ratio` (or when the map viewport dimensions are odd), the raster is fetched at one size and then drawn scaled on the canvas. Because the request width/height end up as floats (then ceil\u2019d) and the final drawImage uses a non-integer scale, the browser applies image smoothing, resulting in a blurry map instead of a pixel-perfect rendering."
+    }
+}

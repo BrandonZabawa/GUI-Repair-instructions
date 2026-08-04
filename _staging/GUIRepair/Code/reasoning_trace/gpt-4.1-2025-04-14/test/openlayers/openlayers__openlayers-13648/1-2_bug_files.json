@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/source/Tile.js",
+            "src/ol/source/TileImage.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "explanation": "- src/ol/source/GeoTIFF.js: This file is responsible for reading and parsing GeoTIFF (including COG) files, and potentially needs to be updated to better handle non-square pixel data (pixel aspect ratio).\n- src/ol/source/DataTile.js, src/ol/source/Tile.js, src/ol/source/TileImage.js: These are core files related to how tiled raster sources are fetched, interpreted, and displayed, which include the logic for laying out the raster on the map canvas, and may fail with incorrect aspect ratios if non-square pixels are not considered.\n- src/ol/reproj/Tile.js: This file involves reprojection of tiles, which is often where pixel aspect ratio issues surface (since the source and target projections\u2014and the pixel shapes\u2014can differ).\n- src/ol/tilegrid/TileGrid.js: The tile grid determines how the image is sliced into tiles and transformed onto map coordinates, so handling of pixel size and grid extents is critical here for non-square pixel support.\nThese files are the most suspicious for handling the interpretation, tiling, and display of raster data (especially COGs) and their treatment of non-square pixels.",
+        "bug_scenario": "The bug report and the provided screenshot describe a scenario in which a Cloud Optimized GeoTIFF (COG) with non-square pixels is not displaying correctly. In the user's (OpenLayers-based) application, only the upper part of the image is shown, while the same raster displays correctly in QGIS (as shown in the image). This discrepancy suggests that the tiling and projection logic in the application is not properly accounting for pixel aspect ratio (non-square pixels), resulting in an incomplete display when reading and rendering the raster image."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/source/Image.js",
+            "src/ol/source/ImageCanvas.js",
+            "src/ol/source/TileImage.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/geom/SimpleGeometry.js",
+            "src/ol/render/canvas/Builder.js",
+            "src/ol/proj/Projection.js"
+        ],
+        "explanation": "The files are related to GeoTIFF and general raster handling in OpenLayers: 1) 'src/ol/source/GeoTIFF.js' is the main loader for GeoTIFFs, specifically COGs; errors in pixel aspect and geotransform handling would be here. 2) Supporting raster source files (DataTile.js, Image.js, ImageCanvas.js, TileImage.js) interact with or render tiled/raster imagery and may be involved in reading bi-dimensional pixels. 3) The render files (ImageBuilder.js, Builder.js) handle drawing the image on the canvas, where issues with scaling or pixel shape would be manifest. 4) 'SimpleGeometry.js' is relevant if geometries (like bounding boxes) are normalized incorrectly due to pixel ratios. 5) 'Projection.js' may be involved since pixel size/shape can be projection-dependent, and bad pixel ratio handling could result in only part of the COG showing.",
+        "bug_scenario": "The bug report describes an issue with displaying a COG (Cloud Optimized GeoTIFF) in OpenLayers where only the upper part is shown, in contrast to how the entire image is displayed in other software like QGIS or geotiff.io. The attached image demonstrates the correct rendering (full image visible) in QGIS. The problem seems related to non-square pixels (pixel aspect ratio) and may involve reading or displaying the raster data incorrectly in OpenLayers, possibly due to skipped or incorrect handling of pixel size or transformations."
+    }
+}

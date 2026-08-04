@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/format/KML.js",
+            "src/ol/format/XML.js",
+            "src/ol/format/XMLFeature.js"
+        ],
+        "explanation": "All text fields in a KML feature flow through the generic XML parser and KML reader before being handed off to the style/text renderer. \n\n\u2022 src/ol/format/KML.js is responsible for extracting the <name> (and other text) elements from a KML document. It currently takes the raw node text, which in some parsing modes still contains XML-entity encodings like \u201c&apos;\u201d.\n\u2022 src/ol/format/XML.js implements the low-level XML parsing utilities (node traversals, text extraction). It does not normalize or decode XML entities beyond what the XML parser itself provides, so any remaining &apos; or other named entities stay in the string.\n\u2022 src/ol/format/XMLFeature.js wires up the XML parsing logic and maps element values into feature properties. It passes the un-decoded text along to the feature\u2019s properties and ultimately into the style/Text pipeline.\n\nBecause the labels drawn on the canvas come straight from these parsed strings, the un-decoded entity shows up verbatim in the map. To fix the bug, one must add a decoding step (for example using a small entity-decode utility or calling DOMParser on the fragment) in the XML parsing path\u2014ideally in XML.js or in the feature reader in KML.js\u2014so that &apos; becomes ' before the text ever reaches the renderer.",
+        "bug_scenario": "When loading placemarks from a KML file whose <name> element contains XML-escaped entities (in this case \u201cAndy&amp;apos;s\u201d), OpenLayers renders the literal \u201c&apos;\u201d in the canvas label instead of decoding it to an apostrophe. In the DOM caption below the map the entity is correctly resolved by the browser, but the map-drawing path shows the raw entity code."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/format/KML.js",
+            "src/ol/xml.js",
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/TextBuilder.js"
+        ],
+        "explanation": "\u2022 src/ol/format/KML.js is responsible for reading the <name> and other text nodes from KML. It currently pulls nodeInnerHTML or raw nodeValue, preserving &apos; entities instead of returning decoded strings.\n\u2022 src/ol/xml.js (the XML utility) provides the low-level functions for extracting textContent or nodeValue. If entity decoding isn\u2019t happening here, the KML parser will see the raw entities.\n\u2022 src/ol/style/Text.js takes the feature\u2019s name property and passes it directly on to the renderer without any further decoding or sanitization of XML entities.\n\u2022 src/ol/render/canvas/TextBuilder.js finally renders the text onto the canvas. Since it draws the string literally, any remaining &amp;apos; sequences appear verbatim on the map.\nTogether, these files form the path from parsing the KML through to drawing the label. The fix is to introduce entity decoding (e.g. via a decodeHTML or decodeURIComponent step) in either the parser (in xml.js or KML.js) or at the start of the Text style (in Text.js) so that &apos; becomes \u2019 before rendering.",
+        "bug_scenario": "When loading a KML file whose <name> is \u201cAndy&apos;s\u201d, the map displays the literal entity text \u201cAndy&amp;apos;s\u201d instead of the decoded apostrophe \u201cAndy\u2019s\u201d. In the example, the piepline is: the KML parser reads the XML, hands the raw string including &apos; through to the Feature properties, then the Text style and canvas renderer draw it without decoding HTML/XML entities."
+    }
+}

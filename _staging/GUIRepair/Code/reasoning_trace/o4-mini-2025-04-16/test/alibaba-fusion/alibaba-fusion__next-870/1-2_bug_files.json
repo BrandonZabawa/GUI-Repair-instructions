@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_files": [
+            "src/overlay/utils/position.js",
+            "src/overlay/position.jsx",
+            "src/overlay/popup.jsx",
+            "src/number-picker/number-picker.jsx",
+            "src/number-picker/style.js",
+            "src/number-picker/main.scss"
+        ],
+        "explanation": "Overlay Files:  \n\u2022 src/overlay/utils/position.js \u2013 this utility computes the overlay\u2019s top/left based on target bounding rect and scroll offsets; it currently miscalculates when a container has both horizontal and vertical scrollbars, leading to wrong offsets.  \n\u2022 src/overlay/position.jsx \u2013 the React wrapper that invokes position.js on mount and update; it needs to adjust its logic to re-compute against the container\u2019s scroll dimensions, not just the page\u2019s.  \n\u2022 src/overlay/popup.jsx \u2013 the Popup component passes container and followTrigger props into the Overlay; the interplay of followTrigger and container here can override correct parent-relative positioning when re-opening after scroll.  \n\nNumberPicker Files:  \n\u2022 src/number-picker/number-picker.jsx \u2013 renders the main input plus up/down buttons and currently only injects innerBefore; it lacks rendering logic for innerAfter and does not properly wrap either for correct flex alignment.  \n\u2022 src/number-picker/style.js \u2013 maps component parts to CSS class names; it defines styles for the prefix slot but has no entry for a suffix slot (innerAfter), so even if rendered, styles won\u2019t apply.  \n\u2022 src/number-picker/main.scss \u2013 contains the CSS rules that align the input, prefix, and buttons; it needs to include rules for an inner-after (suffix) node and adjust margins so both prefix and suffix align correctly with the input box.",
+        "bug_scenario": "1. Overlay Position Bug: when you render a DatePicker inside a scrollable container with both vertical and horizontal scrollbars, the Popup overlay is mounted into the container (via container={trigger => trigger.parentNode}) but the positioning calculation does not account correctly for two scroll offsets. After you scroll the container and reopen the picker, the calendar panel appears at the wrong offset (drifting off target).  \n2. NumberPicker innerBefore/innerAfter Bug: NumberPicker supports a custom innerBefore element (a prefix) but the style for that element is misaligned, and innerAfter (a suffix) is not supported at all\u2014so if you pass innerAfter the layout breaks or the element doesn\u2019t render."
+    },
+    "2": {
+        "bug_files": [
+            "src/overlay/utils/position.js",
+            "src/overlay/position.jsx",
+            "src/overlay/popup.jsx",
+            "src/overlay/overlay.jsx",
+            "src/overlay/manager.js",
+            "src/number-picker/number-picker.jsx",
+            "src/number-picker/index.jsx",
+            "src/number-picker/style.js",
+            "src/number-picker/main.scss"
+        ],
+        "explanation": "\u2022 src/overlay/utils/position.js & src/overlay/position.jsx: These modules contain the core logic for computing overlay coordinates relative to target nodes and containers. They need to factor in both container scroll and page scroll offsets (especially when followTrigger is false) but currently only use a single scroll context, causing the misplacement.\n\u2022 src/overlay/popup.jsx & src/overlay/overlay.jsx: The Popup and Overlay wrapper components orchestrate when and where to call the position utility. They cache positioning arguments and interact with the manager; any stale cache or incorrect container reference here will propagate wrong offsets.\n\u2022 src/overlay/manager.js: Manages global overlay stacking and may throttle or defer position updates. If it doesn\u2019t detect a container scroll or reflow, it won\u2019t recalculate in time, so scrolling then re-clicking shows stale positioning.\n\u2022 src/number-picker/number-picker.jsx: The rendering logic handles innerBefore but has no branch for innerAfter. It also applies CSS classes/styles only around the input + prefix, leaving any suffix unstyled or outside the container.\n\u2022 src/number-picker/index.jsx: Exposes the component API and default props. It needs to declare innerAfter as a supported prop and pass it through to the renderer.\n\u2022 src/number-picker/style.js & src/number-picker/main.scss: Define class names and layout (input width, padding for prefix/suffix). They lack rules to accommodate a right-hand innerAfter node, so adding suffix shifts or overflows the container without proper margin or flex alignment.",
+        "bug_scenario": "1. Overlay Position Bug: When the DatePicker Popup is rendered inside a scrollable container (via container={trigger=>trigger.parentNode}) and the user scrolls the container and then clicks again, the popup\u2019s absolute position is calculated incorrectly. The overlay \u201cdetaches\u201d or jumps to the wrong spot because the positioning logic doesn\u2019t properly account for multiple scroll offsets (container + page).\n2. NumberPicker innerBefore/innerAfter Bug: The NumberPicker component accepts an innerBefore prop (which renders a prefix node) but does not support innerAfter (suffix), and the layout/CSS for innerBefore is misaligned when used. As a result, providing innerAfter either has no effect or breaks the input field\u2019s container width and alignment."
+    }
+}

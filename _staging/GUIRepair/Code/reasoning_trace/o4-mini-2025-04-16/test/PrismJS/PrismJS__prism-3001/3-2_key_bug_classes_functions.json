@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-typescript.js//Prism.languages.typescript"
+        ],
+        "bug_functions": [
+            "components/prism-typescript.js//Prism.languages.typescript.keyword.push"
+        ],
+        "explanation": "In components/prism-typescript.js, the call Prism.languages.typescript.keyword.push(...) injects a regex to recognize TS\u2010only keywords (including \u201cinfer\u201d and \u201ctype\u201d). The regex uses a loose negative lookahead that fails to enforce proper word boundaries, so it matches prefixes of longer identifiers (e.g. \u201cinference\u201d, \u201ctypeDefs\u201d). This is the root cause of the over\u2010eager highlighting. Editing this regex in the keyword.push call\u2014replacing it with one that demands a true word boundary after the keyword\u2014will prevent partial matches and fix the bug.",
+        "bug_scenario": "The screenshots illustrate import statements in a TSX file where Prism\u2019s TypeScript highlighter treats \u201cinfer\u201d and \u201ctype\u201d as standalone keywords even when they are part of longer identifiers. For example, in \u201cimport { infer, inference, infer }\u2026\u201d, \u201cinference\u201d is wrongly flagged as a keyword. Likewise, \u201ctypeDefs\u201d in \u201cimport { type, typeDefs, type }\u2026\u201d is also highlighted as if it were the bare \u201ctype\u201d keyword. By contrast, \u201cconst\u201d and \u201cconstants\u201d behave correctly."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-typescript.js"
+        ],
+        "bug_functions": [
+            "components/prism-typescript.js//Prism.languages.typescript.keyword.push"
+        ],
+        "explanation": "The root of the problem lies in the regex pushed onto Prism.languages.typescript.keyword. The pattern `/\\b(?:asserts|infer|interface|module|namespace|type)(?!\\s*[^\\s_${}*a-zA-Z\\xA0-\\uFFFF])/` is intended to match only standalone keywords followed by whitespace or punctuation. However, its negative lookahead is too permissive and still matches when the keyword is immediately followed by alphabetic characters, so \u201cinference\u201d and \u201ctypeDefs\u201d are wrongly highlighted. Adjusting this regex (for example by enforcing a word boundary after the keyword) in the call to `Prism.languages.typescript.keyword.push` will correct the behavior.",
+        "bug_scenario": "In TSX/TypeScript imports, the highlighter treats keywords like \u201cinfer\u201d and \u201ctype\u201d as keywords even when they\u2019re part of longer identifiers (e.g. \u201cinference\u201d, \u201ctypeDefs\u201d), causing incorrect highlighting on \u201cinference\u201d and \u201ctypeDefs\u201d while correctly leaving \u201cconstants\u201d alone."
+    }
+}

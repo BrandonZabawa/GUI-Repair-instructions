@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/LabelBehavior.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js//findNewLabelLineStartIndex",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js//getLabelAdjustment",
+            "lib/features/modeling/behavior/LabelBehavior.js//getVisibleLabelAdjustment",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape"
+        ],
+        "explanation": "\u2022 LabelLayoutUtil.findNewLabelLineStartIndex and getLabelAdjustment: The crash occurs here because attachment.segmentIndex is assumed always defined, but getAttachment sometimes returns undefined or missing segmentIndex for external labels on reconnected flows.\n\u2022 LabelBehavior.getVisibleLabelAdjustment: This wrapper invokes getLabelAdjustment unconditionally after reconnection, propagating the undefined segmentIndex into the util.\n\u2022 DropOnFlowBehavior.insertShape: This function is responsible for splitting and reconnecting the flow around the dropped gateway, triggering connection.layout/updateWaypoints events without providing the label attachment hints needed by findNewLabelLineStartIndex. Adjusting insertShape to supply proper hints (e.g. bendpointMove, connectionStart/End) or guarding against missing segmentIndex in the layout util will prevent the undefined property access.",
+        "bug_scenario": "A user drops a gateway onto an existing sequence flow that already has an external \"NO\" label. During the automatic reconnection (DropOnFlowBehavior.insertShape) and subsequent layout update, the label\u2010layout logic in LabelBehavior fires getVisibleLabelAdjustment, which calls LabelLayoutUtil.getLabelAdjustment. Inside that util, attachment.segmentIndex is undefined (getAttachment returned a payload without segmentIndex), so findNewLabelLineStartIndex blows up with \"Cannot read properties of undefined (reading 'segmentIndex')\", leaving the editor in a broken state."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/LabelBehavior.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js//findNewLabelLineStartIndex",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js//getLabelAdjustment",
+            "lib/features/modeling/behavior/LabelBehavior.js//getVisibleLabelAdjustment",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape"
+        ],
+        "explanation": "When a gateway is inserted on a flow, DropOnFlowBehavior.insertShape reconnects the sequence flow, triggering a connection.layout/updateWaypoints event. LabelBehavior listens to these events and calls getVisibleLabelAdjustment, which in turn calls LabelLayoutUtil.getLabelAdjustment. That function first obtains an attachment via getAttachment and immediately reads attachment.segmentIndex in LabelLayoutUtil.findNewLabelLineStartIndex without checking for undefined. If getAttachment returns undefined (e.g. no label on that connection segment), attachment.segmentIndex triggers the TypeError. Hence the layout\u2010adjustment functions in LabelLayoutUtil (and the LabelBehavior hook that invokes them) are the loci where a guard around attachment is needed, and DropOnFlowBehavior.insertShape is what drives the problematic reconnection and layout call sequence.",
+        "bug_scenario": "When dragging and dropping a gateway (diamond) onto an existing sequence flow (the green line \u201cNO\u201d branch), the editor throws a TypeError \u201cCannot read properties of undefined (reading 'segmentIndex')\u201d and the canvas becomes unresponsive. In the provided GIF you see the gateway being dropped onto the flow, the broken pane appear immediately and no further interaction is possible."
+    }
+}

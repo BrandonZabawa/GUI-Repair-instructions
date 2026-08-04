@@ -1,0 +1,69 @@
+{
+    "1/1": {
+        "lighthouse-core/audits/byte-efficiency/unminified-javascript.js": [
+            {
+                "SEARCH": [
+                    "/** @type {Array<esprima.Token> & {errors: Error[]}} */",
+                    "const tokens = (esprima.tokenize(scriptContent, {tolerant: true}));",
+                    "if (!tokens.length && tokens.errors && tokens.errors.length) {",
+                    "throw tokens.errors[0];",
+                    "}",
+                    "",
+                    "for (const token of tokens) {",
+                    "totalTokenLength += token.value.length;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    /** @type {Array<esprima.Token> & {errors: Error[]}} */",
+                    "    let tokens;",
+                    "    try {",
+                    "      tokens = esprima.tokenize(scriptContent, {tolerant: true});",
+                    "    } catch (e) {",
+                    "      // If esprima fails (likely due to a copyright header or non-code at the top), skip this file.",
+                    "      return null;",
+                    "    }",
+                    "    if (!tokens.length && tokens.errors && tokens.errors.length) {",
+                    "      // If tokenization fails, skip this file instead of throwing.",
+                    "      return null;",
+                    "    }",
+                    "",
+                    "    for (const token of tokens) {",
+                    "      totalTokenLength += token.value.length;",
+                    "    }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "try {",
+                    "const result = UnminifiedJavaScript.computeWaste(scriptContent, networkRecord);",
+                    "// If the ratio is minimal, the file is likely already minified, so ignore it.",
+                    "// If the total number of bytes to be saved is quite small, it's also safe to ignore.",
+                    "if (result.wastedPercent < IGNORE_THRESHOLD_IN_PERCENT ||",
+                    "result.wastedBytes < IGNORE_THRESHOLD_IN_BYTES ||",
+                    "!Number.isFinite(result.wastedBytes)) continue;",
+                    "items.push(result);",
+                    "} catch (err) {",
+                    "warnings.push(`Unable to process ${networkRecord.url}: ${err.message}`);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "      try {",
+                    "        const result = UnminifiedJavaScript.computeWaste(scriptContent, networkRecord);",
+                    "        // If computeWaste returns null, skip this file (likely due to non-code header).",
+                    "        if (!result) continue;",
+                    "        // If the ratio is minimal, the file is likely already minified, so ignore it.",
+                    "        // If the total number of bytes to be saved is quite small, it's also safe to ignore.",
+                    "        if (result.wastedPercent < IGNORE_THRESHOLD_IN_PERCENT ||",
+                    "          result.wastedBytes < IGNORE_THRESHOLD_IN_BYTES ||",
+                    "          !Number.isFinite(result.wastedBytes)) continue;",
+                    "        items.push(result);",
+                    "      } catch (err) {",
+                    "        warnings.push(`Unable to process ${networkRecord.url}: ${err.message}`);",
+                    "      }",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

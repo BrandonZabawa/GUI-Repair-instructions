@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages.js",
+            "src/language-js/index.js",
+            "src/main/parser.js//getParsers",
+            "src/main/parser.js//resolveParser",
+            "src/main/parser.js//parse"
+        ],
+        "explanation": "To integrate Cherow as a first-class parser option, Prettier must: (1) register a new 'cherow' parser in its languages list (src/languages.js and src/language-js/index.js where JS parsers are declared); and (2) ensure the core parser resolution logic (getParsers, resolveParser, parse in src/main/parser.js) can load and invoke Cherow\u2019s parseScript API. Those are the key locations where parser names are listed, bundled into plugins, and dispatched at runtime.",
+        "bug_scenario": "Prettier is currently using Babel\u2019s parser (Babylon/@babel/parser) to parse JavaScript, but benchmarks show Cherow is roughly 40% faster. The user wants to add Cherow as an alternate JS parser in Prettier (for format-on-save scenarios) while preserving existing Flow support. The screenshot shows parsing times for various libraries comparing Cherow vs. Babylon and others."
+    },
+    "2": {
+        "bug_classes": [
+            "src/language-js/index.js",
+            "src/main/parser.js",
+            "src/standalone.js"
+        ],
+        "bug_functions": [
+            "src/main/parser.js//getParsers",
+            "src/main/parser.js//resolveParser",
+            "src/standalone.js//withPlugins"
+        ],
+        "explanation": "1. src/language-js/index.js: This module declares the JavaScript language plugin\u2014specifically the list of parser names (e.g. \"babel\", \"flow\") that Prettier will load for .js files. To use Cherow, you must add \"cherow\" to the parsers array here (and supply a corresponding parser-cherow plugin).  \n2. src/main/parser.js:getParsers & resolveParser:  \n   \u2022 getParsers collects all parser getters from plugins. It must expose a Cherow getter so that resolveParser(opts, parsers) can return Cherow.parse when opts.parser is \"cherow\".  \n   \u2022 resolveParser dispatches on the parser name string (or function) and returns an object with parse, astFormat, locStart, locEnd. It needs to recognize \"cherow\" and wire up the Cherow API correctly.  \n3. src/standalone.js:withPlugins wraps the public API to inject all internal plugins (languages and parsers) into every call. To ship Cherow in the standalone bundle, withPlugins must include the parser-cherow plugin in internalPlugins.  \nTogether these are the precise extension points where Prettier\u2019s JS parser list, parser resolution logic, and bundling must be updated to opt into Cherow while preserving existing Flow support.",
+        "bug_scenario": "The benchmark screenshot shows that Cherow parses large real-world JavaScript bundles (jQuery, Angular, React, TypeScript, etc.) about 40% faster than Babylon (Prettier\u2019s default JS parser). The report proposes swapping in the Cherow parser for JavaScript in Prettier to speed up format-on-save workflows.  However, Cherow doesn\u2019t yet support Flow syntax, so any change must still respect existing Flow support."
+    }
+}

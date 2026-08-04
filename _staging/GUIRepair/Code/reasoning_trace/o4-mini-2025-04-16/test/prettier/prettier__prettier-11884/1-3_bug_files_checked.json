@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/print/typescript.js",
+            "src/document/doc-builders.js",
+            "src/language-js/print/type-parameters.js"
+        ],
+        "explanation": "1. src/language-js/print/typescript.js \u2013 This module contains the printer for TypeScript AST nodes, including the TSTupleType case. The logic here breaks an empty tuple into bracketed lines and \u2013 under trailing-comma=all \u2013 emits a comma even when there are no elements.  \n2. src/document/doc-builders.js \u2013 The `join` and bracket\u2010wrapper helpers in this file drive how lists of docs and separators are emitted. When given an empty list and a comma separator (from trailingComma), it still emits a placeholder comma, producing the stray comma in \u201c[ , ]\u201d.  \n3. src/language-js/print/type-parameters.js \u2013 Although not directly responsible for the tuple comma, this file governs how generic type parameters are broken across lines. The breakpoint decision here (with a very long type parameter name) triggers the formatting path that ultimately surfaces the empty-tuple printer bug. Adjusting the break logic here can prevent the downstream TSTupleType printer from ever being invoked in its buggy form.",
+        "bug_scenario": "When formatting a TypeScript generic declaration with an empty tuple type as a conditional check, Prettier (v2.5.0) inserts a stray comma inside the empty brackets when the entire line exactly meets the print-width boundary. In our repro, the long identifier and a 120-column limit pushes the `aaddffgg extends []` tuple pattern onto its own indented lines. Instead of printing `[]`, it renders it as `[\n  ,\n]`, inserting an unwanted comma."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/print/typescript.js",
+            "src/language-js/print/type-parameters.js"
+        ],
+        "explanation": "\u2022 src/language-js/print/typescript.js \u2014 this file contains the logic for printing TypeScript tuple types, including the empty-tuple case. the printer currently delegates to a generic list/join with the global \u201ctrailing-comma\u201d option, which causes it to emit \u201c[,]\u201d for an empty array of elements.\n\u2022 src/language-js/print/type-parameters.js \u2014 this file is responsible for laying out long generic parameter lists and forcing the break that isolates the tuple check into its own group. without the break logic here the bug never surfaces, so any fix must preserve the break but avoid propagating inappropriate trailing commas in the downstream tuple printer.",
+        "bug_scenario": "When Prettier 2.5.0 formats a TypeScript conditional type whose check is an empty tuple type (i.e. \u201c[]\u201d) under \u201c--trailing-comma all\u201d and a line-break is forced by the 120-character print-width, it rewrites the empty tuple to\n\n  [ , ]\n\ninserting a spurious comma inside the brackets. This only happens when the long generic name exactly fills the width, so the formatter splits the conditional\u2019s tuple check into its own indented group, and the tuple printer (in conjunction with the global trailing-comma logic) unconditionally emits a comma even when there are no elements."
+    }
+}

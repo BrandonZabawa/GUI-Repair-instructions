@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-shell-session.js//Prism.languages['shell-session']\u2192command",
+            "components/prism-shell-session.js//Prism.languages['shell-session']\u2192shell-symbol"
+        ],
+        "explanation": "The bug lives entirely in the Shell-session grammar (components/prism-shell-session.js). The top-level \u201ccommand\u201d token is defined by a RegExp that always starts with either `$` or `#` (i.e. the shell prompt), and then the very first character is re-tokenized as \u201cshell-symbol.\u201d Because this pattern runs on every line, any `#` anywhere in the line\u2014including URL anchors\u2014matches as a prompt and is marked as a shell symbol. To fix this, the grammar must be tightened so that only real prompt characters at the start of a command line (not `#` inside URLs or comments) are captured as shell symbols.",
+        "bug_scenario": "On Prism\u2019s test-drive page with Shell session highlighting enabled, any \u201c#\u201d in the input is being picked up as a shell prompt symbol. In the screenshot you can see the URL fragment \u201c#pre-1-0-9-manifest-spoofing-vulnerability\u201d in the middle of a code block is wrongly colored as a shell prompt (\u2018shell-symbol\u2019) instead of being left plain text."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-shell-session.js//Prism.languages['shell-session']",
+            "components/prism-shell-session.min.js//Prism.languages['shell-session']"
+        ],
+        "bug_functions": [
+            "components/prism-shell-session.js//command",
+            "components/prism-shell-session.js//shell-symbol"
+        ],
+        "explanation": "The bug resides in the shell-session language definition. The top\u2010level Prism.languages['shell-session'] grammar (in both the unminified and minified files) declares a \u201ccommand\u201d pattern that begins with either '$' or '#' and then marks that first character as a 'shell-symbol'. As a result, any line that starts with '#'\u2014even if it\u2019s meant to be a comment inside the snippet\u2014is misidentified as a shell prompt. To fix this, the \u2018command\u2019 pattern (and its sub-pattern 'shell-symbol') must be adjusted so that real comments (e.g. lines matching the bash comment syntax) are not captured as prompt symbols.",
+        "bug_scenario": "In the Prism test\u2010drive screenshot with \u201cShell session\u201d selected, lines in the code snippet that begin with \u201c#\u201d (intended as comments inside the shell snippet) are being highlighted as if \u201c#\u201d were the prompt symbol. In other words, Prism\u2019s shell\u2010session grammar is treating every leading \u201c#\u201d as the prompt rather than as a comment delimiter, resulting in incorrect tokenization and highlighting of comment lines."
+    }
+}

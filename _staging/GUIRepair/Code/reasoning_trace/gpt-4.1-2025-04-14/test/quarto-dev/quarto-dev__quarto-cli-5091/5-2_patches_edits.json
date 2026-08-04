@@ -1,0 +1,74 @@
+{
+    "1/1": {
+        "src/resources/filters/common/url.lua": [
+            {
+                "SEARCH": [
+                    "function urldecode(url)",
+                    "if url == nil then",
+                    "return",
+                    "end",
+                    "url = url:gsub(\"+\", \" \")",
+                    "url = url:gsub(\"%%(%x%x)\", function(x)",
+                    "return string.char(tonumber(x, 16))",
+                    "end)",
+                    "return url",
+                    "end",
+                    ""
+                ],
+                "REPLACE": [
+                    "function urldecode(url)",
+                    "  if url == nil then",
+                    "  return",
+                    "  end",
+                    "    url = url:gsub(\"+\", \" \")",
+                    "    url = url:gsub(\"%%(%x%x)\", function(x)",
+                    "      return string.char(tonumber(x, 16))",
+                    "    end)",
+                    "  return url",
+                    "end",
+                    "",
+                    "-- Sanitize a URL for use as a filename",
+                    "function url_to_filename(url)",
+                    "  -- Replace unsafe characters with underscores",
+                    "  return url:gsub(\"[/:%%?&=#+]\", \"_\")",
+                    "end",
+                    ""
+                ]
+            }
+        ],
+        "src/resources/filters/quarto-finalize/mediabag.lua": [
+            {
+                "SEARCH": [
+                    "if contents ~= nil then",
+                    "",
+                    "local mediabagDir = param(\"mediabag-dir\", nil)",
+                    "local mediaFile = pandoc.path.join{mediabagDir, el.src}",
+                    "",
+                    "local file = _quarto.file.write(mediaFile, contents)",
+                    "if not file then",
+                    "warn('failed to write mediabag entry: ' .. mediaFile)",
+                    "end",
+                    "el.src = mediaFile",
+                    "return el",
+                    "end"
+                ],
+                "REPLACE": [
+                    "        if contents ~= nil then",
+                    "          ",
+                    "          local mediabagDir = param(\"mediabag-dir\", nil)",
+                    "          -- sanitize the URL for use as a filename",
+                    "          local safeFilename = url_to_filename(el.src)",
+                    "          local mediaFile = pandoc.path.join{mediabagDir, safeFilename}",
+                    "",
+                    "          local file = _quarto.file.write(mediaFile, contents)",
+                    "          if not file then",
+                    "            warn('failed to write mediabag entry: ' .. mediaFile)",
+                    "          end",
+                    "          el.src = mediaFile",
+                    "          return el",
+                    "        end"
+                ]
+            }
+        ]
+    }
+}

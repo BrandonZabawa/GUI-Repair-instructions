@@ -1,0 +1,85 @@
+{
+    "1/1": {
+        "src/ol/expr/expression.js": [
+            {
+                "SEARCH": [
+                    "function withGetArgs(encoded, context) {",
+                    "const arg = parse(encoded[1], context);",
+                    "if (!(arg instanceof LiteralExpression)) {",
+                    "throw new Error('Expected a literal argument for get operation');",
+                    "}",
+                    "if (typeof arg.value !== 'string') {",
+                    "throw new Error('Expected a string argument for get operation');",
+                    "}",
+                    "context.properties.add(arg.value);",
+                    "return [arg];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function withGetArgs(encoded, context) {",
+                    "  const arg = parse(encoded[1], context);",
+                    "  if (!(arg instanceof LiteralExpression)) {",
+                    "    throw new Error('Expected a literal argument for get operation');",
+                    "  }",
+                    "  if (typeof arg.value !== 'string') {",
+                    "    throw new Error('Expected a string argument for get operation');",
+                    "  }",
+                    "  // do not add \"id\" to the properties list \u2013 it is fetched via feature.getId()",
+                    "  if (arg.value !== 'id') {",
+                    "    context.properties.add(arg.value);",
+                    "  }",
+                    "  return [arg];",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/expr/cpu.js": [
+            {
+                "SEARCH": [
+                    "function compileAccessorExpression(expression, context) {",
+                    "const nameExpression = /** @type {LiteralExpression} */ (expression.args[0]);",
+                    "const name = /** @type {string} */ (nameExpression.value);",
+                    "switch (expression.operator) {",
+                    "case Ops.Get: {",
+                    "return (context) => context.properties[name];",
+                    "}",
+                    "case Ops.Var: {",
+                    "return (context) => context.variables[name];",
+                    "}",
+                    "default: {",
+                    "throw new Error(`Unsupported accessor operator ${expression.operator}`);",
+                    "}",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function compileAccessorExpression(expression, context) {",
+                    "  const nameExpression = /** @type {LiteralExpression} */ (expression.args[0]);",
+                    "  const name = /** @type {string} */ (nameExpression.value);",
+                    "  switch (expression.operator) {",
+                    "    case Ops.Get: {",
+                    "      if (name === 'id') {",
+                    "        // Special\u2010case the feature id",
+                    "        return (context) => {",
+                    "          const feature = context.feature;",
+                    "          // prefer getId(), but fall back to .id if needed",
+                    "          return typeof feature.getId === 'function'",
+                    "            ? feature.getId()",
+                    "            : feature.id;",
+                    "        };",
+                    "      }",
+                    "      return (context) => context.properties[name];",
+                    "    }",
+                    "    case Ops.Var: {",
+                    "      return (context) => context.variables[name];",
+                    "    }",
+                    "    default: {",
+                    "      throw new Error(`Unsupported accessor operator ${expression.operator}`);",
+                    "    }",
+                    "  }",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

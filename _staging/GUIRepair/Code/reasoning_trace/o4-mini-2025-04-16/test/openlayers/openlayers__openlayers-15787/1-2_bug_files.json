@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/webgl/PaletteTexture.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/webgl/BaseTileRepresentation.js",
+            "src/ol/webgl/styleparser.js",
+            "src/ol/renderer/webgl/TileLayerBase.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "\n\u2022 PaletteTexture.js\u2014manages the 1D lookup texture for palette styles. If its texture isn\u2019t deleted or rebound to the new context on layer re\u2010add, the old GL texture handle becomes invalid.\n\u2022 TileTexture.js\u2014wraps each tile\u2019s RGBA WebGL texture. Without proper disposal and recreation when the layer\u2019s context is lost, black tiles appear.\n\u2022 BaseTileRepresentation.js\u2014coordinates the creation and caching of TileTexture/PaletteTexture per tile. It needs to listen for context\u2010loss or layer removal to destroy stale textures.\n\u2022 styleparser.js\u2014generates GLSL shader code for palette styles. If shader programs aren\u2019t recompiled after context recreation, they will reference invalid textures.\n\u2022 renderer/webgl/TileLayerBase.js & TileLayer.js\u2014set up and manage the WebGL tile layer pipeline, including initializing representations. They must tear down and reinitialize the BaseTileRepresentation when the layer is removed and re\u2010added, but currently do not, leading to stale resources being reused.",
+        "bug_scenario": "A WebGLTileLayer styled with a palette renders correctly on first addition, but after calling map.removeLayer(layer) and then map.addLayer(layer) again, the layer comes back as a solid black tile and the console shows WebGL warnings about binding textures from a lost or different context. In other words, palette\u2010based tile textures or associated shader resources aren\u2019t being cleaned up or re\u2010initialized when the layer\u2019s WebGL context is torn down and recreated."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/webgl/styleparser.js",
+            "src/ol/webgl/PaletteTexture.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/webgl/BaseTileRepresentation.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/TileLayerBase.js"
+        ],
+        "explanation": "\u2022 src/ol/layer/WebGLTile.js \u2013 defines the WebGLTileLayer and kicks off style parsing and representation creation when the layer is added\n\u2022 src/ol/webgl/styleparser.js \u2013 extracts palette stops from the style expression and drives creation of the palette texture\n\u2022 src/ol/webgl/PaletteTexture.js \u2013 creates and uploads the palette color lookup texture to the GL context; if not re-created on re-add, it points at an invalid context\n\u2022 src/ol/webgl/TileTexture.js & BaseTileRepresentation.js \u2013 manage the tile and palette texture references and uniforms for each tile; stale references here lead to binding textures from the wrong context\n\u2022 src/ol/renderer/webgl/TileLayer.js & TileLayerBase.js \u2013 orchestrate rendering of WebGLTileLayers, including context loss/restore handling and resource cleanup; missing or incomplete cleanup/re-initialization of palette textures here causes the black tiles and context-mismatch errors",
+        "bug_scenario": "A WebGLTileLayer styled with a palette renders correctly on first add, but after calling map.removeLayer(layer) and map.addLayer(layer) several times, the tiles go black. The browser console reports WebGL warnings like \"bindTexture: tex is from a different (or lost) WebGL context.\" This indicates that the palette texture (and possibly other WebGL resources) created for the layer aren\u2019t being re-initialized or rebound to the current WebGL context when the layer is re-added."
+    }
+}

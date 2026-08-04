@@ -1,0 +1,40 @@
+diff --git a/packages/components/src/components/tabs/tabs.js b/packages/components/src/components/tabs/tabs.js
+index 06c6ec6f..7e89066a 100644
+--- a/packages/components/src/components/tabs/tabs.js
++++ b/packages/components/src/components/tabs/tabs.js
+@@ -49,10 +49,26 @@ class Tab extends ContentSwitcher {
+     const selected = this.element.querySelector(
+       this.options.selectorButtonSelected
+     );
++    // Set ARIA attributes for all tab buttons
++    this._updateAriaAttributes();
+     if (selected) {
+       this._updateTriggerText(selected);
+     }
+   }
++  /**
++   * Updates ARIA attributes for all tab buttons to support screen readers.
++   */
++  _updateAriaAttributes() {
++    const buttons = toArray(
++      this.element.querySelectorAll(this.options.selectorButton)
++    );
++    const setsize = buttons.length;
++    buttons.forEach((button, idx) => {
++      button.setAttribute('aria-setsize', setsize);
++      button.setAttribute('aria-posinset', idx + 1);
++    });
++  }
++  }
+ 
+   /**
+    * Internal method of {@linkcode Tab#setActive .setActive()}, to select a tab item.
+@@ -65,6 +81,8 @@ class Tab extends ContentSwitcher {
+     super._changeState(detail, (error, ...data) => {
+       if (!error) {
+         this._updateTriggerText(detail.item);
++        // Update ARIA attributes after state change
++        this._updateAriaAttributes();
+       }
+       callback(error, ...data);
+     });

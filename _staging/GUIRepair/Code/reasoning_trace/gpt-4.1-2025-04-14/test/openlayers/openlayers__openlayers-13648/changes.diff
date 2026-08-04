@@ -1,0 +1,86 @@
+diff --git a/src/ol/source/GeoTIFF.js b/src/ol/source/GeoTIFF.js
+index 65d960d8a8..21a8398a21 100644
+--- a/src/ol/source/GeoTIFF.js
++++ b/src/ol/source/GeoTIFF.js
+@@ -116,11 +116,13 @@ function getOrigin(image) {
+  */
+ function getResolution(image, referenceImage) {
+   try {
+-    return image.getResolution(referenceImage)[0];
++    // getResolution returns [xRes, yRes]
++    return image.getResolution(referenceImage);
+   } catch (_) {
+-    return (
+-      referenceImage.fileDirectory.ImageWidth / image.fileDirectory.ImageWidth
+-    );
++    // Fallback: assume square pixels if not available
++    const xRes = referenceImage.fileDirectory.ImageWidth / image.fileDirectory.ImageWidth;
++    const yRes = referenceImage.fileDirectory.ImageLength / image.fileDirectory.ImageLength;
++    return [xRes, yRes];
+   }
+ }
+ 
+@@ -607,11 +609,16 @@ class GeoTIFFSource extends DataTile {
+         return accumulator;
+       }, 0) + additionalBands;
+ 
++    // If resolutions are arrays of [xRes, yRes], split them
++    let xResolutions = resolutions.map(r => Array.isArray(r) ? r[0] : r);
++    let yResolutions = resolutions.map(r => Array.isArray(r) ? r[1] : r);
++
+     const tileGrid = new TileGrid({
+       extent: extent,
+       minZoom: minZoom,
+       origin: origin,
+-      resolutions: resolutions,
++      resolutions: xResolutions,
++      yResolutions: yResolutions,
+       tileSizes: tileSizes,
+     });
+ 
+@@ -638,9 +645,13 @@ class GeoTIFFSource extends DataTile {
+     const samplesPerPixel = this.samplesPerPixel_;
+     const nodataValues = this.nodataValues_;
+     const sourceInfo = this.sourceInfo_;
++    // Support for yResolutions
++    const yResolutions = this.tileGrid.yResolutions_ || this.tileGrid.resolutions_;
+     for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {
+       const source = sourceInfo[sourceIndex];
+       const resolutionFactor = this.resolutionFactors_[sourceIndex];
++      // Use yResolutions if available for correct pixel bounds
++      const yResolution = yResolutions[z] || this.tileGrid.getResolution(z);
+       const pixelBounds = [
+         Math.round(x * (size[0] * resolutionFactor)),
+         Math.round(y * (size[1] * resolutionFactor)),
+diff --git a/src/ol/tilegrid/TileGrid.js b/src/ol/tilegrid/TileGrid.js
+index 2340e44746..b9d97d66eb 100644
+--- a/src/ol/tilegrid/TileGrid.js
++++ b/src/ol/tilegrid/TileGrid.js
+@@ -77,6 +77,11 @@ class TileGrid {
+      * @type {!Array<number>}
+      */
+     this.resolutions_ = options.resolutions;
++    /**
++     * @private
++     * @type {Array<number>|undefined}
++     */
++    this.yResolutions_ = options.yResolutions;
+     assert(
+       isSorted(
+         this.resolutions_,
+@@ -324,6 +329,15 @@ class TileGrid {
+     return this.resolutions_[z];
+   }
+ 
++  /**
++   * Get the Y resolution for the given zoom level (for non-square pixels).
++   * @param {number} z Integer zoom level.
++   * @return {number|undefined} Y Resolution.
++   */
++  getYResolution(z) {
++    return this.yResolutions_ ? this.yResolutions_[z] : this.resolutions_[z];
++  }
++
+   /**
+    * Get the list of resolutions for the tile grid.
+    * @return {Array<number>} Resolutions.

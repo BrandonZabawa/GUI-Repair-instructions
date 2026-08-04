@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/draw.js",
+            "src/ol/layer/vector.js",
+            "src/ol/renderer/canvas/intermediatecanvas.js",
+            "src/ol/renderer/canvas/vectorlayer.js"
+        ],
+        "explanation": "1. src/ol/interaction/draw.js  \u2013 the draw interaction\u2019s handleEvent, modifyDrawing_ and updateSketchFeatures_ routines drive a map repaint on every pointer move.  In image mode this means a full layer render for each pixel update.\n\n2. src/ol/layer/vector.js  \u2013 the switch to renderMode: 'image' is managed here, turning a normal vector layer into one backed by an intermediate canvas/image source rather than directly drawing primitives.\n\n3. src/ol/renderer/canvas/intermediatecanvas.js  \u2013 in image mode all layer features are drawn into an off-screen canvas and then blitted on every frame.  The composeFrame method does a drawImage() for each update instead of vector context drawing.\n\n4. src/ol/renderer/canvas/vectorlayer.js  \u2013 the prepareFrame and composeFrame logic here rebuilds the entire ol.render.canvas.ReplayGroup on every draw call (for each pointer move), iterating over all features and replaying them into the canvas.  This massive work on each event is the root cause of the performance regression in renderMode: 'image'.",
+        "bug_scenario": "When upgrading OpenLayers from 4.4.2 to 4.6.2 and using a Vector layer with renderMode: 'image', the draw interaction (click-and-drag to draw a triangular polygon) becomes painfully slow.  In 4.4.x the same draw routine would immediately sketch the triangle in vector mode; in 4.6.x each pointer move forces the entire layer to re-render into an intermediate canvas and then be drawn back onto the map.  The provided screenshot shows a simple triangle being sketched in the Pacific, but every pointer move triggers full re-rendering of all red data points around the globe, causing the severe lag."
+    }
+}

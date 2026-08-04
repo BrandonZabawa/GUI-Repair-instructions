@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/number-picker/index.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/number-picker/index.jsx//getPrecision",
+            "src/number-picker/index.jsx//getPrecisionFactor",
+            "src/number-picker/index.jsx//upStep"
+        ],
+        "explanation": "The NumberPicker component computes how much to increment by using getPrecision (to determine decimal places) and getPrecisionFactor (to compute a scaling factor). Its upStep method then multiplies, adds, and divides by that factor but does not apply any rounding, so in Safari the result can be 4.029999999999999 instead of 4.03. getPrecision and getPrecisionFactor set the scale; upStep needs a toFixed (or equivalent) rounding step\u2014just as downStep does\u2014to avoid floating-point artifacts when adding small decimal steps.",
+        "bug_scenario": "In Safari, clicking the \u201c+\u201d button on a NumberPicker initialized at 4.02 with a step of 0.01 produces 4.029999999999999 instead of rounding to 4.03, exposing a JavaScript floating-point precision issue."
+    },
+    "2": {
+        "bug_classes": [
+            "src/number-picker/index.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/number-picker/index.jsx//NumberPicker.getPrecision",
+            "src/number-picker/index.jsx//NumberPicker.getPrecisionFactor",
+            "src/number-picker/index.jsx//NumberPicker.upStep",
+            "src/number-picker/index.jsx//NumberPicker.downStep",
+            "src/number-picker/index.jsx//NumberPicker.step"
+        ],
+        "explanation": "All of the arithmetic for incrementing or decrementing the value lives in NumberPicker. getPrecision and getPrecisionFactor compute how many decimal places to support and derive a scaling factor. upStep and downStep use that factor to perform addition or subtraction without naively adding floats, but upStep never applies a final rounding (toFixed) whereas downStep does, so Safari\u2019s floating-point multiplication still leaks tiny errors back through setValue. step(type) ties into upStep/downStep, so the missing rounding in upStep is the direct cause of seeing 4.029999999999999 instead of 4.03.",
+        "bug_scenario": "When using NumberPicker with defaultValue=4.02 and step=0.01 in Safari, clicking the \u201c+\u201d button produces 4.029999999999999 instead of the expected 4.03\u2014exposing a JS float-precision bug in the component\u2019s increment logic."
+    }
+}

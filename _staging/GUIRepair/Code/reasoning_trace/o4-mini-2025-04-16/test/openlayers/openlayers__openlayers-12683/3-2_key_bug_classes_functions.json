@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/IconImage.js//IconImage",
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/IconImage.js//IconImage.replaceColor_",
+            "src/ol/style/Icon.js//Icon.getOrigin",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder.setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder.drawPoint",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder.drawMultiPoint"
+        ],
+        "explanation": "The bug only occurs when a color tint is applied (IconImage.replaceColor_) and pixelRatio>1 because replaceColor_ creates a scaled canvas (canvas.width/height = ceil(image size * pixelRatio)) and then applies the color. However, Icon.getOrigin calculates the sprite offset based on unscaled dimensions, and CanvasImageBuilder.setImageStyle stores that unscaled origin in originX_/originY_. In drawPoint/drawMultiPoint, the code scales anchorX_/anchorY_ by imagePixelRatio but leaves originX_/originY_ unscaled, so the sprite sub-rectangle is pulled from the wrong coordinates. To fix this, the origin offsets must also be multiplied by the imagePixelRatio (or otherwise adjusted) when drawing colored icons at non-unity pixel ratios.",
+        "bug_scenario": "When using an Icon style with a custom tint color on a high-DPI display (pixel ratio \u2260 1) and specifying a sprite offset and size, the sub-rectangle chosen from the sprite sheet is shifted/misaligned. At pixelRatio=1 (or when no color is applied) the offset is correct; at pixelRatio=2 with color the icon is clipped at the wrong position."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Icon.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "bug_functions": [
+            "Icon.prototype.getOrigin",
+            "CanvasImageBuilder.prototype.setImageStyle",
+            "CanvasImageBuilder.prototype.drawPoint",
+            "CanvasImageBuilder.prototype.drawMultiPoint"
+        ],
+        "explanation": "The Icon.getOrigin method computes the CSS-pixel offset into the sprite but never accounts for the device pixel ratio. When a color is applied, IconImage.replaceColor_ generates a high-resolution canvas (canvas.width/height multiplied by pixelRatio) and IconImage.getPixelRatio returns that pixelRatio. CanvasImageBuilder then uses imagePixelRatio to scale anchor, width, and height but passes the unscaled originX/Y into the drawImage instruction. As a result, the crop start (origin) stays in CSS pixels while the canvas is in device pixels, causing an incorrect sub-image selection. To fix this, the originX_ and originY_ stored in setImageStyle (or used in drawPoint/drawMultiPoint) must be multiplied by imagePixelRatio, or Icon.getOrigin must return origin values already scaled by pixelRatio.",
+        "bug_scenario": "When you apply a custom color tint to an Icon style that uses a sprite sheet (sub-image via offset/size) and view it on a high-DPI screen (pixelRatio > 1), the drawn symbol is cropped from the wrong region of the sprite. At pixelRatio = 1 or when no color is applied, the offset works correctly. As soon as you tint (triggering a canvas re-render of the icon at device pixels) and pixelRatio \u2260 1, the origin/offset is not scaled and you get a shifted or partially clipped icon."
+    }
+}

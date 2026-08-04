@@ -1,0 +1,31 @@
+diff --git a/lighthouse-core/audits/user-timings.js b/lighthouse-core/audits/user-timings.js
+index 45acbf655..042ce7adb 100644
+--- a/lighthouse-core/audits/user-timings.js
++++ b/lighthouse-core/audits/user-timings.js
+@@ -55,10 +55,22 @@ class UserTimings extends Audit {
+ 
+       // reject these "userTiming" events that aren't really UserTiming, by nuking ones with frame data (or requestStart)
+       // https://cs.chromium.org/search/?q=trace_event.*?user_timing&sq=package:chromium&type=cs
+-      return evt.name !== 'requestStart' &&
+-          evt.name !== 'navigationStart' &&
+-          evt.name !== 'paintNonDefaultBackgroundColor' &&
+-          evt.args.frame === undefined;
++      // Also filter out known irrelevant marks, such as those injected by ads/analytics (e.g., names starting with 'goog_')
++      const irrelevantMarkPatterns = [
++        /^goog_/i, // Google Ads/Analytics
++        /^gtm\./i, // Google Tag Manager
++        /^ga_/i,   // Google Analytics
++      ];
++      if (
++        evt.name === 'requestStart' ||
++        evt.name === 'navigationStart' ||
++        evt.name === 'paintNonDefaultBackgroundColor' ||
++        evt.args.frame !== undefined ||
++        irrelevantMarkPatterns.some(pattern => pattern.test(evt.name))
++      ) {
++        return false;
++      }
++      return true;
+     })
+     .forEach(ut => {
+       // Mark events fall under phases R and I (or i)

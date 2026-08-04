@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js",
+            "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js",
+            "lib/features/modeling/behavior/AttachEventBehavior.js"
+        ],
+        "explanation": "1. BpmnCopyPaste.js: this module drives the copy/paste lifecycle but currently only copies name, DI, isExpanded and a few simple properties. It does not ensure that engine-specific extension elements (async continuations, job configs) survive when the event type changes to a boundary event.\n\n2. ModdleCopy.js: although it generally copies all moddle properties, it explicitly disallows certain properties and may filter out extensionElements if empty. It needs to be adjusted to allow copying the engine extension elements (async continuations, job configuration) through the copyElement call.\n\n3. CreateBoundaryEventBehavior.js: on pasting as a boundary event this handler creates a fresh bpmn:BoundaryEvent via bpmnFactory.create(...) with only cancelActivity and attachedToRef. It never re-uses or copies the old event\u2019s extension elements or engine properties.\n\n4. AttachEventBehavior.js: similarly, when dragging an intermediate event onto a task this module calls bpmnReplace.replaceElement(...) but only passes the new eventDefinitionType. It doesn\u2019t carry over the original intermediate event\u2019s extension elements or async/job settings. All of these need to be enhanced so that when we swap in a boundary event we also copy over the engine-specific properties from the original event.",
+        "bug_scenario": "The user creates an Intermediate Throw Event (with async continuation or job configuration set in the properties panel), copies it, and pastes it onto a task to turn it into a Boundary Event. Visually the pasted boundary event appears, but all of the previously filled engine-specific properties (async continuation / job priority, extension elements, etc.) are gone. In the GIF, you can see the intermediate event on the left with its job configuration set; after copy-and-paste as a boundary event on the right, those fields have been reset."
+    }
+}

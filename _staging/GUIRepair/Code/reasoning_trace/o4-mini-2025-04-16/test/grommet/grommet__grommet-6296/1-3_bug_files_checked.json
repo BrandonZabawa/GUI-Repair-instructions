@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/PageHeader/PageHeader.js",
+            "src/js/components/Heading/StyledHeading.js"
+        ],
+        "explanation": "1. PageHeader.js \u2013 this file constructs the layout for the header (title, subtitle, actions, parent link) and currently renders the heading inside a flex row without wrap and (by default) passes through any truncate behaviour inherited from the Heading component. Because the title is treated as a single non\u2010wrapping element in a no\u2010wrap flex box, a long string spills out. We need to remove implicit truncation and/or enable wrapping in the page header\u2019s heading container.  \n2. StyledHeading.js \u2013 this file defines the default CSS for Grommet\u2019s Heading component (used by PageHeader). It doesn\u2019t currently include word\u2010break or overflow\u2010wrap rules, nor does it disable the default truncate setting when used in a context like PageHeader. By adding an overflow\u2010wrap (or word-break) rule here and/or defaulting truncate to false when appropriate, we allow very long words or strings to break and wrap instead of overflowing.",
+        "bug_scenario": "In the Grommet \u201cPageHeader\u201d example, when you pass a very long, unpredictable string into the \u201ctitle\u201d prop, it doesn\u2019t wrap and instead overflows its container, colliding with adjacent elements (for example, the \u201cGet Started\u201d button). We expect the heading text to break or wrap at its container boundary, but today it simply overflows on a single line."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/PageHeader/PageHeader.js",
+            "src/js/components/Heading/Heading.js",
+            "src/js/components/Heading/StyledHeading.js"
+        ],
+        "explanation": "\u2022 PageHeader.js: This is where the PageHeader layout is defined, including the Box that lays out the title and actions in a single row. Because it forces a single row, the title never wraps. This file will need to be updated to allow the title container to shrink/grow and wrap its contents (e.g., by setting flex or overflow-wrap/word-break on the title sub-component).  \n\n\u2022 Heading.js: The PageHeader title is rendered via the Heading component. Any default props or behaviors (such as truncate or white-space) that prevent wrapping live here. We may need to expose a prop or override behavior to allow break-word.  \n\n\u2022 StyledHeading.js: This is the styled-component for the Heading element (e.g., styled.h1). It currently does not include CSS rules such as 'word-break: break-word' or 'overflow-wrap: break-word'. We need to add those so that long, unbroken strings wrap instead of overflowing.",
+        "bug_scenario": "When a very long, unbroken string is passed as the title to PageHeader, the heading does not wrap or break and instead overflows its container, overlapping the adjacent action button. In the screenshot you can see \u201cLVL3928734.haiku.yosemite_342397\u201d running off the right edge and colliding with the \u201cGet Started\u201d button. The expectation is that a long heading should wrap (or break) onto multiple lines when it reaches the container boundary."
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Button/Button.js"
+        ],
+        "explanation": "1. packages/react/src/components/Button/Button.js defines Button.propTypes.kind with a oneOf([...]) list that omits the string 'danger-ghost', so any use of kind=\"danger-ghost\" triggers a warning. You need to add 'danger-ghost' to that array.\n\n2. packages/react/src/components/Button/Button.mdx shows examples of <Button kind=\"danger-ghost\"/>, so the docs and prop-type list are out of sync. Updating the MDX (or simply keeping the example and PropTypes in sync) will eliminate the warning and restore consistency between docs and implementation.",
+        "bug_scenario": "When you render the Danger Ghost Button story (i.e. <Button kind=\"danger-ghost\">) under Storybook in dev mode, you get this warning:\n\n  Warning: Failed prop type: Invalid prop `kind` of value `danger-ghost` supplied to `Button`, expected one of [\"primary\",\"secondary\",\"danger\",\"ghost\",\"danger--primary\",\"danger--tertiary\",\"danger-tertiary\",\"tertiary\"].\n\nEven though the MDX docs and the story itself both show and use \u201cdanger-ghost,\u201d the Button component\u2019s PropTypes list doesn\u2019t include it, so React spits out a prop-type warning."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Button/Button.js",
+            "packages/react/src/components/Button/Button-test.js"
+        ],
+        "explanation": "The root cause is that Button.js defines its `kind` PropTypes.oneOf list without the \u201cdanger-ghost\u201d option, so passing kind=\"danger-ghost\" fails validation and triggers the warning. Button.js is where the prop types and class-name mapping for each variant live and must be updated to include \u201cdanger-ghost\u201d. In addition, Button-test.js should be updated to cover the new variant so existing tests don\u2019t break and to verify that using kind=\"danger-ghost\" no longer emits a warning.",
+        "bug_scenario": "When running Storybook in development mode on the React Button component, any story that renders a \u201cdanger-ghost\u201d button emits a prop-type warning. The warning shows that the `kind` propType for Button does not include \u201cdanger-ghost\u201d among its allowed values, even though the docs and stories are already using that variant."
+    }
+}

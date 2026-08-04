@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/Table.js",
+            "packages/react/src/components/DataTable/TableRow.js",
+            "packages/react/src/components/DataTable/TableHeader.js",
+            "packages/react/src/components/DataTable/DataTable.mdx"
+        ],
+        "explanation": "\n1) Table.js is the root of the React DataTable \u2014 it renders the `<table>` element but does not forward a passed-in `style` prop (and so any `--row-height` variable) to the real DOM node.\n2) TableRow.js renders each `<tr>` in the body; it takes props from `getRowProps` but does not apply a passed `style.height` or CSS var to the row.\n3) TableHeader.js renders the header `<tr>` and `<th>` cells; like TableRow, it does not forward a `style` prop or apply a CSS custom property for row height.\n4) DataTable/DataTable.mdx is the documentation for the React DataTable \u2014 it needs to be updated to document the new \u201cmedium\u201d row-height option and show how to consume `--row-height` when styling the table.",
+        "bug_scenario": "The goal is to give Carbon\u2019s React DataTable a third \u201cmedium\u201d (40 px) row-height variant (in addition to the existing \u201ccompact\u201d and \u201cshort\u201d modes) and/or allow consumers to override row height via the CSS custom property `--row-height`. In the repro we pass `<Table style={{ '--row-height': '40px' }}>` and even set `<TableRow style={{ height: '40px' }}>`, but neither the header nor the body rows pick up this new height. In other words, neither the DataTable wrapper nor its row/header components forward the custom CSS variable or inline height to the DOM, so the table stays at the default row height."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/Table.js",
+            "packages/react/src/components/DataTable/DataTable.js",
+            "packages/react/src/components/DataTable/TableRow.js",
+            "packages/react/src/components/DataTable/TableHeader.js"
+        ],
+        "explanation": "All of the core rendering logic for row height lives in the React DataTable implementation. \n\n\u2022 Table.js \u2013 this file defines the <Table> component\u2019s size prop, its allowed values, and the mapping from size (\"compact\", \"short\" etc.) to the matching CSS class or CSS variable. We need to add \u201cmd\u201d to its propTypes/defaultProps and implement the 40px mapping.\n\n\u2022 DataTable.js \u2013 the top\u2010level wrapper that reads incoming props and passes size (and default size) down to Table. It needs to accept and pass through the new \u201cmd\u201d option.\n\n\u2022 TableRow.js \u2013 this file is responsible for rendering each <tr> and applies inline styles or classNames based on table size. It needs to recognize the new 40px variant so that rows render at the requested height.\n\n\u2022 TableHeader.js \u2013 similar to TableRow.js but for the header <th> row. It also applies style or className for the header height and must be updated for the 40px size.\n\nUpdating these four files will allow consumers to use size=\"md\" (or an equivalent new prop) and have the table render with 40px row and header heights consistently, without manually overriding CSS variables or inline styles.",
+        "bug_scenario": "The Carbon React DataTable currently only ships with the default, \u201cshort\u201d (32px), and \u201ccompact\u201d (24px) heights. The request is to add a new \u201cmd\u201d (40px) row\u2010height option so that table rows and headers can render at 40px high. In the reproduction the user resorts to inline styles (\"--row-height: 40px\" on the <Table> and style={{ height: '40px' }} on each <TableRow>), because the component\u2019s built\u2010in size variants do not include a 40px option. We need to extend the React DataTable code so that a \u201cmd\u201d size prop (or similar) maps to 40px and surfaces via the correct CSS class or CSS variable, just like the other sizes."
+    }
+}

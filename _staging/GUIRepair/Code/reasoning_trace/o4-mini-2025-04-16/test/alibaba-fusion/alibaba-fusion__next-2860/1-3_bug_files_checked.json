@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/number-picker/number-picker.jsx",
+            "src/number-picker/style.js"
+        ],
+        "explanation": "• src/number-picker/number-picker.jsx 中负责监听内部 input 的 onFocus/onBlur 并切换触发按钮的显示状态：当前实现会在 input blur 时立即隐藏按钮，应改为只有在真正离开整个组件时才触发隐藏，使 focus-within 效果生效。\n• src/number-picker/style.js 生成组件样式，其中只在 hover 或组件自身聚焦时添加显示触发器的 class，需要补充对 :focus-within 或 focus class 的支持，确保在子元素（input 或按钮）获得焦点时触发器可见。\n• src/number-picker/main.scss 定义了触发按钮的显示/隐藏样式规则，需要在 CSS 中增加 .next-number-picker:focus-within .next-number-picker-trigger 或者相应的 class 选择器，保证无论是输入框还是按钮获得焦点时都能展示操作按钮。",
+        "bug_scenario": "当使用键盘 Tab 将焦点移动到 NumberPicker 的输入框时，组件未显示增减按钮；再按一次 Tab 切换到按钮时，按钮依然隐藏，且整个 NumberPicker 的外边框聚焦样式消失。合理的行为是在输入或按钮聚焦时都显示触发按钮，并保持组件的聚焦样式（可通过 :focus-within 实现）。"
+    },
+    "2": {
+        "bug_files": [
+            "src/number-picker/number-picker.jsx",
+            "src/number-picker/style.js"
+        ],
+        "explanation": "1. main.scss – this file currently only shows the trigger buttons on hover (e.g. .next-number-picker:hover .next-number-picker-trigger). We need to add a :focus-within rule so that when the input or buttons inside the wrapper are focused, the buttons are displayed and the wrapper keeps its focus border styling.\n\n2. number-picker.jsx – this component renders the wrapper div and input/buttons inside. If CSS-only approach isn’t sufficient, we can also hook into the input’s onFocus/onBlur here, add a 'focus' class to the wrapper, and toggle visibility of the triggers. This file is where you’d wire up those events.\n\n3. style.js – this file imports main.scss and ties the styles into the component className prefix. After adding new selectors (like :focus-within or a generated `.focus` modifier), you’ll need to ensure style.js still injects the correct CSS and that the generated class names match what you use in main.scss or number-picker.jsx.",
+        "bug_scenario": "When you tab into the NumberPicker input, the blue focus-outline appears around the text input but the “+” and “–” trigger buttons remain hidden (they only show on hover). At the same time the overall NumberPicker wrapper loses its hover-based focus styling. In other words, keyboard focus on the input does not reveal the trigger buttons nor preserve the wrapper’s focus style — we need to use CSS :focus-within (or equivalent JS) so that when any child (the input or buttons) has focus, the wrapper keeps its focus style and the triggers become visible."
+    }
+}

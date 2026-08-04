@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/VectorTile.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/style/Style.js",
+            "src/ol/render/canvas/style.js"
+        ],
+        "explanation": "\u2022 src/ol/layer/VectorTile.js: the default renderMode is 'hybrid', which for fills causes the vector-tile polygons/lines to be drawn into an overlaid image. With a transparent fill that image ends up ghosting above everything else. We need either to change the default to 'vector' when a fill is present or to special-case fills in hybrid mode so they don\u2019t produce a separate compositing layer.\n\u2022 src/ol/renderer/canvas/VectorTileLayer.js: in hybrid mode this class builds tile images of filled geometries but does not tear down or re-render them correctly when setFill() is called, so stale image layers accumulate. The code in prepareTile/renderTileImage_/postRender needs to detect style changes and clear out the old image before drawing the new fill.\n\u2022 src/ol/style/Style.js: setFill() is currently a no\u2010op. That means calling selectionStyle.setFill(...) never flags the layer for a full re-render of the underlying tile image. We need to implement setFill() to update the internal fill_ property and dispatch a change event so the canvas renderer will rebuild its tile images.\n\u2022 src/ol/render/canvas/style.js: buildFill() doesn\u2019t return a proper FillEvaluator so the renderer falls back to a default fill when none is detected, further confusing the hybrid image pipeline. We need to wire up buildFill() so a custom fill style is compiled into the flat style instructions rather than triggering the default\u2010fill fallback.",
+        "bug_scenario": "When you create a VectorTile layer in ol@9.1.0 with a Style that has a fill on it, the renderer falls back into \u201chybrid\u201d mode and draws the vector\u2010tile polygons and lines into a semitransparent image which is then composited on top of everything else. In the screenshot you can see a pinkish translucent \u201cghost\u201d fill layer sitting above adjacent tiles and above any layers drawn beneath\u2014even when you change styles at runtime with setFill(), the \u201chybrid\u201d image layer isn\u2019t torn down and recreated cleanly, so you end up with flicker and a persistent semitransparent overlay. If you remove the fill entirely (or switch to pure \u201cvector\u201d mode), the problem goes away."
+    }
+}

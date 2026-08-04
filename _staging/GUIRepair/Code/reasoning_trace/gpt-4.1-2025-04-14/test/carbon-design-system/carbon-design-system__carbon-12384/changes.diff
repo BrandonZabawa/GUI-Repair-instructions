@@ -1,0 +1,81 @@
+diff --git a/packages/react/src/components/NumberInput/NumberInput.js b/packages/react/src/components/NumberInput/NumberInput.js
+index 5c61144d..1e7d980d 100644
+--- a/packages/react/src/components/NumberInput/NumberInput.js
++++ b/packages/react/src/components/NumberInput/NumberInput.js
+@@ -76,7 +76,7 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+     [`${prefix}--number--readonly`]: readOnly,
+     [`${prefix}--number--light`]: light,
+     [`${prefix}--number--nolabel`]: hideLabel,
+-    [`${prefix}--number--nosteppers`]: hideSteppers,
++    [`${prefix}--number--nosteppers`]: hideSteppers || readOnly, // Hide steppers if readOnly
+     [`${prefix}--number--${size}`]: size,
+     [customClassName]: !enabled,
+   });
+@@ -149,6 +149,7 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+           hideLabel={hideLabel}
+           id={id}
+           label={label}
++          readOnly={readOnly}
+         />
+         <div className={wrapperClasses}>
+           <input
+@@ -191,12 +192,12 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+           {normalizedProps.icon ? (
+             <normalizedProps.icon className={iconClasses} />
+           ) : null}
+-          {!hideSteppers && (
++          {!hideSteppers && !readOnly && (
+             <div className={`${prefix}--number__controls`}>
+               <button
+                 aria-label={decrementNumLabel || iconDescription}
+                 className={`${prefix}--number__control-btn down-icon`}
+-                disabled={disabled}
++                disabled={disabled || readOnly}
+                 onClick={(event) => {
+                   const state = {
+                     value: clamp(max, min, parseInt(value) - step),
+@@ -221,7 +222,7 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+               <button
+                 aria-label={incrementNumLabel || iconDescription}
+                 className={`${prefix}--number__control-btn up-icon`}
+-                disabled={disabled}
++                disabled={disabled || readOnly}
+                 onClick={(event) => {
+                   const state = {
+                     value: clamp(max, min, parseInt(value) + step),
+@@ -249,7 +250,7 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+         {normalizedProps.validation ? (
+           normalizedProps.validation
+         ) : (
+-          <HelperText disabled={disabled} description={helperText} />
++          <HelperText disabled={disabled} description={helperText} readOnly={readOnly} />
+         )}
+       </div>
+     </div>
+@@ -395,11 +396,12 @@ NumberInput.propTypes = {
+   warnText: PropTypes.node,
+ };
+ 
+-function Label({ disabled, id, hideLabel, label }) {
++function Label({ disabled, id, hideLabel, label, readOnly }) {
+   const prefix = usePrefix();
+   const className = cx({
+     [`${prefix}--label`]: true,
+     [`${prefix}--label--disabled`]: disabled,
++    [`${prefix}--label--readonly`]: readOnly,
+     [`${prefix}--visually-hidden`]: hideLabel,
+   });
+ 
+@@ -420,10 +422,11 @@ Label.propTypes = {
+   label: PropTypes.node,
+ };
+ 
+-function HelperText({ disabled, description }) {
++function HelperText({ disabled, description, readOnly }) {
+   const prefix = usePrefix();
+   const className = cx(`${prefix}--form__helper-text`, {
+     [`${prefix}--form__helper-text--disabled`]: disabled,
++    [`${prefix}--form__helper-text--readonly`]: readOnly,
+   });
+ 
+   if (description) {

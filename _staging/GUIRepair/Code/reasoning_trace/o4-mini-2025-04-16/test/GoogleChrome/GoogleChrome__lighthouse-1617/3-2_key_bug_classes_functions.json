@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/manifest-short-name-length.js//ManifestShortNameLength"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/manifest-short-name-length.js//ManifestShortNameLength.audit"
+        ],
+        "explanation": "The heart of the false positive lies in the audit method of the ManifestShortNameLength class. In audit(), the code falls back to `manifest.name.value` when `short_name` is missing, but then treats any missing or empty value as a failure (`rawValue: false`). This logic (`manifest.short_name.value || manifest.name.value || ''` and then `isShortNameShortEnough = manifestValue && manifestValue.length <= suggestedLength`) causes a missing short_name to be treated as length zero. To fix the bug, the audit logic needs to differentiate between a truly empty short_name and a missing one, and only enforce the length check when a short_name actually exists.",
+        "bug_scenario": "The Lighthouse audit for manifest-short-name-length shows a failure (\u201cFound: 0 chars\u201d) whenever the manifest is missing a `short_name`, even if a valid `name` is defined. In the repro, an empty manifest or one with only `name` triggers `rawValue: false` and reports zero characters, producing a false positive."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/manifest-short-name-length.js//ManifestShortNameLength"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/manifest-short-name-length.js//ManifestShortNameLength.audit"
+        ],
+        "explanation": "The root of the false positive is in the static audit() method of the ManifestShortNameLength class. It unconditionally falls back to an empty string when both short_name and name are missing, then applies the length check and flags a failure (0 chars). To fix this bug the audit() implementation needs to first detect the absence of a short_name (and optionally name), and skip or pass the audit instead of treating it as a zero-length label. Adjusting this logic in ManifestShortNameLength.audit will prevent empty manifests from producing the \u201cFound: 0 chars\u201d false positive.",
+        "bug_scenario": "When a web app manifest is completely empty (no \u201cshort_name\u201d and no \u201cname\u201d), the manifest-short-name-length audit treats the missing value as a zero\u2010length string, fails the check, and reports \u201cFound: 0 chars,\u201d producing a false positive."
+    }
+}

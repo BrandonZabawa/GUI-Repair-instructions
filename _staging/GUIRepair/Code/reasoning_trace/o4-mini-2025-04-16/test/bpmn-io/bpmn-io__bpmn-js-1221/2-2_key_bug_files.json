@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/import/BpmnImporter.js"
+        ],
+        "explanation": "1. AdaptiveLabelPositioningBehavior.js: This behavior is responsible for adjusting external labels on commands like connection.create or label.create, but it does not listen to the copy-paste pipeline (e.g. paste events or direct shape creation by the importer). It needs to hook into paste events to apply the alignment after pasting.\n\n2. BpmnCopyPaste.js: This module copies only semantic properties (name, di.fill, di.stroke, isExpanded) into the descriptor and does not carry over any label positioning hints or DI for external label offsets. As a result, the importer gets no information that the label should be relocated relative to the host\u2019s orientation.\n\n3. DropOnFlowBehavior.js: When shapes (including boundary events) are dropped or inserted on a flow (via paste or move-on-flow), this behavior reconnects the element but does not trigger any label adjustment. The pasted boundary event\u2019s label is never re-aligned after the flow insertion.\n\n4. BpmnImporter.js: This importer creates shapes and labels directly from the BPMN DI (using getExternalLabelBounds) without invoking the label positioning behavior. On paste, the initial label bounds are taken from the old DI, and no post-import alignment is performed. The importer must invoke the adaptive positioning or fire the correct events so that the label adjustment behavior can run.",
+        "bug_scenario": "When copying and pasting a boundary event (with an external label) onto a vertical flow, the pasted element is correctly inserted but its label is not repositioned according to the flow orientation. Instead of adapting (e.g. moving to the left or right of the circle based on the flow direction), the label remains in its old position."
+    }
+}

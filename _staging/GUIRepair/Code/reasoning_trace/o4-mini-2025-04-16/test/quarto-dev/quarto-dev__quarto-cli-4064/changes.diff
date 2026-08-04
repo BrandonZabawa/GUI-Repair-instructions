@@ -1,0 +1,41 @@
+diff --git a/src/format/reveal/format-reveal.ts b/src/format/reveal/format-reveal.ts
+index 242f04a13..f149f3fca 100644
+--- a/src/format/reveal/format-reveal.ts
++++ b/src/format/reveal/format-reveal.ts
+@@ -264,10 +264,10 @@ export function revealjsFormat() {
+               : "c/t";
+           }
+ 
+-          // opinionated version of reveal config defaults
+-          extras.metadata = {
+-            ...extras.metadata,
+-            ...revealMetadataFilter({
++          // opinionated version of reveal config defaults,
++          // but do not override any user-specified width/height (e.g. "100%")
++          {
++            const defaultConfig: Record<string, unknown> = {
+               width: 1050,
+               height: 700,
+               margin: 0.1,
+@@ -282,8 +282,19 @@ export function revealjsFormat() {
+               transition: "none",
+               backgroundTransition: "none",
+               pdfSeparateFragments: false,
+-            }),
+-          };
++            };
++            // if the user provided width or height (perhaps as "100%"), keep it
++            if (format.metadata["width"] !== undefined) {
++              delete defaultConfig.width;
++            }
++            if (format.metadata["height"] !== undefined) {
++              delete defaultConfig.height;
++            }
++            extras.metadata = {
++              ...extras.metadata,
++              ...revealMetadataFilter(defaultConfig),
++            };
++          }
+         }
+ 
+         // hash-type: number (as shorthand for -auto_identifiers)

@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "audits/uses-rel-preconnect-test.js",
+            "audits/uses-rel-preload-test.js",
+            "audits/network-requests-test.js",
+            "gather/gatherers/html-without-javascript-test.js",
+            "network-records-to-devtools-log.js",
+            "config/default-config-test.js"
+        ],
+        "explanation": "\u2022 audits/uses-rel-preconnect-test.js: Contains the unit tests for the preconnect audit. Examining this will show how the audit discovers existing <link rel=preconnect> tags and what cases it currently treats as \u201cmissing\u201d.\n\u2022 audits/uses-rel-preload-test.js: The preload audit uses very similar DOM-parsing logic. Comparing its tests will help pinpoint how it handles deduplication or origin matching differently.\n\u2022 audits/network-requests-test.js: The preconnect audit operates over the set of networkRequests. Reviewing this test confirms how origins are collected and normalized before hints are checked.\n\u2022 gather/html-without-javascript-test.js: This gatherer pulls all <link> elements from the DOM (including rel=preconnect/dns-prefetch). Inspecting it reveals how link tags and their hrefs are captured for use by the audit.\n\u2022 computed/network-records-to-devtools-log.js: Converts raw network records into the DevTools protocol format that underpins how the audit correlates requests with hint origins. Investigating this will help you simulate and reproduce the issue in tests.\n\u2022 config/default-config-test.js: Shows how the \u201cuses-rel-preconnect\u201d audit is wired into the Performance > Opportunities category. Useful to confirm you\u2019re running the correct audit and to adjust thresholds or grouping for your repro setup.",
+        "bug_scenario": "When running Lighthouse against a page that already includes <link rel=\"preconnect\"> hints for third-party origins, the \u201cAvoid multiple, costly round trips to any origin\u201d opportunity still flags those same origins. In the screenshot you can see links for \u201chttps://www.google-analytics.com\u201d and \u201chttps://fonts.gstatic.com\u201d are already present in the DOM, yet Lighthouse recommends adding preconnect/dns-prefetch for two origins (\u201cgoogle-analytics.com\u201d and \u201cfonts.googleapis.com\u201d). The audit doesn\u2019t dedupe or match existing hints, resulting in a false positive."
+    }
+}

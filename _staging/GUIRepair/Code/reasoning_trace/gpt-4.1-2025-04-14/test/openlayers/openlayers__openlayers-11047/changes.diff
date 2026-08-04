@@ -1,0 +1,42 @@
+diff --git a/src/ol/source/Raster.js b/src/ol/source/Raster.js
+index 9992395d54..e5ad95d25d 100644
+--- a/src/ol/source/Raster.js
++++ b/src/ol/source/Raster.js
+@@ -98,9 +98,24 @@ export class RasterSourceEvent extends Event {
+      * @api
+      */
+     this.data = data;
++  /**
++   * Clean up and terminate any web workers.
++   */
++  disposeInternal() {
++    if (this.worker_ && typeof this.worker_.dispose === 'function') {
++      this.worker_.dispose();
++    } else if (this.worker_ && typeof this.worker_.terminate === 'function') {
++      this.worker_.terminate();
++    }
++    this.worker_ = null;
++    if (super.disposeInternal) {
++      super.disposeInternal();
++    }
+   }
+ }
+ 
++}
++
+ /**
+  * @typedef {Object} Options
+  * @property {Array<import("./Source.js").default|import("../layer/Layer.js").default>} sources Input
+@@ -259,6 +274,12 @@ class RasterSource extends ImageSource {
+    * @api
+    */
+   setOperation(operation, opt_lib) {
++    // Terminate previous worker if it exists
++    if (this.worker_ && typeof this.worker_.dispose === 'function') {
++      this.worker_.dispose();
++    } else if (this.worker_ && typeof this.worker_.terminate === 'function') {
++      this.worker_.terminate();
++    }
+     this.worker_ = new Processor({
+       operation: operation,
+       imageOps: this.operationType_ === RasterOperationType.IMAGE,

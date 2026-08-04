@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Grid/Grid.js",
+            "packages/react/src/components/Grid/Grid-story.js",
+            "packages/components/src/components/grid/grid.config.js"
+        ],
+        "explanation": "\u2022 Grid.js: Introduces the `narrow` prop and applies the `bx--grid--narrow` class, but there is no matching CSS rule for it.  \n\u2022 Grid-story.js: The story for Grid should surface the narrow variant in documentation/snaps, but currently the knob/config for narrow is missing or invalid.  \n\u2022 grid.config.js: The component\u2019s configuration for the site/docs must include the new `narrow` option so it\u2019s officially supported in the Carbon demos.  \n\u2022 _grid.scss: The SCSS source for the grid never defines styles under the `.bx--grid--narrow` selector (the 16px gutter on both edges), so the class has no effect and spacing remains inconsistent.",
+        "bug_scenario": "The user wants a \u201cnarrow\u201d Carbon grid variant with a 16px gutter on both sides, but although the React Grid component accepts a `narrow` prop (injecting the `bx--grid--narrow` class), there is no corresponding SCSS/CSS implementation in the Carbon styles. The documentation mentions a narrow grid but disables the code snippet because the naming and spacing are inconsistent, and the demo screenshot shows more padding on the right side than the left."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Grid/Grid.js",
+            "packages/components/src/components/grid/grid.config.js",
+            "packages/layout/src/tokens.js"
+        ],
+        "explanation": "\u2022 Grid.js: already applies the `bx--grid--narrow` class when the `narrow` prop is set, but without any CSS, the class has no effect. We may need to adjust or document this behavior here if the API changes.\n\n\u2022 grid.config.js (React component metadata): this file ties together the React component and its style names for tools like the Storybook CSS loader; it must be updated to list the new `grid--narrow` variant so that downstream style\u2010loading scripts know to include the new CSS.\n\n\u2022 _grid.scss (layout package): this is where the grid gutter sizes are defined in SCSS. We need to add a rule for `.#{$prefix}--grid--narrow` (using the new 16 px gutter token) so that the class actually applies the correct margins/padding.\n\n\u2022 tokens.js (layout package): new design tokens for the 16 px \u201cnarrow\u201d gutter should be declared here (e.g. `$layout-grid-gutter-narrow: 1rem;`) so that the SCSS file can reference it and remain theme-aware.",
+        "bug_scenario": "The documentation for Carbon\u2019s \u201cnarrow\u201d grid (16 px gutters) shows a variant of the grid with consistent 16 px gutters on both sides, but there is no official CSS implementation in the SCSS package and no easy way to turn it on in the React Grid component. Although the React Grid component\u2019s API (Grid.js) already accepts a `narrow` prop and applies a `bx--grid--narrow` class, there are no corresponding SCSS rules in the Carbon stylesheet (and no token for a 16 px gutter). As a result, users must resort to awkward work-arounds (e.g. `bx--no-gutter--left`) that lead to uneven padding."
+    }
+}

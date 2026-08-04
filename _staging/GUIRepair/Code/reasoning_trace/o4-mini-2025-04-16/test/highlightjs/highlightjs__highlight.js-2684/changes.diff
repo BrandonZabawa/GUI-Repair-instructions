@@ -1,0 +1,58 @@
+diff --git a/src/languages/bash.js b/src/languages/bash.js
+index cb134a07..7f99993b 100644
+--- a/src/languages/bash.js
++++ b/src/languages/bash.js
+@@ -42,7 +42,20 @@ export default function(hljs) {
+       SUBST
+     ]
+   };
+-  SUBST.contains.push(QUOTE_STRING);
++SUBST.contains.push(QUOTE_STRING);
++// new operators/redirections/continuation markers
++const REDIRECTION = {
++className: 'operator',
++begin: /<<<?|>>?|<|>/
++};
++const OPERATOR = {
++className: 'operator',
++begin: /\|\||&&|\||;|>>|>|<<|<|<<</
++};
++const CONTINUATION = {
++className: 'punctuation',
++begin: /\\$/
++};
+   const ESCAPED_QUOTE = {
+     className: '',
+     begin: /\\"/
+@@ -111,16 +124,20 @@ export default function(hljs) {
+         'unsetopt vared wait whence where which zcompile zformat zftp zle zmodload zparseopts zprof ' +
+         'zpty zregexparse zsocket zstyle ztcp'
+     },
+-    contains: [
+-      KNOWN_SHEBANG, // to catch known shells and boost relevancy
+-      hljs.SHEBANG(), // to catch unknown shells but still highlight the shebang
+-      FUNCTION,
+-      ARITHMETIC,
+-      hljs.HASH_COMMENT_MODE,
+-      QUOTE_STRING,
+-      ESCAPED_QUOTE,
+-      APOS_STRING,
+-      VAR
+-    ]
++contains: [
++KNOWN_SHEBANG,        // to catch known shells and boost relevancy
++hljs.SHEBANG(),       // to catch unknown shells but still highlight the shebang
++FUNCTION,
++ARITHMETIC,
++hljs.HASH_COMMENT_MODE,
++QUOTE_STRING,
++ESCAPED_QUOTE,
++APOS_STRING,
++SUBST,                // highlight $(…)
++CONTINUATION,         // highlight trailing backslash
++OPERATOR,             // highlight |, &&, ||, ;
++REDIRECTION,          // highlight <, >, <<, >>, <<<
++VAR
++]
+   };
+ }

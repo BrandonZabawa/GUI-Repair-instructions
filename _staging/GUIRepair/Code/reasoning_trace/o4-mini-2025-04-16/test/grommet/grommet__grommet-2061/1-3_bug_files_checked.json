@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Select/SelectContainer.js",
+            "src/js/components/Select/Select.js"
+        ],
+        "explanation": "The search input that you type into is defined and styled in SelectContainer.js (it renders a styled <input type=\"search\"/>). Safari applies its own \u2018searchfield\u2019 appearance to that element, stripping out any padding. That file needs to explicitly add `-webkit-appearance: textfield;` (or `none`) so our padding takes effect. Select.js is responsible for rendering the search input and passing styling down, so it\u2019s also relevant if you need to surface or override the appearance prop there.",
+        "bug_scenario": "When you open a multi-select in Safari and type into the search field, the padding around the input is completely ignored\u2014the little search box shrinks down to the browser\u2019s native size. In Chrome the same markup and CSS show a nicely padded text field, but Safari\u2019s default appearance on input[type=search] prevents our padding from applying."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/Select/SelectContainer.js",
+            "src/js/components/TextInput/StyledTextInput.js"
+        ],
+        "explanation": "SelectContainer.js is where the <input type=\"search\"/> is instantiated for the Select\u2019s filtering input. It passes through to the TextInput component. StyledTextInput.js is the styled-component definition of all text inputs (including type=\"search\"). Safari\u2019s default searchfield appearance strips out padding unless you override it, so you must inject `-webkit-appearance: textfield;` (and possibly reset other appearance rules) in StyledTextInput.js for inputs of type search to restore the intended padding and height.",
+        "bug_scenario": "The issue appears only in Safari when using the v2 <Select> with onSearch enabled. Safari renders the underlying <input type=\"search\"/> at its native, minimal height and ignores any padding, so the search box shrinks down to a very small, un-padded sliver. In Chrome (and other browsers) the same styled component shows the correct height and padding. The difference is that Safari\u2019s built-in \u201csearch\u201d appearance overrides the padding unless you explicitly reset it (for example by adding `-webkit-appearance: textfield`)."
+    }
+}

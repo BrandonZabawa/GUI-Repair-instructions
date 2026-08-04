@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "The WebGLTile layer class (WebGLTile.js) and its renderer (renderer/webgl/TileLayer.js) are responsible for fetching the tile grid from the source and driving the shader-based tile rendering. Because the WebGL renderer currently assumes the source has a pre-configured tile grid, it does not fall back to the projection\u2019s default grid when wrapX=false. These two files contain the logic that must be updated so that, like the standard Tile layer, the WebGLTile renderer uses source.getTileGridForProjection(projection) when no explicit tile grid is provided.",
+        "bug_scenario": "When changing a WMS Tile layer (ol/layer/Tile) to a WebGLTile layer (ol/layer/WebGLTile) on a map view that has wrapX set to false, no tiles are rendered. The standard Tile layer correctly falls back to the projection\u2019s default tile grid, but the WebGLTile renderer instead expects the source to have an explicit tile grid and fails to draw anything."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "The WebGLTile layer class (src/ol/layer/WebGLTile.js) and its renderer (src/ol/webgl/TileLayer.js) contain the logic for obtaining and using a tile grid from the source. Because they unconditionally call the source\u2019s tile grid methods, they break when wrapX is false and the source does not define a grid. Fixing the bug requires updating these files to fall back to a default projection-based grid when no source grid is available.",
+        "bug_scenario": "When using a view projection with wrapX set to false, changing a standard Tile layer to a WebGLTile layer results in no tiles being rendered. The WebGLTileLayer implementation incorrectly assumes that its source always provides a tile grid, and fails when wrapX is false (and the source does not explicitly supply a grid)."
+    }
+}

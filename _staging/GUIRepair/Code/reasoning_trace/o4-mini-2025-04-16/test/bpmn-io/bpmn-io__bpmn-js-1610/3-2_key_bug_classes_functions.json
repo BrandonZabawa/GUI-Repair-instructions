@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js"
+        ],
+        "bug_functions": [
+            "LabelEditingProvider (constructor) \u2013 eventBus registrations",
+            "UpdateCanvasRootHandler.prototype.execute",
+            "DrilldownOverlayBehavior.prototype.addOverlay"
+        ],
+        "explanation": "The root of the bug is that plane (root) changes caused by either the modeling command (UpdateCanvasRootHandler.execute) or the drilldown button (DrilldownOverlayBehavior.addOverlay invoking canvas.setRootElement) do not notify the direct\u2010editing module to shut down the input. LabelEditingProvider wires up directEditing.complete()/cancel() on many interactions (canvas.viewbox.changing, drag.init, commandStack.changed, etc.) but never on canvas root changes. To fix the bug one must either:\n\n\u2022 Add a listener in LabelEditingProvider (in its constructor) for the canvas root change event (e.g. eventBus.on('canvas.setRoot', \u2026)) to call directEditing.complete() or cancel().\n\n\u2022 Or, in UpdateCanvasRootHandler.execute (and revert) and/or DrilldownOverlayBehavior.addOverlay, explicitly invoke directEditing.cancel() (or complete()) before or after calling canvas.setRootElement.\n\nThese three classes/functions are directly responsible for switching the plane or providing direct editing, and thus are the points to hook in the cancellation logic.",
+        "bug_scenario": "When editing a label inside a collapsed subprocess (i.e. on a non\u2010root plane), then drilling down into that subprocess (or executing a modeling command that switches the canvas root), the direct\u2010editing input box remains open even though the element being edited is no longer visible. The expected behavior is that direct editing is canceled or completed whenever the canvas root (plane) changes."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//DrilldownOverlayBehavior",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js//UpdateCanvasRootHandler"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider constructor (eventBus listeners)",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//addOverlay",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js//execute"
+        ],
+        "explanation": "\u2022 LabelEditingProvider (in lib/features/label-editing/LabelEditingProvider.js) is responsible for registering cancellation handlers when certain canvas or modeling events occur (e.g. canvas.viewbox.changing, drag.init, commandStack.changed) and for activating direct editing. However, it does not listen for canvas root changes, so when the plane is switched via drilldown the direct\u2010editing session isn\u2019t cancelled.\n\n\u2022 DrilldownOverlayBehavior (in lib/features/drilldown/DrilldownOverlayBehavior.js) wires up the drill\u2010down arrow button. Its addOverlay() method attaches a click handler that calls canvas.setRootElement(...) to change the plane, but this operation bypasses the existing direct\u2010editing cancellation hooks.\n\n\u2022 UpdateCanvasRootHandler (in lib/features/modeling/cmd/UpdateCanvasRootHandler.js) implements the low\u2010level logic for swapping the canvas root element (execute()), but it does not emit an event or otherwise notify directEditing to cancel. \n\nTo fix the bug, LabelEditingProvider needs to hook into the plane\u2010switch operation (e.g. listen for canvas.setRootElement or a canvas.root.changed event) and call directEditing.cancel() when the root element changes.",
+        "bug_scenario": "In the provided GIF and diagram scenario, a label on a BPMN element is put into direct\u2010editing mode (the little text box appears for inline renaming). While that editing box is open, the user drills down into another plane (e.g. a collapsed subprocess) by clicking the drill\u2010down arrow. Although the canvas root is switched and the diagram \u201cnavigates\u201d to the subprocess, the direct\u2010editing widget remains visible and active on the old plane (even though that element is no longer visible). The expected behavior is that changing planes should cancel any active direct editing."
+    }
+}

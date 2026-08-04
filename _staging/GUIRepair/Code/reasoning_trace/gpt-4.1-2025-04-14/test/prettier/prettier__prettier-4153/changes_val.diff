@@ -1,0 +1,54 @@
+diff --git a/src/language-markdown/embed.js b/src/language-markdown/embed.js
+index ed22cbbf2..d8b8ed5e1 100644
+--- a/src/language-markdown/embed.js
++++ b/src/language-markdown/embed.js
+@@ -13,7 +13,8 @@ function embed(path, print, textToDoc, options) {
+   const node = path.getValue();
+ 
+   if (node.type === "code") {
+-    const parser = getParserName(node.lang);
++    const langId = getLang(node.lang);
++    const parser = getParserName(langId);
+     if (parser) {
+       const styleUnit = options.__inJsTemplate ? "~" : "`";
+       const style = styleUnit.repeat(
+@@ -68,3 +69,11 @@ function embed(path, print, textToDoc, options) {
+ }
+ 
+ module.exports = embed;
++
++// Extract the language identifier, ignoring anything after (such as attributes)
++function getLang(langString) {
++  if (!langString) return '';
++  // Match the initial word, i.e. language identifier
++  const match = langString.match(/^[A-Za-z0-9_-]+/);
++  return match ? match[0] : '';
++}
+diff --git a/src/language-markdown/printer-markdown.js b/src/language-markdown/printer-markdown.js
+index a45b03926..8ecf25e62 100644
+--- a/src/language-markdown/printer-markdown.js
++++ b/src/language-markdown/printer-markdown.js
+@@ -197,7 +197,7 @@ function genericPrint(path, options, print) {
+       );
+       return concat([
+         style,
+-        node.lang || "",
++        getLang(node.lang) || "",
+         hardline,
+         join(hardline, node.value.split("\n")),
+         hardline,
+@@ -412,6 +412,14 @@ function getNthSiblingIndex(node, parentNode, condition) {
+   }
+ }
+ 
++// Extract the language identifier, ignoring anything after (such as attributes)
++function getLang(langString) {
++  if (!langString) return '';
++  // Match the initial word, i.e. language identifier
++  const match = langString.match(/^[A-Za-z0-9_-]+/);
++  return match ? match[0] : '';
++}
++
+ function getAncestorCounter(path, typeOrTypes) {
+   const types = [].concat(typeOrTypes);
+ 

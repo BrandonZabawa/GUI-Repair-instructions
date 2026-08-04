@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "gather/computed/critical-request-chains-test.js",
+            "audits/critical-request-chains-test.js",
+            "report/v2/renderer/crc-details-renderer-test.js",
+            "gather/computed/page-dependency-graph-test.js",
+            "audits/uses-rel-preload-test.js",
+            "gather/network-recorder-test.js"
+        ],
+        "explanation": "1. gather/computed/critical-request-chains-test.js: Contains the unit tests for the computed artifact that builds the request-dependency graph and extracts critical request chains. Reviewing this shows how rel=preload is classified and measured.\n2. audits/critical-request-chains-test.js: Verifies the audit logic (thresholds, scoring, headings) for reporting CR chains. Helps trace how the artifact feeds into the Audit and under what conditions it is flagged.\n3. report/v2/renderer/crc-details-renderer-test.js: Tests the UI renderer for the CR-chains details in the generated report, including how links, timings, and waterfall views are assembled.\n4. gather/computed/page-dependency-graph-test.js: The CR-chains artifact depends on the page dependency graph\u2014this shows how resources (HTML \u2192 CSS) are linked and how rel=preload fits into the graph model.\n5. audits/uses-rel-preload-test.js: Ensures that rel=preload usage is detected correctly. While this audit is separate, it shows how Lighthouse parses and treats rel=preload elements in the document, which may influence priority assignment.\n6. gather/network-recorder-test.js: Illustrates how network activity (requests, timings) are captured. Understanding the raw records is necessary to see how the CSS request\u2019s 5 s delay ends up in the CR chain artifact.",
+        "bug_scenario": "The user\u2019s test page (`preload-control.html`) uses a non-blocking CSS preload pattern: `<link rel=\"preload\" as=\"style\" href=\"slow.css.php\" onload=\"this.rel='stylesheet';\u2026\">`. Even though this stylesheet never blocks rendering (and in the test contains no CSS), Lighthouse is still identifying it as part of a \"critical request chain.\" The provided screenshot shows the Diagnostics panel under \u201cCritical Request Chains,\u201d listing two requests (the HTML and the slow CSS) with a total latency of ~5.9 s. The user wants to understand why Lighthouse treats a rel=preload resource as \"critical,\" and what part of the CR-chain algorithm or audit logic triggers this warning."
+    }
+}

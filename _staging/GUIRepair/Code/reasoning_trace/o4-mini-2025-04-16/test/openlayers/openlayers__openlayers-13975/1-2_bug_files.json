@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Image.js",
+            "src/ol/style/Icon.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "The displacement option is defined and stored in the base Image class (Image.js) and exposed in Icon.js when building the style. However, in the canvas pipeline (ImageBuilder.js) the code that positions and draws the image applies the displacement inside the same transform matrix used for scale. As a result, when you change the icon\u2019s scale the displacement is also scaled, causing the icon\u2019s bottom to shift. To fix the bug you need to adjust ImageBuilder.js so the displacement is applied after scaling (or kept in unscaled pixels), and verify Image.js/Icon.js correctly pass the raw displacement values through.",
+        "bug_scenario": "When using ol.style.Icon with both \u201cscale\u201d and \u201cdisplacement\u201d set, changing the scale value unexpectedly shifts the icon\u2019s vertical position. In the CodePen example the bottoms of two icons are aligned at the same displacement, but when one icon is scaled down the bottom no longer lines up\u2014that indicates the Y-displacement is being multiplied by the scale (or otherwise incorrectly applied) rather than kept constant."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/flat.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/Executor.js"
+        ],
+        "explanation": "All of these files participate in taking the user\u2010supplied \u201cscale\u201d and \u201cdisplacement\u201d options on an ol.style.Icon and turning them into canvas draw calls. \n\n\u2022 src/ol/style/Icon.js: Defines and normalizes the \u201cdisplacement\u201d and \u201cscale\u201d properties alongside the anchor; it is the first place where the offset and scaling logic is configured.\n\u2022 src/ol/style/flat.js: Flattens the Icon style into a sequence of low\u2010level image instructions, passing both the computed pixel displacement and the scale factor down to the renderer.\n\u2022 src/ol/render/canvas/ImageBuilder.js: Packs the offset, size and scale values into drawing instructions. Any error here in how it encodes displacement vs scale will propagate to rendering.\n\u2022 src/ol/render/canvas/Executor.js: Executes the drawImage instructions by applying translate/scale/rotate calls on the CanvasRenderingContext. The current transform order causes the user displacement to be multiplied by the scale. Because translate(\u2026) and scale(\u2026) are applied in the wrong sequence, changing the icon scale also scales the displacement, shifting the image vertically.",
+        "bug_scenario": "In the provided CodePen example the user has created two identical icons with a fixed bottom\u2010alignment via the \u201cdisplacement\u201d option. When they change the \u201cscale\u201d of those icons, the vertical position of the icons shifts, even though the bottom displacement was kept constant. They expected scale and displacement to be independent so that scaling an icon would not change its rendered Y offset. The fact that modifying scale drags the icon up or down reveals a coupling (bug) in how displacement is applied in conjunction with scale."
+    }
+}

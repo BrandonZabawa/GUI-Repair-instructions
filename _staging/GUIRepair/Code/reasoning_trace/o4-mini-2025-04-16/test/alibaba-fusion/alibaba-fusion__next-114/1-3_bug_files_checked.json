@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/number-picker/index.jsx",
+            "src/util/func.js"
+        ],
+        "explanation": "src/number-picker/index.jsx implements the +/\u2013 step logic and applies the precision prop. It performs the raw float addition and then rounds (or should round) the result. Because it isn\u2019t correcting the typical JS float artifacts, Safari shows 4.029999999999999. src/util/func.js provides number-precision utilities (e.g. determining decimal length, rounding helpers) that NumberPicker relies on. Both files need to be updated so that after adding step to the current value you force a correct toFixed()/rounding pass using the desired precision, eliminating the floating-point residue.",
+        "bug_scenario": "In Safari, clicking the \u201c+\u201d button on a NumberPicker initialized at 4.02 with a step of 0.01 yields an internal sum of 4.029999999999999 instead of 4.03 (due to JavaScript floating-point precision) and the component displays that incorrect value."
+    },
+    "2": {
+        "bug_files": [
+            "src/number-picker/index.jsx"
+        ],
+        "explanation": "The core logic for adding the step value and applying the precision lives in src/number-picker/index.jsx. This file computes the new value when the user clicks '+' or '-' and applies a toFixed or similar rounding based on the precision prop. Because it currently performs a direct float addition, Safari (and other browsers) expose the usual JS floating-point imprecision. Fixing the bug requires updating the arithmetic and rounding logic in this file to use a decimal-safe addition (e.g. scaling to integers, using a utility for precise decimal math, then applying toFixed) so that 4.02 + 0.01 correctly becomes 4.03 before display.",
+        "bug_scenario": "When using NumberPicker in Safari with a defaultValue of 4.02 and step of 0.01 (with or without precision={2}), clicking the '+' button adds the step but yields 4.029999999999999 instead of 4.03 due to JavaScript floating-point arithmetic. The component displays that un-rounded value, causing a visual bug."
+    }
+}

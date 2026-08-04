@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/space-tool/BpmnSpaceTool.js",
+            "lib/features/modeling/behavior/SpaceToolBehavior.js",
+            "lib/features/modeling/behavior/util/ResizeUtil.js",
+            "lib/features/modeling/behavior/ResizeLaneBehavior.js",
+            "lib/features/rules/BpmnRules.js",
+            "lib/draw/BpmnRenderer.js"
+        ],
+        "explanation": "\u2022 lib/features/space-tool/BpmnSpaceTool.js: The entry point for the space-tool. It decides which elements can be targeted and how to calculate the insertion segment. To prevent resizing empty pools vertically, you need to filter out participant shapes with no children here so that the space-tool ignores them.\n\n\u2022 lib/features/modeling/behavior/SpaceToolBehavior.js: Implements the actual element shifting and segment resizing logic when the space-tool is active. It currently treats participants (pools) like lanes. It must be extended to detect empty pools and skip vertical adjustments.\n\n\u2022 lib/features/modeling/behavior/util/ResizeUtil.js: Provides the low-level geometry math for applying resize delta to shapes. Even if the behavior is skipped, the util might still be called on pools, so it should guard against zero-child participants or delegate to a no-op in that case.\n\n\u2022 lib/features/modeling/behavior/ResizeLaneBehavior.js: Handles resizing of lanes and pools (since BPMN pools are implemented as a special kind of lane). The rule that lets a pool grow vertically lives here; we need to short-circuit resizing when a pool has no embedded flow nodes.\n\n\u2022 lib/features/rules/BpmnRules.js: Defines allowed modeling operations (resize, move, connect). There is no rule preventing resize of an empty pool under the space-tool. A new rule should be added to forbid vertical space insertion on empty pools.\n\n\u2022 lib/draw/BpmnRenderer.js: Responsible for drawing pools with a fixed height when empty. Once the resizing is prevented, rendering will not need adjusting; but if it needs to re-enforce minimal height after an inadvertent resize, the logic belongs here.",
+        "bug_scenario": "When using the space-tool on a BPMN diagram, dragging into an empty pool (i.e. a Participant shape with no lanes or child flow nodes) causes the pool\u2019s height to grow. By design an empty pool should have a fixed, minimal height to distinguish it from a multi-lane pool, so vertical resizing via the space-tool should be disallowed. In the supplied GIF you can see dragging the handle of the space-tool at the top of the empty pool incorrectly increases its vertical size."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/space-tool/BpmnSpaceTool.js",
+            "lib/modeling/behavior/SpaceToolBehavior.js",
+            "lib/modeling/behavior/ResizeLaneBehavior.js",
+            "lib/features/rules/BpmnRules.js"
+        ],
+        "explanation": "The Space Tool feature is initialized in lib/features/space-tool/BpmnSpaceTool.js; it hooks into the modeling layer via SpaceToolBehavior (lib/modeling/behavior/SpaceToolBehavior.js). That behavior is responsible for computing the vertical shifts and resizing of elements \u2013 but it does not currently distinguish an empty pool from a multi-lane pool. Meanwhile ResizeLaneBehavior in lib/modeling/behavior/ResizeLaneBehavior.js governs pool and lane resize operations, and BpmnRules (lib/features/rules/BpmnRules.js) allow pool resize actions when using the space tool. To prevent an empty pool from stretching, you will need to update SpaceToolBehavior to detect a Participant without child lanes, adjust ResizeLaneBehavior so that resizing is suppressed for those cases, and add a corresponding rule in BpmnRules to forbid vertical resize of empty pools.",
+        "bug_scenario": "When you draw an empty pool (i.e. a Participant with no lanes), it is rendered with a fixed height. As soon as you activate the Space Tool and drag on the pool\u2019s top edge, however, that fixed-height pool is allowed to stretch vertically \u2013 even though empty pools are supposed to remain a constant height."
+    }
+}

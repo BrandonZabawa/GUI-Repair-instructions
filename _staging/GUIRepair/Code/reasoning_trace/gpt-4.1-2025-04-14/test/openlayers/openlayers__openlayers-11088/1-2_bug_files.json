@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/proj/projections.js",
+            "src/ol/proj/transforms.js",
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/source/WMTS.js",
+            "src/ol/source/TileImage.js",
+            "src/ol/source/OSM.js",
+            "src/ol/source/VectorTile.js",
+            "src/ol/View.js"
+        ],
+        "explanation": "These files are bug related because:\n\n- src/ol/proj/proj4.js: Integrates proj4js with OpenLayers, handles custom projections and coordinate transforms via proj4js. Likely needs changes to handle the axis order differences in proj4js 2.6.1+.\n- src/ol/proj/Projection.js: Core representation of projections in OL, including axis orientation and coordinate order.\n- src/ol/proj/projections.js: Manages the registry of projection definitions and transformations between them.\n- src/ol/proj/transforms.js: Deals with actual transformation logic, which may be sensitive to axis order changes.\n- src/ol/reproj/common.js, src/ol/reproj/Image.js, src/ol/reproj/Tile.js: Responsible for reprojecting raster and tile layers. If axis order is misunderstood, reprojected outputs will be rotated or misplaced.\n- src/ol/source/WMTS.js: Handles WMTS (Web Map Tile Service) layers, often used in scenarios with differing projections (like EPSG:2180 vs EPSG:3857 in the bug report).\n- src/ol/source/TileImage.js, src/ol/source/OSM.js, src/ol/source/VectorTile.js: Provide tiled layer support; bugs in projection handling can manifest in these layers as misalignments.\n- src/ol/View.js: Responsible for specifying the projection of the map view and performing coordinate transformations as users interact with the map.\n\nResolving the bug will require updating one or more of these files to ensure OpenLayers correctly interprets axis order changes made in proj4js 2.6.1+ (possibly by being explicit about axis order or converting accordingly when registering projections).",
+        "bug_scenario": "The bug scenario concerns a map rendering problem when using OpenLayers (OL) with proj4js library version 2.6.1 and above. Prior to proj4js 2.6.1, projections and layers (e.g., WMTS with EPSG:2180, or a Mercator base layer) align and render correctly. However, with proj4js 2.6.1 and newer, the map images and overlays appear improperly rotated or misaligned, as visible in the provided screenshots. The root issue relates to changes in proj4js that affected interpretation of axis order, leading OpenLayers to mis-handle transformations between coordinate systems, causing misalignment of layers and reprojection artifacts."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/proj/projections.js",
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js"
+        ],
+        "explanation": "These files are responsible for projection handling, integration with proj4js, and reprojection logic within OpenLayers. The bug is attributed to changes in axis order interpretation in proj4js 2.6.1+, which affects how OpenLayers interprets and applies projections to map layers. 'src/ol/proj/proj4.js' manages proj4js integration; 'src/ol/proj/Projection.js' defines projection behavior; 'src/ol/proj/projections.js' manages projection registrations; 'src/ol/reproj/common.js', 'src/ol/reproj/Image.js', and 'src/ol/reproj/Tile.js' handle reprojection logic for images and tiles, where misinterpretation of axis order would directly result in the observed map rotation issues. These files must be checked or potentially modified to ensure that OpenLayers correctly handles axis order changes introduced in proj4js 2.6.1 and above.",
+        "bug_scenario": "The bug report describes a problem when using OpenLayers (OL) with proj4js versions 2.6.1 and above. Specifically, map layers using different projections (EPSG:3857 Mercator and EPSG:2180) are displayed with an incorrect rotation when using proj4js 2.6.1+, whereas previous versions (such as 2.6.0) display them correctly. The bug is visually shown in the images: The first two images (likely with proj4js 2.6.0) have correct layer alignments, while the last two images (with proj4js 2.6.1) show the WMTS and OSM layers incorrectly rotated, indicating a mismatch in map projection axis order interpretation after the proj4js update."
+    }
+}

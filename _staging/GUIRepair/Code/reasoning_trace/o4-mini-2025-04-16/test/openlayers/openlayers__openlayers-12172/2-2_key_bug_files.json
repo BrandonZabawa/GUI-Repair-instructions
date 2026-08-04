@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "The core of the problem is that the Icon style\u2019s displacement is being treated as a change to the source\u2010image crop instead of as an offset in screen space. In style/Icon.js getOrigin() adds the displacement into the source offset (so parts of the icon are cut off), rather than moving the draw position. Then in CanvasImageBuilder (render/canvas/ImageBuilder.js), setImageStyle() and drawPoint()/drawMultiPoint() honor that shifted origin when slicing out the sprite, so the drawn tile is missing the displaced parts instead of simply drawing the full image shifted. Fixing getOrigin to include displacement in the draw translation (or removing it from the crop origin) will restore the full icon shape when displaced.",
+        "bug_scenario": "In the provided example the user applies a displacement to an Icon style (a green cross image), but instead of the icon being moved on the map, parts of it are being \u201ccropped out\u201d \u2013 the cross appears clipped at its edges. In a healthy render the entire cross (just shifted by the specified x/y displacement) should be visible, just as it is for RegularShape symbols."
+    }
+}

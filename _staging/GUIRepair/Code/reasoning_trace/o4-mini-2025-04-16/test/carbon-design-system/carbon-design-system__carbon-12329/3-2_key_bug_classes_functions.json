@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/DatePicker/DatePicker.js//DatePicker",
+            "packages/react/src/components/DatePicker/index.js//default export"
+        ],
+        "explanation": "The DatePicker component in DatePicker.js is defined as a function and exported directly, so React won\u2019t allow refs on it. To support `ref` props, the DatePicker export needs to be wrapped with React.forwardRef and accept a second `ref` argument. Additionally, the index.js re-export of DatePicker should forward that ref. Without applying forwardRef at these points, any ref passed to <DatePicker> will not reach the underlying input element, triggering the warning and breaking existing ref-based integrations.",
+        "bug_scenario": "When updating from Carbon v10 to v11, passing a ref to the DatePicker component no longer works. In the example app, the developer does:\n\n  const datePickerRef = useRef();\n  <DatePicker ref={datePickerRef} ... />\n\nand sees the console warning:\n\n  Warning: Function components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?\n\nBecause DatePicker in v11 is declared as a plain function component and never wrapped with React.forwardRef, the ref is dropped and never forwarded down to the underlying DOM input element."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/DatePicker/DatePicker.js//DatePicker",
+            "packages/react/src/components/DatePicker/index.js//default export"
+        ],
+        "explanation": "The root of the problem is that DatePicker is defined as a plain function component and exported directly, so it doesn\u2019t receive or forward the ref parameter at all. To restore ref support, the DatePicker function must be wrapped with React.forwardRef (and accept a second ref argument), and the default export in index.js must export that forwarded\u2010ref version instead of the raw function. These two spots (the component definition and the re-export) are the places to add forwardRef logic so that refs passed by consumers are relayed to the actual input element.",
+        "bug_scenario": "When you try to pass a React ref to the <DatePicker> component in v11, you see a console warning: \u201cFunction components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?\u201d In other words, DatePicker no longer accepts or forwards a ref to its underlying DOM node, breaking code that relied on grabbing the input via that ref."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-fsharp.js//Prism.languages.extend",
+            "components/prism-fsharp.js//Prism.languages.insertBefore"
+        ],
+        "explanation": "The root of the highlighting issue lies entirely in the F# grammar definition in prism-fsharp.js (and its minified counterpart). The call to Prism.languages.extend('clike', { \u2026 }) defines tokens for comments, keywords, strings, and numbers, but never defines a token for type annotations (colon punctuation and type names). Likewise, the insertBefore call only injects a preprocessor rule ahead of 'keyword'. To fix the bug, the F# grammar needs to be amended\u2014by inserting a new token (e.g. 'punctuation' for ':' and a 'type' token for uppercase identifiers) before or after the existing rules\u2014so that type annotations are recognized and highlighted appropriately.",
+        "bug_scenario": "In the provided screenshots, F# type annotations (the colon \u2018:\u2019 and the following type names in parameter lists and record fields) are not receiving any special syntax highlighting under the current Prism F# grammar. In the first image, all of the type annotations appear in the default text color. The desired result (second image) shows colons in the punctuation color and the type names (e.g. Int, double, MyUnion) in the type/color reserved for types."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-fsharp.js"
+        ],
+        "bug_functions": [
+            "components/prism-fsharp.js//Prism.languages.extend",
+            "components/prism-fsharp.js//Prism.languages.insertBefore"
+        ],
+        "explanation": "The file components/prism-fsharp.js defines the entire F# syntax grammar for Prism. It uses Prism.languages.extend to inherit from the C-style grammar (clike) and adds F#-specific tokens (comment, keyword, string, number). It then calls Prism.languages.insertBefore to inject preprocessor rules. However, there is no rule here for F# type annotations (the colon syntax). To highlight types, we must modify the grammar object passed to Prism.languages.extend (or insertBefore) by adding a new token (e.g. \u201ctype\u201d) with a regex that matches \u201c: TypeName\u201d or record-field annotations. Without a \u201ctype\u201d pattern in these two functions, type annotations fall back to plain text.",
+        "bug_scenario": "In the provided screenshots, F# code is being syntax-highlighted by Prism but type annotations (for example \u201c(a: MyRecord)\u201d, \u201cc: double = 1.0\u201d, and the record field types \u201cA: int\u201d, \u201cB: double\u201d, \u201cC: MyUnion\u201d) are rendered in the default text color rather than receiving their own \u201ctype\u201d color. The desired result is to have these annotations highlighted (for instance, in cyan) just like they appear in Visual Studio."
+    }
+}

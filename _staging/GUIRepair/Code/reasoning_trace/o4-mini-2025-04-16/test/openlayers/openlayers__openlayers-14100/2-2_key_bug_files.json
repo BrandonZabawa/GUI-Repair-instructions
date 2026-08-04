@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/Map.js",
+            "src/ol/TileQueue.js"
+        ],
+        "explanation": "The change in behavior is rooted in how the map\u2019s tile queue is driven and how many new tile loads it will schedule per frame.  In Map.js (handlePostRender), the code that determines the maximum number of new tile loads (\u201cmaxNewLoads\u201d) and the total parallel loads (\u201cmaxTotalLoading\u201d) was altered in 7.0, so that only one new tile is enqueued per render frame when animating or even when static.  TileQueue.js\u2019s loadMoreTiles then only ever loops once per frame, yielding strictly sequential loads.  Restoring the old behavior requires adjusting the parameters passed from Map.js to TileQueue.loadMoreTiles (or the defaults in TileQueue.js) so that, in the non\u2010animating case, maxNewLoads is unbounded (or set to a suitably large number) and maxTotalLoading matches the map\u2019s maxTilesLoading option.",
+        "bug_scenario": "After upgrading from OpenLayers 6.1 to 7.0, twenty TileLayer instances grouped in a single LayerGroup, which used to fire off their tile\u2010requests in parallel, now load strictly one tile at a time.  In the first screenshot (v6.1) you can see many concurrent WMTS requests, whereas in the second (v7.0) you see each request only start after the previous one finishes, dramatically slowing down the map."
+    }
+}

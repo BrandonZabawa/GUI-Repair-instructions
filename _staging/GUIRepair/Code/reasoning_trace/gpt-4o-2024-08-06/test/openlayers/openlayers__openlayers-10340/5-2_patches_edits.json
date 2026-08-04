@@ -1,0 +1,540 @@
+{
+    "1/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "const squaredLength = squaredCoordinateDistance(",
+                    "coordinates[0], coordinates[1]);",
+                    "circle.setCenterAndRadius(coordinates[0], Math.sqrt(squaredLength));"
+                ],
+                "REPLACE": [
+                    "const radius = getGeographicDistance(coordinates[0], coordinates[1]);",
+                    "circle.setCenterAndRadius(coordinates[0], radius);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));"
+                ],
+                "REPLACE": [
+                    "const radius = getGeographicDistance(center, end);"
+                ]
+            }
+        ],
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "flatCoordinates[offset] = center[0] + (radius * Math.cos(angle));",
+                    "flatCoordinates[offset + 1] = center[1] + (radius * Math.sin(angle));"
+                ],
+                "REPLACE": [
+                    "const geographicOffset = getGeographicOffset(center, radius, angle);",
+                    "flatCoordinates[offset] = geographicOffset[0];",
+                    "flatCoordinates[offset + 1] = geographicOffset[1];"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "const squaredLength = squaredCoordinateDistance(",
+                    "coordinates[0], coordinates[1]);",
+                    "circle.setCenterAndRadius(coordinates[0], Math.sqrt(squaredLength));"
+                ],
+                "REPLACE": [
+                    "const radius = getSphericalRadius(coordinates[0], coordinates[1]);",
+                    "circle.setCenterAndRadius(coordinates[0], radius);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "function createRegularPolygon(opt_sides, opt_angle) {",
+                    "return function(coordinates, opt_geometry) {",
+                    "const center = /** @type {LineCoordType} */ (coordinates)[0];",
+                    "const end = /** @type {LineCoordType} */ (coordinates)[1];",
+                    "const radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));",
+                    "..."
+                ],
+                "REPLACE": [
+                    "function createRegularPolygon(opt_sides, opt_angle) {",
+                    "return function(coordinates, opt_geometry) {",
+                    "const center = /** @type {LineCoordType} */ (coordinates)[0];",
+                    "const end = /** @type {LineCoordType} */ (coordinates)[1];",
+                    "const radius = getSphericalRadius(center, end);",
+                    "..."
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "export function createRegularPolygon(opt_sides, opt_angle) {",
+                    "return function(coordinates, opt_geometry) {",
+                    "const center = /** @type {LineCoordType} */ (coordinates)[0];",
+                    "const end = /** @type {LineCoordType} */ (coordinates)[1];",
+                    "const radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));",
+                    "const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :",
+                    "fromCircle(new Circle(center), opt_sides);",
+                    "let angle = opt_angle;",
+                    "if (!opt_angle) {",
+                    "const x = end[0] - center[0];",
+                    "const y = end[1] - center[1];",
+                    "angle = Math.atan(y / x) - (x < 0 ? Math.PI : 0);",
+                    "}",
+                    "makeRegular(geometry, center, radius, angle);",
+                    "return geometry;",
+                    "};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function createRegularPolygon(opt_sides, opt_angle) {",
+                    "return function(coordinates, opt_geometry) {",
+                    "const center = /** @type {LineCoordType} */ (coordinates)[0];",
+                    "const end = /** @type {LineCoordType} */ (coordinates)[1];",
+                    "const radius = calculateGeodesicRadius(center, end);",
+                    "const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :",
+                    "fromCircle(new Circle(center), opt_sides);",
+                    "let angle = opt_angle;",
+                    "if (!opt_angle) {",
+                    "const x = end[0] - center[0];",
+                    "const y = end[1] - center[1];",
+                    "angle = Math.atan(y / x) - (x < 0 ? Math.PI : 0);",
+                    "}",
+                    "makeGeodesicRegular(geometry, center, radius, angle);",
+                    "return geometry;",
+                    "};",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "export function createBox() {",
+                    "return (",
+                    "function(coordinates, opt_geometry) {",
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "const boxCoordinates = [[",
+                    "getBottomLeft(extent),",
+                    "getBottomRight(extent),",
+                    "getTopRight(extent),",
+                    "getTopLeft(extent),",
+                    "getBottomLeft(extent)",
+                    "]];",
+                    "let geometry = opt_geometry;",
+                    "if (geometry) {",
+                    "geometry.setCoordinates(boxCoordinates);",
+                    "} else {",
+                    "geometry = new Polygon(boxCoordinates);",
+                    "}",
+                    "return geometry;",
+                    "}",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function createBox() {",
+                    "return (",
+                    "function(coordinates, opt_geometry) {",
+                    "const extent = calculateGeodesicExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "const boxCoordinates = calculateGeodesicBoxCoordinates(extent);",
+                    "let geometry = opt_geometry;",
+                    "if (geometry) {",
+                    "geometry.setCoordinates(boxCoordinates);",
+                    "} else {",
+                    "geometry = new Polygon(boxCoordinates);",
+                    "}",
+                    "return geometry;",
+                    "}",
+                    ");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "const radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));",
+                    "const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :",
+                    "fromCircle(new Circle(center), opt_sides);",
+                    "let angle = opt_angle;",
+                    "if (!opt_angle) {",
+                    "const x = end[0] - center[0];",
+                    "const y = end[1] - center[1];",
+                    "angle = Math.atan(y / x) - (x < 0 ? Math.PI : 0);",
+                    "}",
+                    "makeRegular(geometry, center, radius, angle);"
+                ],
+                "REPLACE": [
+                    "let radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));",
+                    "",
+                    "// Adjust radius if useGeographic is true (consider distortion)",
+                    "if (useGeographic) {",
+                    "const centerLonLat = fromLonLat(center);",
+                    "const endLonLat = fromLonLat(end);",
+                    "radius = getDistance(centerLonLat, endLonLat);",
+                    "}",
+                    "",
+                    "const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :",
+                    "fromCircle(new Circle(center), opt_sides);",
+                    "let angle = opt_angle;",
+                    "if (!opt_angle) {",
+                    "const x = end[0] - center[0];",
+                    "const y = end[1] - center[1];",
+                    "angle = Math.atan(y / x) - (x < 0 ? Math.PI : 0);",
+                    "}",
+                    "makeRegular(geometry, center, radius, angle);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "const boxCoordinates = [[",
+                    "getBottomLeft(extent),",
+                    "getBottomRight(extent),",
+                    "getTopRight(extent),",
+                    "getTopLeft(extent),",
+                    "getBottomLeft(extent)",
+                    "]];"
+                ],
+                "REPLACE": [
+                    "let extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "",
+                    "// Adjust extent if useGeographic is true",
+                    "if (useGeographic) {",
+                    "const transformedCoords = coordinates.map(coord => fromLonLat(coord));",
+                    "extent = boundingExtent(transformedCoords);",
+                    "}",
+                    "",
+                    "const boxCoordinates = [[",
+                    "getBottomLeft(extent),",
+                    "getBottomRight(extent),",
+                    "getTopRight(extent),",
+                    "getTopLeft(extent),",
+                    "getBottomLeft(extent)",
+                    "]];"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "circle.setCenterAndRadius(coordinates[0], Math.sqrt(squaredLength));"
+                ],
+                "REPLACE": [
+                    "const radius = Math.sqrt(squaredLength);",
+                    "// Convert to geodesic length",
+                    "const geodesicRadius = getGeodesicRadius(coordinates[0], radius, viewProjection);",
+                    "circle.setCenterAndRadius(coordinates[0], geodesicRadius);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "makeRegular(geometry, center, radius, angle);"
+                ],
+                "REPLACE": [
+                    "// Adjust for geographic coordinates",
+                    "const geodesicRadius = getGeodesicRadius(center, radius, viewProjection);",
+                    "makeRegular(geometry, center, geodesicRadius, angle);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));"
+                ],
+                "REPLACE": [
+                    "// Adjust the extent to respect geodesic distances",
+                    "const extent = getGeodesicBoundingExtent(/** @type {LineCoordType} */ (coordinates), viewProjection);"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "const squaredLength = squaredCoordinateDistance(",
+                    "coordinates[0], coordinates[1]);",
+                    "circle.setCenterAndRadius(coordinates[0], Math.sqrt(squaredLength));"
+                ],
+                "REPLACE": [
+                    "const distance = calculateGeographicDistance(",
+                    "coordinates[0], coordinates[1]);",
+                    "circle.setCenterAndRadius(coordinates[0], distance);"
+                ]
+            }
+        ],
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "const radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));",
+                    "makeRegular(geometry, center, radius, angle);"
+                ],
+                "REPLACE": [
+                    "const radius = calculateGeographicDistance(center, end);",
+                    "correctRegularShape(geometry, center, radius, angle);"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "geometryFunction = function(coordinates, opt_geometry) {",
+                    "...",
+                    "circle.setCenterAndRadius(coordinates[0], Math.sqrt(squaredLength));"
+                ],
+                "REPLACE": [
+                    "geometryFunction = function(coordinates, opt_geometry) {",
+                    "...",
+                    "let radius = Math.sqrt(squaredLength);",
+                    "if (useGeographic) {",
+                    "// Adjust radius for geographic coordinates",
+                    "radius *= Math.abs(Math.cos(coordinates[0][1] * Math.PI / 180));",
+                    "}",
+                    "circle.setCenterAndRadius(coordinates[0], radius);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "export function createRegularPolygon(opt_sides, opt_angle) {",
+                    "...",
+                    "makeRegular(geometry, center, radius, angle);"
+                ],
+                "REPLACE": [
+                    "export function createRegularPolygon(opt_sides, opt_angle) {",
+                    "...",
+                    "if (useGeographic) {",
+                    "// Adjust angle for geographic distortion",
+                    "angle -= center[1] * Math.PI / 180;",
+                    "}",
+                    "makeRegular(geometry, center, radius, angle);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "export function createBox() {",
+                    "return (",
+                    "function(coordinates, opt_geometry) {",
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));"
+                ],
+                "REPLACE": [
+                    "export function createBox() {",
+                    "return (",
+                    "function(coordinates, opt_geometry) {",
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "if (useGeographic) {",
+                    "// Adjust extent for geographic projection",
+                    "adjustExtentForGeographic(extent);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "const radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));",
+                    "const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :",
+                    "fromCircle(new Circle(center), opt_sides);",
+                    "let angle = opt_angle;",
+                    "if (!opt_angle) {",
+                    "const x = end[0] - center[0];",
+                    "const y = end[1] - center[1];",
+                    "angle = Math.atan(y / x) - (x < 0 ? Math.PI : 0);",
+                    "}",
+                    "makeRegular(geometry, center, radius, angle);"
+                ],
+                "REPLACE": [
+                    "const radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));",
+                    "const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :",
+                    "fromCircle(new Circle(center), opt_sides);",
+                    "let angle = opt_angle;",
+                    "if (!opt_angle) {",
+                    "const x = end[0] - center[0];",
+                    "const y = end[1] - center[1];",
+                    "angle = Math.atan2(y, x) - (x < 0 ? Math.PI : 0); // Use atan2 for correct quad detection",
+                    "}",
+                    "makeRegular(geometry, getGeographicCenter(center), radius, angle);  // Adjust for geographic center"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "const boxCoordinates = [[",
+                    "getBottomLeft(extent),",
+                    "getBottomRight(extent),",
+                    "getTopRight(extent),",
+                    "getTopLeft(extent),",
+                    "getBottomLeft(extent)",
+                    "]];",
+                    "let geometry = opt_geometry;",
+                    "if (geometry) {",
+                    "geometry.setCoordinates(boxCoordinates);",
+                    "} else {",
+                    "geometry = new Polygon(boxCoordinates);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "const boxCoordinates = [[",
+                    "getGeographicCoordinate(getBottomLeft(extent)),",
+                    "getGeographicCoordinate(getBottomRight(extent)),",
+                    "getGeographicCoordinate(getTopRight(extent)),",
+                    "getGeographicCoordinate(getTopLeft(extent)),",
+                    "getGeographicCoordinate(getBottomLeft(extent))",
+                    "]];",
+                    "let geometry = opt_geometry;",
+                    "if (geometry) {",
+                    "geometry.setCoordinates(boxCoordinates);",
+                    "} else {",
+                    "geometry = new Polygon(boxCoordinates);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "export function createRegularPolygon(opt_sides, opt_angle) {",
+                    "return function(coordinates, opt_geometry) {",
+                    "const center = /** @type {LineCoordType} */ (coordinates)[0];",
+                    "const end = /** @type {LineCoordType} */ (coordinates)[1];",
+                    "const radius = Math.sqrt(",
+                    "squaredCoordinateDistance(center, end));",
+                    "const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :",
+                    "fromCircle(new Circle(center), opt_sides);",
+                    "let angle = opt_angle;",
+                    "if (!opt_angle) {",
+                    "const x = end[0] - center[0];",
+                    "const y = end[1] - center[1];",
+                    "angle = Math.atan(y / x) - (x < 0 ? Math.PI : 0);",
+                    "}",
+                    "makeRegular(geometry, center, radius, angle);",
+                    "return geometry;",
+                    "};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function createRegularPolygon(opt_sides, opt_angle) {",
+                    "return function(coordinates, opt_geometry) {",
+                    "const center = /** @type {LineCoordType} */ (coordinates)[0];",
+                    "const end = /** @type {LineCoordType} */ (coordinates)[1];",
+                    "const radius = calculateGeographicRadius(center, end);",
+                    "const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :",
+                    "fromCircle(new Circle(center), opt_sides);",
+                    "let angle = opt_angle || calculateInitialAngle(center, end);",
+                    "makeRegular(geometry, center, radius, angle);",
+                    "return geometry;",
+                    "};",
+                    "}",
+                    "",
+                    "function calculateGeographicRadius(center, end) {",
+                    "// Adjusted radius calculation considering geographic projection",
+                    "return calculateHaversineDistance(center, end);",
+                    "}",
+                    "",
+                    "function calculateInitialAngle(center, end) {",
+                    "// Calculate initial bearing from center to end",
+                    "return calculateBearingGeographic(center, end);",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "export function createBox() {",
+                    "return (",
+                    "function(coordinates, opt_geometry) {",
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "const boxCoordinates = [[",
+                    "getBottomLeft(extent),",
+                    "getBottomRight(extent),",
+                    "getTopRight(extent),",
+                    "getTopLeft(extent),",
+                    "getBottomLeft(extent)",
+                    "]];",
+                    "let geometry = opt_geometry;",
+                    "if (geometry) {",
+                    "geometry.setCoordinates(boxCoordinates);",
+                    "} else {",
+                    "geometry = new Polygon(boxCoordinates);",
+                    "}",
+                    "return geometry;",
+                    "}",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function createBox() {",
+                    "return (",
+                    "function(coordinates, opt_geometry) {",
+                    "const extent = boundingExtent(/** @type {LineCoordType} */ (coordinates));",
+                    "const boxCoordinates = generateBoxCoordinates(extent);",
+                    "let geometry = opt_geometry;",
+                    "if (geometry) {",
+                    "geometry.setCoordinates(boxCoordinates);",
+                    "} else {",
+                    "geometry = new Polygon(boxCoordinates);",
+                    "}",
+                    "return geometry;",
+                    "}",
+                    ");",
+                    "}",
+                    "",
+                    "function generateBoxCoordinates(extent) {",
+                    "// Adjusted calculation for geographic projection",
+                    "return [",
+                    "transformCoordinateToGeographic(getBottomLeft(extent)),",
+                    "transformCoordinateToGeographic(getBottomRight(extent)),",
+                    "transformCoordinateToGeographic(getTopRight(extent)),",
+                    "transformCoordinateToGeographic(getTopLeft(extent)),",
+                    "transformCoordinateToGeographic(getBottomLeft(extent))",
+                    "];",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "circle.setCenterAndRadius(coordinates[0], Math.sqrt(squaredLength));"
+                ],
+                "REPLACE": [
+                    "const radius = getGeographicRadius(coordinates[0], coordinates[1], map.getView().getProjection());",
+                    "circle.setCenterAndRadius(coordinates[0], radius);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "export function makeRegular(polygon, center, radius, opt_angle) {"
+                ],
+                "REPLACE": [
+                    "export function makeRegular(polygon, center, radius, opt_angle, projection) {",
+                    "if (projection.canWrapX()) {",
+                    "center = wrapCoordinate(center, projection);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

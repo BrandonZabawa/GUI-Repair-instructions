@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/elixir.js//LOWERCASE_SIGIL",
+            "src/languages/elixir.js//regexp container mode"
+        ],
+        "bug_functions": [
+            "src/languages/elixir.js//export default function(hljs)"
+        ],
+        "explanation": "All of the Elixir grammar rules live inside the default export function in elixir.js. Within that function:\n\n\u2022 The LOWERCASE_SIGIL (and similarly UPCASE_SIGIL) rule includes a sub-mode that begins and ends on `/\u2026/`, which is intended only for things like `~r/.../`, but it will pick up the `/1` in a function capture if the preceding `&` or identifier makes it look like a sigil.\n\n\u2022 The unnamed \u201cregexp container mode\u201d (the object whose variants begin with `/` and end with `/[a-z]*`) is designed to detect standalone regex literals, but it also triggers on the `/1` in `&letter?/1` because High-Light.js\u2019s RE_STARTERS_RE matches the preceding context.\n\nTogether these two modes cause the slash in a function capture to be parsed as the start of a regex/sigil. To fix the bug, the grammar needs an explicit mode for function captures (something like `{ className: 'built_in', begin: /&${ELIXIR_IDENT_RE}\\/\\d+/ }`) or adjustments to the regex/sigil modes so they do not trigger on `&name?/arity`. This requires editing the default export function in src/languages/elixir.js where those modes are defined.",
+        "bug_scenario": "When highlighting this Elixir snippet:\n\n    def has_letter?(str), do: str |> String.graphemes() |> Enum.any?(&letter?/1)\n    def letter?(c), do: c =~ ~r/\\p{L}/u\n\nthe built-in Elixir grammar treats the `/` in `&letter?/1` as the start of a regex or sigil delimiter. As a result everything from that slash up to the next slash is colored as a regex literal (red in the screenshot), instead of leaving the entire function-capture form `&letter?/1` un-highlighted (white) and continuing normal Elixir syntax highlighting."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/elixir.js//regexp container"
+        ],
+        "bug_functions": [],
+        "explanation": "In src/languages/elixir.js there is a custom \u201cregexp container\u201d mode whose variants include \u201cbegin: '/'\u201d and \u201cend: '/[a-z]*'\u201d to detect Elixir regex literals. Because it simply looks for a leading slash after certain characters, it also captures the slash used in function captures (arity notation) like \u201c&letter?/1\u201d. That misclassification is the root of the broken highlighting, so the regexp container mode must be adjusted (or a new rule added) to avoid treating capture\u2010arity slashes as regex delimiters.",
+        "bug_scenario": "When highlighting an Elixir snippet that uses a function capture operator (e.g. &letter?/1), the highlighter treats the \u201c/1\u201d as the start of a regex literal and continues until it finds a closing \u201c/\u201d, mangling the rest of the line\u2019s colors. In other words, the slash in the capture (arity) is mistaken for the regex delimiter."
+    }
+}

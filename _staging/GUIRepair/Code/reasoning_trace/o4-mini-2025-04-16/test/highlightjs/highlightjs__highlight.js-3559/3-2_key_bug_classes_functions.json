@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/kotlin.js//class mode (className: 'class')"
+        ],
+        "bug_functions": [
+            "src/languages/kotlin.js//default export function(hljs)"
+        ],
+        "explanation": "The core of the problem is in src/languages/kotlin.js: the syntax\u2010highlighter\u2019s \u201cclass\u201d mode is defined with end:/[:\\{(]|$/ and excludeEnd:true, which makes the mode terminate before hitting the brace when there\u2019s a colon (inheritance) in the declaration. As a result, that brace is not part of the class\u2010scoped highlighting and picks up a different color. To fix this, the \u2018end\u2019 regex for the class rule must be adjusted (for example, removing \u2018\\{\u2019 from the end pattern or changing how inheritance colons are handled) so that the opening brace remains inside the same highlight scope.",
+        "bug_scenario": "The screenshot shows a Kotlin code snippet in a syntax\u2010highlighted editor (VSCode/JSFiddle) where the opening brace \u201c{\u201d after an inherited class declaration (e.g. class TABLE: Tag { ) is rendered in a different color than other class/body braces. In other words, the highlighter\u2019s Kotlin \u201cclass\u201d rule is stopping at the colon and not including the brace in the same scope, so that brace falls back to a different (punctuation) style."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/kotlin.js//export default function"
+        ],
+        "explanation": "The bug lives in the Kotlin highlighter definition in src/languages/kotlin.js\u2014the anonymous default-export function that defines the grammar. In its \u201cclass\u201d rule it uses end: /[:\\{(]|$/ and excludeEnd: true. By including \u201c{\u201d in the end pattern, the opening brace is excluded from the class context and thus is not scoped together with its matching brace. This split breaks bracket-matching and results in differently colored braces. Adjusting this end regex (for example, removing \u201c\\{\u201d so the rule doesn\u2019t terminate on the brace) will keep the brace inside the class scope and restore uniform bracket coloring.",
+        "bug_scenario": "In the Kotlin snippet shown in the screenshot, the class declarations that inherit from another type (for example, \u201cclass TABLE: Tag { \u2026 }\u201d) have their opening and closing braces highlighted in a different color from each other. In other words, because the syntax highlighter\u2019s \u201cclass\u201d rule ends on the colon (and even on an opening brace), the brace tokens fall outside of the class-decl context and are tokenized (and colored) independently, causing the brace pair to no longer be recognized and colored as matching brackets."
+    }
+}

@@ -1,0 +1,51 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index 5de570b2c8..cbfa927a8a 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -242,11 +242,17 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+      */
+     this.paletteTextures_ = options.paletteTextures || [];
+ 
+-    /**
+-     * @private
+-     * @type {import("../../Map.js").FrameState|null}
+-     */
++    /** 
++     * @private 
++     * @type {import("../../Map.js").FrameState|null} 
++     */ 
+     this.frameState_ = null;
++
++    /** 
++     * @private 
++     * @type {import("../../proj/Projection.js").default|null} 
++     */
++    this.lastProjection_ = null;
+   }
+ 
+   /**
+@@ -266,6 +272,9 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+         this.vertexShader_
+       );
+     }
++    // Clear tile‐texture cache on source/style reset.
++    this.tileTextureCache_.forEach((tileTexture) => tileTexture.dispose());
++    this.tileTextureCache_.clear();
+   }
+ 
+   afterHelperCreated() {
+@@ -416,6 +425,14 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+    * @return {HTMLElement} The rendered element.
+    */
+   renderFrame(frameState) {
++    // If the viewProjection has changed, clear any old tile textures.
++    const currentProj = frameState.viewState.projection;
++    if (this.lastProjection_ !== currentProj) {
++      this.tileTextureCache_.forEach((tileTexture) => tileTexture.dispose());
++      this.tileTextureCache_.clear();
++    }
++    this.lastProjection_ = currentProj;
++
+     this.frameState_ = frameState;
+     this.renderComplete = true;
+     const gl = this.helper.getGL();

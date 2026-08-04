@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Text.js//Text",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Text.js//setTextBaseline",
+            "src/ol/style/Text.js//getTextBaseline",
+            "src/ol/render/canvas/TextBuilder.js//setTextStyle",
+            "src/ol/render/canvas/TextBuilder.js//drawText",
+            "src/ol/render/canvas/TextBuilder.js//drawChars_"
+        ],
+        "explanation": "The two\u2010line gap issue stems from how OpenLayers v4\u2019s Text style and CanvasTextBuilder split and draw multi\u2010line text. In Text.js the default textBaseline is set to \u2018middle\u2019 and there is no option to control line spacing or line\u2010height. CanvasTextBuilder.setTextStyle applies that baseline (and no newline\u2010specific offset), while drawText and its helper drawChars_ push instructions to render each character or line but never adjust the vertical advance per line to match how v2 did (tightly stacking lines). To restore a tight line spacing or allow the developer to specify zero gap, you must modify Text.js to accept a lineSpacing/lineHeight option (or override the default baseline) and update CanvasTextBuilder.setTextStyle, drawText and drawChars_ to honour it when calculating vertical offsets between lines.",
+        "bug_scenario": "In the v4.6.4 screenshot, two\u2010line labels (e.g. \u201c4.3\\nbar\u201d or \u201c2.0\\nbar\u201d) render with a significant vertical gap between lines, whereas in v2.13 the same two\u2010line text was rendered with lines tight to each other (no extra blank space). The user wants to remove or reduce that unwanted line gap in multi\u2010line labels."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Text.js//Text",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Text.js//setText",
+            "src/ol/render/canvas/TextBuilder.js//drawText",
+            "src/ol/render/canvas/TextBuilder.js//drawChars_"
+        ],
+        "explanation": "The Text class in src/ol/style/Text.js is responsible for storing the raw text string including line breaks (via setText). The CanvasTextBuilder in src/ol/render/canvas/TextBuilder.js then takes that text and lays it out on the canvas: drawText handles splitting or positioning text lines (and ultimately issues a DRAW_IMAGE for point labels), and drawChars_ computes per-character baselines and offsets for line-placement. The extra vertical gap arises from the default line-spacing logic in these routines. To remove or customize that gap, adjustments must be made inside CanvasTextBuilder.drawText/drawChars_ (or the data passed to them, e.g. by extending Text with a lineHeight option) so that consecutive lines are drawn flush without the extra spacing.",
+        "bug_scenario": "The user is seeing an unwanted vertical gap between two lines of text when using a multi-line label in OpenLayers v4.6.4 (e.g. \u201c3.5\\nbar\u201d). In v2.13 the two lines render tightly stacked; in v4.6.4 there is a noticeable blank space between them. The screenshot shows four labelled squares with a larger inter-line gap in the newer version."
+    }
+}

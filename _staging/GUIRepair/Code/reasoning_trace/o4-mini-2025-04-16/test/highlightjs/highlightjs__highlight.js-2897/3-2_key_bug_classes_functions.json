@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/javascript.js//JSDOC_COMMENT",
+            "src/languages/javascript.js//COMMENT"
+        ],
+        "bug_functions": [
+            "src/languages/javascript.js//export default function(hljs)",
+            "src/lib/mode_compiler.js//compileLanguage"
+        ],
+        "explanation": "The empty /**/ is currently being matched by the JSDOC_COMMENT mode (defined in javascript.js) instead of the generic C_BLOCK_COMMENT_MODE. JSDOC_COMMENT begins on '/**' and ends on '*/', but its internal configuration (contains doctag rules only) doesn\u2019t handle a zero-length body, leaving the parser stuck inside a comment mode. The COMMENT variant groups together JSDOC_COMMENT and C_BLOCK_COMMENT_MODE, but because JSDOC_COMMENT is listed first, it always wins on '/**/', preventing normal code parsing from resuming. The default export function in javascript.js is where these modes are wired up, and compileLanguage in mode_compiler.js is responsible for building the underlying regex machinery that executes the begin/end logic. Fixing this requires adjusting the JSDOC_COMMENT definition (or its priority) so that an empty '/**/' is treated as a standard block comment (or explicitly allowed) and doesn\u2019t block further highlighting.",
+        "bug_scenario": "When using highlight (not highlightAuto) on a JavaScript snippet that starts and ends with an empty block comment (/**/console.log(\"Hello, World!\")/**/), the highlighter treats the initial /**/ as the start of a JSDoc-style comment and never correctly resumes highlighting the code or the trailing /**/. The code after the first empty /**/ is shown as plain text (no coloring), and the final /**/ is also not recognized."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/javascript.js//JSDOC_COMMENT",
+            "src/languages/javascript.js//COMMENT"
+        ],
+        "bug_functions": [
+            "src/languages/javascript.js//<default export function>"
+        ],
+        "explanation": "The two mode definitions in javascript.js control how /*\u2026*/-style comments are recognized. JSDOC_COMMENT is defined to begin on '/**' and end on '*/' and lives ahead of the generic C_BLOCK_COMMENT_MODE inside the COMMENT variants. Because it will happily match an empty '/**/\u2019 it enters comment mode and never hands control back to the lexer for the code that follows. By adjusting JSDOC_COMMENT (for example, requiring at least one non-asterisk inside, or changing the order so that empty block comments are handled by the simpler C_BLOCK_COMMENT_MODE and immediately exited) or by modifying the COMMENT variant list, you can prevent an empty /**/ from halting further highlighting. The default export function wraps these modes into the language definition, so any change to how COMMENT or JSDOC_COMMENT is built must happen before or inside that function.",
+        "bug_scenario": "When you put an empty block comment at the very start of a JavaScript snippet\u2014e.g. \u201c/**/console.log(\u2026)/**/\u201d\u2014highlight.js will consume the first \u201c/**/\u201d as a JSDoc comment and never resume normal tokenization, so none of the console.log call or the trailing \u201c/**/\u201d get highlighted. In other words, the empty comment mode \u201clocks up\u201d the parser and breaks all subsequent syntax highlighting."
+    }
+}

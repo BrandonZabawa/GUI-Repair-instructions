@@ -1,0 +1,30 @@
+diff --git a/lib/features/modeling/BpmnUpdater.js b/lib/features/modeling/BpmnUpdater.js
+index 28d24076..1530b34c 100644
+--- a/lib/features/modeling/BpmnUpdater.js
++++ b/lib/features/modeling/BpmnUpdater.js
+@@ -329,6 +329,25 @@ BpmnUpdater.prototype.updateParent = function(element, oldParent) {
+     }
+   }
+ 
++  // [PATCH] Update parent for associations/artifacts if their source/target moved to a new parent
++  if (is(element, 'bpmn:Association') || is(element, 'bpmn:TextAnnotation') || is(element, 'bpmn:Group')) {
++    // Find the lowest common parent of source and target, or fallback to element.parent
++    var sourceParent = element.source && element.source.parent,
++        targetParent = element.target && element.target.parent;
++
++    // If both source and target exist, use their common parent; otherwise, fallback to element.parent
++    if (sourceParent && targetParent) {
++      // If source and target have the same parent, use it
++      if (sourceParent === targetParent) {
++        parentBusinessObject = sourceParent.businessObject;
++        parentDi = parentBusinessObject && parentBusinessObject.di;
++      }
++    } else if (element.parent) {
++      parentBusinessObject = element.parent.businessObject;
++      parentDi = parentBusinessObject && parentBusinessObject.di;
++    }
++  }
++
+   this.updateSemanticParent(businessObject, parentBusinessObject);
+ 
+   if (is(element, 'bpmn:DataObjectReference') && businessObject.dataObjectRef) {

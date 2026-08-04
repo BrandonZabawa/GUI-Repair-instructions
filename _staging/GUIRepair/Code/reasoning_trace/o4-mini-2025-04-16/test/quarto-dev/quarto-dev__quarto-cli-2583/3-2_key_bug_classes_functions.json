@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/table-captions.lua//tableCaptions",
+            "src/resources/filters/quarto-pre/table-captions.lua//tableCaptionsAndLabels",
+            "src/resources/filters/quarto-pre/table-captions.lua//applyTableCaptions",
+            "src/resources/filters/quarto-pre/table-captions.lua//applyLatexTableCaption"
+        ],
+        "explanation": "All of the core logic for extracting, converting, and reinserting table captions lives in table-captions.lua. \u2022 tableCaptions builds the Div walker that detects the tbl-cap attribute and invokes downstream steps. \u2022 tableCaptionsAndLabels calls markdownToInlines to convert raw Markdown strings into Pandoc inline elements, but only for the initial internal representation. \u2022 applyTableCaptions then iterates over RawBlock nodes to inject the caption back into the HTML (and LaTeX), but in the HTML branch it uses pandoc.utils.stringify on the inline list. stringify flattens all inlines back to plain text, dropping emphasis and other formatting. As a result, _italics_ and ^superscript^ are lost. The LaTeX path in applyLatexTableCaption likewise re-escapes and reinserts in a way that still preserves styling. To fix the bug, the HTML branch in applyTableCaptions should insert the original inline elements (or re-render them) rather than calling stringify, so that Markdown formatting is retained in the final <caption>.",
+        "bug_scenario": "When you set a table caption in Quarto using the \u201ctbl-cap\u201d attribute and include Markdown syntax (e.g. _italics_, ^superscript^) it renders as plain text inside a <caption> tag (or inside a div wrapper), losing all Markdown formatting. By contrast, figure captions do honor inline Markdown. The attached screenshot shows that the table caption \u201cCan\u2019t use ^superscript^ or _italics_ in table caption\u201d appears unstyled, whereas the identical text in a figure caption is correctly italicized and superscripted."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/table-captions.lua",
+            "src/resources/filters/common/tables.lua"
+        ],
+        "bug_functions": [
+            "table-captions.lua//applyTableCaptions",
+            "tables.lua//htmlTableCaptionPattern"
+        ],
+        "explanation": "The function applyTableCaptions (in table-captions.lua) is responsible for inserting captions into raw HTML table blocks. In its RawBlock handler it retrieves the markdown-converted inlines (tblCaptions[idx]) but then calls pandoc.utils.stringify on them. stringify returns plain text, dropping all inline formatting (italics, superscript, etc.). As a result the final <caption> contains only unstyled text. The helper htmlTableCaptionPattern (in common/tables.lua) and htmlTablePattern drive the raw-HTML matching, but the real formatting loss comes from stringify. To preserve markdown styling, applyTableCaptions must render the inline AST back to HTML (for example via pandoc.write or by constructing a Pandoc Inline element that survives serialization) rather than stringifying it.",
+        "bug_scenario": "In the user\u2019s .qmd file they set a table caption with markdown styling (e.g. _italics_ or ^superscript^). When rendered to HTML via kableExtra, the caption text appears inside a <caption> tag, but any markdown formatting is stripped and shown literally. In contrast, figure captions correctly allow markdown styling. The root cause is in how Quarto\u2019s filters process raw HTML tables: they insert a caption via string substitution and use pandoc.utils.stringify on the inline AST, which flattens and loses any emphasis nodes."
+    }
+}

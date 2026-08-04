@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ListBox/ListBox.js",
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/components/src/components/dropdown/dropdown.js"
+        ],
+        "explanation": "\u2022 ListBox.js is responsible for gathering and passing down props (including tabIndex and disabled) to its Field and Menu children. It currently does not adjust or override the tabIndex when disabled is true, so Field ends up receiving a default tabindex of 0.\n\u2022 ListBoxField.js is where the inner toggle button gets rendered and its tabindex set. It always applies a non-negative tabindex, ignoring the disabled flag passed in. This is why the child element remains tabbable even when disabled.\n\u2022 components/src/components/dropdown/dropdown.js is the vanilla JavaScript implementation of the dropdown used in non-React contexts. It likewise hardcodes tabindex on the toggle button without checking disabled. Aligning its behavior with the React component will ensure consistency across implementations. Each of these files needs to be updated so that when disabled=true the tabindex for the toggle button is automatically set to -1.",
+        "bug_scenario": "When a Dropdown is rendered with disabled=true and tabIndex=\"-1\", the outer wrapper correctly has tabindex=\"-1\" but the inner toggle field (a div with role=\"button\") is still rendered with tabindex=\"0\". That makes the disabled dropdown focusable via keyboard, which breaks the expected behavior that disabled controls should not be tabbable."
+    },
+    "2": {
+        "bug_files": [
+            "packages/components/src/components/dropdown/dropdown.js",
+            "packages/react/src/components/Dropdown/Dropdown.js"
+        ],
+        "explanation": "\u2022 dropdown.js is the web component implementation that applies the disabled CSS class to the outer wrapper but never cascades the disabled state (or its tabIndex) down to the inner toggle button.  Fixing it here lets the component set the correct tabindex on the rendered button when disabled.\n\u2022 list-box-field.js is the underlying component that always stamps its field element with tabindex=0.  It needs logic to emit tabindex=-1 when its host has a disabled attribute.\n\u2022 Dropdown.js in the React package wraps and forwards props (including disabled and tabIndex) to the underlying element.  Ensuring it passes disabled down to both list-box and toggle slots\u2014or explicitly sets the child tabIndex when disabled\u2014may also be required for the React wrapper to behave correctly.",
+        "bug_scenario": "In the Dropdown example above, passing both `disabled` and `tabIndex=\"-1\"` only kicks the `tabindex=\"-1\"` onto the outer `<div>` container.  The inner button/list-box field that actually receives focus on tabbing still has `tabindex=\"0\"`, so even though the control is visually disabled and cursor-unfocusable, it is still in the page\u2019s tab order.  Tabbing into the disabled dropdown is a bad a11y smell\u2014the child focusable control must also pick up `tabindex = -1` when disabled."
+    }
+}

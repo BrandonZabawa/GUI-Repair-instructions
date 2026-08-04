@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-d.js",
+            "components/prism-d.min.js"
+        ],
+        "explanation": "The only files in the repo that define or override the D language grammar are prism-d.js and its minified copy. They extend the clike grammar and supply the regex patterns for D\u2019s string and character literals. Because the regex in prism-d.js does not allow an apostrophe inside a double-quoted string and does not recognize backtick strings, these two files must be updated to fix the highlighting bug.",
+        "bug_scenario": "On Prism\u2019s online tester with the D language selected, double-quoted strings containing an apostrophe (single quote) are being split incorrectly: the apostrophe is treated like the end of the string (or a char literal), so highlighting breaks mid-string. Also, D\u2019s backtick strings (WYSIWYG strings) are not recognized\u2014they fall back to the same broken pattern. In the screenshot you can see \u201cIt\u2019s\u201d is highlighted as two separate tokens instead of one string."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-clike.js",
+            "components/prism-clike.min.js",
+            "components/prism-d.js",
+            "components/prism-d.min.js"
+        ],
+        "explanation": "Prism\u2019s D language support is implemented by extending the generic C-style grammar defined in prism-clike.js. The Regex patterns in prism-clike.js for 'string' and 'char' don\u2019t allow a single quote inside a double-quoted string (they treat it as the end of a char or start of a new string), and they know nothing about D\u2019s backtick raw-string syntax. prism-d.js simply inherits those patterns, so all string tokenization issues originate in prism-clike.js and manifest in prism-d.js. Fixing the apostrophe handling and adding a backtick-based string rule must happen in these two source files (and their minified counterparts).",
+        "bug_scenario": "When highlighting D code, any single quote (apostrophe) inside a double\u2010quoted string is being treated as the opening or closing of a character literal, which splits the string into multiple tokens and highlights incorrectly. Likewise, D\u2019s raw (\"WYSIWYG\") strings delimited by backticks (`\u2026`) aren\u2019t recognized as strings at all, so they fall back to default tokenization. In the test page you can paste:\n\n```d\nstring foo = \"It\u2019s\";\nfoo = \"It\u2019s\";\nfoo = \"It\u2019s\";\n\nstring bar = `It\u2019s`;\nbar = `It\u2019s`;\nbar = `It\u2019s`;\nbar = `It\u2019s`;\n```\n\nand see that:\n- The apostrophe in \"It\u2019s\" breaks the double-quoted string into multiple pieces.\n- Backtick-delimited strings are not treated as strings.\n"
+    }
+}

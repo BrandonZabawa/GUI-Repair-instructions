@@ -1,0 +1,32 @@
+diff --git a/components/cascader-select/cascader-select.tsx b/components/cascader-select/cascader-select.tsx
+index 49be8bf38..32016fdbe 100644
+--- a/components/cascader-select/cascader-select.tsx
++++ b/components/cascader-select/cascader-select.tsx
+@@ -573,9 +573,17 @@ class CascaderSelect extends Component<CascaderSelectProps, CascaderSelectState>
+         if (!('value' in this.props)) {
+             st.value = value;
+         }
++        // single-mode: still clear searchValue after selecting an item
+         if (!multiple && searchValue) {
+             st.searchValue = '';
+         }
++        // multiple-mode: if all of the filtered (search) items have been picked, clear the search
++        if (multiple && searchValue) {
++            const filteredPaths = this.filterItems();
++            if (filteredPaths.length > 0 && value.length === filteredPaths.length) {
++                st.searchValue = '';
++            }
++        }
+         if (Object.keys(st).length) {
+             this.setState(st);
+         }
+@@ -584,7 +592,8 @@ class CascaderSelect extends Component<CascaderSelectProps, CascaderSelectState>
+             onChange(value, data, extra);
+         }
+ 
+-        if (searchValue && this.select) {
++        // whenever we actually cleared searchValue in state, clear the Select’s search input
++        if (st.hasOwnProperty('searchValue') && this.select) {
+             this.select.handleSearchClear();
+         }
+     }

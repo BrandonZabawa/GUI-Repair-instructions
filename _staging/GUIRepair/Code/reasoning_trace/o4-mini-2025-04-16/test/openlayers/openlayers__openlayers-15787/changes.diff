@@ -1,0 +1,38 @@
+diff --git a/src/ol/webgl/PaletteTexture.js b/src/ol/webgl/PaletteTexture.js
+index d38c86f667..d5c4921154 100644
+--- a/src/ol/webgl/PaletteTexture.js
++++ b/src/ol/webgl/PaletteTexture.js
+@@ -16,6 +16,11 @@ class PaletteTexture {
+      * @private
+      */
+     this.texture_ = null;
++    /**
++     * @type {WebGLRenderingContext|null}
++     * @private
++     */
++    this.gl_ = null;
+   }
+ 
+   /**
+@@ -23,6 +28,12 @@ class PaletteTexture {
+    * @return {WebGLTexture} The texture.
+    */
+   getTexture(gl) {
++    // If we already have a texture but the GL context has changed,
++    // throw away the old texture so we can recreate it for the new context.
++    if (this.texture_ && this.gl_ !== gl) {
++      this.texture_ = null;
++      this.gl_ = null;
++    }
+     if (!this.texture_) {
+       const texture = gl.createTexture();
+       gl.bindTexture(gl.TEXTURE_2D, texture);
+@@ -42,6 +53,8 @@ class PaletteTexture {
+         this.data,
+       );
+       this.texture_ = texture;
++      // remember which gl context created this texture
++      this.gl_ = gl;
+     }
+     return this.texture_;
+   }

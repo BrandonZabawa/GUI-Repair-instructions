@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "src/format/html/format-html-bootstrap.ts",
+            "src/format/html/format-html-shared.ts",
+            "src/format/html/format-html.ts",
+            "src/format/formats.ts",
+            "src/format/formats-shared.ts",
+            "resources/filters/quarto-pre/panel-tabset.lua"
+        ],
+        "explanation": "The bug concerns how .panel-tabset and .nav-fill HTML classes are handled and rendered into the final HTML. Rendering issues of custom panel/tab components are almost always related to the HTML formatting logic and any custom pre-processing filters/scripts that translate markdown or qmd-specific syntax into the appropriate Bootstrap-compatible HTML. The panel-tabset feature is implemented using both Lua filters (resources/filters/quarto-pre/panel-tabset.lua) and TypeScript/JS logic for HTML layout (src/format/html/*, src/format/formats*). Changes or regressions in these files could break the application of classes or structure. The files selected are the most directly relevant to handling tabset and navigation classes, the generic HTML render logic, and the Bootstrap-specific formatting\u2014all of which must work together for these features to render properly. If the bug is in the class merging/nesting or in the order classes are applied or divs are generated, it will be handled here.",
+        "bug_scenario": "The bug is about the incorrect rendering of the 'panel-tabset' combined with the 'nav-fill' class when generating HTML. In the working version, tabs are distributed across the width (nav-fill), but in the prerelease, the tabset appears broken, showing headers as if they're normal text, not tabs. The issue is that combining '.panel-tabset' and '.nav-fill' in a single div no longer works as before; proper rendering only occurs when they are nested. The attached images illustrate these two very different results: the first is broken (prerelease), showing just text, while the second is correct (older version), showing a proper tab bar."
+    },
+    "2": {
+        "bug_files": [
+            "src/lib/pandoc/format-extension.ts",
+            "src/lib/pandoc/pandoc-attr.ts",
+            "src/lib/css.ts",
+            "src/format/html/format-html-bootstrap.ts",
+            "src/format/html/format-html-shared.ts",
+            "src/filters/panel-tabset.lua",
+            "src/filters/panel-layout.lua"
+        ],
+        "explanation": "These files are related to how Quarto processes markdown extensions and generates HTML and CSS classes, especially around tabsets and Bootstrap nav classes: \n- 'src/lib/pandoc/format-extension.ts' and 'src/lib/pandoc/pandoc-attr.ts' handle parsing and applying markdown extensions and div/class attributes, which is core to tabset behavior and nav class propagation.\n- 'src/lib/css.ts' helps with CSS class handling and application, which may be involved in combining or ordering classes for proper Bootstrap rendering.\n- 'src/format/html/format-html-bootstrap.ts' and 'src/format/html/format-html-shared.ts' implement the HTML generation for Bootstrap components, likely converting .panel-tabset and .nav-fill to the appropriate Bootstrap HTML/CSS.\n- 'src/filters/panel-tabset.lua' and 'src/filters/panel-layout.lua' (Lua filters) are critical for transforming markdown/AST inputs with .panel-tabset and .nav-fill into the expected final Bootstrap-flavored output. If the handling or order of these filters changed, the bug could arise.\n\nThese files must be investigated/edited to restore the intended combined behavior of .panel-tabset and .nav-fill under modern Quarto.",
+        "bug_scenario": "In the bug report, the issue is that the combination of `.panel-tabset` and `.nav-fill` (Bootstrap/styles for tabs) is no longer rendering the expected tabbed panel style in newer Quarto versions. The first screenshot (working behavior in 1.2.335) shows proper tabs UI, while the second screenshot (broken in 1.3.146) displays headers without working tabs\u2014indicating a loss of tab rendering or class application. The working workaround (nesting `.nav-fill` outside `.panel-tabset`) means upstream code handling the translation of Quarto markdown/AST to HTML and CSS class generation is not properly handling this scenario anymore."
+    }
+}

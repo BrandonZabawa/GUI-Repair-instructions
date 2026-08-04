@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/snapping/BpmnConnectSnapping.js//BpmnConnectSnapping"
+        ],
+        "bug_functions": [
+            "lib/features/snapping/BpmnConnectSnapping.js//snapInsideTarget",
+            "lib/features/snapping/BpmnConnectSnapping.js//snapToPosition"
+        ],
+        "explanation": "The core snapping behavior for connections is implemented in BpmnConnectSnapping: it listens to connect.hover, connect.move and connect.end. The helper function snapInsideTarget only ensures the connector stays within a padded region of the target, but never moves it exactly to the geometric center. The snapToPosition helper is available but only used for MessageFlows, not SequenceFlows. To restore center\u2192center snapping for sequence flows, BpmnConnectSnapping\u2019s event handler must invoke snapToPosition(mid(target)) (or similar) for SequenceFlow connectionAttrs, in addition to or instead of snapInsideTarget. Hence BpmnConnectSnapping and its two helper functions are the key elements to update.",
+        "bug_scenario": "The user is trying to create a sequence flow by dragging a connection line from the center of one task to the center of another. In the \u201cbefore\u201d image the dashed preview snaps exactly to the source and target task centers. In the \u201cafter\u201d image, with the new snapping/grid preview logic, the connection no longer snaps to the exact center of the target task; it only snaps within a padded boundary. As a result, center-to-center connections fail unless the user manually aligns them."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/snapping/BpmnConnectSnapping.js//BpmnConnectSnapping"
+        ],
+        "bug_functions": [
+            "lib/features/snapping/BpmnConnectSnapping.js//snapInsideTarget",
+            "lib/features/snapping/BpmnConnectSnapping.js//snapToPosition",
+            "lib/features/snapping/BpmnConnectSnapping.js//getDimensionForAxis"
+        ],
+        "explanation": "All of the snapping logic for connection endpoints lives in BpmnConnectSnapping. The core event listener in BpmnConnectSnapping decides when and how to snap on connect.hover, connect.move, and connect.end. snapInsideTarget is responsible for constraining the connector to within a padding region of the target\u2019s bounds \u2013 this is where center-to-center snaps should occur but currently only respects a fixed padding. snapToPosition is used for message flows but could be reused for sequence flows to enforce exact midpoint snapping. getDimensionForAxis computes the width/height used by snapInsideTarget to decide snapping thresholds. Adjusting these functions (or adding a special case for exact mid-snapping) will restore true center-to-center connection behavior.",
+        "bug_scenario": "When attempting to connect two BPMN tasks by dragging a sequence flow directly from the center of one task to the center of another, the connection preview no longer snaps to the exact midpoint of the target task. After snapping/grid-snapping was introduced, dragging a connector to the center of the task only brings the end point to within a padding region (20px) from the target bounds rather than exactly to its midpoint, preventing the common \u201ccenter-to-center\u201d connection."
+    }
+}

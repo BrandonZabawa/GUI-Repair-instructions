@@ -1,0 +1,9 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-finalize/mediabag.lua"
+        ],
+        "explanation": "The Lua filter in `mediabag.lua` is responsible for retrieving binary contents from Pandoc\u2019s media bag and writing them out to the filesystem so that LaTeX can include them. Right now it uses the raw `el.src` URL as the filename, including \u2018https://\u2019 and embedded slashes, which leads to invalid paths. To fix the PDF build error, this file needs to sanitize or remap remote URLs to safe filesystem names before writing and updating `el.src`.",
+        "bug_scenario": "The user has authored a Quarto document containing a non-standard, hard-to-parse remote image URL with embedded percent-escapes and slashes:\n\n```markdown\n![](https://substackcdn.com/image/fetch/.../public/images/..._289x174.jpeg)\n```\n\nWhen rendering this document to PDF (via XeLaTeX), the Lua \u201cmediabag\u201d filter in Quarto tries to look up the image in Pandoc\u2019s media bag, writes it out to disk under the literal URL path (including \u201chttps://\u2026\u201d and slashes), and then sets `el.src` to that file path.  This produces a broken path like `badurl_files/mediabag/https://bucket.jpeg`, which XeLaTeX cannot load, causing the build to fail.  The example image itself is a simple pink cartoon blob with a smile (a placeholder test image)."
+    }
+}

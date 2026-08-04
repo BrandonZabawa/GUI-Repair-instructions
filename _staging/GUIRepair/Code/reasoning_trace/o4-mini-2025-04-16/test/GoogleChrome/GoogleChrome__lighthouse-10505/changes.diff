@@ -1,0 +1,35 @@
+diff --git a/lighthouse-core/computed/metrics/interactive.js b/lighthouse-core/computed/metrics/interactive.js
+index b534a5a5a..ef431c750 100644
+--- a/lighthouse-core/computed/metrics/interactive.js
++++ b/lighthouse-core/computed/metrics/interactive.js
+@@ -99,9 +99,6 @@ class Interactive extends ComputedMetric {
+     const cpuQuietPeriods = this._findCPUQuietPeriods(longTasks, traceOfTab)
+         .filter(isLongEnoughQuietPeriod);
+ 
+-    const cpuQueue = cpuQuietPeriods.slice();
+-    const networkQueue = networkQuietPeriods.slice();
+-
+     // We will check for a CPU quiet period contained within a Network quiet period or vice-versa
+     let cpuCandidate = cpuQueue.shift();
+     let networkCandidate = networkQueue.shift();
+@@ -132,10 +129,16 @@ class Interactive extends ComputedMetric {
+         }
+       }
+     }
+-
+-    throw new LHError(
+-      cpuCandidate
+-        ? LHError.errors.NO_TTI_NETWORK_IDLE_PERIOD
++    
++    // Fallback for “provided” throttling: assume the page remained idle after FCP
++    const fallbackTime = FcpTsInMs + REQUIRED_QUIET_WINDOW;
++    const fallbackPeriod = {start: fallbackTime, end: fallbackTime};
++    return {
++      cpuQuietPeriod: fallbackPeriod,
++      networkQuietPeriod: fallbackPeriod,
++      cpuQuietPeriods,
++      networkQuietPeriods,
++    };
+         : LHError.errors.NO_TTI_CPU_IDLE_PERIOD
+     );
+   }

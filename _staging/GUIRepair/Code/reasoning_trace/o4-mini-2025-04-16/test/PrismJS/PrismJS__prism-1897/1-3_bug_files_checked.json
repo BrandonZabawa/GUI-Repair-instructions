@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-markdown.js",
+            "components/prism-markdown.min.js"
+        ],
+        "explanation": "The bug lives in the Markdown language definition, which is implemented in components/prism-markdown.js (and its minified counterpart). This is where the regex patterns for italic punctuation are defined. To fix the over-greedy match you need to update the pattern in prism-markdown.js (and then regenerate the .min.js) so that exactly one leading/trailing \u2018*\u2019 or \u2018_\u2019 is matched, preventing it from swallowing strong delimiters.",
+        "bug_scenario": "In Prism\u2019s Markdown grammar the italic delimiter patterns for \u201c*\u201d and \u201c_\u201d are too greedy: they will match any number of leading/trailing asterisks or underscores rather than exactly one. As a result nested strong/italic markup like *__foo__* or _**bar**_ is highlighted incorrectly (the grammar eats up all the punctuation instead of distinguishing * vs ** or _ vs __)."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-markdown.js",
+            "components/prism-markdown.min.js"
+        ],
+        "explanation": "Both of these files register the Markdown language grammar in Prism, including the regex patterns for 'emphasis' (italic) and 'strong' (bold). The overly greedy pattern lives in those definitions, so updating the pattern here to only match a single marker (as suggested in the bug report) will correct the punctuation boundaries for italics and nested styles.",
+        "bug_scenario": "In Prism\u0019s Markdown highlighter the regex for italic (and similarly bold) punctuation is too greedy and will consume any number of leading `*` or `_`. As a result constructs like *__foo__* or _**bar**_ are mis-highlighted: the outer italic markers grab all the inner bold punctuation, so you end up with wrong token boundaries."
+    }
+}

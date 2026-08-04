@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "src/ol/layer/WebGLTile.js defines the WebGLTile Layer class, which lacks the setStyle method required to dynamically update visualization. This is the main file where such a setter method would be implemented to enable changing the layer's appearance without removing/re-adding the layer. src/ol/renderer/webgl/TileLayer.js is responsible for rendering WebGL-based tile layers and would need to support reinitializing shaders, buffers, and textures in response to style changes triggered by setStyle. Both of these files are directly related to managing the visualization and should be updated to implement and respond to a setStyle feature. Other files may use or extend these classes, but these are the core files where the bug manifests and would be fixed.",
+        "bug_scenario": "The bug is about the inability to dynamically update or replace the visualization style of a WebGLTile Layer instance in the application. Currently, users must remove and re-add the entire layer to change its appearance, instead of updating its style while preserving loaded raster data. This is especially problematic for large or costly data sources like GeoTIFFs. The feature request is for a setStyle method\u2014letting users apply new visualization styles dynamically, triggering necessary internal updates (e.g., shader recompilation, rebinding buffers/textures)."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/style/Style.js"
+        ],
+        "explanation": "1. `src/ol/layer/WebGLTile.js` is the main file implementing the `WebGLTile` layer. To add a `setStyle` method and support dynamic style updates, this is where the new API and related logic would go.\n2. `src/ol/renderer/webgl/TileLayer.js` handles the WebGL rendering for tile layers. Dynamically changing styles (such as rebuilding shaders and rebinding resources) requires updates here to properly reinitialize rendering resources when a style is changed via setStyle.\n3. `src/ol/style/Style.js` contains style definitions used across various layers. Any interaction with styles, including how they are set, validated, or changed, might require changes to support passing style information in the way needed for dynamic WebGLTile styling. \n\nThese files are directly related to the bug scenario where a dynamic visualization update for a WebGLTile layer is not supported due to lacking API and rendering update mechanisms.",
+        "bug_scenario": "The bug scenario is that the `WebGLTile` layer in the library does not have a `setStyle` method, meaning users cannot dynamically change the visualization (style) of the layer after creation. Currently, the only options are to adjust other properties or completely remove and recreate the layer, resulting in loss of all downloaded raster data. The desired scenario would allow users to update the visualization (style, including shaders and rendering configs) without reloading data, which is especially important for use cases like visualizing GeoTIFFs."
+    }
+}

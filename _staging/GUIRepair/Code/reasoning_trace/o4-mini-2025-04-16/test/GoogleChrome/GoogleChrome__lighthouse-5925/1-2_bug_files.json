@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js"
+        ],
+        "explanation": "The file unminified-javascript.js implements the UnminifiedJavascriptAudit. It loads Esprima, attempts to parse each script, and on parse failure (e.g. due to \\r\\n in a license comment) falls back to flagging the entire transfer size as unminified. This is precisely where the over-estimation bug originates, so this file must be updated to handle parse failures more gracefully (for example, by stripping comments first or by estimating savings based on token counts rather than wholesale transferSize).",
+        "bug_scenario": "When a JavaScript file is already minified but begins with a multi-line license comment containing carriage-returns (\\r\\n) or other edge-case tokens, Esprima fails to parse the script in UnminifiedJavascriptAudit. Because the audit code catches that parse error and immediately treats the entire transfer size as \u201cwasted,\u201d Lighthouse dramatically over-estimates potential savings. In our reproduction, a tiny minified body is prefixed by a license header with \\r\\n line breaks, causing the audit to mark 100 KB as unminified."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js"
+        ],
+        "explanation": "The core of this over-estimation bug lives in unminified-javascript.js. This audit calls Esprima to parse the script and, on any parse error, it simply treats the entire transferSize as unminified. Because the failure path never falls back or strips license comments, scripts with tricky comment blocks are mis-classified as completely unminified, resulting in huge, incorrect \u201csavings.\u201d Adjusting the error handling here (for example stripping comments or warning without counting all bytes) is required to fix the issue.",
+        "bug_scenario": "When Lighthouse\u2019s UnminifiedJavascriptAudit runs, it attempts to parse each script with Esprima to determine how much could be saved by minification. If Esprima throws (e.g. because a license comment contains carriage returns or unusual tokens), the audit abandons detailed analysis, logs a warning, and marks the full transfer size as \u201cwasted.\u201d In our reproduction the fake script body is already minified, but a multi-line license header with \u201c\\r\\n\u201d causes Esprima to fail, so Lighthouse reports ~100 KB of potential savings on an already-minified file."
+    }
+}

@@ -1,0 +1,115 @@
+diff --git a/src/ol/render/canvas/Executor.js b/src/ol/render/canvas/Executor.js
+index efe2953bf5..4a1d951134 100644
+--- a/src/ol/render/canvas/Executor.js
++++ b/src/ol/render/canvas/Executor.js
+@@ -906,42 +906,46 @@ class Executor {
+                 : null,
+             ];
+             if (declutterTree) {
+-              if (declutterMode === 'none') {
+-                // not rendered in declutter group
+-                continue;
+-              } else if (declutterMode === 'obstacle') {
+-                // will always be drawn, thus no collision detection, but insert as obstacle
+-                declutterTree.insert(dimensions.declutterBox);
+-                continue;
+-              } else {
+-                let imageArgs;
+-                let imageDeclutterBox;
+-                if (declutterImageWithText) {
+-                  const index = dd - d;
+-                  if (!declutterImageWithText[index]) {
+-                    // We now have the image for an image+text combination.
+-                    declutterImageWithText[index] = args;
+-                    // Don't render anything for now, wait for the text.
+-                    continue;
+-                  }
+-                  imageArgs = declutterImageWithText[index];
+-                  delete declutterImageWithText[index];
+-                  imageDeclutterBox = getDeclutterBox(imageArgs);
+-                  if (declutterTree.collides(imageDeclutterBox)) {
+-                    continue;
+-                  }
+-                }
+-                if (declutterTree.collides(dimensions.declutterBox)) {
+-                  continue;
+-                }
+-                if (imageArgs) {
+-                  // We now have image and text for an image+text combination.
+-                  declutterTree.insert(imageDeclutterBox);
+-                  // Render the image before we render the text.
+-                  this.replayImageOrLabel_.apply(this, imageArgs);
+-                }
+-                declutterTree.insert(dimensions.declutterBox);
+-              }
++switch (declutterMode) {
++case 'none':
++// not rendered in declutter group
++continue;
++case 'obstacle':
++// will always be drawn, thus no collision detection, but insert as obstacle
++declutterTree.insert(dimensions.declutterBox);
++continue;
++case 'text':
++if (declutterImageWithText) {
++const index = dd - d;
++if (!declutterImageWithText[index]) {
++declutterImageWithText[index] = args;
++continue;
++}
++imageArgs = declutterImageWithText[index];
++delete declutterImageWithText[index];
++imageDeclutterBox = getDeclutterBox(imageArgs);
++if (declutterTree.collides(imageDeclutterBox)) {
++continue;
++}
++}
++if (declutterTree.collides(dimensions.declutterBox)) {
++continue;
++}
++if (imageArgs) {
++declutterTree.insert(imageDeclutterBox);
++this.replayImageOrLabel_.apply(this, imageArgs);
++}
++declutterTree.insert(dimensions.declutterBox);
++break;
++case 'geometry':
++case 'both':
++default:
++if (declutterTree.collides(dimensions.declutterBox)) {
++continue;
++}
++declutterTree.insert(dimensions.declutterBox);
++break;
++}
+             }
+             this.replayImageOrLabel_.apply(this, args);
+           }
+diff --git a/src/ol/style/Image.js b/src/ol/style/Image.js
+index be788cd4da..ffb6724ec2 100644
+--- a/src/ol/style/Image.js
++++ b/src/ol/style/Image.js
+@@ -66,7 +66,8 @@ class ImageStyle {
+      * @private
+      * @type {"declutter"|"obstacle"|"none"|undefined}
+      */
+-    this.declutterMode_ = options.declutterMode;
++this.declutterMode_ = options.declutterMode;
++this.ignorePlacement_ = options.ignorePlacement || false;
+   }
+ 
+   /**
+diff --git a/src/ol/style/Text.js b/src/ol/style/Text.js
+index d76110b7cb..f80b09968a 100644
+--- a/src/ol/style/Text.js
++++ b/src/ol/style/Text.js
+@@ -203,7 +203,8 @@ class Text {
+      * @private
+      * @type {Array<number>|null}
+      */
+-    this.padding_ = options.padding === undefined ? null : options.padding;
++this.padding_ = options.padding === undefined ? null : options.padding;
++this.ignorePlacement_ = options.ignorePlacement || false;
+   }
+ 
+   /**

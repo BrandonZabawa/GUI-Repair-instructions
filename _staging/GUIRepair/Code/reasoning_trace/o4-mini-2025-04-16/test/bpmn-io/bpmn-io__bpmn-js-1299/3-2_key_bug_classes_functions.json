@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js"
+        ],
+        "bug_functions": [
+            "LabelEditingProvider constructor (eventBus.on('element.mousedown', \u2026) handler)",
+            "UpdateLabelHandler.postExecute"
+        ],
+        "explanation": "The key issue is that on any element.mousedown (i.e. selecting an event or gateway) the LabelEditingProvider forces a completion of direct editing, even if the user never actually edited a label. That triggers the UpdateLabelHandler.postExecute logic which unconditionally calls modeling.resizeShape(...) based on empty or default label bounds. Because many BPMN elements (events, gateways) have external labels by default, this ends up shrinking the element\u2019s own shape down to zero or near zero. To fix this bug you need to adjust the element.mousedown listener in LabelEditingProvider so that it only completes an active direct edit when it truly belongs to that element, and/or guard the UpdateLabelHandler.postExecute so that it only resizes actual label shapes (not the event/gateway shape).",
+        "bug_scenario": "When you click (select) a BPMN event or gateway the shape briefly re-renders at a minimal size (diamond gateways collapse to a tiny box or vanish altogether, circles shrink), making them un-clickable. This happens because a lingering \u201cempty\u201d direct edit is being completed on click and the postExecute resize logic meant for labels is being (mis-)applied to the element itself."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider",
+            "lib/features/label-editing/cmd/UpdateLabelHandler",
+            "lib/draw/TextRenderer"
+        ],
+        "bug_functions": [
+            "LabelEditingProvider (constructor) \u21a6 eventBus.on('element.mousedown', \u2026 directEditing.complete())",
+            "LabelEditingProvider.prototype.update \u21a6 triggers modeling.updateLabel on mousedown completion",
+            "UpdateLabelHandler.postExecute \u21a6 computes newBounds (via textRenderer.getExternalLabelBounds) and calls modeling.resizeShape",
+            "TextRenderer.getExternalLabelBounds \u21a6 lays out empty text and returns minimal width/height"
+        ],
+        "explanation": "1) LabelEditingProvider now listens to all \u2018element.mousedown\u2019 events and always calls directEditing.complete(), even when clicking on events or gateways that aren\u2019t being directly edited. 2) Completing a label\u2010editing session dispatches the UpdateLabelHandler, whose postExecute step always resizes the target element (mistaking it for a label) to the computed bounds for its (empty) text. 3) TextRenderer.getExternalLabelBounds, when given an empty string, returns essentially zero or minimum dimensions. 4) modeling.resizeShape then shrinks the event or gateway shape to those minimal dimensions, making it appear tiny or vanish.",
+        "bug_scenario": "When clicking (selecting) a BPMN \u201cevent\u201d or \u201cgateway\u201d element, its SVG shape is immediately resized to minimal bounds (or even disappears). This happens without using the lasso tool and only after upgrading to version 6.3.3. The root cause is a newly\u2010added global mousedown hook in the label editing feature, which on any click calls directEditing.complete() and dispatches an \u201cupdate label\u201d command on the clicked element. Because events and gateways have \u201cexternal\u201d labels by default, the UpdateLabelHandler.postExecute logic mistakes the shape itself for a label, computes zero or minimal bounds via TextRenderer.getExternalLabelBounds(text = \"\"), and then resizes the shape to those tiny dimensions."
+    }
+}

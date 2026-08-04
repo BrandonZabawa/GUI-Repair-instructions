@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/html/renderer/pwa-category-renderer.js//PwaCategoryRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/html/renderer/pwa-category-renderer.js//PwaCategoryRenderer.renderScoreGauge"
+        ],
+        "explanation": "PwaCategoryRenderer overrides renderScoreGauge to use its own template (\u2018#tmpl-lh-gauge--pwa\u2019) but never applies the SVG arc stroke or sets the numeric percentage text. The parent class\u2019s renderScoreGauge (in category-renderer.js) is responsible for computing strokeDasharray and percentage label. By forking that logic without re-implementing it, the PWA gauge falls back to an unstyled default. Fixing this requires enhancing PwaCategoryRenderer.renderScoreGauge to calculate and apply the strokeDasharray and percentage text (or delegating to super.renderScoreGauge) so that the colored arc and score value appear as intended.",
+        "bug_scenario": "When rendering just the PWA category header via jsdom using PwaCategoryRenderer.render, the gauge appears as an unstyled gray circle with only the PWA icon. It lacks the colored arc stroke indicating score and the numeric percentage label that other categories display."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/html/renderer/pwa-category-renderer.js//PwaCategoryRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/html/renderer/pwa-category-renderer.js//renderScoreGauge"
+        ],
+        "explanation": "The heart of the styling problem lives in PwaCategoryRenderer.renderScoreGauge. Unlike the base CategoryRenderer.renderScoreGauge (used by Performance, Accessibility, etc.), the PWA version only clones the PWA\u2010specific template and adds classes/label but never sets the SVG arc\u2019s strokeDasharray or writes the numeric percentage into the DOM. As a result, no colored arc is drawn and the score value is never visible. To fix the bug, renderScoreGauge in PwaCategoryRenderer must be updated to mirror the parent implementation: find the .lh-gauge-arc element in the template, set its strokeDasharray based on category.score, populate .lh-gauge__percentage with the rounded score*100, and apply the correct wrapper classes for rating.",
+        "bug_scenario": "The PWA category header gauge in the Lighthouse HTML report is rendering as a static gray circle with only the \u201cPWA\u201d icon inside. Unlike the other category gauges, it never draws the colored arc indicating the score nor does it display the numeric percentage."
+    }
+}

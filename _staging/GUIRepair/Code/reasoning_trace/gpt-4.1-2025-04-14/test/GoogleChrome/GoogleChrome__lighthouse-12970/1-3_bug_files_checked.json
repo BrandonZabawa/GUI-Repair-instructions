@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js"
+        ],
+        "explanation": "The bug is specifically about how resources are identified and reported as render-blocking. The logic for determining and filtering render-blocking resources is centralized in the file 'lighthouse-core/audits/byte-efficiency/render-blocking-resources.js'. This file performs the audit and generates the list of render-blocking resources, where it should be updated to properly exclude local file:// resources from being flagged. No other audit or report logic in the repo structure appears directly related to how render-blocking resources are analyzed and reported in this context.",
+        "bug_scenario": "Lighthouse is mistakenly treating local resources (file:/// URLs) as render-blocking resources and flagging them as an optimization opportunity. The bug occurs when using Lighthouse CLI, where the audit for render-blocking resources is not correctly excluding local file URLs. As local resources are inherently blocked and not loaded over the network, they should not be included in render-blocking resources suggestions. The screenshot confirms that a file:///some/local/file.e entry is shown as a render-blocking resource, which is incorrect behavior."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js",
+            "lighthouse-core/computed/network-records.js",
+            "lighthouse-core/gather/gather-runner.js"
+        ],
+        "explanation": "1. 'lighthouse-core/audits/byte-efficiency/render-blocking-resources.js': This file implements the logic for the 'Eliminate render-blocking resources' audit. The bug likely originates here, specifically in the part of the code that collects and lists render-blocking resources without filtering out unsupported or local file protocol resources (file:///).\n2. 'lighthouse-core/computed/network-records.js': This file defines how network requests are recognized and recorded. It may be passing local file resources to other audits, so adjustments may be needed to prevent 'file:///' network records from being treated as render-blocking for web audits.\n3. 'lighthouse-core/gather/gather-runner.js': This orchestrates gathering artifacts for audits, including network requests. Fixes may need to ensure that 'file:///' resources are either flagged or excluded at the gather stage before they propagate to the audits.\n\nThese files are all directly involved in either identifying or evaluating render-blocking resources. To resolve the bug, changes should be made so that audits do not report local files ('file:///') as render-blocking when running on web URLs.",
+        "bug_scenario": "The bug scenario, as shown in the screenshot and described in the report, is that Lighthouse's 'Eliminate render-blocking resources' audit incorrectly highlights local file URLs (file:///) as render-blocking, even though these resources are not loaded and should not impact the critical rendering path. This results in a misleading recommendation in the audit report, suggesting optimizations on resources that the browser never actually attempts to fetch or render."
+    }
+}

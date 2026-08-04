@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ListBox/ListBoxSelection.js",
+            "packages/react/src/components/ListBox/ListBoxField.js"
+        ],
+        "explanation": "1. ComboBox.js: This is where we render the <ListBox.Selection> pill and the <WarningFilled16> invalid icon. It doesn\u2019t add any ComboBox-specific modifiers to the selection pill, so you get the default ListBox/MultiSelect pill style instead of a styled ComboBox pill, and the invalid icon uses only the generic ListBox positioning. 2. ListBoxSelection.js: This is the shared component that renders the little \u201c\u00d7\u201d pill. It only applies the `${prefix}--list-box__selection` class and never any `${prefix}--combo-box__selection` styling hook, so ComboBox ends up with multi-select pill margins and padding. 3. ListBoxField.js: This wraps the input and positions any icons (invalid icon, menu icon, etc.). Its CSS expects only the default list-box markup; it doesn\u2019t apply the extra offsets that the ComboBox invalid icon class (`--combo-box__invalid-icon`) assumes. Together, those three files need to be updated so that the selection pill and invalid icon get the right ComboBox-specific class names and positioning rules.",
+        "bug_scenario": "When you render the React ComboBox in \u201cinvalid\u201d state with a selected item, the clear-selection pill (the little \u201c\u00d7\u201d you get once you choose something) is picking up the multi-select/ListBox styles instead of the ComboBox-specific styles. In our repro you see the black square around the \u201c\u00d7\u201d and the dropdown arrow overlapping the pill; you also see the invalid state icon (the little warning symbol in the red box) sitting in the wrong spot. In short, ComboBox is reusing ListBox.Selection (and ListBoxField) styling intended for other controls, so the pill and invalid icon get mis-positioned and mis-styled."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ListBox/ListBoxSelection.js",
+            "packages/components/src/components/combo-box/combo-box.config.js",
+            "packages/components/src/components/list-box/list-box.config.js"
+        ],
+        "explanation": "\u2022 ComboBox.js is where the ComboBox renders its Field, the invalid icon (`.bx--combo-box__invalid-icon`) and the selection \u201c\u00d7\u201d via ListBox.Selection. It\u2019s pulling in the generic ListBoxSelection component instead of a ComboBox-specific one.\n\u2022 ListBoxSelection.js defines the shared clear-selection pill and icon for multi-select controls. Because ComboBox reuses it, you inherit the multiselect CSS (height, padding, alignment) instead of a single-line combobox style.\n\u2022 combo-box.config.js and _combo-box.scss are the Carbon Components SCSS entry points for generating the ComboBox CSS. They currently don\u2019t include any overrides for the selection pill or invalid icon positioning, so the generic ListBox rules win.\n\u2022 list-box.config.js and _list-box.scss define the core ListBox (and MultiSelect) styles, including the selection pill and invalid icon placement. Those rules must be scoped or overridden by the ComboBox SCSS so that only multiselects use them, and single-select comboboxes get the correct sizing and icon positioning.",
+        "bug_scenario": "When you render a single-select <ComboBox> in React with the \u201cinvalid\u201d prop, the little \u201c\u00d7\u201d clear-selection icon and the invalid-state icon both pick up the generic MultiSelect/ListBox styles instead of the ComboBox-specific overrides. In practice you end up with the selection pill from the multiselect (too tall, wrong margins) and the ! icon floated in the wrong place \u2013 the control looks entirely broken."
+    }
+}

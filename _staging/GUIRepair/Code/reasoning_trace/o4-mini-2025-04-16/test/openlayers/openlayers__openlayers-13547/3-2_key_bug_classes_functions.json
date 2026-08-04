@@ -1,0 +1,36 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/XYZ.js//XYZ",
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/TileTexture.js//TileTexture"
+        ],
+        "bug_functions": [
+            "src/ol/source/XYZ.js//constructor",
+            "src/ol/source/DataTile.js//constructor",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles",
+            "src/ol/webgl/TileTexture.js//constructor",
+            "src/ol/webgl/TileTexture.js//uploadTile_"
+        ],
+        "explanation": "\u2022 src/ol/source/XYZ.js \u2013 The XYZ source constructor doesn\u2019t accept or forward a gutter option, so XYZ\u2010based tile sources cannot request or expose buffered tiles to avoid seams.\n\u2022 src/ol/source/DataTile.js \u2013 Similarly, the DataTileSource constructor and getTile pipeline lack any gutter handling, so typed\u2010array data tiles can\u2019t include a buffer region.\n\u2022 src/ol/renderer/webgl/TileLayer.js \u2013 The WebGLTileLayerRenderer.enqueueTiles (and ultimately renderFrame) creates instances of TileTexture without passing a gutter parameter. Without forwarding gutter here, the WebGL renderer never applies a buffer when uploading textures, so interpolation across tile boundaries still shows edges.\n\u2022 src/ol/webgl/TileTexture.js \u2013 Although TileTexture supports a gutter_ property and crops image tiles in uploadTile_, it only honors gutter when provided. The constructor and uploadTile_ method crop out the buffer before creating the WebGL texture, but since no gutter is ever passed in from XYZ/DataTile or the WebGL renderer, that code is effectively unused. Fixing this requires adding a gutter option in the source constructors, propagating it through the renderer to TileTexture, and ensuring uploadTile_ correctly retains the buffered pixels to eliminate seams.",
+        "bug_scenario": "When rendering XYZ or DataTile sources (for example Nextzen terrain tiles at 260\u00d7260 with a 2-px buffer) in OpenLayers, the library currently does not support a \u201cgutter\u201d (buffer) option except for TileWMS. As a result, when WebGL tile layers interpolate at tile edges, you can see visible seams and edge-artifacts where tiles meet. The supplied screenshot shows these gaps and edge effects around water bodies where the source tiles lack the required buffer."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/XYZ.js//XYZ",
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/TileTexture.js//TileTexture"
+        ],
+        "bug_functions": [
+            "src/ol/source/XYZ.js//constructor",
+            "src/ol/source/DataTile.js//getTile",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles",
+            "src/ol/webgl/TileTexture.js//constructor",
+            "src/ol/webgl/TileTexture.js//uploadTile_"
+        ],
+        "explanation": "\u2022 XYZ.constructor (XYZ.js) and DataTileSource.getTile (DataTile.js) currently do not accept or forward a gutter option to the downstream tile pipeline.  To support buffers on XYZ/DataTile sources, these constructors must be updated to read a gutter parameter from options and pass it on when creating tile\u2010loading calls or texture objects.\n\n\u2022 WebGLTileLayerRenderer.enqueueTiles (TileLayer.js) is where new webgl TileTexture instances are created.  It must be modified to pass the gutter value into each TileTexture creation so that the texture knows to reserve and ignore the extra border pixels.\n\n\u2022 TileTexture.constructor (TileTexture.js) holds the gutter option internally but only defaults to zero if none is provided, and uploadTile_ crops out the gutter before uploading.  This cropping approach does not prevent interpolation artifacts in WebGL.  You need to either preserve the gutter in the texture coordinates or adjust the rendering quad based on gutter (rather than pruning the pixels) so that edge interpolation samples within the valid tile interior.  uploadTile_ is the key method where the gutter is currently removed and needs to be revised.",
+        "bug_scenario": "The screenshot shows a tiled map layer (in this case a hillshade/terrain layer overlaid on a base map) with visible seams at tile boundaries.  Because no \u201cgutter\u201d or buffer is requested for XYZ/DataTile sources, linear interpolation on the edges bleeds in transparent or background pixels, producing noticeable edge artifacts where tiles meet."
+    }
+}

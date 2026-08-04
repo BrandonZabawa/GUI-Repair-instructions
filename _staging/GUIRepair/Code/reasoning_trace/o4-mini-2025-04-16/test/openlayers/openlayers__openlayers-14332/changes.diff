@@ -1,0 +1,175 @@
+diff --git a/src/ol/render/canvas/Immediate.js b/src/ol/render/canvas/Immediate.js
+index 0577c846b7..18a3a77ee7 100644
+--- a/src/ol/render/canvas/Immediate.js
++++ b/src/ol/render/canvas/Immediate.js
+@@ -872,54 +872,69 @@ class CanvasImmediateRenderer extends VectorContext {
+   setContextStrokeState_(strokeState) {
+     const context = this.context_;
+     const contextStrokeState = this.contextStrokeState_;
+-    if (!contextStrokeState) {
+-      context.lineCap = strokeState.lineCap;
+-      context.setLineDash(strokeState.lineDash);
+-      context.lineDashOffset = strokeState.lineDashOffset;
+-      context.lineJoin = strokeState.lineJoin;
+-      context.lineWidth = strokeState.lineWidth;
+-      context.miterLimit = strokeState.miterLimit;
+-      context.strokeStyle = strokeState.strokeStyle;
+-      this.contextStrokeState_ = {
+-        lineCap: strokeState.lineCap,
+-        lineDash: strokeState.lineDash,
+-        lineDashOffset: strokeState.lineDashOffset,
+-        lineJoin: strokeState.lineJoin,
+-        lineWidth: strokeState.lineWidth,
+-        miterLimit: strokeState.miterLimit,
+-        strokeStyle: strokeState.strokeStyle,
+-      };
+-    } else {
+-      if (contextStrokeState.lineCap != strokeState.lineCap) {
+-        contextStrokeState.lineCap = strokeState.lineCap;
++      if (!contextStrokeState) {
+         context.lineCap = strokeState.lineCap;
+-      }
+-      if (!equals(contextStrokeState.lineDash, strokeState.lineDash)) {
+-        context.setLineDash(
+-          (contextStrokeState.lineDash = strokeState.lineDash)
+-        );
+-      }
+-      if (contextStrokeState.lineDashOffset != strokeState.lineDashOffset) {
+-        contextStrokeState.lineDashOffset = strokeState.lineDashOffset;
+-        context.lineDashOffset = strokeState.lineDashOffset;
+-      }
+-      if (contextStrokeState.lineJoin != strokeState.lineJoin) {
+-        contextStrokeState.lineJoin = strokeState.lineJoin;
++        // divide dashes and offset by the current context scale
++        {
++          const m = context.getTransform();
++          const s = Math.hypot(m.a, m.b);
++          context.setLineDash(strokeState.lineDash.map(n => n / s));
++          context.lineDashOffset = strokeState.lineDashOffset / s;
++        }
+         context.lineJoin = strokeState.lineJoin;
+-      }
+-      if (contextStrokeState.lineWidth != strokeState.lineWidth) {
+-        contextStrokeState.lineWidth = strokeState.lineWidth;
+-        context.lineWidth = strokeState.lineWidth;
+-      }
+-      if (contextStrokeState.miterLimit != strokeState.miterLimit) {
+-        contextStrokeState.miterLimit = strokeState.miterLimit;
++        // likewise compensate lineWidth
++        {
++          const m = context.getTransform();
++          const s = Math.hypot(m.a, m.b);
++          context.lineWidth = strokeState.lineWidth / s;
++        }
+         context.miterLimit = strokeState.miterLimit;
+-      }
+-      if (contextStrokeState.strokeStyle != strokeState.strokeStyle) {
+-        contextStrokeState.strokeStyle = strokeState.strokeStyle;
+         context.strokeStyle = strokeState.strokeStyle;
++        this.contextStrokeState_ = {
++          lineCap: strokeState.lineCap,
++          lineDash: strokeState.lineDash,
++          lineDashOffset: strokeState.lineDashOffset,
++          lineJoin: strokeState.lineJoin,
++          lineWidth: strokeState.lineWidth,
++          miterLimit: strokeState.miterLimit,
++          strokeStyle: strokeState.strokeStyle,
++        };
++      } else {
++        if (contextStrokeState.lineCap != strokeState.lineCap) {
++          contextStrokeState.lineCap = strokeState.lineCap;
++          context.lineCap = strokeState.lineCap;
++        }
++        if (!equals(contextStrokeState.lineDash, strokeState.lineDash)) {
++          const m = context.getTransform();
++          const s = Math.hypot(m.a, m.b);
++          context.setLineDash(strokeState.lineDash.map(n => n / s));
++          contextStrokeState.lineDash = strokeState.lineDash;
++        }
++        if (contextStrokeState.lineDashOffset != strokeState.lineDashOffset) {
++          const m = context.getTransform();
++          const s = Math.hypot(m.a, m.b);
++          context.lineDashOffset = strokeState.lineDashOffset / s;
++          contextStrokeState.lineDashOffset = strokeState.lineDashOffset;
++        }
++        if (contextStrokeState.lineJoin != strokeState.lineJoin) {
++          contextStrokeState.lineJoin = strokeState.lineJoin;
++          context.lineJoin = strokeState.lineJoin;
++        }
++        if (contextStrokeState.lineWidth != strokeState.lineWidth) {
++          const m = context.getTransform();
++          const s = Math.hypot(m.a, m.b);
++          context.lineWidth = strokeState.lineWidth / s;
++          contextStrokeState.lineWidth = strokeState.lineWidth;
++        }
++        if (contextStrokeState.miterLimit != strokeState.miterLimit) {
++          contextStrokeState.miterLimit = strokeState.miterLimit;
++          context.miterLimit = strokeState.miterLimit;
++        }
++        if (contextStrokeState.strokeStyle != strokeState.strokeStyle) {
++          contextStrokeState.strokeStyle = strokeState.strokeStyle;
++          context.strokeStyle = strokeState.strokeStyle;
++        }
+       }
+-    }
+   }
+ 
+   /**
+diff --git a/src/ol/renderer/canvas/TileLayer.js b/src/ol/renderer/canvas/TileLayer.js
+index a57967c859..d85ee19499 100644
+--- a/src/ol/renderer/canvas/TileLayer.js
++++ b/src/ol/renderer/canvas/TileLayer.js
+@@ -363,12 +363,7 @@ class CanvasTileLayerRenderer extends CanvasLayerRenderer {
+           );
+         }
+       }
+-    }
+-
+-    const canvasScale =
+-      ((tileResolution / viewResolution) * pixelRatio) / tilePixelRatio;
+-
+-    // set forward and inverse pixel transforms
++    // set forward pixelTransform directly on the 2D context
+     composeTransform(
+       this.pixelTransform,
+       frameState.size[0] / 2,
+@@ -380,15 +375,21 @@ class CanvasTileLayerRenderer extends CanvasLayerRenderer {
+       -height / 2
+     );
+ 
+-    const canvasTransform = toTransformString(this.pixelTransform);
+-
+-    this.useContainer(target, canvasTransform, this.getBackground(frameState));
++    // instead of CSS‐transforming the container, push the matrix into the context
+     const context = this.context;
++    context.setTransform(
++      this.pixelTransform[0],
++      this.pixelTransform[1],
++      this.pixelTransform[2],
++      this.pixelTransform[3],
++      this.pixelTransform[4],
++      this.pixelTransform[5]
++    );
+     const canvas = context.canvas;
+ 
+     makeInverse(this.inversePixelTransform, this.pixelTransform);
+ 
+-    // set scale transform for calculating tile positions on the canvas
++    // we still need tempTransform for tile‐image positioning
+     composeTransform(
+       this.tempTransform,
+       width / 2,
+@@ -399,6 +400,13 @@ class CanvasTileLayerRenderer extends CanvasLayerRenderer {
+       -width / 2,
+       -height / 2
+     );
++    
++    // no CSS transforms on the container anymore
++    this.useContainer(target, '', this.getBackground(frameState));
++      0,
++      -width / 2,
++      -height / 2
++    );
+ 
+     if (canvas.width != width || canvas.height != height) {
+       canvas.width = width;

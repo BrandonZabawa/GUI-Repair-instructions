@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/lib/regex.js",
+            "src/languages/c-like.js",
+            "src/languages/c.js",
+            "src/languages/cpp.js"
+        ],
+        "explanation": "1) src/lib/regex.js defines the core C_NUMBER_RE and C_NUMBER_MODE, which include the suffix-matching pattern. The pattern currently only allows one character of [uUlL], so \u201cLL\u201d is split into a token boundary. \n2) src/languages/c-like.js brings in hljs.C_NUMBER_RE into the generic C-like number mode. Any mistake in the quantifier there will propagate to all C-like languages.  \n3) src/languages/c.js uses hljs.C_NUMBER_MODE to highlight C literals. Since the underlying regex only matches one suffix character, any multi-character C suffix (e.g. LL, ULL) is not fully recognized.  \n4) src/languages/cpp.js reuses the C number mode for C++. It therefore inherits the same faulty suffix\u2010matching behavior and fails to highlight C++ long long suffixes correctly.",
+        "bug_scenario": "When highlighting C/C++ code, integer literals suffixed with \u201cLL\u201d only have their first \u201cL\u201d picked up as part of the number token. The second \u201cL\u201d ends up rendered as plain text. In StackOverflow examples and local tests (e.g. `467510400LL * 1000000;`), you can see `90LL`, `90ull`, `90LLU`, etc. should all be fully highlighted, but highlight.js is only matching a single-character suffix. This indicates the numeric\u2010literal regular expression or the number mode is only consuming one suffix character."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/c-like.js",
+            "src/languages/c.js",
+            "src/languages/cpp.js"
+        ],
+        "explanation": "The logic for recognizing integer literal suffixes lives in the language definition files for C-like languages. In c-like.js there is a generic NUMBER_MODE that defines the suffix regex, but it currently only allows a single \u2018[uUlL]\u2019 rather than matching combinations like \u2018LL\u2019, \u2018ULL\u2019, or \u2018LLU\u2019. Both the specialized C and C++ language definitions (c.js and cpp.js) rely on or override that same pattern. To properly highlight multi-character suffixes, the regex needs to be updated in these three files to accept two \u2018L\u2019s (and combinations with \u2018U\u2019 in any order).",
+        "bug_scenario": "When highlighting C/C++ code, integer literals with a double \u201cLL\u201d or \u201cll\u201d suffix are not fully recognized as part of the number token. Only the first \u201cL\u201d is consumed by the number pattern and highlighted, while the second \u201cL\u201d is treated as plain text. In the user test screenshot, expressions like \u2018467510400LL * 1000000;\u2019 only have the first \u2018L\u2019 colored as part of the numeric literal. In the developer test screenshot, various suffix combinations (e.g. 90ll, 90LL, 90uLL, 90LLu, 90LLU, etc.) are shown but only a single character of a multi-character suffix is picked up."
+    }
+}

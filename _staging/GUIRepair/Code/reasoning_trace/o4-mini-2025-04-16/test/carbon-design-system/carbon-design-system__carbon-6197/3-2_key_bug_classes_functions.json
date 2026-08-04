@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/Table.js//Table",
+            "packages/react/src/components/DataTable/TableHeader.js//TableHeader"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/DataTable.js//getHeaderProps"
+        ],
+        "explanation": "The Table component applies the \u2018--tall\u2019 modifier class for large row heights but does not account for the extra wrapper and icons that TableHeader injects when isSortable is true. TableHeader switches from a plain <th><span>\u2026</span></th> to a <th><button>\u2026</button></th> with two icon elements and a label span. That extra wrapper and icon markup breaks the vertical centering rules defined in the CSS for tall headers. The getHeaderProps function in DataTable.js is responsible for toggling the isSortable and sortDirection props on TableHeader, so together these three elements govern whether a header cell is rendered in the mis-aligned, sortable variant. To fix the bug, TableHeader (and potentially Table\u2019s CSS hooks) needs an update to apply consistent vertical alignment or flex centering in the sortable case under the \u2018--tall\u2019 size.",
+        "bug_scenario": "In a \u201ctall\u201d DataTable where only one column is sortable, the header labels become misaligned vertically once sorting is enabled. Non-sortable headers sit vertically centered in their tall header row, but the sortable header (which is rendered as a button with icons) shifts its label off-center, creating inconsistent alignment across the header cells."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/Table.js//Table",
+            "packages/react/src/components/DataTable/TableHeader.js//TableHeader"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/Table.js//Table",
+            "packages/react/src/components/DataTable/TableHeader.js//TableHeader"
+        ],
+        "explanation": "The misalignment occurs because the <Table> component applies the --data-table--tall class (adding extra height) but the TableHeader component renders sortable headers inside a <button> (with two SVG icons) while non-sortable headers are rendered as a simple <span>. The extra wrapper and icons in the sortable case aren\u2019t vertically centered the same way as the span in the non-sortable case. To fix this, the markup or CSS in TableHeader (and/or the sizing logic in Table) must be adjusted so that both sortable and non-sortable headers have identical padding/margins and vertical alignment in tall mode.",
+        "bug_scenario": "When a DataTable is rendered with size=\"tall\" and only one column is made sortable, the header row\u2019s vertical alignment breaks: the sortable header (\u201cName\u201d) (which is wrapped in a <button> with its sort icons) sits lower than the other, non-sortable headers (\u201cDescription\u201d, \u201cStatus\u201d, \u201cStart Date\u201d). As a result the header labels appear misaligned in tall mode whenever sorting is enabled on one or more columns."
+    }
+}

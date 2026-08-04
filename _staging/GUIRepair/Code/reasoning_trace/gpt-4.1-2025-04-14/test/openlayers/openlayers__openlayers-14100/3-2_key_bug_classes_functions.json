@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/TileQueue.js//TileQueue",
+            "src/ol/layer/Group.js//LayerGroup"
+        ],
+        "bug_functions": [
+            "src/ol/TileQueue.js//loadMoreTiles",
+            "src/ol/TileQueue.js//enqueue",
+            "src/ol/layer/Group.js//getLayersArray",
+            "src/ol/layer/Group.js//getLayerStatesArray"
+        ],
+        "explanation": "The core of the bug is a change in how tile requests are scheduled and dispatched for layers inside a LayerGroup. The TileQueue class (src/ol/TileQueue.js) is directly responsible for queuing and loading tiles, especially the loadMoreTiles and enqueue methods, which control how many tile loads occur simultaneously and how they are added to the queue. If an artificial restriction or sequential logic was introduced, it would manifest here. The LayerGroup class (src/ol/layer/Group.js) manages grouped layers and their states\u2014methods like getLayersArray and getLayerStatesArray are critical in how the group organizes and provides information about its layers to the renderer and tile queue. If grouping logic or iteration changed between versions, it could lead to sequential rather than parallel tile requests. Both these classes and the highlighted functions are central to the observed regression in tile loading concurrency.",
+        "bug_scenario": "The bug concerns a change in tile loading behavior for TileLayers grouped within a LayerGroup after an upgrade from version 6.1 to 7.0. In the original (6.1) version, tile requests for layers in a LayerGroup are sent concurrently, resulting in faster imagery display. In version 7.0, tile requests are sent sequentially (one layer at a time), causing a significant delay in imagery loading. The provided images show the network requests timeline, with the first image (7.0) depicting sequential tile requests and the second image (6.1) showing concurrent requests."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/TileQueue.js//TileQueue",
+            "src/ol/layer/Group.js//LayerGroup"
+        ],
+        "bug_functions": [
+            "src/ol/TileQueue.js//loadMoreTiles",
+            "src/ol/TileQueue.js//enqueue",
+            "src/ol/TileQueue.js//handleTileChange"
+        ],
+        "explanation": "The core of the bug is a change in tile request timing for layers within a LayerGroup, resulting in sequential instead of concurrent requests. The 'TileQueue' class in 'src/ol/TileQueue.js' is responsible for managing the loading and prioritization of tiles, including how many tiles are loaded concurrently (see the 'loadMoreTiles' method). This method directly controls the number and timing of tile load requests, which is central to the observed behavior. The 'enqueue' and 'handleTileChange' methods are related to how tiles are added to the loading queue and how the queue is updated when a tile's state changes, impacting concurrency. The 'LayerGroup' class in 'src/ol/layer/Group.js' is responsible for grouping layers and may impact how their tiles are managed collectively. If LayerGroup's handling of its layers or their states changed, it could affect how tile requests are batched or triggered. These classes/functions are thus directly related to the bug's manifestation and would be key targets for investigation and modification to restore the previous (concurrent) loading behavior.",
+        "bug_scenario": "The bug scenario involves a change in how tile requests are made for layers within a LayerGroup after upgrading from version 6.1 to 7.0. In version 6.1, tile requests for all layers in a LayerGroup were sent concurrently, resulting in faster imagery load times (as seen in the first screenshot). After the upgrade, tile requests appear to be sent sequentially, with one TileLayer at a time, leading to slower and more visibly staggered image loading (as seen in the second screenshot). This is observable in the network request waterfall charts, where the requests are stacked (concurrent) before, but are now serialized (sequential)."
+    }
+}

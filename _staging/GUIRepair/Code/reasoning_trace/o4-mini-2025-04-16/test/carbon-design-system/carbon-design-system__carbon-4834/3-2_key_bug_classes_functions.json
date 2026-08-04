@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/HeaderGlobalBar.js//HeaderGlobalBar"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/SkipToContent.js//SkipToContent",
+            "packages/react/src/components/UIShell/HeaderMenuItem.js//HeaderMenuItem"
+        ],
+        "explanation": "1. SkipToContent (SkipToContent.js) renders the \"Skip to main content\" link with its default colors, which do not meet WCAG AA contrast requirements. This component\u2019s style or class needs updating to use a higher-contrast combination.\n2. HeaderMenuItem (HeaderMenuItem.js) always applies role=\"menuitem\" to each <li>/<a>, but when used inside HeaderGlobalBar, there is no wrapping element with an appropriate menu role. Fixing this requires updating HeaderGlobalBar (wrapComponent in HeaderGlobalBar.js) to accept or inject a role prop (e.g. role=\"menubar\" or \"menu\") around its children so that its HeaderMenuItem children are contained in a valid ARIA menu structure.",
+        "bug_scenario": "The screenshot shows the Header Base with Navigation rendered in the browser\u2019s inspector. A \"Skip to main content\" link at the top has very low contrast (contrast ratio ~1.91:1) and fails WCAG AA. Below it, individual menu items (<a class=\"bx--header__menu-item\" role=\"menuitem\") are rendered inside a global bar without any parent element having role=\"menu\", \"menubar\", or \"group\", causing ARIA containment violations when the header collapses into a hamburger menu."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/SkipToContent.js//SkipToContent",
+            "packages/react/src/components/UIShell/HeaderMenuItem.js//HeaderMenuItem",
+            "packages/react/src/components/UIShell/HeaderGlobalBar.js//HeaderGlobalBar"
+        ],
+        "bug_functions": [],
+        "explanation": "SkipToContent: This component renders the skip-link. Its inline style (backgroundColor and color) was removed, causing contrast failures\u2014so we need to restore or source appropriate CSS or style props. HeaderMenuItem: It currently emits its <li>/<a> with role=\"menuitem\" but nothing in its ancestry provides role=\"menu\" or role=\"menubar\". We must adjust the container component (HeaderGlobalBar or the overall navigation wrapper) to supply the correct ARIA role, or change HeaderMenuItem to default to a neutral role when used outside of a menu. HeaderGlobalBar: This container wraps global actions and, when used to hold menu items, must present role=\"menubar\" (or wrap children in a <ul role=\"menubar\">). Editing this wrapper is required to group HeaderMenuItem instances under a valid ARIA menu role.",
+        "bug_scenario": "The carbon-react Header Base with Navigation UI Shell is failing automated accessibility (DAP) checks in two areas. 1) The \u201cSkip to main content\u201d link (rendered by SkipToContent) no longer has sufficient color contrast, because its inline style attributes for background and foreground were removed. 2) Header menu items (HeaderMenuItem) are rendered with role=\"menuitem\" but are not wrapped in any element with role=\"menu\" or role=\"menubar\", causing the ARIA \u201crole must be contained within a valid parent element\u201d violation."
+    }
+}

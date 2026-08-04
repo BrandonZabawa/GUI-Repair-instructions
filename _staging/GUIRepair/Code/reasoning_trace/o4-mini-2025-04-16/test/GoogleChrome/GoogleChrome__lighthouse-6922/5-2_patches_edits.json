@@ -1,0 +1,33 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "await this.sendCommand('Page.enable');",
+                    "await this.sendCommand('Page.setLifecycleEventsEnabled', {enabled: true});",
+                    "await this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});",
+                    "// No timeout needed for Page.navigate. See #6413."
+                ],
+                "REPLACE": [
+                    "    await this.sendCommand('Page.enable');",
+                    "    // Discover and attach to OOPIF (iframe) targets so we capture their network requests too.",
+                    "    await this.sendCommand('Target.setDiscoverTargets', {discover: true});",
+                    "    this.on('Target.targetCreated', async ({targetInfo}) => {",
+                    "      if (targetInfo.type === 'iframe') {",
+                    "        const attachRes = await this.sendCommand('Target.attachToTarget', {",
+                    "          targetId: targetInfo.targetId,",
+                    "          flatten: true,",
+                    "        });",
+                    "        const sessionId = attachRes.sessionId;",
+                    "        // Now enable the Network domain on that iframe session",
+                    "        await this._connection.sendCommand('Network.enable', {}, sessionId);",
+                    "      }",
+                    "    });",
+                    "    await this.sendCommand('Page.setLifecycleEventsEnabled', {enabled: true});",
+                    "    await this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});",
+                    "    // No timeout needed for Page.navigate. See #6413."
+                ]
+            }
+        ]
+    }
+}

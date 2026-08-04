@@ -1,0 +1,49 @@
+diff --git a/src/tree/view/tree.jsx b/src/tree/view/tree.jsx
+index 6f2789e5c..5ff2419fa 100644
+--- a/src/tree/view/tree.jsx
++++ b/src/tree/view/tree.jsx
+@@ -152,27 +152,30 @@ const preHandleData = (dataSource, props) => {
+             const pos = `${prefix}-${index}`;
+             let { key } = item;
+ 
+-            item.pos = pos;
+-            item.level = level;
+-
+-            // 判断为叶子节点
+-            // - 指定isLeaf属性
+-            // - loadData模式下 没有指定isLeaf为true
+-            // - 存在children元素
+-            if (!('isLeaf' in item)) {
+-                item.isLeaf = !((children && children.length) || props.loadData);
++            // 克隆一下，切勿修改原始 (可能是 frozen/immutable) 对象
++            const newItem = { ...item };
++            newItem.pos = pos;
++            newItem.level = level;
++
++            // 判断是否叶子节点
++            if (!('isLeaf' in newItem)) {
++                newItem.isLeaf = !((children && children.length) || props.loadData);
+             }
+-            item.isLastChild = parent ? [].concat(parent.isLastChild || [], index === data.length - 1) : [];
++            newItem.isLastChild = parent ? [].concat(parent.isLastChild || [], index === data.length - 1) : [];
+ 
+             if (key === undefined || key === null) {
+-                item.key = key = pos;
++                newItem.key = key = pos;
+             }
+ 
+-            !item.isLeaf && drill(children, level + 1, pos, item);
++            // 递归时使用 cloned children 并把结果重新挂到 newItem 上
++            if (!newItem.isLeaf) {
++                newItem.children = drill(children, level + 1, pos, newItem);
++            }
+ 
+-            k2n[key] = p2n[pos] = { ...item };
++            // 直接存储 newItem，不再是展开原 item
++            k2n[key] = p2n[pos] = newItem;
+ 
+-            return item;
++            return newItem;
+         });
+ 
+     return { dataSource: drill(dataSource), k2n, p2n };

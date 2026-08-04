@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/number-picker/index.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "NumberPicker//upStep",
+            "NumberPicker//getPrecisionFactor",
+            "NumberPicker//getPrecision"
+        ],
+        "explanation": "The NumberPicker component\u2019s upStep method calculates the new value by multiplying and dividing by a precision factor, but never rounds the result, allowing binary floating\u2010point artifacts (e.g. 4.029999999999999). The getPrecision and getPrecisionFactor functions determine the scale for correct rounding, so upStep should use them and apply toFixed or Number(...toFixed(precision))\u2014similarly to downStep\u2014to produce the correctly rounded result.",
+        "bug_scenario": "In Safari, when using NumberPicker with defaultValue=4.02 and step=0.01 (precision=2), clicking the '+' button produces 4.029999999999999 instead of rounding to 4.03. This is due to floating\u2010point arithmetic precision issues in the up-step calculation."
+    },
+    "2": {
+        "bug_classes": [
+            "src/number-picker/index.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/number-picker/index.jsx//getPrecision",
+            "src/number-picker/index.jsx//getPrecisionFactor",
+            "src/number-picker/index.jsx//upStep"
+        ],
+        "explanation": "The core of this bug lies in how the NumberPicker scales and adds floating-point numbers. getPrecision and getPrecisionFactor determine the multiplier for shifting decimals to integer space, and upStep applies this factor to compute the next value. Because upStep performs (factor*val + factor*step)/factor without rounding, binary imprecision (e.g. 4.02\u00d7100 \u2260 exactly 402) leaks through, showing 4.0299999\u2026 instead of 4.03. downStep guards against this by applying toFixed rounding, but upStep does not. Fixing upStep (e.g. rounding its result to the computed precision) resolves the display error.",
+        "bug_scenario": "In Safari, when using NumberPicker with defaultValue={4.02} and step={0.01}, clicking the \u201c+\u201d button yields a value of 4.029999999999999 instead of the expected 4.03, due to JavaScript floating-point precision issues."
+    }
+}

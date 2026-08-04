@@ -1,0 +1,56 @@
+diff --git a/lib/features/drilldown/DrilldownOverlayBehavior.js b/lib/features/drilldown/DrilldownOverlayBehavior.js
+index 1e845483..21da9d3c 100644
+--- a/lib/features/drilldown/DrilldownOverlayBehavior.js
++++ b/lib/features/drilldown/DrilldownOverlayBehavior.js
+@@ -88,6 +88,19 @@ export default function DrilldownOverlayBehavior(
+     });
+   });
+ 
++  // when deep‐link or manual root change happens, re‐add + re‐show overlays
++  eventBus.on('root.set', function() {
++    // re-attach overlays on all collapsed SubProcess shapes
++    elementRegistry
++      .filter(function(e) { return self.canDrillDown(e); })
++      .forEach(function(el) { self.addOverlay(el); });
++
++    // update empty‐marker state on all overlays
++    elementRegistry
++      .getAll()
++      .forEach(function(e) { self.updateDrilldownOverlay(e); });
++  });
++
+ }
+ 
+ inherits(DrilldownOverlayBehavior, CommandInterceptor);
+@@ -178,4 +191,4 @@ DrilldownOverlayBehavior.$inject = [
+   'eventBus',
+   'elementRegistry',
+   'overlays'
+-];
+\ No newline at end of file
++];
+diff --git a/lib/features/drilldown/SubprocessCompatibility.js b/lib/features/drilldown/SubprocessCompatibility.js
+index 2bd76c13..97cdd79b 100644
+--- a/lib/features/drilldown/SubprocessCompatibility.js
++++ b/lib/features/drilldown/SubprocessCompatibility.js
+@@ -150,13 +150,16 @@ SubprocessCompatibility.prototype.moveToDiPlane = function(diElement, newPlane)
+   var parentPlaneElement = containingDiagram.plane.get('planeElement');
+   parentPlaneElement.splice(parentPlaneElement.indexOf(diElement), 1);
+   newPlane.get('planeElement').push(diElement);
+-};
+-
+-
+ SubprocessCompatibility.prototype.createDiagram = function(bo) {
+-  var plane = this._moddle.create('bpmndi:BPMNPlane', { bpmnElement: bo });
++  var plane = this._moddle.create('bpmndi:BPMNPlane', {
++    // assign id so that getPlaneIdFromShape(shape) === plane.id
++    id: bo.id + '_plane',
++    bpmnElement: bo
++  });
+   var diagram = this._moddle.create('bpmndi:BPMNDiagram', {
+     plane: plane
++  });
++    plane: plane
+   });
+   plane.$parent = diagram;
+   plane.bpmnElement = bo;

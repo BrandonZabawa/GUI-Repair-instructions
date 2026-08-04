@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/NumberInput/NumberInput.js//NumberInput"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/NumberInput/NumberInput.js//NumberInput.render"
+        ],
+        "explanation": "All of the offending markup is generated in the NumberInput component\u2019s render method. The warning icon (<WarningFilled16>) is inserted there when invalid=true but lacks either aria-hidden or a non-empty aria-label. Likewise, the logic that spreads props onto the <input> creates an aria-label that overrides or conflicts with the visible <label> text, causing the accessible name violation. To resolve these DAP violations, the render() method in NumberInput.js must be updated to apply the correct ARIA attributes to the icon and to ensure the input\u2019s accessible name is derived only from the visible label when the label is not hidden.",
+        "bug_scenario": "When the NumberInput is rendered with validation or disabled knobs in the Carbon React demo, DAP reports two accessibility violations on the NumberInput component: 1) The <svg> warning icon (WarningFilled16) has role=\"img\" but no alternative text or aria-hidden, so it fails the IMG\u2010role ARIA rule. 2) The <input> has an accessible name (via aria-label) that does not match the visible <label> text, failing the accessible\u2010name\u2010must\u2010match\u2010label rule."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/NumberInput/NumberInput.js//NumberInput"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/NumberInput/NumberInput.js//render"
+        ],
+        "explanation": "The NumberInput class\u2019s render method is where both the warning icon and the <input> are created. By default the imported icon components (WarningFilled16, CaretUpGlyph, CaretDownGlyph) render <svg role=\"img\">, so without overriding to role=\"presentation\" or aria-hidden=\"true\" they violate the IMG role rule. Also, render spreads any incoming aria-label into the <input> (via {...other}) even when the visible <label> is present, leading to a mismatched accessible name. Fixing these requires editing the render function: add role=\"presentation\"/aria-hidden to the icon SVGs and ensure the <input> only receives an aria-label (or aria-labelledby) that matches the visible label text (or remove the extraneous aria-label prop when hideLabel is false).",
+        "bug_scenario": "The screenshots show two IBM DAP accessibility violations in the NumberInput component: 1) The invalid\u2010state warning icon (an SVG from WarningFilled16) is rendered with role=\"img\" but no nonempty aria\u2010label or aria\u2010labelledby, triggering the WAI-ARIA IMG role violation; 2) The underlying <input> element has an aria-label that does not match or contain the visible label text, causing an \u201caccessible name mismatch\u201d violation."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/scala.js//CLASS",
+            "src/languages/javascript.js//PARAMS"
+        ],
+        "bug_functions": [],
+        "explanation": "In scala.js the CLASS mode controls how class declarations are parsed. Its end regex currently treats the newline before the brace as a terminator and then continues to treat the rest of the line (including \u201c// \u2026\u201d) as part of the class title. That CLASS definition must be adjusted so that comments after the declaration\u2014even when the \u201c{\u201d is on the next line\u2014are correctly recognized by hljs.C_LINE_COMMENT_MODE instead of by the title rule.  \n\nIn javascript.js the PARAMS mode governs highlighting of function\u2010parameter lists. Although PARAMS.contains includes the comment modes, the arrow\u2010function rule uses a separate inline params matcher (based on PARAMS) and appears to terminate too early or not re-invoke the comment mode for multi-line parameter lists. Fixing PARAMS (or its use in the arrow\u2010function grammar) will restore comment highlighting inside parentheses.",
+        "bug_scenario": "There are two related highlighting bugs.  \n1) Scala: when you write a class declaration with the opening brace on the next line, any trailing comment on that first line (e.g. \u201c// Something goes here\u201d) is being picked up as part of the class title instead of as a comment.  In other words, \u201c// Something goes here\u201d is rendered with the \u2018hljs-title\u2019 style rather than as a comment.  \n2) JavaScript: when you define an arrow function whose parameters span multiple lines (especially with destructuring or default values), any inline //-style comments inside the parameter list are not being recognized as comments and thus are not highlighted."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/scala.js//CLASS"
+        ],
+        "bug_functions": [
+            "src/languages/javascript.js//PARAMS",
+            "src/languages/javascript.js//PARAMS_CONTAINS"
+        ],
+        "explanation": "\u2022 In scala.js, the CLASS definition (the grammar object named CLASS) drives how the class header is matched and how its contents are scoped. Because its begin/end patterns and contains array do not properly allow a stand-alone // comment after the header when the brace is on the next line, the comment tokens fall into the NAME or title pattern instead of hljs.C_LINE_COMMENT_MODE.\n\n\u2022 In javascript.js, the PARAMS rule (and its helper array PARAMS_CONTAINS) govern comment highlighting inside parentheses. The fact that comments in deeply nested or arrow-function parameter lists aren\u2019t being picked up means that PARAMS_CONTAINS is missing or mis-scoped for those positions. Adjusting PARAMS_CONTAINS (or injecting hljs.C_LINE_COMMENT_MODE into the arrow-function params variants) will restore proper comment highlighting inside all parameter lists.",
+        "bug_scenario": "There are two related highlighting problems seen in the screenshots and description:\n\n1. Scala: When a Scala class declaration has its opening brace on the next line, any \u201c// comment\u201d that follows the class header is being parsed as part of the class title rather than as a comment. For example:\n   class A  // Something goes here\n   {\n   }\n   renders the \u201c// Something goes here\u201d tokens as hljs-title spans instead of hljs-comment.\n\n2. JavaScript: Single-line comments inside a function\u2019s parameter list (especially nested or recursive/arrow function parameters) are not being recognized as comments. In the example:\n   f = (\n     // f is a recursive function taking:\n     [c,        //   c = next digit character\n       ...a],   //   a[] = array of remaining digits\n     o = '',    //   o = output string\n     S = new Set\n   ) => \u2026\n   none of those \u201c//\u201d-led lines are highlighted as comments within the params mode."
+    }
+}

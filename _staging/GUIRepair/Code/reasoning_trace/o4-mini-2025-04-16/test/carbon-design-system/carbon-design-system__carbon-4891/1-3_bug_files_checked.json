@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Search/Search.js",
+            "packages/react/src/components/Search/Search.js"
+        ],
+        "explanation": "Both of these files render the <input> and clear-icon button for the Search component in the Carbon React packages. The fix must be applied here\u2014inserting the inline WebKit autofill override (the large inset box-shadow and text-fill reset) on the <input>\u2014so that Chrome\u2019s sky-blue autofill background is covered and the clear icon remains high-contrast. The first path is the source in the new monorepo under packages/react, and the second path is the main react package shipped to users. Both need the same style override to resolve the low-contrast bug in Chrome autofill.",
+        "bug_scenario": "When you open the Carbon React <Search> component in Chrome and trigger the browser\u2019s autofill (which applies a sky-blue background to the <input>), the \u201cclear\u201d (X) icon button loses its contrast and virtually disappears against the autofill background. The screenshot shows the sky-blue autofill background bleeding through around the clear icon, making it inaccessible."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Search/Search.js",
+            "packages/react/src/components/Search/Search-test.js",
+            "packages/react/src/components/Search/Search-story.js",
+            "packages/components/src/components/search/search.js"
+        ],
+        "explanation": "1. Search.js (React) already contains the inline autofill-override on the <input> but doesn\u2019t apply the same override to the clear <button>. We need to add WebkitBoxShadow (and WebkitTextFillColor) to the button to force its background back to white under Chrome autofill.  \n2. The accompanying Search-test.js and Search-story.js in the React folder should be updated to add coverage and documentation of the fix (e.g. verify that the button style is applied under autofill).  \n3. The vanilla implementation in components/src/components/search/search.js and its SCSS file search.scss govern the non-React web component. To ensure consistency across React and non-React users, we should also add the autofill override CSS rules (e.g. input:-webkit-autofill and .bx--search-close) in search.scss and adjust search.js if needed to prevent the autofill background from showing through the clear button there as well.",
+        "bug_scenario": "When using the React <Search> component in Chrome and you trigger autofill on the input (e.g. by having Chrome remember prior entries), Chrome paints the autofill background sky-blue. That sky-blue background bleeds through the \u201cclear\u201d (X) button (which is rendered as a transparent button with an SVG icon), making the close icon nearly invisible and violating contrast guidance. Although the component injects a WebkitBoxShadow hack to override autofill on the input itself, that hack isn\u2019t applied to the close button, so the button remains sky-blue behind the icon."
+    }
+}

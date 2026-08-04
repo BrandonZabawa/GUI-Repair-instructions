@@ -1,0 +1,133 @@
+{
+    "1/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "removeProperties(descriptor, 'oldBusinessObject');",
+                    "});"
+                ],
+                "REPLACE": [
+                    "// Ensure boundary events are attached to the new host",
+                    "if (is(descriptor, 'bpmn:BoundaryEvent') && descriptor.host) {",
+                    "var newHost = cache[descriptor.host.id];",
+                    "if (newHost) {",
+                    "descriptor.businessObject.attachedToRef = getBusinessObject(newHost);",
+                    "}",
+                    "}",
+                    "",
+                    "removeProperties(descriptor, 'oldBusinessObject');",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "resolveReferences(descriptor);"
+                ],
+                "REPLACE": [
+                    "resolveReferences(descriptor);",
+                    "",
+                    "// Attach boundary event to new host if applicable",
+                    "if (descriptor.oldBusinessObject.attachedToRef) {",
+                    "var newHost = cache[descriptor.oldBusinessObject.attachedToRef.id];",
+                    "if (newHost) {",
+                    "newBusinessObject.attachedToRef = newHost.businessObject;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "removeProperties(descriptor, 'oldBusinessObject');"
+                ],
+                "REPLACE": [
+                    "// check and attach boundary events to the respective host",
+                    "if (oldBusinessObject.attachedToRef) {",
+                    "var newHostBo = getBusinessObject(cache[oldBusinessObject.attachedToRef.id]);",
+                    "newBusinessObject.attachedToRef = newHostBo;",
+                    "}",
+                    "removeProperties(descriptor, 'oldBusinessObject');"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "eventBus.on('copyPaste.pasteElement', function(context) {",
+                    "var cache = context.cache,",
+                    "descriptor = context.descriptor,",
+                    "oldBusinessObject = descriptor.oldBusinessObject,",
+                    "newBusinessObject;"
+                ],
+                "REPLACE": [
+                    "eventBus.on('copyPaste.pasteElement', function(context) {",
+                    "var cache = context.cache,",
+                    "descriptor = context.descriptor,",
+                    "oldBusinessObject = descriptor.oldBusinessObject,",
+                    "newBusinessObject,",
+                    "host;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "descriptor.businessObject = moddleCopy.copyElement(",
+                    "oldBusinessObject,",
+                    "newBusinessObject",
+                    ");"
+                ],
+                "REPLACE": [
+                    "host = cache[ descriptor.attachedToRef ];",
+                    "newBusinessObject = moddleCopy.copyElement(",
+                    "oldBusinessObject,",
+                    "newBusinessObject",
+                    ");",
+                    "if (host && is(newBusinessObject, 'bpmn:BoundaryEvent')) {",
+                    "newBusinessObject.attachedToRef = getBusinessObject(host);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "// resolve references e.g. default sequence flow",
+                    "resolveReferences(descriptor);",
+                    "",
+                    "copyProperties(descriptor, newBusinessObject, [",
+                    "'isExpanded',",
+                    "'name'",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "// resolve and restore the attachment references",
+                    "resolveReferences(descriptor);",
+                    "",
+                    "if (is(element, 'bpmn:BoundaryEvent') && element.host) {",
+                    "const newHost = cache[element.host.id];",
+                    "",
+                    "if (newHost) {",
+                    "newBusinessObject.attachedToRef = getBusinessObject(newHost);",
+                    "descriptor.host = newHost;",
+                    "}",
+                    "}",
+                    "",
+                    "copyProperties(descriptor, newBusinessObject, [",
+                    "'isExpanded',",
+                    "'name'",
+                    "]);"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Tile/Tile.js//SelectableTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.getDerivedStateFromProps",
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.handleClick",
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.handleKeyDown"
+        ],
+        "explanation": "The SelectableTile component manages its own internal `selected` state by inverting the incoming `selected` prop in its handleClick and handleKeyDown methods. This logic ignores external range-select updates (e.g. shift-click multi-selection) and flips the tile off whenever it was already true. The getDerivedStateFromProps also only updates state when the incoming prop changes, so the tile never re-syncs correctly during range selection. Fixing the bug requires adjusting handleClick/handleKeyDown (and possibly getDerivedStateFromProps) to respect the incoming `selected` prop rather than blindly toggling it.",
+        "bug_scenario": "When a user holds Shift and clicks to multi-select a series of SelectableTile components, any tile that was already selected within the shift-click range becomes deselected instead of remaining selected. In the demo GIF, selecting the first tile then shift-clicking the fourth tile should leave all four tiles selected, but the fourth tile flickers off and its visual state goes out of sync with the `selected` prop."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Tile/Tile.js//SelectableTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.getDerivedStateFromProps",
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.handleClick",
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.handleKeyDown"
+        ],
+        "explanation": "The bug resides entirely in the SelectableTile class. Its static getDerivedStateFromProps will correctly update internal state when selected props change, but its handleClick and handleKeyDown methods always invert this.props.selected instead of inverting the current state. When range-select code updates props.selected to true, the next click (part of the shift+click sequence) still sees props.selected as the old value (false) and flips back to false, desynchronizing the visual state from the prop. To fix this, handleClick/handleKeyDown should toggle based on the up-to-date state or otherwise respect the latest props.selected rather than the stale value.",
+        "bug_scenario": "When a user performs a shift+click multi-selection of SelectableTile components, the last tile in the range\u2014although its selected prop has been updated externally\u2014gets immediately toggled off by its own click handler. In the animated repro you can see that holding Shift and clicking to extend selection correctly updates the parent state (props.selected=true) for the tile, but the tile\u2019s own handleClick inverts the old prop and deselects itself, so the UI loses that final selection."
+    }
+}

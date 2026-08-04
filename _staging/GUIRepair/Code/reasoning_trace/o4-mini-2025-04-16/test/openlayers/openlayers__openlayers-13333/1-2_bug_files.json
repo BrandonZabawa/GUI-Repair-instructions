@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This defines the WebGLTile layer type and accepts an \u201cextent\u201d option, but it never injects that extent into the renderer or the shader uniforms for cropping. Fixing the bug requires passing the layer extent downstream.\n2. src/ol/renderer/webgl/TileLayer.js: This is where tile quads are created and the WebGL draw calls issued. Currently it renders each tile\u2019s full UV coordinates, ignoring any layer extent clipping. It must be updated to intersect the tile bounds with the layer extent and adjust vertex positions or UVs accordingly.\n3. src/ol/webgl/TileTexture.js: This utility computes the UV rectangle for a tile within the texture atlas. It assumes rendering the entire tile image and never crops it to an arbitrary extent. To honor the layer\u2019s extent, this module needs to compute partial UVs when only a subset of the tile should be shown.",
+        "bug_scenario": "The user is loading a large Cloud-Optimized GeoTIFF through a GeoTIFFSource, calling getView() to retrieve its geographic extent, and then instantiating a WebGLTile layer with that extent. In QGIS and raster tools the image is correctly clipped to its true bounds (shown by the red box), but in OpenLayers the WebGLTile layer is drawing parts of the tile outside that extent. As you zoom in, the out-of-extent sliver narrows, indicating that the layer\u2019s geometry or shader UVs aren\u2019t being cropped to the given extent."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/webgl/ShaderBuilder.js",
+            "src/ol/webgl/Helper.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This is the layer class that accepts an \u201cextent\u201d option but does not propagate that extent down to the WebGL renderer for clipping.  \n2. src/ol/renderer/webgl/TileLayer.js: This renderer builds the quads and passes uniforms to the shader; it never applies the layer extent to trim or clamp the vertices.  \n3. src/ol/webgl/TileTexture.js: This module computes the UV matrix for each tile\u2014if it doesn\u2019t take the overall extent into account the texture coordinates will spill outside the valid region.  \n4. src/ol/webgl/ShaderBuilder.js: The shader builder assembles the GLSL code for sampling the tile texture; it lacks any logic to discard fragments outside the layer extent.  \n5. src/ol/webgl/Helper.js: Provides common WebGL utility routines (e.g. passing uniforms, setting up scissor or viewport), but doesn\u2019t offer an API to clip to a layer\u2019s defined extent.  \n\nTogether these files control how WebGLTile lays out geometry and textures. Because none of them honor the layer extent, the rendered image leaks past its bounds and gets warped when zoomed.",
+        "bug_scenario": "The customer is loading a COG (Cloud-Optimized GeoTIFF) into an OpenLayers WebGLTile layer by passing in the source\u2019s computed \u201cview.extent.\u201d QGIS correctly clips the image to that extent (the red box), but the WebGLTile renderer draws the image well outside of its true bounds and even \u201cpinches\u201d the image when zooming (it narrows on one edge). In other words, WebGLTile is not honoring the layer extent when it lays out its tile\u2010quads or when it computes the UV transforms, so you see image data leaking beyond the requested geographic extent."
+    }
+}

@@ -1,0 +1,56 @@
+diff --git a/lighthouse-core/audits/uses-rel-preconnect.js b/lighthouse-core/audits/uses-rel-preconnect.js
+index f17d1ba58..8034b22d5 100644
+--- a/lighthouse-core/audits/uses-rel-preconnect.js
++++ b/lighthouse-core/audits/uses-rel-preconnect.js
+@@ -41,7 +41,7 @@ class UsesRelPreconnectAudit extends Audit {
+       id: 'uses-rel-preconnect',
+       title: str_(UIStrings.title),
+       description: str_(UIStrings.description),
+-      requiredArtifacts: ['devtoolsLogs', 'URL'],
++      requiredArtifacts: ['devtoolsLogs', 'URL', 'LinkElements'],
+       scoreDisplayMode: Audit.SCORING_MODES.NUMERIC,
+     };
+   }
+@@ -89,12 +89,30 @@ class UsesRelPreconnectAudit extends Audit {
+     const settings = context.settings;
+     let maxWasted = 0;
+ 
+-    const [networkRecords, mainResource, loadSimulator] = await Promise.all([
++    const [networkRecords, mainResource, loadSimulator, linkElements] = await Promise.all([
+       NetworkRecords.request(devtoolsLog, context),
+       MainResource.request({devtoolsLog, URL}, context),
+       LoadSimulator.request({devtoolsLog, settings}, context),
++      Promise.resolve(artifacts.LinkElements),
+     ]);
+ 
++    // Collect all origins that already have preconnect or dns-prefetch
++    /** @type {Set<string>} */
++    const preconnectedOrigins = new Set();
++    for (const link of linkElements) {
++      if (
++        (link.rel === 'preconnect' || link.rel === 'dns-prefetch') &&
++        link.href
++      ) {
++        try {
++          const url = new URL(link.href, URL.finalUrl);
++          preconnectedOrigins.add(url.origin);
++        } catch (e) {
++          // ignore invalid URLs
++        }
++      }
++    }
++
+     const {rtt, additionalRttByOrigin} = loadSimulator.getOptions();
+ 
+     /** @type {Map<string, LH.Artifacts.NetworkRequest[]>}  */
+@@ -113,7 +131,9 @@ class UsesRelPreconnectAudit extends Audit {
+           // filter out all resources where origins are already resolved
+           UsesRelPreconnectAudit.hasAlreadyConnectedToOrigin(record) ||
+           // make sure the requests are below the PRECONNECT_SOCKET_MAX_IDLE (15s) mark
+-          !UsesRelPreconnectAudit.socketStartTimeIsBelowThreshold(record, mainResource)
++          !UsesRelPreconnectAudit.socketStartTimeIsBelowThreshold(record, mainResource) ||
++          // filter out origins that already have preconnect/dns-prefetch
++          preconnectedOrigins.has(record.parsedURL.securityOrigin)
+         ) {
+           return;
+         }

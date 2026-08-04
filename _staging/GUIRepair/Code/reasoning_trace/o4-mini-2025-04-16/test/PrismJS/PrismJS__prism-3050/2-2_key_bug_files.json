@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "components.js",
+            "gulpfile.js/paths.js",
+            "gulpfile.js/docs.js",
+            "plugins/autoloader/prism-autoloader.js"
+        ],
+        "explanation": "\n1. components.js \u2013 This is where all supported languages are listed under the \u201clanguages\u201d key. Because \u201cmermaid\u201d isn\u2019t there, loadLanguages will warn and never try to require('./prism-mermaid'). To add Mermaid support we must insert a new entry for \u201cmermaid\u201d (with its title, optional/require/dependencies, etc.).\n\n2. gulpfile.js/paths.js \u2013 The components globbing patterns determine which prism-*.js files get picked up by the build. By default it will match all .js under components/, but if you ever whitelist/bundle \u201cmain\u201d languages you\u2019ll need to add \u2018components/prism-mermaid.js\u2019 there so it ends up in your shipped build or distribution.\n\n3. gulpfile.js/docs.js \u2013 The JSDoc pipeline only includes prism-core.js by default in its list of files for docs generation. To have Mermaid\u2019s API and grammar tokens show up in the generated documentation, you need to add prism-mermaid.js to the jsDoc.files array.\n\n4. plugins/autoloader/prism-autoloader.js \u2013 At runtime the autoloader plugin maps from a language id to the URL/path of its grammar. Although it is mostly generic (\u2018./prism-'+lang), you should verify that it knows how to resolve and load prism-mermaid.js (or adjust its dependency map if you need Mermaid to pull in other languages). Without this, even after registering Mermaid in components.js, the autoloader will not fetch the right file or wire up callbacks correctly.",
+        "bug_scenario": "The user wants Prism to recognize and highlight code blocks written in the Mermaid diagram-DSL (i.e. code fenced with ```mermaid). In their page they have a sample Mermaid flowchart (see attached image). Right now, when Prism\u2019s autoloader sees a \u201clanguage-mermaid\u201d class it issues a warning \u201cLanguage does not exist: mermaid\u201d, and no highlighting or dynamic loading of a prism-mermaid.js grammar ever happens. To fix this, we have to teach Prism about the new \u201cmermaid\u201d language at build time (components registry, build scripts, documentation) and at runtime (autoloader)."
+    }
+}

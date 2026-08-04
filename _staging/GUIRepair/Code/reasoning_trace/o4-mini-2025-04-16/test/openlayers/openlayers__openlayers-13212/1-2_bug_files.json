@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/worker/geotiff-decoder.js",
+            "src/ol/source/common.js",
+            "src/ol/source/TileImage.js",
+            "src/ol/tilegrid/TileGrid.js",
+            "src/ol/source/WMTS.js"
+        ],
+        "explanation": "\u2022 src/ol/source/GeoTIFF.js: This is the current GeoTIFF raster source, which must be extended to accept a URL template and custom tileGrid, to request and composite multiple pyramid tiles into one output canvas per tile.  \n\u2022 src/ol/worker/geotiff-decoder.js: The worker that decodes GeoTIFF bytes; it needs updates to fetch and merge an array of source tiles for a given tileCoord, rather than decoding a single file.  \n\u2022 src/ol/source/common.js: Contains the URL template and tileUrlFunction utilities; it must support parsing multi\u2010template strings and generating URLs for all overlapping tiles in a pyramid for a given tileCoord.  \n\u2022 src/ol/source/TileImage.js: The base class that orchestrates tile loading and image canvas creation; overriding its getTile or tileLoadFunction will be necessary to composite multiple GeoTIFF sources into one tile.  \n\u2022 src/ol/tilegrid/TileGrid.js: Defines the tileGrid API (resolutions, origin, tileCoordToExtent); the new GeoTIFF pyramid source will rely on TileGrid.getTileCoordForTileUrlFunction and grid metadata to determine which GeoTIFF pyramid tiles overlap a requested tile.  \n\u2022 src/ol/source/WMTS.js: Serves as the implementation model for a pyramid\u2010based source\u2014its use of tileGrid, requestEncoding, and multi\u2010template URL handling can be adapted when implementing the new GeoTIFF pyramid source.",
+        "bug_scenario": "When using a deep GeoTIFF pyramid via WebGLTileLayers, OpenLayers creates a separate WebGL context (and a separate canvas) for each layer/tile. As the number of pyramid levels grows, browsers quickly exhaust available GPU contexts and report \u201cWebGL context lost\u201d in the console. The result is missing tiles and poor frame rates (2\u20135 FPS instead of ~30 FPS). The proposed fix is to introduce a pyramid\u2010aware GeoTIFF source\u2014similar to the WMTS source\u2014that takes a URL template and a tileGrid. That new source would compose each displayed tile by fetching and stitching all overlapping GeoTIFF tiles in a single canvas/WebGL context per layer, avoiding one context per pyramid level."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/worker/geotiff-decoder.js",
+            "src/ol/tilegrid/TileGrid.js",
+            "src/ol/source/WMTS.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js"
+        ],
+        "explanation": "\u2022 src/ol/source/GeoTIFF.js: the existing GeoTIFF source implementation must be extended or cloned to accept a URL template and TileGrid, and to request and composite multiple TIFF files per output tile instead of one file per layer.  \n\u2022 src/ol/worker/geotiff-decoder.js: the worker that decodes GeoTIFFs must be updated to fetch and decode multiple files per tile and return composited pixel data.  \n\u2022 src/ol/tilegrid/TileGrid.js: core logic for defining and computing tile coordinates and resolutions \u2013 needed to drive the new pyramid source\u2019s TileGrid-based requests.  \n\u2022 src/ol/source/WMTS.js: provides a template\u2010URL + TileGrid source reference implementation; serves as a guide for parsing URL templates and integrating tile grids into a tiled source.  \n\u2022 src/ol/renderer/webgl/TileLayer.js: WebGL tile layer rendering must be adapted to draw pyramid\u2010composited tiles from a single source with one WebGL context instead of stacking multiple layers/contexts.  \n\u2022 src/ol/webgl/TileTexture.js: the helper for creating textures from tile image data will need changes to accept the composited image returned by the TIFF worker and upload it to the shared WebGL context.",
+        "bug_scenario": "When using WebGLTileLayers with a GeoTIFF source to display a full pyramid of TIFF tiles, the example works for a small number of pyramid levels but quickly exhausts GPU resources. Each WebGLTileLayer instance creates its own WebGL context, and stacking many levels leads to lost contexts (visible as console errors), missing tiles, and drastically reduced FPS (down to 2\u20135). The requested feature is a new GeoTIFF pyramid source that takes a URL template and a TileGrid, composes each requested tile from the overlapping TIFFs in the on\u2010demand pyramid, and uses a single canvas/WebGL context per layer to avoid context loss and restore smooth 30 FPS rendering."
+    }
+}

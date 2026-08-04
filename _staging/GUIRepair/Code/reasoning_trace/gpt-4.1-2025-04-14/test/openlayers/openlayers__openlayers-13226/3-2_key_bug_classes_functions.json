@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//parseStyle",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.createRenderer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.renderFrame",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.enqueueTiles"
+        ],
+        "explanation": "The issue arises from how WebGLTileLayerRenderer (in src/ol/renderer/webgl/TileLayer.js) interacts with the source, specifically when the source does not provide a tile grid or has wrapX set to false. The class WebGLTileLayer is the main layer class that would invoke the renderer and set up the tile source. The createRenderer method as well as the parseStyle function in WebGLTileLayer are involved in establishing how the tiles and styles are handled. The functions renderFrame and enqueueTiles in WebGLTileLayerRenderer are core to how tiles are selected and displayed each frame; if the renderer incorrectly assumes a tile grid or mishandles the wrapX property, it would manifest in these methods. Therefore, these classes and functions are most relevant for debugging and fixing this issue.",
+        "bug_scenario": "When using a WebGLTileLayer with a tile source that has wrapX set to false and uses view projection, the tiles do not display as expected. The bug report states that the WebGL renderer incorrectly expects the source to have a tile grid, leading to incorrect rendering or failure to render tiles when wrapX is false. The expected behavior is that WebGLTileLayer should work equivalently to the regular Tile layer, regardless of the wrapX setting, but currently it does not."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/source/Tile.js//TileSource",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//parseStyle",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.createRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.setStyle",
+            "src/ol/source/Tile.js//TileSource.getTileGrid",
+            "src/ol/source/Tile.js//TileSource.getTileGridForProjection",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.renderFrame",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.enqueueTiles"
+        ],
+        "explanation": "The bug centers on the interaction between WebGLTileLayer, its renderer, and sources that may or may not provide a tile grid, especially when wrapX is false. \n\n- src/ol/layer/WebGLTile.js//WebGLTileLayer: This is the main class for the WebGL tile layer and is responsible for creating the renderer and managing style. Its createRenderer and setStyle methods set up the rendering pipeline, which assumes the presence of a tile grid.\n- src/ol/layer/WebGLTile.js//parseStyle: This function is called to generate shaders and uniforms based on the style, which may interact with the tile grid properties.\n- src/ol/source/Tile.js//TileSource: The abstract tile source. Its getTileGrid and getTileGridForProjection methods determine if a tile grid is present, and how tiles are selected or wrapped based on wrapX. If wrapX=false and no tile grid is provided, these methods influence how the tiles are managed and rendered. \n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: This is the renderer that implements WebGL-based tile rendering. Its renderFrame and enqueueTiles methods are where tiles are prepared and rendered; it likely assumes the presence of a tile grid and may not properly handle sources without one or with wrapX=false.\n\nThus, the fix will likely involve ensuring that the renderer and associated classes/functions properly check for the presence of a tile grid and handle wrapX=false cases gracefully, matching the behavior of the older TileLayer implementation.",
+        "bug_scenario": "The bug report describes an issue where using WebGLTileLayer with sources that use view projection and have wrapX set to false does not work as expected. The WebGL renderer expects the source to always have a tile grid, but this may not be the case when wrapX is false, leading to rendering failures or incorrect behavior. The expected behavior is that WebGLTileLayer should behave just like the regular Tile layer when wrapX is false, but currently it does not."
+    }
+}

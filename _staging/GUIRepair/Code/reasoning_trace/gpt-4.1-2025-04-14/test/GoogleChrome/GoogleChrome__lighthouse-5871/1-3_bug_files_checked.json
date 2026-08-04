@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/lib/emulation.js",
+            "lighthouse-core/report/html/renderer/report-renderer.js",
+            "lighthouse-core/report/html/renderer/details-renderer.js",
+            "lighthouse-core/report/report-generator.js",
+            "lighthouse-core/gather/gather-runner.js"
+        ],
+        "explanation": "The mismatch and confusion stems from how Lighthouse handles emulation and reporting of user agent strings. \n- 'lighthouse-core/gather/driver.js' and 'lighthouse-core/lib/emulation.js' are involved in configuring and applying device and network emulation, including setting the user agent for emulated browsers. This is where the 'real' user agent used for network requests is determined.\n- 'lighthouse-core/gather/gather-runner.js' coordinates the gathering/auditing process and may decide which user agent(s) are used and how they're reported as artifacts.\n- 'lighthouse-core/report/html/renderer/report-renderer.js' and 'lighthouse-core/report/html/renderer/details-renderer.js' are responsible for presenting the runtime settings (including the user agent) in the HTML report.\n- 'lighthouse-core/report/report-generator.js' handles assembling the data and rendering the report, deciding what runtime information is included.\n\nTo fix the bug, the code should be reviewed and likely updated so that a) all user agents actually used are captured during the run, and b) the report-inducing files (especially report-renderer.js and report-generator.js) are updated to display both user agent strings (e.g., the real/request UA and the emulated UA if both are involved). This would resolve the discrepancy and clarify the runtime environment to users.",
+        "bug_scenario": "The bug scenario is that the 'User agent' value shown under 'Runtime settings' in the Lighthouse report does not match the user agent(s) actually used to fetch the page, as recorded in the web server's access log, especially when device emulation is in use. This causes confusion, as the report suggests a single user agent, but two (or more) different user agent strings are involved during the audit. The bug report requests that both user agents should be consistently exposed in the report, so users aren\u2019t confused by the mismatch between the agent making the request and the one listed in the report settings."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/report/html/renderer/details-renderer.js",
+            "lighthouse-core/report/html/renderer/report-renderer.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/lib/emulation.js"
+        ],
+        "explanation": "These files are likely involved in the bug because:\n- `lighthouse-core/gather/driver.js`: Responsible for controlling Chrome, handling network interception, and setting the user agent for requests during the audit. Any logic about changing or reporting the user agent string likely exists here.\n- `lighthouse-core/lib/emulation.js`: Handles emulation and device settings (such as simulating mobile devices). The emulated user agent string used for tests is probably set or modified here.\n- `lighthouse-core/gather/gather-runner.js`: Orchestrates the audit process; coordinates what gets set before and during the run, including user agent emulation and what is eventually reported.\n- `lighthouse-core/report/html/renderer/details-renderer.js` and `lighthouse-core/report/html/renderer/report-renderer.js`: These files handle rendering the runtime settings and the user agent string in the report. Bug could stem from reporting or displaying the wrong user agent (not the one actually set for requests/emulation).\n\nOther related files (such as config) could be indirectly involved, but the above are the most suspicious based on responsibility for controlling, setting, and reporting the user agent string in both emulation and report output.",
+        "bug_scenario": "The bug scenario presents a situation where, upon running Lighthouse audits (via extension and embedded DevTools), the user agent string shown under 'Runtime settings' in the generated report does not match the actual user agent string used for HTTP requests made to the tested webpage (observable in the server access logs). Two images illustrate this mismatch: the first shows a desktop user agent displayed in the report but a mobile user agent in server logs; the second shows a similar mismatch, with the reported user agent differing from all user agents seen in logs. This discrepancy could be confusing for users, as it undermines the clarity of what device/agent is being simulated and whether headers on the tested requests truly reflect the runtime settings."
+    }
+}

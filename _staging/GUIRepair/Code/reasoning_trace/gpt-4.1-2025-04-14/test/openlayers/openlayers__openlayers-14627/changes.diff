@@ -1,0 +1,38 @@
+diff --git a/src/ol/extent.js b/src/ol/extent.js
+index 833c0bbd31..76975dd1c0 100644
+--- a/src/ol/extent.js
++++ b/src/ol/extent.js
+@@ -809,6 +809,16 @@ export function intersectsSegment(extent, start, end) {
+  * @api
+  */
+ export function applyTransform(extent, transformFn, dest, stops) {
++  // Check for empty extent: [Infinity, Infinity, -Infinity, -Infinity]
++  if (
++    extent[0] === Infinity &&
++    extent[1] === Infinity &&
++    extent[2] === -Infinity &&
++    extent[3] === -Infinity
++  ) {
++    // Return the empty extent directly
++    return [Infinity, Infinity, -Infinity, -Infinity];
++  }
+   let coordinates = [];
+   if (stops > 1) {
+     const width = extent[2] - extent[0];
+diff --git a/src/ol/proj/epsg3857.js b/src/ol/proj/epsg3857.js
+index 62cd57e93b..063827dd2d 100644
+--- a/src/ol/proj/epsg3857.js
++++ b/src/ol/proj/epsg3857.js
+@@ -93,6 +93,12 @@ export function fromEPSG4326(input, output, dimension) {
+     }
+   }
+   for (let i = 0; i < length; i += dimension) {
++    // Check for Infinity/-Infinity in input, which means empty extent
++    if (!isFinite(input[i]) || !isFinite(input[i + 1])) {
++      output[i] = input[i];
++      output[i + 1] = input[i + 1];
++      continue;
++    }
+     output[i] = (HALF_SIZE * input[i]) / 180;
+     let y = RADIUS * Math.log(Math.tan((Math.PI * (+input[i + 1] + 90)) / 360));
+     if (y > MAX_SAFE_Y) {

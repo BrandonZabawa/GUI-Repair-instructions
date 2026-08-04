@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/render/webgl/MixedGeometryBatch.js",
+            "src/ol/geom/flat/orient.js",
+            "src/ol/render/webgl/utils.js"
+        ],
+        "explanation": "1. MixedGeometryBatch.js: In addCoordinates_('Polygon'), it uses linearRingIsClockwise to split out rings whenever it sees a CW ring, but GeoJSON holes are CW by spec. That causes holes to be treated as separate filled polygons rather than cutouts.  \n2. src/ol/geom/flat/orient.js: The linearRingIsClockwise routine and its assumed orientation convention (left-hand rule by default) don\u2019t match GeoJSON\u2019s right-hand rule (CCW exterior, CW interior), so rings are misclassified.  \n3. src/ol/render/webgl/utils.js: writePolygonTrianglesToBuffers relies on the ringsCount and hole positions produced upstream. Because the hole detection is inverted, earcut triangulates and fills what should be empty regions, compounding the problem.",
+        "bug_scenario": "The user is styling a GeoJSON polygon with a large exterior ring and an interior \u201chole\u201d ring (a reversed zone, i.e. \u201ceverything except hole\u201d) using the new WebGL vector layer. Under valid GeoJSON orientation (exterior ring CCW, hole CW per spec), the fill-color erroneously paints the hole area as additional filled patches\u2014overlapping fills\u2014rather than leaving it empty. When the rings are given in the wrong orientation, the fill behaves as expected. The screenshots show a blue fill covering both the main polygon and its hole region multiple times instead of cutting out the hole."
+    }
+}

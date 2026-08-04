@@ -1,0 +1,69 @@
+diff --git a/components/prism-bash.js b/components/prism-bash.js
+index fc34d926..564f5b44 100644
+--- a/components/prism-bash.js
++++ b/components/prism-bash.js
+@@ -113,32 +113,38 @@
+ 			alias: 'variable',
+ 			lookbehind: true
+ 		},
+-		'string': [
+-			// Support for Here-documents https://en.wikipedia.org/wiki/Here_document
+-			{
+-				pattern: /((?:^|[^<])<<-?\s*)(\w+?)\s[\s\S]*?(?:\r?\n|\r)\2/,
+-				lookbehind: true,
+-				greedy: true,
+-				inside: insideString
+-			},
+-			// Here-document with quotes around the tag
+-			// → No expansion (so no “inside”).
+-			{
+-				pattern: /((?:^|[^<])<<-?\s*)(["'])(\w+)\2\s[\s\S]*?(?:\r?\n|\r)\3/,
+-				lookbehind: true,
+-				greedy: true,
+-				inside: {
+-					'bash': commandAfterHeredoc
+-				}
+-			},
+-			// “Normal” string
+-			{
+-				pattern: /(^|[^\\](?:\\\\)*)(["'])(?:\\[\s\S]|\$\([^)]+\)|\$(?!\()|`[^`]+`|(?!\2)[^\\`$])*\2/,
+-				lookbehind: true,
+-				greedy: true,
+-				inside: insideString
+-			}
+-		],
++'string': [
++// ANSI-C Quoting: $'...'
++{
++pattern: /\\$'(?:\\\\[\\s\\S]|[^\\\\'])*'/,
++greedy: true,
++inside: insideString
++},
++// Support for Here-documents https://en.wikipedia.org/wiki/Here_document
++{
++pattern: /((?:^|[^<])<<-?\\s*)(\\w+?)\\s[\\s\\S]*?(?:\\r?\\n|\\r)\\2/,
++lookbehind: true,
++greedy: true,
++inside: insideString
++},
++// Here-document with quotes around the tag
++// → No expansion (so no “inside”).
++{
++pattern: /((?:^|[^<])<<-?\\s*)(["'])(\\w+)\\2\\s[\\s\\S]*?(?:\\r?\\n|\\r)\\3/,
++lookbehind: true,
++greedy: true,
++inside: {
++'bash': commandAfterHeredoc
++}
++},
++// “Normal” string
++{
++pattern: /(^|[^\\](?:\\\\)*)(["'])(?:\\[\\s\\S]|\\$\\([^)]+\\)|\\$(?!\\()|`[^`]+`|(?!\\2)[^\\`$])*\\2/,
++lookbehind: true,
++greedy: true,
++inside: insideString
++}
++],
+ 		'environment': {
+ 			pattern: RegExp("\\$?" + envVars),
+ 			alias: 'constant'

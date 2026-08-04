@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "gather/driver-test.js",
+            "gather/gather-runner-test.js",
+            "gather/fake-driver.js",
+            "gather/gatherers/service-worker-test.js",
+            "gather/gatherers/offline-test.js",
+            "gather/gatherers/start-url-test.js"
+        ],
+        "explanation": "To understand and reproduce the hang at \u201cLoading page & waiting for onload,\u201d you need to trace through how Lighthouse drives Chrome, waits for the page\u2019s load event, and then runs the PWA gatherers (ServiceWorker, Offline, StartUrl). \n\n\u2022 gather/driver-test.js and gather/fake-driver.js show how the driver navigates and listens for onload\n\u2022 gather/gather-runner-test.js orchestrates page navigation and gatherer execution\ngather/gatherers/service-worker-test.js, offline-test.js, and start-url-test.js cover the individual steps that run once the page is loaded. Together, these files let you replicate the navigation \u2192 wait-for-onload \u2192 gather pipeline and pinpoint where it fails to resolve the load event, causing the indefinite hang.",
+        "bug_scenario": "When a Progressive Web App\u2013only audit is launched (either via the native Chrome audit panel or the Lighthouse extension), Lighthouse navigates to the target URL and then stalls indefinitely at the \u201cLoading page & waiting for onload\u201d step. The chrome-style dialog shows the Lighthouse lighthouse-style illustration with the caption \u201cServiceWorker, Offline, StartUrl,\u201d and a cancel button. This indicates that the gather-runner has started the SW/offline/start-URL gatherers but never receives the page\u2019s load event, causing the audit to hang forever."
+    }
+}

@@ -1,0 +1,85 @@
+diff --git a/src/languages/javascript.js b/src/languages/javascript.js
+index 656a43a4..6c909761 100644
+--- a/src/languages/javascript.js
++++ b/src/languages/javascript.js
+@@ -86,13 +86,44 @@ export default function(hljs) {
+     ],
+     relevance: 0
+   };
+-  const SUBST = {
+-    className: 'subst',
+-    begin: '\\$\\{',
+-    end: '\\}',
+-    keywords: KEYWORDS,
+-    contains: [] // defined later
+-  };
++const SUBST = {
++className: 'subst',
++begin: '\\${',
++end: '\\}',
++keywords: KEYWORDS,
++contains: [] // defined later
++};
++
++// Add recursive brace matching for nested objects/functions in template substitutions
++const NESTED_BRACES = {
++begin: /\{/,
++end: /\}/,
++contains: [
++"self",
++// Allow all the same things as in SUBST
++hljs.APOS_STRING_MODE,
++hljs.QUOTE_STRING_MODE,
++// Allow template strings inside nested braces
++{
++begin: /`/,
++end: /`/,
++contains: [
++hljs.BACKSLASH_ESCAPE,
++// Allow nested substitutions
++// This will be replaced with SUBST after SUBST is defined
++]
++},
++// Numbers, regex, etc.
++HTML_TEMPLATE,
++CSS_TEMPLATE,
++TEMPLATE_STRING,
++NUMBER,
++hljs.REGEXP_MODE
++]
++};
++
++// Now that NESTED_BRACES is defined, we can set SUBST.contains
++// (We need to do this after NESTED_BRACES is defined to avoid circular reference issues)
+   const HTML_TEMPLATE = {
+     begin: 'html`',
+     end: '',
+@@ -169,15 +200,19 @@ export default function(hljs) {
+       hljs.C_LINE_COMMENT_MODE
+     ]
+   };
+-  SUBST.contains = [
+-    hljs.APOS_STRING_MODE,
+-    hljs.QUOTE_STRING_MODE,
+-    HTML_TEMPLATE,
+-    CSS_TEMPLATE,
+-    TEMPLATE_STRING,
+-    NUMBER,
+-    hljs.REGEXP_MODE
+-  ];
++// Add NESTED_BRACES to allow for nested objects/functions in template substitutions
++NESTED_BRACES.contains[2].contains.push(SUBST); // Add SUBST to template string inside nested braces
++
++SUBST.contains = [
++hljs.APOS_STRING_MODE,
++hljs.QUOTE_STRING_MODE,
++HTML_TEMPLATE,
++CSS_TEMPLATE,
++TEMPLATE_STRING,
++NUMBER,
++hljs.REGEXP_MODE,
++NESTED_BRACES
++];
+   const SUBST_AND_COMMENTS = [].concat(COMMENT, SUBST.contains);
+   const PARAMS_CONTAINS = SUBST_AND_COMMENTS.concat([
+     // eat recursive parens in sub expressions

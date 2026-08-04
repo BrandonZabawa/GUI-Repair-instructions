@@ -1,0 +1,29 @@
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index bcb475ced..76774dcac 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -73,7 +73,24 @@ class Driver {
+       this._devtoolsLog.record(event);
+       if (this._networkStatusMonitor) {
+         this._networkStatusMonitor.dispatch(event);
++  }
++
++  /**
++   * Discover targets and enable network monitoring for OOPIFs.
++   * @return {Promise<void>}
++   */
++  async enableOOPIFs() {
++    const targets = await this.sendCommand('Target.getTargets');
++    for (const target of targets.targetInfos) {
++      if (target.type === 'iframe') {
++        await this.sendCommand('Target.attachToTarget', {targetId: target.targetId, flatten: true});
++        await this.sendCommand('Target.sendMessageToTarget', {
++          targetId: target.targetId,
++          message: JSON.stringify({id: 1, method: 'Network.enable'}),
++        });
+       }
++    }
++  }
+ 
+       // @ts-ignore TODO(bckenny): tsc can't type event.params correctly yet,
+       // typing as property of union instead of narrowing from union of

@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.configure_",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.loadTile_"
+        ],
+        "explanation": "The class `GeoTIFFSource` is the main class handling GeoTIFF data, including nodata and alpha band logic, which is central to the bug. The method `configure_` is responsible for configuring the tile grid and determining when and how to add an alpha band to handle nodata values. This is directly related to the bug, as it must correctly recognize NaN and set up the alpha band accordingly. The `loadTile_` method is involved in loading tile data, which includes applying the nodata logic and populating alpha values in the returned data. If this method does not handle NaN nodata values correctly (e.g., not setting the alpha to 0 when pixel value is NaN), the bug will manifest as described. Thus, changes to these functions/methods are required to fix the issue.",
+        "bug_scenario": "The bug scenario involves handling GeoTIFF images where the no-data value is specified as NaN. When using the `getData` method on such a source, the returned pixel values for no-data areas include `[NaN, NaN, NaN, 255]` (fully opaque), instead of `[NaN, NaN, NaN, 0]` (fully transparent), even though an alpha band is added. This breaks expected styling and transparency behaviors when NaN is used for nodata."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.configure_",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.loadTile_"
+        ],
+        "explanation": "The GeoTIFFSource class is responsible for managing GeoTIFF sources, including no-data handling and the addition of alpha bands. The configure_ method determines if and how alpha bands are added based on nodata values from options or metadata, making it essential for correct no-data/NaN processing. The loadTile_ method loads and processes raster data for tiles and is likely involved in applying the nodata mask and setting the alpha band values. Bugs in these methods could lead to incorrect handling of NaN as no-data (e.g., always setting alpha to 255 instead of 0), which directly relates to the reported issue. Thus, these are the key areas to inspect and fix.",
+        "bug_scenario": "The bug scenario involves handling GeoTIFF files where the no-data value is set to NaN (Not a Number). When a GeoTIFF source is initialized with nodata: NaN, the library is expected to recognize this and handle pixels accordingly. However, when using the getData method, the alpha band is always set to 255 (fully opaque) instead of 0 (fully transparent) for NaN pixels. As a result, NaN values are not masked out properly, leading to incorrect data and visual representation. Styling functionality relying on correct no-data handling is also affected."
+    }
+}

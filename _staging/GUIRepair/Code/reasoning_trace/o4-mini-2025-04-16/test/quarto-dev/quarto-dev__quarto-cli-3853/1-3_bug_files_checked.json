@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/theorems.lua",
+            "src/resources/filters/crossref/theorems.lua"
+        ],
+        "explanation": "Both of these Lua filter files are part of the Pandoc pipeline Quarto uses to convert Markdown divs with classes \u201cdefinition\u201d, \u201cexample\u201d, \u201ctheorem\u201d and \u201cproof\u201d into LaTeX environments. In ast/theorems.lua the code generating the \\leavevmode\\vadjust pre{\\hypertarget\u2026} injection lives \u2014 it adds the hypertarget for cross-references, but also triggers unwanted vertical glue. The crossref/theorems.lua file coordinates placing those hypertargets before each environment. To fix the bug, you would either remove or modify the \\leavevmode\\vadjust insertion in ast/theorems.lua (and/or adjust how crossref/theorems.lua emits its target code) so that no extra vertical space or empty line is introduced.",
+        "bug_scenario": "When rendering a PDF via Quarto with LaTeX (e.g. using the scrreprt class), \u201cdefinition\u201d, \u201cexample\u201d, \u201ctheorem\u201d and \u201cproof\u201d blocks are preceded by TeX code of the form \u201c\\leavevmode\\vadjust pre{\\hypertarget{\u2026}{}}%\u201d. That raw LaTeX insertion introduces an unwanted vertical gap above those environments (visible as excessive white space in the user\u2019s first screenshot), and in the case of proofs the extra blank line before \\end{proof} pushes down the QED symbol. Removing or adjusting that \\leavevmode\\vadjust code (or suppressing the extra blank line) corrects the spacing and lifts the QED symbol to its normal position."
+    },
+    "2": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/theorems.lua",
+            "src/resources/filters/common/theorems.lua",
+            "src/command/render/output-tex.ts"
+        ],
+        "explanation": "In Quarto the Lua filter at resources/filters/quarto-pre/theorems.lua is responsible for transforming callout Divs like definitions/theorems into Pandoc blocks with LaTeX anchors. It emits the raw snippet \u201c\\leavevmode\\vadjust pre{\\hypertarget{\u2026}{}}\u201d to support hyperlinked IDs. That raw injection adds extra vertical space. The companion file resources/filters/common/theorems.lua further customizes theorem formatting (and may re-emit or tweak the same space around environments). Finally, after Pandoc writes the .tex, the TypeScript post-processor in src/command/render/output-tex.ts rewrites or normalizes the LaTeX, including leaving a blank line before \\end{proof}. That stray blank line causes the proof QED square to drop. All three files collaborate in generating and post-processing the LaTeX: removing or adjusting their injected glue and trimming the proof ending newline fixes both spacing issues.",
+        "bug_scenario": "When rendering a PDF from a Quarto document containing definition/theorem/example/proof blocks, the generated LaTeX always inserts a leading \u201c\\leavevmode\\vadjust pre{\u2026}\\begin{definition}\u2026\u201d (and similarly for theorem, example, etc.) immediately after the preceding paragraph. This extra \\leavevmode/\\vadjust pre call injects vertical glue, so you see an undesirably large gap before each environment. At the same time, Quarto\u2019s LaTeX writer emits a blank line before the closing \\end{proof}, so the QED symbol sits lower than normal. Removing the \\leavevmode\u2026 line and stripping the blank line before \\end{proof} restores expected spacing."
+    }
+}

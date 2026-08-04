@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/computed/metrics/interactive.js//Interactive",
+            "lighthouse-core/computed/metrics/total-blocking-time.js//TotalBlockingTime"
+        ],
+        "bug_functions": [
+            "lighthouse-core/computed/metrics/interactive.js//Interactive.findOverlappingQuietPeriods",
+            "lighthouse-core/computed/metrics/interactive.js//Interactive._findCPUQuietPeriods",
+            "lighthouse-core/computed/metrics/total-blocking-time.js//TotalBlockingTime.computeObservedMetric"
+        ],
+        "explanation": "Interactive.findOverlappingQuietPeriods (and its helper _findCPUQuietPeriods) enforce a REQUIRED_QUIET_WINDOW of 5000 ms after FCP and filter out any CPU/network quiet periods that end before FCP+5 s. In the provided-throttling scenario the trace ends immediately after FCP, so no qualifying quiet period is found and the code throws NO_TTI_CPU_IDLE_PERIOD. TotalBlockingTime.computeObservedMetric calls into Interactive.request (via TimetoInteractive.request) and thus surfaces the same error for TBT. Both of these are the critical code paths that must be adjusted to avoid spurious NO_TTI_CPU_IDLE_PERIOD errors when the page is idle immediately after FCP.",
+        "bug_scenario": "When Lighthouse runs in \u201cprovided\u201d throttling mode against a page that artificially delays its First Contentful Paint (FCP) by ~1.7 s and then does almost no work afterwards, the computed trace ends too soon to ever contain a 5 s \u201cquiet window\u201d after FCP. The TTI metric code in interactive.js filters out any CPU or network quiet periods shorter than 5 s after FCP, finds none, and throws NO_TTI_CPU_IDLE_PERIOD. Total Blocking Time also calls into TTI and fails. In the screenshot you see FCP at ~2.3 s (green) but TTI and TBT both error with NO_TTI_CPU_IDLE_PERIOD."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/computed/metrics/interactive.js//Interactive",
+            "lighthouse-core/computed/metrics/total-blocking-time.js//TotalBlockingTime"
+        ],
+        "bug_functions": [
+            "lighthouse-core/computed/metrics/interactive.js//Interactive._findCPUQuietPeriods",
+            "lighthouse-core/computed/metrics/interactive.js//Interactive.findOverlappingQuietPeriods",
+            "lighthouse-core/computed/metrics/total-blocking-time.js//TotalBlockingTime.computeObservedMetric"
+        ],
+        "explanation": "Interactive._findCPUQuietPeriods and Interactive.findOverlappingQuietPeriods implement the core logic that identifies a 5 s CPU\u2010quiet window following FCP. In traces where FCP is delayed and the trace ends immediately afterward, no period meets the REQUIRED_QUIET_WINDOW, so findOverlappingQuietPeriods throws NO_TTI_CPU_IDLE_PERIOD. TotalBlockingTime.computeObservedMetric then calls into the interactive metric (TimetoInteractive.request), so its computeObservedMetric path fails with the same error. Fixing this bug requires updating the quiet\u2010window logic in Interactive (or how traceEnd is determined) so that an idle trace end still counts as a valid quiet period, and ensuring TotalBlockingTime handles the adjusted TTI value rather than propagating the error.",
+        "bug_scenario": "The page under test deliberately delays its First Contentful Paint (FCP) by ~1.7 s and then immediately goes idle (no long tasks or network requests). With \u201cprovided\u201d throttling (DevTools path), Lighthouse records FCP and immediately ends the trace, so there is never a 5 s \u201cquiet window\u201d after FCP before trace end. As a result, the CPU\u2010quiet\u2010period detection in the interactive metric finds no sufficiently long quiet period and throws NO_TTI_CPU_IDLE_PERIOD. That same error propagates into Total Blocking Time, so both TTI and TBT show the error in the report."
+    }
+}

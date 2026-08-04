@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/slider/slider.jsx",
+            "src/slider/slick/inner-slider.jsx",
+            "src/slider/slick/arrow.jsx"
+        ],
+        "explanation": "\u2022 src/slider/slider.jsx: This is the top-level Slider component where defaultActiveIndex is passed into the slick engine. It seeds the initial currentSlide state, so any misalignment between defaultActiveIndex and the arrow disable logic here will directly cause the wrong arrow state.\n\u2022 src/slider/slick/inner-slider.jsx: This file maintains currentSlide and computes props like slideCount, slidesToShow, infinite, and passes disabled flags down to the arrow components. The logic that decides when arrows are disabled lives here.\n\u2022 src/slider/slick/arrow.jsx: Here the actual disabled state is rendered on the arrow buttons. The code includes a clause roughly like \u201cdisabled = !infinite && (currentSlide <= 0 || slideCount <= slidesToShow)\u201d. When slideCount <= slidesToShow, it forces disabled even if currentSlide > 0, which is exactly why the left arrow stays disabled. Fixing the condition in this file (or in inner-slider before passing props) will correct the behavior.",
+        "bug_scenario": "In this scenario the Slider is initialized with slidesToShow larger than the total number of slides (slidesCount), infinite scrolling disabled, and a defaultActiveIndex > 0. Because the built-in disable logic considers slideCount <= slidesToShow as a condition to suppress navigation, the left (previous) arrow is greyed out and non-interactive even though you should be able to navigate back to index 0 from the non-zero start position."
+    },
+    "2": {
+        "bug_files": [
+            "src/slider/slider.jsx",
+            "src/slider/slick/inner-slider.jsx",
+            "src/slider/arrow.jsx"
+        ],
+        "explanation": "1. src/slider/slider.jsx: this wrapper accepts your defaultActiveIndex prop but never wires it up to React-Slick\u2019s initialSlide option. As a result inner-slider.jsx always starts currentSlide at 0.\n\n2. src/slider/slick/inner-slider.jsx: the component\u2019s state.currentSlide is initialized to 0 instead of using an initialSlide from props. Even if you passed a non-zero defaultActiveIndex, currentSlide remains 0 and the \u201cprev\u201d arrow stays disabled.\n\n3. src/slider/arrow.jsx: the disabled logic uses (currentSlide === 0 && arrowType === 'prev') to grey out the left arrow. Because currentSlide never reflects your defaultActiveIndex when slidesToShow > slideCount, the prev arrow is wrongly disabled at mount.",
+        "bug_scenario": "When you set slidesToShow larger than the total number of slides (slidesCount), infinite={false}, and defaultActiveIndex non\u2013zero, the left (\"prev\") arrow is greyed out and disabled even though you started in the middle and there are slides to scroll back to. In other words, defaultActiveIndex is not respected when deciding whether to enable the \"prev\" arrow if slidesToShow exceeds slidesCount."
+    }
+}

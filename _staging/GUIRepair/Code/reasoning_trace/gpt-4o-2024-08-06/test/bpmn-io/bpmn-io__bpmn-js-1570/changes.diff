@@ -1,0 +1,62 @@
+diff --git a/lib/features/auto-resize/BpmnAutoResize.js b/lib/features/auto-resize/BpmnAutoResize.js
+index e518728e..032030f9 100644
+--- a/lib/features/auto-resize/BpmnAutoResize.js
++++ b/lib/features/auto-resize/BpmnAutoResize.js
+@@ -29,10 +29,13 @@ inherits(BpmnAutoResize, AutoResize);
+  * @param {Object} hints
+  */
+ BpmnAutoResize.prototype.resize = function(target, newBounds, hints) {
++var currentViewbox = this._canvas.viewbox();
+ 
+-  if (is(target, 'bpmn:Participant')) {
+-    this._modeling.resizeLane(target, newBounds, null, hints);
+-  } else {
+-    this._modeling.resizeShape(target, newBounds, null, hints);
+-  }
++if (is(target, 'bpmn:Participant')) {
++this._modeling.resizeLane(target, newBounds, null, hints);
++} else {
++this._modeling.resizeShape(target, newBounds, null, hints);
++}
++
++this._canvas.viewbox(currentViewbox);
+ };
+\ No newline at end of file
+diff --git a/lib/features/modeling/Modeling.js b/lib/features/modeling/Modeling.js
+index 0c7619e6..8888b264 100644
+--- a/lib/features/modeling/Modeling.js
++++ b/lib/features/modeling/Modeling.js
+@@ -161,16 +161,19 @@ Modeling.prototype.updateLaneRefs = function(flowNodeShapes, laneShapes) {
+  * @return {djs.model.Root} the new root element
+  */
+ Modeling.prototype.makeProcess = function() {
++var currentViewbox = this._canvas.viewbox();
+ 
+-  var processElement = this._create('root', {
+-    type: 'bpmn:Process'
+-  });
++var processElement = this._create('root', {
++type: 'bpmn:Process'
++});
+ 
+-  var context = {
+-    newRoot: processElement
+-  };
++var context = {
++newRoot: processElement
++};
+ 
+-  this._commandStack.execute('canvas.updateRoot', context);
++this._commandStack.execute('canvas.updateRoot', context);
++
++this._canvas.viewbox(currentViewbox);
+ };
+ 
+ 
+@@ -199,4 +202,4 @@ Modeling.prototype.setColor = function(elements, colors) {
+     elements: elements,
+     colors: colors
+   });
+-};
++};
+\ No newline at end of file

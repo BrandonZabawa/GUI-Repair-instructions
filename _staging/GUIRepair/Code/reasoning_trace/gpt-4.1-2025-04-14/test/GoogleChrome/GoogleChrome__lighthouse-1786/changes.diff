@@ -1,0 +1,48 @@
+diff --git a/lighthouse-core/formatters/table.js b/lighthouse-core/formatters/table.js
+index 6897313f6..60381c3fa 100644
+--- a/lighthouse-core/formatters/table.js
++++ b/lighthouse-core/formatters/table.js
+@@ -85,6 +85,19 @@ class Table extends Formatter {
+     const headingKeys = Object.keys(headings);
+ 
+     const rows = results.map(result => {
++      const escapeMarkdown = str => {
++        // Only escape if not already a code snippet
++        if (typeof str !== 'string' || str.startsWith('`')) return str;
++        // Escape markdown-sensitive characters
++        return str
++          .replace(/_/g, '\\_')
++          .replace(/\*/g, '\\*')
++          .replace(/\[/g, '\\[')
++          .replace(/\]/g, '\\]')
++          .replace(/\(/g, '\\(')
++          .replace(/\)/g, '\\)');
++      };
++
+       const cols = headingKeys.map(key => {
+         let value = result[key];
+         if (typeof value === 'undefined') {
+@@ -100,15 +113,20 @@ class Table extends Formatter {
+             }
+             return '';
+           case 'code':
+-            return '`' + value.trim() + '`';
++            // If value already starts and ends with backtick, return as is
++            const trimmed = typeof value === 'string' ? value.trim() : value;
++            if (typeof trimmed === 'string' && trimmed.startsWith('`') && trimmed.endsWith('`')) {
++              return trimmed;
++            }
++            return '`' + trimmed + '`';
+           case 'pre':
+-            return '\`\`\`\n' + result[key].trim() + '\`\`\`';
++            return '```\n' + result[key].trim() + '\n```';
+           case 'lineCol':
+             return `${result.line}:${result.col}`;
+           case 'isEval':
+             return value ? 'yes' : '';
+           default:
+-            return String(value);
++            return escapeMarkdown(String(value));
+         }
+       });
+ 

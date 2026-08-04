@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/lib/dependency-graph/network-node.js",
+            "lighthouse-core/gather/computed/page-dependency-graph.js"
+        ],
+        "explanation": "\u2022 audits/critical-request-chains.js: This is the audit that traverses the dependency tree and flags any high-priority resources as part of the \u201ccritical request chain.\u201d It is where the final list of critical chains is built and displayed. It needs to be updated so that rel=preload (as=style) CSS does not count as a blocking resource.\n\n\u2022 lib/dependency-graph/network-node.js: The hasRenderBlockingPriority() method here classifies network requests as \u201crender-blocking\u201d based solely on DevTools priority (e.g. \u2018High\u2019 or \u2018VeryHigh\u2019). Because preload-as-style inherits a high priority, it\u2019s currently treated as blocking. Adjusting this logic (for example, by detecting rel=preload or as=style) will prevent CSS preloads from showing up as critical.\n\n\u2022 gather/computed/page-dependency-graph.js: This builds the network/CPU dependency graph used by the audit. Although it doesn\u2019t itself filter based on priority, it is the source of the tree that critical-request-chains traverses. If preload nodes should be pruned entirely, this is where they would be excluded from the graph before the audit runs.",
+        "bug_scenario": "On page load, a stylesheet is fetched via a <link rel=\"preload\" as=\"style\" onload=\"this.rel='stylesheet'\"> tag and deliberately delayed by 5 seconds on the server. In Lighthouse\u2019s Performance > Diagnostics \u203a Critical Request Chains panel, the CSS preload request (slow.css) appears in the \u201ccritical request chain,\u201d showing a ~5 s blocking chain\u2014even though rel=preload should load resources without blocking initial rendering."
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/tree/view/tree.jsx",
+            "src/tree/view/tree-node.jsx",
+            "src/tree/view/util.js"
+        ],
+        "explanation": "这三个文件共同承担了 Tree 组件的选中逻辑和渲染。\n\n1. src/tree/view/tree.jsx\n   - 负责处理 onSelect 回调、selectedKeys 的受控更新和 extra.selected 的计算。这里的逻辑只有在第一次点击时正确地将 selectedKeys 置为空数组并把 extra.selected 置为 false，但后续点击并没有根据当前状态重置 selectedKeys，从而导致 extra.selected 永远是 false。\n\n2. src/tree/view/tree-node.jsx\n   - 负责根据节点是否被选中（从 selectedKeys 或 extra.selected 拿到状态）来给节点打上选中或非选中的 CSS class。因为 selectedKeys 没有被重新加入，导致节点的 selected 属性始终为 false，样式也无法回到选中状态。\n\n3. src/tree/view/util.js\n   - 工具函数中涉及对 selectedKeys 和 nodeKey 的增删操作，Tree 组件在内部调用了这里的方法来决定“点击后是否要把 key 加入或移出 selectedKeys”。这里的逻辑并没有区分“同一个 key 再次点击时应该重新加入 selectedKeys”，导致只能出发一次删除操作而无重新加入操作。\n\n综上，这三处对选中状态的判断、更新和渲染缺乏完整的 toggle 逻辑，需要补充同一个节点点击多次时从 false 切换回 true 的处理。",
+        "bug_scenario": "用户在使用受控 Tree 组件时，对同一个节点点击选中/取消选中，本应在 true 和 false 之间来回切换，同时相应的样式（被选中和未被选中）也应当来回切换。但实际行为是：第一次点击取消选中后，extra.selected 正确变为 false，但之后再次点击该节点，不论点击多少次，extra.selected 一直保持 false，样式也不变化，无法回到 true。"
+    },
+    "2": {
+        "bug_files": [
+            "src/tree/view/tree.jsx",
+            "src/tree/view/tree-node.jsx",
+            "src/tree/view/util.js"
+        ],
+        "explanation": "• src/tree/view/tree.jsx: This is where the component’s onSelect handler lives and where the `extra.selected` flag is computed and passed back to the user callback. In controlled mode it reads parent-provided `selectedKeys`, but its toggle logic doesn’t properly detect when a controlled key is re-added, so `extra.selected` stays false.\n• src/tree/view/tree-node.jsx: This file renders each node and applies the CSS class for the selected state. Because `extra.selected` never becomes true again, the node never re-renders with the selected style.\n• src/tree/view/util.js: Contains helper functions that calculate which nodes are selected/expanded. The algorithm that updates the selected set on each click fails to re-include a key that was just removed under controlled mode. Adjusting the toggle logic here will restore correct `extra.selected` values and rerendering.",
+        "bug_scenario": "When using the Tree component in controlled mode (supplying selectedKeys from the parent), clicking a selected node the first time correctly deselects it (extra.selected:false), but subsequent clicks on the same node never re-select it (extra.selected remains false). The visual selected style never toggles back on. Expected behavior is: click once → selected:true + style, click again → selected:false + style removed, click again → selected:true + style reappears, and so on."
+    }
+}

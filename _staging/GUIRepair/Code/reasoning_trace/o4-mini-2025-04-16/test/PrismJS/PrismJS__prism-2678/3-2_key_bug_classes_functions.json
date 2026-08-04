@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-markdown.js//Prism.languages.markdown",
+            "components/prism-markdown.js//Prism.languages.markdown.url",
+            "components/prism-markdown.js//Prism.languages.insertBefore"
+        ],
+        "bug_functions": [
+            "components/prism-markdown.js//createInline(pattern)",
+            "components/prism-markdown.js//Prism.hooks.add('after-tokenize', callback)",
+            "components/prism-markdown.js//Prism.hooks.add('wrap', callback)"
+        ],
+        "explanation": "The core of the bug is in the way the markdown grammar is defined in Prism. The `Prism.languages.markdown` class holds token definitions for bold, italic, links, etc., but it does not distinguish an image token. The `url` token\u2019s regex (built via `createInline`) technically allows a leading \u201c!\u201d but is not wired up to create a separate image alias or styling. The call to `Prism.languages.insertBefore('markdown','prolog',\u2026)` injects front-matter and block tokens, but does not insert an image rule. Finally, the hooks registered via `Prism.hooks.add('after-tokenize',\u2026)` and `Prism.hooks.add('wrap',\u2026)` do post-processing of code blocks and do not address image markup. To fix the bug, one must update or augment the `url` token (or insert a new `image` token) at registration time\u2014using `createInline` for the correct regex\u2014and ensure that image links receive their own alias (e.g. `'image'`) so Prism will tokenize and style them correctly.",
+        "bug_scenario": "When authoring markdown that includes an image\u2014e.g. `![emoji](https://content.markdowner.net/emoji/g/64/1f44d.png)`\u2014the Prism-based markdown highlighter does not recognize or treat the image token specially. The alt text and URL are not tokenized or styled as an image, so inline image links remain unhighlighted or misclassified."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-markdown.js//Prism.languages.markdown"
+        ],
+        "bug_functions": [
+            "components/prism-markdown.js//createInline",
+            "components/prism-markdown.js//Prism.languages.insertBefore"
+        ],
+        "explanation": "All of the Markdown token definitions live in components/prism-markdown.js under Prism.languages.markdown, which is set up via a call to Prism.languages.insertBefore. Inside that block the existing 'url' token (built with the createInline helper) handles both links and images but never surfaces an explicit 'image' token. To add true image support you must update the insertBefore call to define a new 'image' token\u2014using createInline to build a regex for ![alt](src)\u2014and insert it into the Prism.languages.markdown grammar alongside or before the 'url' token. Adjusting createInline and the insertBefore block will allow Prism to recognize and style image syntax separately.",
+        "bug_scenario": "When writing a Markdown image syntax like ![emoji](https://content.markdowner.net/emoji/g/64/1f44d.png), Prism\u2019s Markdown highlighter does not treat it as a distinct token (e.g. an image) and falls back to plain text or the generic URL token. The user expects Prism to recognize and style image syntax separately."
+    }
+}

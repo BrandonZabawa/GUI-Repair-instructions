@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/rules/BpmnRules.js//BpmnRules",
+            "lib/features/replace/BpmnReplace.js//BpmnReplace",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//ReplaceMenuProvider",
+            "lib/features/replace/ReplaceOptions.js//START_EVENT"
+        ],
+        "bug_functions": [
+            "lib/features/rules/BpmnRules.js//canCreate",
+            "lib/features/rules/BpmnRules.js//canReplace",
+            "lib/features/replace/BpmnReplace.js//replaceElement",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//getEntries"
+        ],
+        "explanation": "\u2022 BpmnRules (canCreate, canReplace): This rule provider enforces where elements may be created or replaced. It needs to prevent creation or morphing of typed start events inside a non\u2010event subprocess.\n\u2022 BpmnReplace.replaceElement: When moving or replacing a start event into a subprocess, this function carries over eventDefinitionType. It must detect insertion into a non\u2010event subprocess and drop the eventDefinitionType so the event becomes untyped.\n\u2022 ReplaceMenuProvider.getEntries: This popup menu provider composes the list of replace actions shown in the context pad. It must filter out typed start event entries when the target element is a non\u2010event subprocess.\n\u2022 ReplaceOptions.START_EVENT: The array of all start\u2010event replacement options. These definitions include the typed start events that must be suppressed or post\u2010processed when in a non\u2010event subprocess. By adjusting or filtering this list, we can prevent illegal morphing to typed start events.",
+        "bug_scenario": "When the user drags a typed start event (e.g. message or timer start event) into a non\u2010event subprocess, or tries to morph an existing untyped start event into a typed one inside such a subprocess, the editor currently allows it. According to the BPMN spec, any start event inside a non\u2010event subprocess must be untyped. The attached gif demonstrates dropping a message start event into a plain subprocess and seeing it accepted instead of being converted to a plain (none) start event."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/rules/BpmnRules.js//BpmnRules",
+            "lib/features/replace/BpmnReplace.js//BpmnReplace",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//ReplaceMenuProvider"
+        ],
+        "bug_functions": [
+            "lib/features/rules/BpmnRules.js//init",
+            "lib/features/rules/BpmnRules.js//canCreate",
+            "lib/features/rules/BpmnRules.js//canReplace",
+            "lib/features/replace/BpmnReplace.js//replaceElement",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//getEntries"
+        ],
+        "explanation": "1. BpmnRules (especially its init, canCreate and canReplace methods) defines modeling rules for where and how elements can be created or replaced. We must add a rule here to prevent morphing or creating any typed start event inside a non\u2010event subprocess.\\n2. BpmnReplace.replaceElement is responsible for carrying over or initializing event definitions during replacement. When dropping or morphing a start event into a plain subprocess, this method needs logic to drop any eventDefinitionType so the start event becomes untyped.\\n3. ReplaceMenuProvider.getEntries drives the replace\u2010with dropdown/palette and currently still lists typed start event options when the target is a plain subprocess. We must filter out those typed events in this function so users cannot pick them in the first place.",
+        "bug_scenario": "The user opens a non\u2010event\u2010based subprocess (a plain subprocess) and then attempts to morph or add a typed start event (e.g. a message start event) inside it using the replace palette. The UI still offers the envelope icon for a Message Start Event and, when dropped into the subprocess, the event retains its message definition instead of being disallowed or coerced to an untyped start event. According to BPMN rules, only untyped (blank) start events may appear in a non\u2010event\u2010based subprocess."
+    }
+}

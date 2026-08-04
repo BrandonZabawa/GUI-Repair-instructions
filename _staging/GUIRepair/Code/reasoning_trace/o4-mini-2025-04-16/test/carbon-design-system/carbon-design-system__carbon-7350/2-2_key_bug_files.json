@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js",
+            "packages/react/src/internal/ClickListener.js",
+            "packages/react/src/internal/useOutsideClick.js",
+            "packages/react/src/internal/FloatingMenu.js"
+        ],
+        "explanation": "\n\u2022 OverflowMenu.js: this is the top-level React component for the dropdown menu. It currently only responds to onClick and key events. To support right-click context menus, it needs to accept onContextMenu triggers and pass the mouse coordinates down as positioning offsets.\n\n\u2022 ClickListener.js: this internal component detects clicks outside the menu to auto-close it, but it only listens for the \u2018click\u2019 event. It must also handle \u2018contextmenu\u2019 events so that right-clicking elsewhere closes the open menu.\n\n\u2022 useOutsideClick.js: the hook version of outside-click detection is similarly bound only to \u2018click\u2019 events. It needs to subscribe to \u2018contextmenu\u2019 as well to invoke the callback when the user right-clicks outside the menu.\n\n\u2022 FloatingMenu.js: the core positioning logic currently anchors the menu relative to a trigger element\u2019s bounding rect. To support context menus, it should accept absolute page (x,y) coordinates and compute positions directly, rather than always centering around a DOM node. This will allow us to open the menu exactly at the pointer location on right-click.",
+        "bug_scenario": "The attached screenshots and gifs show a classic right-click (context) menu pattern: the user right-clicks on a grid cell or list item, the browser\u2019s default context menu is suppressed, and a custom nested menu is rendered at the pointer position. The menu supports hover to open submenus, icon indicators, and closes automatically when clicking elsewhere. Carbon\u2019s OverflowMenu currently only opens on left-click, closes only on left-click, and its positioning logic doesn\u2019t accept an arbitrary (x, y) coordinate triggered by a right-click event. To support a true context-menu UX, we need to: 1) listen to \u201ccontextmenu\u201d events; 2) open the floating menu at the mouse pointer rather than relative to the trigger node; and 3) close it when the user clicks or right-clicks outside of it."
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/popup-menu/ReplaceMenuProvider.js"
+        ],
+        "explanation": "1. lib/features/replace/BpmnReplace.js\n   \u2022 Contains the core replaceElement logic that copies the old element\u2019s width/height into the new subprocess when converting to an expanded subprocess. Because it always preserves the prior task dimensions, the expanded subprocess never grows to its default size.\n\n2. lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js\n   \u2022 Handles resizing when a subprocess is collapsed or expanded via toggleCollapse, but that command is never invoked on initial replace. As a result, no resize is applied on conversion from call activity \u2192 expanded subprocess.\n\n3. lib/features/replace/ReplaceOptions.js\n   \u2022 Defines both \u201ccollapsed\u201d and \u201cexpanded\u201d subprocess options for the replace menu, even though a collapsed subprocess isn\u2019t fully supported in the UI. This leads to confusing extra menu entries.\n\n4. lib/features/popup-menu/ReplaceMenuProvider.js\n   \u2022 Gathers and filters replace options for the wrench menu. It doesn\u2019t filter out unsupported collapsed-subprocess actions when the element is a call activity, and once converted to expanded subprocess it only offers \u201cevent sub-process,\u201d preventing the user from switching back to call activity.",
+        "bug_scenario": "After transforming a task into a call activity via the wrench (\u201creplace\u201d) menu, two new entries \u2014 \u201csub-process collapsed\u201d and \u201csub-process expanded\u201d \u2014 appear. Choosing \u201csub-process expanded\u201d replaces the call activity with an expanded subprocess, but the shape remains the size of the original task (instead of resizing to the subprocess default). Once in this state, the wrench menu only shows \u201cevent sub-process\u201d as an option, so you cannot revert back to a call activity and you reach a dead end."
+    }
+}

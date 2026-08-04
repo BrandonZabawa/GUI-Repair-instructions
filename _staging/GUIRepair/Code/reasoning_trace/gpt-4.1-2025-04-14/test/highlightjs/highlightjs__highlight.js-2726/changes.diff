@@ -1,0 +1,95 @@
+diff --git a/src/languages/latex.js b/src/languages/latex.js
+index 7dee6baa..ba72c392 100644
+--- a/src/languages/latex.js
++++ b/src/languages/latex.js
+@@ -21,13 +21,18 @@ export default function(hljs) {
+           endsWithParent: true,
+           relevance: 0,
+           contains: [
+-            {
+-              className: 'string', // because it looks like attributes in HTML tags
+-              variants: [
+-                {begin: /\[/, end: /\]/},
+-                {begin: /\{/, end: /\}/}
+-              ]
+-            },
++{
++className: 'string', // because it looks like attributes in HTML tags
++variants: [
++{begin: /\[/, end: /\]/}
++]
++},
++// Allow normal LaTeX parsing inside braces
++{
++begin: /\{/,
++end: /\}/,
++contains: [] // will be filled later to allow recursion
++},
+             {
+               begin: /\s*=\s*/, endsWithParent: true,
+               relevance: 0,
+@@ -44,27 +49,41 @@ export default function(hljs) {
+     ]
+   };
+ 
+-  return {
+-    name: 'LaTeX',
+-    aliases: ['tex'],
+-    contains: [
+-      COMMAND,
+-      {
+-        className: 'formula',
+-        contains: [COMMAND],
+-        relevance: 0,
+-        variants: [
+-          {begin: /\$\$/, end: /\$\$/},
+-          {begin: /\$/, end: /\$/}
+-        ]
+-      },
+-      hljs.COMMENT(
+-        '%',
+-        '$',
+-        {
+-          relevance: 0
+-        }
+-      )
+-    ]
+-  };
++// Helper to allow recursion for braces
++const BRACES = {
++begin: /\{/,
++end: /\}/,
++contains: [] // will be filled with main contains
++};
++
++// Now fill the contains for braces with the main contains
++const MAIN_CONTAINS = [
++COMMAND,
++{
++className: 'formula',
++contains: [COMMAND],
++relevance: 0,
++variants: [
++{begin: /\$\$/, end: /\$\$/},
++{begin: /\$/, end: /\$/}
++]
++},
++hljs.COMMENT(
++'%',
++'$',
++{
++relevance: 0
++}
++)
++];
++BRACES.contains = MAIN_CONTAINS;
++
++// Add braces to main contains
++MAIN_CONTAINS.push(BRACES);
++
++return {
++name: 'LaTeX',
++aliases: ['tex'],
++contains: MAIN_CONTAINS
++};
+ }

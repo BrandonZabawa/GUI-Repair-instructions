@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/user-timings.js//filterTrace",
+            "lighthouse-core/audits/user-timings.js//UserTimings.audit",
+            "lighthouse-core/formatters/user-timings.js//UserTimings.getFormatter"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/user-timings.js//filterTrace",
+            "lighthouse-core/audits/user-timings.js//UserTimings.audit",
+            "lighthouse-core/formatters/user-timings.js//UserTimings.getFormatter"
+        ],
+        "explanation": "All of the negative times originate in the filterTrace function in lighthouse-core/audits/user-timings.js. After collecting raw trace events, filterTrace subtracts navigationStartTime from every event\u2019s startTime (and endTime) in order to align them to zero. Marks recorded before navigationStartTime thus become negative. UserTimings.audit is the entry point that invokes filterTrace, and the pretty-printing branch of UserTimings.getFormatter in lighthouse-core/formatters/user-timings.js simply calls toFixed on those negative times, displaying the negative values. Fixing the bug requires clamping or discarding pre-navigationStart marks in filterTrace (or adjusting the formatter to clamp negatives to 0) so that negative offsets aren\u2019t shown.",
+        "bug_scenario": "When the Lighthouse \u201cUser Timings\u201d audit runs on a page where a performance.mark() was injected in a page.evaluateOnNewDocument (i.e. before NavigationStart), the timestamps for those marks end up negative relative to the zero-point set at NavigationStart. The UI then shows entries like \u201cMark: -184.69ms \u2013 mark_features_unveil_start\u201d."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/user-timings.js//UserTimings"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/user-timings.js//filterTrace",
+            "lighthouse-core/audits/user-timings.js//UserTimings.audit",
+            "lighthouse-core/formatters/user-timings.js//UserTimings.getFormatter"
+        ],
+        "explanation": "The core of the bug lives in filterTrace within lighthouse-core/audits/user-timings.js: it collects all blink.user_timing events (including those before navigationStart), then shifts every event by subtracting navigationStartTime, causing pre-navigation marks to go negative instead of clamping or filtering them out. The static audit method invokes filterTrace, so it surfaces these negative values. Finally, the UserTimings formatter in lighthouse-core/formatters/user-timings.js simply formats whatever startTime it receives\u2014including negatives\u2014so no remedial logic exists downstream. To fix, filterTrace should drop or clamp events whose startTime is earlier than navigationStartTime (or floor at zero) before reporting to the audit and formatter.",
+        "bug_scenario": "When running the User-Timings audit on a page where a performance.mark is injected via page.evaluateOnNewDocument (i.e. before navigationStart), those early marks have a timestamp less than the trace\u2019s NavigationStart. The filterTrace function unconditionally subtracts navigationStartTime from every mark/measure\u2014including those recorded before navigationStart\u2014resulting in negative startTime values (e.g. \u201c-184.69ms\u201d) being reported and formatted."
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Tile/Tile.tsx",
+            "packages/react/src/internal/useNoInteractiveChildren.js"
+        ],
+        "explanation": "1) Tile.tsx is where ExpandableTile decides which wrapper element and role to use and where it applies aria-expanded. Its logic branches on the result of useNoInteractiveChildren(), so it ends up rendering a <div> instead of a <button> and attaching aria-expanded to the wrong element when StructuredList children have roles. 2) useNoInteractiveChildren.js contains the heuristic that treats any child with an ARIA role as \u201cinteractive.\u201d That hook needs to be tightened so that purely structural roles like row/cell in StructuredList don\u2019t flip the tile into its interactive variant.",
+        "bug_scenario": "When you drop a StructuredList (which renders rows and cells with explicit ARIA roles) into an ExpandableTile, the internal \u201cno interactive children\u201d check mistakenly sees those ARIA roles as interactive content. That forces the tile into its \u201cinteractive\u201d variant, which is rendered as a plain <div> with aria-expanded on it\u2014and ARIA validators flag that as invalid (\u201caria-expanded\u201d isn\u2019t allowed on a div). If you try to work around it by inserting a hidden <button>, you force the icon\u2010only version, but then the outer tile container no longer gets any aria-expanded attribute at all."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Tile/Tile.tsx",
+            "packages/react/src/internal/useNoInteractiveChildren.js"
+        ],
+        "explanation": "Tile.tsx contains the ExpandableTile implementation. It decides whether to render as a <button> or as a <div> with an internal toggle button based on the result of useNoInteractiveChildren(), and it is responsible for spreading aria-expanded onto whichever wrapper it chooses. When useNoInteractiveChildren() returns false (thinking there is interactive content), Tile.tsx switches to the \u201cinteractive\u201d markup but still renders aria-expanded on the outer <div> (without a role of button), which violates ARIA attribute rules.\n\nuseNoInteractiveChildren.js contains the hook logic that walks the tile\u2019s children tree to detect any \"interactive\" element. It currently treats any element with a role prop (including StructuredList\u2019s row/gridcell) as interactive, causing ExpandableTile to take the wrong rendering path. Fixing either the detection logic or the markup in Tile.tsx will resolve the aria-expanded violation and remove the need for a hidden workaround button.",
+        "bug_scenario": "When you put a StructuredList (which uses ARIA roles like \u201crow\u201d and \u201cgridcell\u201d) inside an ExpandableTile, the tile\u2019s own code thinks \"you have interactive content\" and switches from rendering a native <button> wrapper to rendering a generic <div> wrapper with aria-expanded on it. Because that <div> has no role=\"button\" (and isn\u2019t a button element), the IBM Accessibility checker flags the attribute aria-expanded=\"false\" as not allowed on that element. In short: structured-list roles falsely trigger the \u201cinteractive\u201d path, and the interactive path still outputs aria-expanded on a bare <div>, tripping the a11y rule."
+    }
+}

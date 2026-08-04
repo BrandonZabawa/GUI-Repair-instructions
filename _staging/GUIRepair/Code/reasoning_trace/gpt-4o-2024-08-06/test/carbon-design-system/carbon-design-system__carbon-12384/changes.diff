@@ -1,0 +1,116 @@
+diff --git a/packages/react/src/components/NumberInput/NumberInput.js b/packages/react/src/components/NumberInput/NumberInput.js
+index 5c61144d..5e2f70af 100644
+--- a/packages/react/src/components/NumberInput/NumberInput.js
++++ b/packages/react/src/components/NumberInput/NumberInput.js
+@@ -151,43 +151,43 @@ const NumberInput = React.forwardRef(function NumberInput(props, forwardRef) {
+           label={label}
+         />
+         <div className={wrapperClasses}>
+-          <input
+-            {...rest}
+-            data-invalid={normalizedProps.invalid ? true : undefined}
+-            aria-invalid={normalizedProps.invalid}
+-            aria-describedby={ariaDescribedBy}
+-            disabled={normalizedProps.disabled}
+-            ref={ref}
+-            id={id}
+-            max={max}
+-            min={min}
+-            onClick={onClick}
+-            onChange={handleOnChange}
+-            onKeyUp={onKeyUp}
+-            onFocus={(e) => {
+-              if (disableWheelProp) {
+-                e.target.addEventListener('wheel', disableWheel);
+-              }
+-
+-              if (rest.onFocus) {
+-                rest.onFocus(e);
+-              }
+-            }}
+-            onBlur={(e) => {
+-              if (disableWheelProp) {
+-                e.target.removeEventListener('wheel', disableWheel);
+-              }
+-
+-              if (rest.onBlur) {
+-                rest.onBlur(e);
+-              }
+-            }}
+-            pattern="[0-9]*"
+-            readOnly={readOnly}
+-            step={step}
+-            type="number"
+-            value={value}
+-          />
++<input
++{...rest}
++data-invalid={normalizedProps.invalid ? true : undefined}
++aria-invalid={normalizedProps.invalid}
++aria-describedby={ariaDescribedBy}
++disabled={normalizedProps.disabled || readOnly}
++ref={ref}
++id={id}
++max={max}
++min={min}
++onClick={onClick}
++onChange={readOnly ? undefined : handleOnChange}
++onKeyUp={onKeyUp}
++onFocus={(e) => {
++if (disableWheelProp) {
++e.target.addEventListener('wheel', disableWheel);
++}
++
++if (rest.onFocus) {
++rest.onFocus(e);
++}
++}}
++onBlur={(e) => {
++if (disableWheelProp) {
++e.target.removeEventListener('wheel', disableWheel);
++}
++
++if (rest.onBlur) {
++rest.onBlur(e);
++}
++}}
++pattern="[0-9]*"
++readOnly={readOnly}
++step={step}
++type="number"
++value={value}
++/>
+           {normalizedProps.icon ? (
+             <normalizedProps.icon className={iconClasses} />
+           ) : null}
+diff --git a/packages/react/src/components/NumberInput/__tests__/NumberInput-test.js b/packages/react/src/components/NumberInput/__tests__/NumberInput-test.js
+index 32bfe638..f4dfb8b9 100644
+--- a/packages/react/src/components/NumberInput/__tests__/NumberInput-test.js
++++ b/packages/react/src/components/NumberInput/__tests__/NumberInput-test.js
+@@ -53,10 +53,22 @@ describe('NumberInput', () => {
+     expect(screen.getByLabelText('test-label')).toHaveAttribute('step', '5');
+   });
+ 
+-  it('should set `disabled` on the underyling <input>', () => {
+-    render(<NumberInput label="test-label" id="test" disabled />);
+-    expect(screen.getByLabelText('test-label')).toHaveAttribute('disabled');
+-  });
++it('should set `disabled` on the underyling <input>', () => {
++render(<NumberInput label="test-label" id="test" disabled />);
++expect(screen.getByLabelText('test-label')).toHaveAttribute('disabled');
++});
++
++it('should set `readOnly` on the underlying <input>', () => {
++render(<NumberInput label="test-label" id="test" readOnly />);
++expect(screen.getByLabelText('test-label')).toHaveAttribute('readonly');
++});
++
++it('should not call `onChange` when the input is read-only', () => {
++const onChange = jest.fn();
++render(<NumberInput label="test-label" id="test" readOnly onChange={onChange} />);
++userEvent.type(screen.getByLabelText('test-label'), '5');
++expect(onChange).not.toHaveBeenCalled();
++});
+ 
+   it('should set the defaultValue of the <input> with `defaultValue`', () => {
+     render(<NumberInput label="test-label" id="test" defaultValue={5} />);

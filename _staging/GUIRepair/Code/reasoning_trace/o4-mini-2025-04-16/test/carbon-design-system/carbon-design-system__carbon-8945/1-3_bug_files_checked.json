@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/FileUploader/FileUploaderDropContainer.js",
+            "packages/react/src/components/FileUploader/__tests__/FileUploaderDropContainer-test.js"
+        ],
+        "explanation": "1. config/jest-config-carbon/package.json: currently specifies \"axe-core\": \"^4.1.1\", so bumping to \"^4.2.0\" (or later) is required to surface the nested-interactive rule in our jest matcher.\n\n2. FileUploaderDropContainer.js: this is where we render a label/div with role=\"button\" that nests a focusable <input type='file'>. That nesting violates WCAG 4.1.2, so this file must be refactored (for example, move the <input> outside the button region or remove the role on the container and apply aria-attributes appropriately).\n\n3. FileUploaderDropContainer-test.js: the missing axe check is added here (`it('should have no axe violations', \u2026)`). After bumping axe-core and fixing the nesting, this test will assert no accessibility violations. These three files together surface the violation (config), identify the failure (test), and contain the offending markup to change (component).",
+        "bug_scenario": "When running the newly added axe accessibility test against FileUploaderDropContainer, axe-core flags a WCAG 4.1.2 \u201cnested-interactive\u201d error: the rendered DOM is a <div role=\"button\"> wrapping an <input type=\"file\"> (an inherently interactive element). Screen readers won\u2019t announce the inner input correctly when it lives inside a button region, so axe reports a serious violation. The test suite also omitted this axe check by default, and the project\u2019s jest config pins axe-core at v4.1.1 (where this rule didn\u2019t exist)."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/FileUploader/FileUploaderDropContainer.js",
+            "packages/react/src/components/FileUploader/__tests__/FileUploaderDropContainer-test.js"
+        ],
+        "explanation": "\u2022 FileUploaderDropContainer.js defines the drop container: it renders a <label> (role=\"button\") around a nested <input type=\"file\" tabindex=\"-1\"/>, causing the nested-interactive violation.  \n\u2022 FileUploaderDropContainer-test.js is where the axe test is inserted; it surfaces this violation during jest runs.  \n\u2022 config/jest-config-carbon/package.json pins the axe-core version; bumping it to ^4.2.0 activates the nested-interactive rule in tests.",
+        "bug_scenario": "When running the newly-added axe accessibility test against FileUploaderDropContainer (after bumping axe-core to v4.2.0+), the test fails with a WCAG 4.1.2 \u201cnested-interactive\u201d violation. The rendered markup wraps a focusable <input type=\u201cfile\u201d> inside an ancestor given role=\u201cbutton\u201d, which axe flags as nested interactive controls."
+    }
+}

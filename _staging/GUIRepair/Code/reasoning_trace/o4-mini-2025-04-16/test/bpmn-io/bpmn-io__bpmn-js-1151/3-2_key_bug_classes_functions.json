@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy",
+            "lib/import/BpmnImporter.js//BpmnImporter"
+        ],
+        "bug_functions": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//copyPaste.copyElement handler",
+            "lib/features/copy-paste/BpmnCopyPaste.js//copyPaste.pasteElement handler",
+            "lib/features/copy-paste/BpmnCopyPaste.js//isLabel",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyElement",
+            "lib/import/BpmnImporter.js//BpmnImporter.prototype.addLabel"
+        ],
+        "explanation": "The missing labels result from the copy/paste pipeline never copying the DI label information into the pasted semantic. BpmnCopyPaste\u2019s copyElement handler only copies fill, stroke and isExpanded, and immediately returns for descriptors marked as labels, so DI.label.bounds are never carried along. On paste, BpmnImporter.add adds shapes and only creates external labels when semantic.di.label is set. Since no label data was copied, addLabel is never invoked. The ModdleCopy.copyElement logic likewise needs to permit copying over the \u2018label\u2019 property on di. Fixing these three areas\u2014BpmnCopyPaste (to include di.label), ModdleCopy (to allow di.label copying), and BpmnImporter.addLabel (to fall back to name-based labels when di.label is missing)\u2014will restore labels on pasted elements.",
+        "bug_scenario": "When copying and pasting the contents of a BPMN participant (pool) by selecting its child shapes and invoking copy/paste, the event shapes (start and end) are recreated but their external labels (\u201cA\u201d and \u201cB\u201d) are not. In the reproduced diagram you see the circles and task rectangle appear after paste, but the labels underneath are lost."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js"
+        ],
+        "bug_functions": [
+            "BpmnCopyPaste \u2013 copyPaste.copyElement listener",
+            "BpmnCopyPaste \u2013 copyPaste.pasteElement listener",
+            "BpmnCopyPaste \u2013 isLabel helper"
+        ],
+        "explanation": "All of the logic for copying and re-creating BPMN elements during copy/paste lives in BpmnCopyPaste.js. In the copyPaste.copyElement listener the code explicitly returns early for descriptors where isLabel(descriptor) is true, and it never captures or stores any di.label information. On paste (copyPaste.pasteElement) external labels are again treated specially\u2014assigning only the businessObject link back to the target shape\u2014without ever recreating the label DI (position/bounds/text). As a result, external labels (\u2018A\u2019 and \u2018B\u2019) are dropped. Adjusting these listeners (and/or extending copyProperties to include di.label) will restore label copying.",
+        "bug_scenario": "When copying the children of a BPMN pool (participant) and pasting them into another process, the external labels (e.g. \u201cA\u201d on the start event and \u201cB\u201d on the end event) are not carried over. In the scenario image you see a pool containing a start event with label \u201cA\u201d and an end event with label \u201cB\u201d. After copy-paste, the circles and arrows appear but the labels are gone."
+    }
+}

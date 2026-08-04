@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/font-display.js",
+            "lighthouse-core/gather/gatherers/css-usage.js",
+            "lighthouse-core/gather/gatherers/iframe-elements.js"
+        ],
+        "explanation": "These files are related to the bug as follows: 1. 'lighthouse-core/audits/font-display.js' implements the font-display audit and consumes data (artifacts) gathered from stylesheets to perform its check. Any inability to collect or process relevant CSS data from iframes would manifest as issues here. 2. 'lighthouse-core/gather/gatherers/css-usage.js' is responsible for gathering usage information about CSS, including stylesheets that reference fonts and the 'font-display' property. If it fails to process nested iframes properly, it leads directly to gaps in the audit's data. 3. 'lighthouse-core/gather/gatherers/iframe-elements.js' is relevant because correct handling and enumeration of iframes (discovery, traversal, and artifact collection) is critical: if CSS usage inside iframes is ignored, the main artifact won't contain all fonts in play. A bug in iframe artifact gathering or orchestration would result in the scenario described in the bug report.",
+        "bug_scenario": "Lighthouse displays warnings in the audit report stating it was unable to automatically check the font-display value for several webfont URLs. This seems to point to an issue where CSSUsage artifacts do not collect or have references to stylesheets within iframes, which leads to missing font-display checks for fonts loaded inside them. The bug surfaced during a protocol migration and is marked as a pre-existing problem, where audits relying on CSSUsage aren't effective for cross-frame/iframe stylesheets."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/font-display.js",
+            "lighthouse-core/gather/gatherers/css-usage.js",
+            "lighthouse-core/gather/gatherers/iframe-elements.js"
+        ],
+        "explanation": "1. 'lighthouse-core/audits/font-display.js': This file performs the audit that checks if 'font-display' is set for web fonts. Any logic that determines audit pass/warning/failure for font-display issues would be here, and it depends on CSSUsage artifacts.\n2. 'lighthouse-core/gather/gatherers/css-usage.js': This gatherer captures which CSS rules are in use and should include stylesheets in iframes (but likely misses some, as per the bug). Modifications here are needed to correctly gather CSS from all frames, not just the main document.\n3. 'lighthouse-core/gather/gatherers/iframe-elements.js': Since the bug specifically involves fonts loaded in iframes, this gatherer may be involved in collecting elements or context for those iframes. Ensuring that CSS (and thus font declarations) in child frames are collected likely requires updating or collaborating with this gatherer.\nResolution would require updating both the audit and the data-gathering logic to ensure fonts loaded through all frames are checked for the correct 'font-display' setting.",
+        "bug_scenario": "The bug involves Lighthouse failing to automatically check the font-display value for web fonts loaded in iframes, resulting in audit warnings for several font URLs. The displayed scenario (per the image and report) shows a warning list under the 'All text remains visible during webfont loads' section, where Lighthouse is unable to ensure the 'font-display' property is set for fonts loaded from external URLs, primarily in iframe contexts. The comment in the bug report suggests the CSSUsage artifact is not collecting all relevant stylesheets from iframes, particularly those that reference the problematic fonts."
+    }
+}

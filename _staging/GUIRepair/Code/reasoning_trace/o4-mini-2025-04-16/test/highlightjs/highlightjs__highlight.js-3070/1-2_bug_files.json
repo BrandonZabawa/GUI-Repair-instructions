@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/lib/ext/multi_class.js",
+            "src/lib/html_renderer.js",
+            "src/languages/php.js"
+        ],
+        "explanation": "\u2022 src/lib/ext/multi_class.js: This extension is responsible for reading a language\u2019s aliases and adding them as extra classes on the highlighted block. It indiscriminately adds every alias (including the bare \"php\") even when the user has already specified a prefixed class. \n\n\u2022 src/lib/html_renderer.js: This module composes the final <code> tag\u2019s class attribute. It merges the user-provided class (\"language-php\"), the built-in \"hljs\" class, and all aliases reported by the multi_class extension. Adjusting the logic here would let us ignore un-prefixed aliases when the prefixed form is already present. \n\n\u2022 src/languages/php.js: Defines the PHP language\u2019s name and its alias list (which currently includes \"php\" in addition to \"php\" prefix). Tweaking or filtering this alias list (or marking \"php\" as the primary name rather than an alias) would prevent the extension from treating it as a second, redundant class.",
+        "bug_scenario": "When a user manually adds the class \"language-php\" to a <code> element, Highlight.js correctly highlights the code\u2014but it then injects an extra un-prefixed \"php\" class on top of the prefixed one (resulting in class=\"language-php hljs php\"). This breaks themes that target only prefixed classes. The same does not occur with \"language-javascript\", so the extra alias injection seems wrong for PHP-specific naming."
+    },
+    "2": {
+        "bug_files": [
+            "src/lib/ext/multi_class.js",
+            "src/lib/html_renderer.js"
+        ],
+        "explanation": "\u2022 src/lib/ext/multi_class.js is the extension that, when loaded, automatically adds both a prefixed class (e.g. \u201clanguage-php\u201d) and an unprefixed class (e.g. \u201cphp\u201d) to every code block. Disabling or guarding this logic is the key to stopping the duplicate class injection.\n\n\u2022 src/lib/html_renderer.js is where Highlight.js composes the final class attribute for <code> elements. It gathers the language name, any aliases, and passes through extensions like multi_class.js. Fixes here (for example, detecting an explicitly provided language-php and suppressing the extra unprefixed tag) will resolve the inconsistency between php vs. javascript aliases.",
+        "bug_scenario": "When you mark up a <code> block with an explicit \u201clanguage-php\u201d class, Highlight.js highlights it correctly but then injects an extra unprefixed \u201cphp\u201d class (so you end up with class=\"language-php hljs php\"). If you don\u2019t set any class, auto-detection will produce just \u201cphp\u201d without duplication. Conversely, when you say \"language-js\" you also get a stray \u201cjavascript\u201d class because \u201cjs\u201d is an alias for \u201cjavascript,\u201d yet using \u201clanguage-javascript\u201d does not add that extra class. This inconsistent behavior breaks themes that expect only the prefixed class or only a single unprefixed class per language."
+    }
+}

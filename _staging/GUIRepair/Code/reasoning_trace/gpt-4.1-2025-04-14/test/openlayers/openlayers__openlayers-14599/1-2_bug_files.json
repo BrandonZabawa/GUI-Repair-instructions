@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/layer/Layer.js",
+            "src/ol/control/Attribution.js",
+            "src/ol/source/TileWMS.js"
+        ],
+        "explanation": "1. src/ol/layer/Group.js: This file likely manages layer groups. The logic for checking group visibility versus sub-layer visibility would be here, and fixes would need to ensure attribution considers group visibility.\n2. src/ol/layer/Layer.js: This is the core layer implementation. Visibility checks and attribution propagation logic affecting individual layers and sub-layers would be impacted here.\n3. src/ol/control/Attribution.js: This handles the rendering and management of attribution text on the map. Filtering of which attributions are shown needs to respect the visibility of the group and its sub-layers.\n4. src/ol/source/TileWMS.js: This file creates and manages TileWMS layers and their attributions; logic relating to when attributions are exposed may need adjustments, especially for WMS sources in groups.",
+        "bug_scenario": "The bug involves map attribution text being displayed in the info popup for a sub-layer ('budynki sezon') that is visible, even when its parent group layer ('SEZON ON/OFF') is invisible. However, the attribution information for the sub-layer should not show if the entire group is invisible. The screenshot illustrates that the group (1) is OFF, the sub-layer (2) is ON, yet the SEZON attribution (3) still appears, which is incorrect behavior."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/layer/Layer.js",
+            "src/ol/layer/Base.js",
+            "src/ol/source/TileWMS.js"
+        ],
+        "explanation": "- src/ol/layer/Group.js: Handles the logic for group layers, including visibility propagation. Since the bug is about a group layer's visibility not being respected when collecting attributions, this file likely contains logic that needs adjustment.\n- src/ol/layer/Layer.js and src/ol/layer/Base.js: These files provide the base and common logic for all layers, including visibility checks. They are key to how visibility is inherited and checked for nested layers and sublayers, influencing whether attributions are collected or not.\n- src/ol/source/TileWMS.js: Generates and manages WMS layer attributions. Since the bug explicitly involves 'attributions' from a WMS tile layer, this source file is responsible for emitting the problematic attribution and may need to check parent visibility before providing attributions.\n\nAdjustments in these files are needed to ensure attributions from sublayers inside invisible groups are not shown, matching the expected behavior.",
+        "bug_scenario": "The bug scenario occurs when a group layer (1, 'SEZON OFF/ON') is set to invisible, but a sublayer within it ('budynki sezon', 2) is visible. Despite the group being hidden, the attributions for the visible sublayer are still displayed in the popup (3, 'SEZON: Budynki'). This leads to attributions being shown for a layer that should effectively be considered hidden due to its parent group's visibility, which is not the expected behavior."
+    }
+}

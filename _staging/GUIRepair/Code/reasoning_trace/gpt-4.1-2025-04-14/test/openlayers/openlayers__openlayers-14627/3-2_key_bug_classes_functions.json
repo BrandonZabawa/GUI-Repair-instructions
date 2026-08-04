@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/proj/epsg3857.js//EPSG3857Projection"
+        ],
+        "bug_functions": [
+            "src/ol/proj/epsg3857.js//fromEPSG4326",
+            "src/ol/extent.js//applyTransform",
+            "src/ol/extent.js//createEmpty"
+        ],
+        "explanation": "The key bug function is fromEPSG4326 in src/ol/proj/epsg3857.js, as shown in the bug report and scenario images. This function does not handle input extents with Infinity values, causing Math.tan(Infinity) to return NaN, which corrupts the extent. The applyTransform function in src/ol/extent.js is also a bug-related element because it is responsible for applying the transformation to the extent, and it does not guard against empty/infinite extents that could result in invalid output. The createEmpty function in src/ol/extent.js is relevant because it generates the empty/infinite extent that triggers this problem. The EPSG3857Projection class is included because it encapsulates the transform logic and projection parameters that are implicated in the transformation chain. A complete fix may involve updating fromEPSG4326 to handle infinities gracefully, and/or ensuring applyTransform and downstream code can robustly handle empty extents.",
+        "bug_scenario": "The bug scenario is that applying a transform to an empty extent (which contains infinities, from createEmpty()) produces an extent with NaN values. Using this NaN extent as a parameter to fit the view throws an error. The error is traced to the transformation function fromEPSG4326, which attempts to use Math.tan(Infinity), resulting in NaN. This then propagates through the code, eventually causing a rendering error: 'Cannot read properties of undefined (reading length)'. The bug arises specifically when an empty extent is transformed between projections, especially when switching from EPSG:4326 to EPSG:3857 and not handling infinite/empty extents properly."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/proj/epsg3857.js//EPSG3857Projection"
+        ],
+        "bug_functions": [
+            "src/ol/proj/epsg3857.js//fromEPSG4326",
+            "src/ol/extent.js//applyTransform"
+        ],
+        "explanation": "The root cause is in src/ol/proj/epsg3857.js, specifically in the fromEPSG4326 function. This function performs mathematical operations (Math.tan, Math.log) on Infinity values, resulting in NaN. The bug occurs because the function does not check for empty extents (Infinity values) and handle them gracefully. The applyTransform function in src/ol/extent.js is also involved, as it applies the transform function to the extent, propagating NaN values if the transform returns them. EPSG3857Projection is noted because the projection logic and its transforms are central to the bug. Fixes should ensure fromEPSG4326 (and potentially applyTransform) check for and handle empty/invalid input extents, returning a valid empty extent rather than propagating NaN values.",
+        "bug_scenario": "When an empty extent is passed to applyTransform (such as from createEmpty()), the extent's coordinates are [Infinity, Infinity, -Infinity, -Infinity]. Applying a projection transform (fromEPSG4326, used via getTransform) to this extent results in calculations with Infinity, which causes Math.tan and Math.log to evaluate to NaN. This produces an extent with NaN values. Passing this NaN extent to fit view logic or rendering code results in errors like 'Cannot read properties of undefined (reading 'length')'. The error trace and code inspection confirm NaN values propagate from the projection transform to downstream logic, causing rendering failures."
+    }
+}

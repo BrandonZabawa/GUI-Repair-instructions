@@ -1,0 +1,112 @@
+diff --git a/src/upload/list.jsx b/src/upload/list.jsx
+index 154b97d5f..4d1527628 100644
+--- a/src/upload/list.jsx
++++ b/src/upload/list.jsx
+@@ -358,49 +358,67 @@ class List extends Component {
+                 </div>,
+             ];
+         } else {
+-            /* eslint-disable no-lonely-if */
+-            if (typeof itemRender === 'function') {
+-                item = itemRender(file);
+-            } else {
+-                item = [
+-                    <div className={`${prefixCls}-list-item-thumbnail`} key="img">
+-                        {img}
+-                    </div>,
+-                    <span
+-                        key="tool"
+-                        className={`${prefixCls}-tool ${!this.props.closable ? `${prefixCls}-noclose` : ''}`}
++        /* eslint-disable no-lonely-if */
++        if (typeof itemRender === 'function') {
++            // user‐provided custom rendering: still include the delete icon if closable
++            const customItem = itemRender(file);
++            item = [
++                <div className={`${prefixCls}-list-item-custom`} key="custom-item">
++                    {customItem}
++                </div>,
++                this.props.closable && !isPreview ? (
++                    <span key="tool-close" className={`${prefixCls}-tool-close`}>
++                        <Icon
++                            type="ashbin"
++                            aria-label={locale.card.delete}
++                            tabIndex="0"
++                            role="button"
++                            onClick={onClose}
++                            onKeyDown={onKeyDownClose}
++                        />
++                    </span>
++                ) : null,
++            ];
++        } else {
++            item = [
++                <div className={`${prefixCls}-list-item-thumbnail`} key="img">
++                    {img}
++                </div>,
++                <span
++                    key="tool"
++                    className={`${prefixCls}-tool ${!this.props.closable ? `${prefixCls}-noclose` : ''}`}
++                >
++                    <a
++                        href={downloadURL}
++                        target="_blank"
++                        tabIndex={downloadURL ? '0' : '-1'}
++                        className={`${prefixCls}-tool-download-link`}
++                        style={{
++                            pointerEvents: downloadURL ? '' : 'none',
++                        }}
+                     >
+-                        <a
+-                            href={downloadURL}
+-                            target="_blank"
+-                            tabIndex={downloadURL ? '0' : '-1'}
+-                            className={`${prefixCls}-tool-download-link`}
+-                            style={{
+-                                pointerEvents: downloadURL ? '' : 'none',
+-                            }}
+-                        >
++                        <Icon
++                            type={downloadURL ? 'download' : ''}
++                            aria-label={locale.card.download}
++                            className={`${prefixCls}-tool-download-icon`}
++                        />
++                    </a>
++
++                    {this.props.closable && !isPreview ? (
++                        <span className={`${prefixCls}-tool-close`}>
+                             <Icon
+-                                type={downloadURL ? 'download' : ''}
+-                                aria-label={locale.card.download}
+-                                className={`${prefixCls}-tool-download-icon`}
++                                type="ashbin"
++                                aria-label={locale.card.delete}
++                                tabIndex="0"
++                                role="button"
++                                onClick={onClose}
++                                onKeyDown={onKeyDownClose}
+                             />
+-                        </a>
+-
+-                        {this.props.closable && !isPreview ? (
+-                            <span className={`${prefixCls}-tool-close`}>
+-                                <Icon
+-                                    type="ashbin"
+-                                    aria-label={locale.card.delete}
+-                                    tabIndex="0"
+-                                    role="button"
+-                                    onClick={onClose}
+-                                    onKeyDown={onKeyDownClose}
+-                                />
+-                            </span>
+-                        ) : null}
+-                    </span>,
+-                ];
+-            }
++                        </span>
++                    ) : null}
++                </span>,
++            ];
++        }
+         }
+ 
+         return (

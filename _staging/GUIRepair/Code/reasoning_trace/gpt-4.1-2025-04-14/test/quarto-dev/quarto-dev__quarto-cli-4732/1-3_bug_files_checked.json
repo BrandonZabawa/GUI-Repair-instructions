@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_files": [
+            "src/core/handlers/embed.ts",
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/format-reveal-plugin.ts",
+            "src/format/reveal/format-reveal-theme.ts",
+            "src/format/reveal/metadata.ts",
+            "src/format/reveal/constants.ts",
+            "src/format/formats-shared.ts",
+            "src/format/formats.ts",
+            "src/core/knitr.ts"
+        ],
+        "explanation": "These files are likely bug related due to their role in (1) handling code embedding/extraction (src/core/handlers/embed.ts, resources/filters/common/embed.lua), (2) defining how revealjs format is rendered, including plugins, themes, and shared logic (src/format/reveal/*, src/format/formats-shared.ts, src/format/formats.ts), and (3) integrating with knitr input/output (src/core/knitr.ts). The root cause is probably that the embed handler or revealjs format templates/filters are not correctly processing or passing through embedded code chunks (from knitr) for revealjs HTML output. The issue appears specific to revealjs, rather than universal to all HTML formats, meaning the revealjs-specific format and its related processing pipeline (handlers, filters, and templates) are key areas to investigate and likely need fixing.",
+        "bug_scenario": "The bug occurs when using revealjs format in Quarto with the knitr engine to embed external code chunks (e.g., from code.R). The embedded code is not shown on the slide: the output HTML contains an empty <div class=\"cell\" data-file=\"code.R\"></div>. However, when not using revealjs (e.g., in standard HTML output), the embedded code displays correctly. The bug scenario images reinforce this: the revealjs slide is empty except for the header, while the non-revealjs output shows a code block as expected. This indicates a failure in the pipeline that processes or renders embedded code for revealjs output, likely involving format-specific filters, handlers, or templates."
+    },
+    "2": {
+        "bug_files": [
+            "src/core/handlers/embed.ts",
+            "src/format/reveal/format-reveal.ts",
+            "src/core/knitr.ts",
+            "src/core/render.ts",
+            "src/command/render/filters.ts"
+        ],
+        "explanation": "1. 'src/core/handlers/embed.ts' is likely responsible for handling code embedding and processing of embed blocks within documents regardless of format, making it a prime suspect for errors in how embedded output is generated or not included for specific formats.\n2. 'src/format/reveal/format-reveal.ts' and 'src/format/reveal/format-reveal-shared.ts' are specifically responsible for customizing the output for the 'revealjs' format, including how content is included on slides and any filtering/processing unique to reveal.js. Problems with block inclusion, filtering or rendering embed blocks in the revealjs path may reside here.\n3. 'src/core/knitr.ts' manages integration with the knitr engine, which is needed to process R code via knitr before being injected in the output. If the revealjs format or filtering somehow interferes with this engine, changes here might be needed.\n4. 'src/core/render.ts' contains core rendering logic for Quarto documents. Since the embedded code is not appearing only in revealjs output, the render pipeline may be omitting embed blocks in this specific output path.\n5. 'src/render/filters.ts' manages the filters applied during rendering. If different filters are applied for different formats, a discrepancy between revealjs and standard HTML output could cause this bug. These files are all relevant to embedding, knitr handling, and revealjs output, thus are the most likely places where a logic or configuration bug could be causing the described issue.",
+        "bug_scenario": "The bug scenario involves embedding code from an external R file (code.R) using the embed engine with knitr in Quarto documents. When the document is rendered using the 'revealjs' format, the embedded code does not appear in the output HTML\u2014the slide only shows the heading and an empty area where the code should be. In contrast, when rendering to a non-reveal HTML format, the embedded code displays as expected. This discrepancy is shown in the provided images and HTML snippet from the bug report: the output for 'revealjs' format omits the code, while the standard HTML output includes it in a formatted code block."
+    }
+}

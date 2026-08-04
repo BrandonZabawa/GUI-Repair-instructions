@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/react/src/components/ListBox/ListBoxMenuIcon.js"
+        ],
+        "explanation": "\u2022 ComboBox.js passes the onClick prop from the user down into the ListBoxField (the underlying component) but doesn\u2019t alter how clicks on the arrow icon are handled.  \n\u2022 ListBoxField.js renders both the <input> (with onClick hooked up to the user\u2019s handler) and the arrow icon (with its own internal toggleMenu click handler). It never invokes the user\u2019s onClick when the arrow is clicked.  \n\u2022 ListBoxMenuIcon.js defines the arrow toggle UI and its own click handling for opening/closing the menu, but it doesn\u2019t forward that event to the parent\u2019s onClick.  \n\nTo fix this bug, the arrow icon\u2019s click handler in ListBoxField (or inside ListBoxMenuIcon) needs to be updated to call the user\u2019s onClick in addition to toggling the menu state. This ensures that clicking the arrow always invokes the user\u2019s fetch routine on first click.",
+        "bug_scenario": "In the provided example the <ComboBox> is mounted with an onClick handler that fetches (or simulates) its list of items. When the user clicks into the text input portion of the Combobox, the onClick fires, the items load, and then clicking the arrow opens the list properly. However, if the user clicks the arrow icon first\u2014before the input has ever been clicked\u2014the onClick never fires, no AJAX call is made, and the list remains empty (even though the arrow flips). Only subsequent arrow clicks (after the list is already populated) work correctly. In short: the down\u2010arrow button toggles the dropdown but doesn\u2019t invoke the user\u2019s onClick until after the input has been clicked once."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/react/src/components/ListBox/ListBoxMenuIcon.js"
+        ],
+        "explanation": "\u2022 ComboBox.js accepts an onClick prop and spreads it into the ListBoxField props, but only the input element picks it up.  \n\u2022 ListBoxField.js renders both the <input> (which gets the user\u2019s onClick) and the menu icon, but its icon click is wired only to toggle Downshift\u2019s menu \u2013 it never invokes the forwarded onClick.  \n\u2022 ListBoxMenuIcon.js itself only knows how to flip the caret, so clicking it never bubbles into the ComboBox\u2019s onClick.  \nTo fix this, the component wiring in ListBoxField (or MenuIcon) must be updated to call the passed onClick callback when the icon is clicked, not only when the input is clicked.",
+        "bug_scenario": "When you render a <ComboBox> and pass an onClick handler (to fetch items via AJAX), clicking the text input fires that callback and populates the menu, but clicking the down-caret icon only toggles the menu open (you see the caret flip) and never invokes your onClick, so the list remains empty until you click the input itself."
+    }
+}

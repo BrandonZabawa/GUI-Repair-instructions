@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-cli/performance-experiment/report/perf-x-report-generator.js",
+            "lighthouse-core/third_party/traceviewer-js/importer/trace_event_importer.js",
+            "lighthouse-core/third_party/traceviewer-js/model/annotation/x_marker_annotation.js",
+            "lighthouse-core/third_party/traceviewer-js/ui/annotations/x_marker_annotation_view.js"
+        ],
+        "explanation": "\u2022 perf-x-report-generator.js is where we assemble and append our synthetic \u2018R\u2019-phase events into the trace. If those events are malformed or mis-categorized here, downstream code will render them incorrectly.  \n\u2022 trace_event_importer.js is responsible for ingesting raw trace events (including phase 'R') and mapping them into timeline model events. A bug here can cause mark events to be treated like duration slices.  \n\u2022 x_marker_annotation.js defines the model for an instant (X-marker) annotation. If the importer isn\u2019t tagging events with this annotation type, or if the model itself has incorrect defaults, the UI will draw them as slices.  \n\u2022 x_marker_annotation_view.js is the view layer that draws those instant annotations. A rendering bug here (or improper event dispatch) can result in using the normal slice renderer instead of the thin-line marker renderer.",
+        "bug_scenario": "When you run Lighthouse with \u201c--save-assets\u201d (or use the injectMetrics.js script) you append synthetic Lighthouse metrics (First Contentful Paint, First Meaningful Paint, etc.) into a Chrome trace as phase \u201cR\u201d mark events. In DevTools > Timeline (or chrome://tracing) you expect to see thin vertical \u201cmarker\u201d lines at the exact timestamps. Instead, you get long colored slices under the \u201cInteractions\u201d lane \u2014 the synthetic marks are being rendered as full-duration slices rather than instant markers."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-cli/performance-experiment/report/perf-x-report-generator.js",
+            "lighthouse-core/closure/third_party/DevtoolsTimelineModel.js",
+            "lighthouse-core/third_party/traceviewer-js/importer/trace_event_importer.js",
+            "lighthouse-core/third_party/traceviewer-js/model/x_marker_annotation.js",
+            "lighthouse-core/third_party/traceviewer-js/ui/annotations/x_marker_annotation_view.js"
+        ],
+        "explanation": "\u2022 lighthouse-cli/performance-experiment/report/perf-x-report-generator.js is where we build and append our synthetic metric events. It currently tags those events with phase \u201cR\u201d, which isn\u2019t being treated as an instantaneous marker by the viewer, so they render as zero-duration slices with minimum width rather than slender vertical markers.  \n\u2022 lighthouse-core/closure/third_party/DevtoolsTimelineModel.js (the upstream DevTools model copy) parses incoming trace events and decides how to classify \u201cmark\u201d events. It must be updated or configured to recognize our Lighthouse category/phase pairing and expose them as markers instead of generic slices.  \n\u2022 lighthouse-core/third_party/traceviewer-js/importer/trace_event_importer.js transforms raw trace JSON into model events. Right now it doesn\u2019t map phase \u201cR\u201d events in category \u201clighthouse\u201d into its InstantEvent type, so downstream code treats them like complete slices.  \n\u2022 lighthouse-core/third_party/traceviewer-js/model/x_marker_annotation.js defines the data model for point-in-time \u201cX-marker\u201d annotations. If our synthetic events aren\u2019t flagged as X-marker events here, the view will never draw them correctly.  \n\u2022 lighthouse-core/third_party/traceviewer-js/ui/annotations/x_marker_annotation_view.js takes X-marker model entries and paints the little triangles/lines on the timeline. It\u2019ll need no-duration/in-time-only events (not slices) in order to render the thin markers rather than the fat bars you\u2019re seeing.",
+        "bug_scenario": "After injecting synthetic Lighthouse metric events into a DevTools/Lighthouse trace (using phase \u201cR\u201d mark events), opening the resulting trace in chrome://tracing or the DevTools Timeline tab shows thick colored bars under the \u201cInteractions\u201d lane instead of thin, zero-duration vertical markers at the exact timestamps of each metric. In the screenshot you can see long slices spanning hundreds of milliseconds rather than the little triangles or lines expected for point-in-time markers (First Contentful Paint, First Meaningful Paint, etc.)."
+    }
+}

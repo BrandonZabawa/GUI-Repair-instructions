@@ -1,0 +1,151 @@
+diff --git a/src/ol/render/canvas/ImageBuilder.js b/src/ol/render/canvas/ImageBuilder.js
+index cb498e4566..5da8c997a2 100644
+--- a/src/ol/render/canvas/ImageBuilder.js
++++ b/src/ol/render/canvas/ImageBuilder.js
+@@ -263,7 +263,8 @@ class CanvasImageBuilder extends CanvasBuilder {
+     this.rotation_ = imageStyle.getRotation();
+     this.scale_ = imageStyle.getScaleArray();
+     this.width_ = size[0];
+-    this.declutterMode_ = imageStyle.getDeclutterMode();
++    // If ignorePlacement is true, do not set declutterMode
++    this.declutterMode_ = imageStyle.getIgnorePlacement() ? undefined : imageStyle.getDeclutterMode();
+     this.declutterImageWithText_ = sharedData;
+   }
+ }
+diff --git a/src/ol/render/canvas/TextBuilder.js b/src/ol/render/canvas/TextBuilder.js
+index 9a4fb9a5f3..bb10a48b3e 100644
+--- a/src/ol/render/canvas/TextBuilder.js
++++ b/src/ol/render/canvas/TextBuilder.js
+@@ -656,7 +656,12 @@ class CanvasTextBuilder extends CanvasBuilder {
+             : '|' + getUid(fillState.fillStyle)
+           : '';
+     }
+-    this.declutterImageWithText_ = sharedData;
++    // If ignorePlacement is true, do not set declutterImageWithText_
++    if (textStyle && textStyle.getIgnorePlacement && textStyle.getIgnorePlacement()) {
++      this.declutterImageWithText_ = undefined;
++    } else {
++      this.declutterImageWithText_ = sharedData;
++    }
+   }
+ }
+ 
+diff --git a/src/ol/style/Image.js b/src/ol/style/Image.js
+index be788cd4da..0932ea3da2 100644
+--- a/src/ol/style/Image.js
++++ b/src/ol/style/Image.js
+@@ -62,11 +62,17 @@ class ImageStyle {
+      */
+     this.displacement_ = options.displacement;
+ 
+-    /**
++    /** 
+      * @private
+      * @type {"declutter"|"obstacle"|"none"|undefined}
+      */
+     this.declutterMode_ = options.declutterMode;
++
++    /**
++     * @private
++     * @type {boolean}
++     */
++    this.ignorePlacement_ = !!options.ignorePlacement;
+   }
+ 
+   /**
+@@ -83,6 +89,7 @@ class ImageStyle {
+       rotateWithView: this.getRotateWithView(),
+       displacement: this.getDisplacement().slice(),
+       declutterMode: this.getDeclutterMode(),
++      ignorePlacement: this.getIgnorePlacement(),
+     });
+   }
+ 
+@@ -148,6 +155,15 @@ class ImageStyle {
+     return this.declutterMode_;
+   }
+ 
++  /**
++   * Get whether to ignore placement for this image.
++   * @return {boolean} Ignore placement.
++   * @api
++   */
++  getIgnorePlacement() {
++    return this.ignorePlacement_;
++  }
++
+   /**
+    * Get the anchor point in pixels. The anchor determines the center point for the
+    * symbolizer.
+@@ -270,6 +286,15 @@ class ImageStyle {
+     this.scaleArray_ = toSize(scale);
+   }
+ 
++  /**
++   * Set whether to ignore placement for this image.
++   * @param {boolean} ignore Ignore placement.
++   * @api
++   */
++  setIgnorePlacement(ignore) {
++    this.ignorePlacement_ = !!ignore;
++  }
++
+   /**
+    * @abstract
+    * @param {function(import("../events/Event.js").default): void} listener Listener function.
+diff --git a/src/ol/style/Text.js b/src/ol/style/Text.js
+index d76110b7cb..49ca57d0e9 100644
+--- a/src/ol/style/Text.js
++++ b/src/ol/style/Text.js
+@@ -199,11 +199,17 @@ class Text {
+       ? options.backgroundStroke
+       : null;
+ 
+-    /**
++    /** 
+      * @private
+      * @type {Array<number>|null}
+      */
+     this.padding_ = options.padding === undefined ? null : options.padding;
++
++    /**
++     * @private
++     * @type {boolean}
++     */
++    this.ignorePlacement_ = !!options.ignorePlacement;
+   }
+ 
+   /**
+@@ -237,6 +243,7 @@ class Text {
+         ? this.getBackgroundStroke().clone()
+         : undefined,
+       padding: this.getPadding() || undefined,
++      ignorePlacement: this.getIgnorePlacement(),
+     });
+   }
+ 
+@@ -608,6 +615,24 @@ class Text {
+   setPadding(padding) {
+     this.padding_ = padding;
+   }
++
++  /**
++   * Get whether to ignore placement for this text.
++   * @return {boolean} Ignore placement.
++   * @api
++   */
++  getIgnorePlacement() {
++    return this.ignorePlacement_;
++  }
++
++  /**
++   * Set whether to ignore placement for this text.
++   * @param {boolean} ignore Ignore placement.
++   * @api
++   */
++  setIgnorePlacement(ignore) {
++    this.ignorePlacement_ = !!ignore;
++  }
+ }
+ 
+ export default Text;

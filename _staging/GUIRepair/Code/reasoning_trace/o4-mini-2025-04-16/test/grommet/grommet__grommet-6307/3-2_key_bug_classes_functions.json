@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/DataTable/DataTable.js//DataTable",
+            "src/js/components/DataTable/Header.js//Header"
+        ],
+        "bug_functions": [],
+        "explanation": "The heart of the problem is that the DataTable receives its sort state from the URL (via its parent) but does not react to history navigation events. The DataTable component (in DataTable.js) is responsible for wiring up the sort prop and onSort handler into its internal state and passing them down to the Header. The Header component (in Header.js) then renders the arrow icons based solely on its sort prop. Because DataTable never updates its internal sort prop in response to a popstate/navigation event, Header never sees a new sort prop and therefore never re-renders its icons. To fix this, DataTable needs to listen for changes to the external sort prop (or to the URL) and update the sort it passes to Header whenever the user navigates back or forward.",
+        "bug_scenario": "When the user clicks the browser\u2019s back or forward button, the URL query parameters (property and direction) update correctly, but the sorting arrow icons in the DataTable header do not update to reflect that new URL\u2010driven sort state."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/js/components/DataTable/DataTable.js//DataTable",
+            "src/js/components/DataTable/Header.js//Header"
+        ],
+        "explanation": "The DataTable component in DataTable.js is responsible for managing and initializing the sort state (when you click a header it pushes new params into the URL). However, it never watches for changes to its controlled sort prop when the browser navigation (popstate) occurs, so its internal sort state stays stale. The Header component in Header.js then renders the arrow icon entirely based on the sort prop it receives. Because DataTable never updates that prop in response to popstate, Header never re-renders the correct icon. To fix the bug you must modify DataTable (for example its useLayoutEffect or sort-state hook) so that it updates its sort state when the URL/query parameters change under browser navigation; once DataTable sends the updated sort prop down, Header will automatically draw the correct arrow.",
+        "bug_scenario": "The snapshot shows that after using the browser back/forward navigation to restore the URL\u2019s \u201cproperty\u201d and \u201cdirection\u201d query parameters, the table\u2019s sort arrow icons in the column headers do not refresh to reflect the new sort state even though the URL has updated. For example, the URL reads \u201c?property=b&direction=desc\u201d but the descending arrow remains on column \u201cA\u201d and never moves over to column \u201cB.\u201d"
+    }
+}

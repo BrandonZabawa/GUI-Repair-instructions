@@ -1,0 +1,232 @@
+{
+    "1/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "const projectionTransform = createTransform();",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ],
+                "REPLACE": [
+                    "const projectionTransform = createTransform();",
+                    "const viewState = frameState.viewState;",
+                    "this.helper.makeProjectionTransform(viewState, projectionTransform);"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "// saves the projection transform for the current frame state",
+                    "const projectionTransform = createTransform();",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ],
+                "REPLACE": [
+                    "// Use the correct projection transform based on featureProjection",
+                    "const projectionTransform = createTransform();",
+                    "const layer = this.getLayer();",
+                    "const source = layer.getSource();",
+                    "const viewState = frameState.viewState;",
+                    "const projection = source.getFeatureProjection() || viewState.projection;",
+                    "this.helper.makeProjectionTransform({ ...frameState, projection }, projectionTransform);"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "const projectionTransform = createTransform();",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ],
+                "REPLACE": [
+                    "const projectionTransform = createTransform();",
+                    "const sourceProjection = this.getLayer().getSource().getProjection();",
+                    "if (sourceProjection && sourceProjection.getCode() === 'EPSG:4326') {",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform, 'EPSG:3857');",
+                    "} else {",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "const projectionMatrixTransform = createTransform();",
+                    "uniforms[DefaultUniform.PROJECTION_MATRIX] = projectionMatrixTransform;"
+                ],
+                "REPLACE": [
+                    "const projectionMatrixTransform = createTransform();",
+                    "const projection = layer.getSource().getProjection();",
+                    "makeProjectionTransform(frameState, projectionMatrixTransform, projection);",
+                    "uniforms[DefaultUniform.PROJECTION_MATRIX] = projectionMatrixTransform;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const projectionTransform = received.projectionTransform;"
+                ],
+                "REPLACE": [
+                    "const projectionTransform = received.projectionTransform;",
+                    "applyGeographicTransformIfEnabled(projectionTransform, frameState);"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "const projectionTransform = createTransform();",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ],
+                "REPLACE": [
+                    "const projectionTransform = createTransform();",
+                    "if (frameState.viewState.projection.getCode() === 'EPSG:4326') {",
+                    "createTransformFromProjections(",
+                    "getProjection('EPSG:3857'),",
+                    "frameState.viewState.projection,",
+                    "projectionTransform",
+                    ");",
+                    "} else {",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "const projectionMatrixTransform = createTransform();",
+                    "uniforms[DefaultUniform.PROJECTION_MATRIX] = projectionMatrixTransform;",
+                    "...",
+                    "const projectionTransform = received.projectionTransform;",
+                    "...",
+                    "this.renderTransform_ = projectionTransform;",
+                    "...",
+                    "this.renderInstructions_[++idx] = tmpCoords[0];",
+                    "this.renderInstructions_[++idx] = tmpCoords[1];"
+                ],
+                "REPLACE": [
+                    "const projectionMatrixTransform = viewState.projection.getUnits() == 'degrees' ? createGeographicTransform() : createTransform();",
+                    "uniforms[DefaultUniform.PROJECTION_MATRIX] = projectionMatrixTransform;",
+                    "...",
+                    "const projectionTransform = viewState.projection.getUnits() == 'degrees' ? createGeographicTransform() : received.projectionTransform;",
+                    "...",
+                    "this.renderTransform_ = viewState.projection.getUnits() == 'degrees' ? createGeographicTransform() : projectionTransform;",
+                    "...",
+                    "if (viewState.projection.getUnits() == 'degrees') {",
+                    "tmpCoords[0] = deg2rad(tmpCoords[0]);",
+                    "tmpCoords[1] = deg2rad(tmpCoords[1]);",
+                    "}",
+                    "this.renderInstructions_[++idx] = tmpCoords[0];",
+                    "this.renderInstructions_[++idx] = tmpCoords[1];"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ],
+                "REPLACE": [
+                    "if (frameState.viewState.projection.getCode() === 'EPSG:4326') {",
+                    "// Adjust projection transform for geographic projection",
+                    "const resolution = frameState.viewState.resolution;",
+                    "const pixelRatio = frameState.pixelRatio;",
+                    "const size = frameState.size;",
+                    "",
+                    "const extent = buffer(frameState.extent, 100 * resolution);",
+                    "const topRight = getTopRight(extent);",
+                    "const topLeft = getTopLeft(extent);",
+                    "const bottomRight = getBottomRight(extent);",
+                    "const bottomLeft = getBottomLeft(extent);",
+                    "",
+                    "projectionTransform = createTransform();",
+                    "scaleTransform(projectionTransform, 2 / size[0], 2 / size[1]);",
+                    "translateTransform(projectionTransform, -1, -1);",
+                    "",
+                    "let w = getWidth(extent) * pixelRatio / size[0];",
+                    "let h = getWidth(extent) * pixelRatio / size[1];",
+                    "scaleTransform(projectionTransform, w, -h);",
+                    "translateTransform(projectionTransform, -pixelRatio * (topRight[0] - 0.5 * (topRight[0] + topLeft[0])),",
+                    "-pixelRatio * (topRight[1] - 0.5 * (bottomLeft[1] + topRight[1])));",
+                    "scaleTransform(projectionTransform, 1 / resolution, 1 / resolution);",
+                    "} else {",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "const projectionTransform = createTransform();",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ],
+                "REPLACE": [
+                    "const projectionTransform = createTransform();",
+                    "const viewState = frameState.viewState;",
+                    "",
+                    "if (useGeographic()) {",
+                    "// Modify the projection transform to accommodate useGeographic",
+                    "const geographicTransform = getProjectionTransform(viewState.projection, 'EPSG:4326');",
+                    "extendTransform(projectionTransform, geographicTransform);",
+                    "} else {",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "rebuildBuffers_(frameState) {",
+                    "// saves the projection transform for the current frame state",
+                    "const projectionTransform = createTransform();",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ],
+                "REPLACE": [
+                    "rebuildBuffers_(frameState) {",
+                    "// use view state's projection which is influenced by useGeographic",
+                    "const viewState = frameState.viewState;",
+                    "const projectionTransform = viewState.projection;",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "const projectionTransform = createTransform();",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);"
+                ],
+                "REPLACE": [
+                    "const projection = frameState.viewState.projection;",
+                    "const projectionTransform = createTransform();",
+                    "",
+                    "if (projection.getCode() === 'EPSG:4326') {",
+                    "this.helper.makeGeographicProjectionTransform(frameState, projectionTransform);",
+                    "} else {",
+                    "this.helper.makeProjectionTransform(frameState, projectionTransform);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

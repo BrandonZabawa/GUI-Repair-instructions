@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Breadcrumb/BreadcrumbItem.js//BreadcrumbItem",
+            "packages/react/src/components/OverflowMenu/index.js//OverflowMenu (FeatureToggle wrapper)",
+            "packages/react/src/internal/ComponentToggle.js//ComponentToggle"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Breadcrumb/BreadcrumbItem.js//forwardRef(BreadcrumbItem) callback",
+            "packages/react/src/components/OverflowMenu/index.js//createComponentToggle",
+            "packages/react/src/internal/ComponentToggle.js//createComponentToggle"
+        ],
+        "explanation": "The core of the bug is in BreadcrumbItem.js: it inspects children.type.displayName and only matches exactly 'OverflowMenu'. After introduce of createComponentToggle, the OverflowMenu component is wrapped and given a displayName of 'FeatureToggle(OverflowMenu)', so BreadcrumbItem never enters the branch that clones the children with menuOffset, menuOptionsClass, and renderIcon props. The toggle logic lives in OverflowMenu/index.js (calling createComponentToggle) and ComponentToggle.js (which sets displayName to `FeatureToggle(${name})`). To fix this, either BreadcrumbItem must also recognize 'FeatureToggle(OverflowMenu)' (or any wrapper) as an overflow menu, or createComponentToggle must propagate the original displayName so that it remains 'OverflowMenu'. This explains why these files and functions are where the bug originates.",
+        "bug_scenario": "When a Breadcrumb uses an OverflowMenu to collapse intermediate items, the shark-fin icon (OverflowMenuHorizontal16) and the menuOffset props aren\u2019t applied. In the screenshot you can see that children.type.displayName for the overflow menu is \u201cFeatureToggle(OverflowMenu)\u201d (from the createComponentToggle wrapper), but BreadcrumbItem only checks for displayName === 'OverflowMenu'. As a result, the first conditional branch never fires and the overflow menu is rendered without the proper icon and positioning."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Breadcrumb/BreadcrumbItem.js//BreadcrumbItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Breadcrumb/BreadcrumbItem.js//BreadcrumbItem (forwardRef callback)",
+            "packages/react/src/components/OverflowMenu/index.js//OverflowMenu (ComponentToggle)",
+            "packages/react/src/internal/ComponentToggle.js//createComponentToggle"
+        ],
+        "explanation": "BreadcrumbItem\u2019s code only looks for children.type.displayName === \"OverflowMenu\", so when OverflowMenu is wrapped by createComponentToggle (giving it the displayName \"FeatureToggle(OverflowMenu)\"), it falls through to the default branch and never gets the shark\u2010fin arrow or menuOffset. To fix it you can either update BreadcrumbItem to check for \"FeatureToggle(OverflowMenu)\" as well or adjust createComponentToggle/OverflowMenu so the wrapped component still reports displayName \"OverflowMenu\".",
+        "bug_scenario": "When a Breadcrumb contains an OverflowMenu (used to collapse intermediate items), the breadcrumb \u201cshark\u2010fin\u201d arrow and the menuOffset are never applied. In the screenshot you see that the overflow icon renders without the little \u201cshark fin\u201d and in the browser devtools you see children.type.displayName is \u201cFeatureToggle(OverflowMenu)\u201d (due to createComponentToggle), but BreadcrumbItem only tests for displayName === \"OverflowMenu\". As a result, the overflow\u2010specific branch never runs."
+    }
+}

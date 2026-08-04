@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/tilegrid/TileGrid.js//TileGrid"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//getBoundingBox",
+            "src/ol/source/GeoTIFF.js//getOrigin",
+            "src/ol/source/GeoTIFF.js//getResolution",
+            "src/ol/source/GeoTIFF.js//configure_"
+        ],
+        "explanation": "The bug relates to how the GeoTIFF data is interpreted and mapped to tiles, particularly when the pixels are not square. This can cause only part of the image to be rendered (e.g., just the upper part). The GeoTIFFSource class is responsible for reading and interpreting COGs, including their affine transforms and pixel size. The configure_ method is likely responsible for setting up the tile grid according to the image metadata, and if it does not properly account for non-square pixels, the grid may not cover the full image extent. The getBoundingBox, getOrigin, and getResolution functions are critical because they extract spatial information from the GeoTIFF metadata and are involved in mapping image coordinates to map coordinates. Similarly, the TileGrid class may be implicated if the tile grid does not properly handle tile sizes or extents for images with non-square pixels. Fixing the bug will likely require ensuring that all relevant classes and functions properly account for pixel aspect ratio and affine transforms, so the entire raster is displayed correctly.",
+        "bug_scenario": "The bug scenario involves loading a Cloud Optimized GeoTIFF (COG) where only the upper part of the image is shown, instead of displaying the entire image as expected. The correct behavior, as shown in QGIS or geotiff.io, is to display the full extent of the raster data. The provided image demonstrates the correct display in QGIS, highlighting that the bug is a rendering or tiling issue specific to the OpenLayers implementation when handling COGs with non-square pixels."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/tilegrid/TileGrid.js//TileGrid"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//getBoundingBox",
+            "src/ol/source/GeoTIFF.js//getResolution",
+            "src/ol/source/GeoTIFF.js//configure_"
+        ],
+        "explanation": "The main problem arises from the way non-square pixels are handled when loading and displaying GeoTIFF images. The 'GeoTIFFSource' class in 'src/ol/source/GeoTIFF.js' is responsible for interpreting the source data and configuring how the image is presented, including extracting spatial information from the GeoTIFF. The 'configure_' method is likely involved in interpreting the raster structure and setting up the tile grid. The 'getBoundingBox' and 'getResolution' functions are crucial because they extract and compute spatial extents and pixel resolutions from the GeoTIFF metadata, which must consider non-square pixels for accurate display. If these functions assume square pixels or mishandle affine transforms, only part of the image will be shown. Additionally, the 'TileGrid' class in 'src/ol/tilegrid/TileGrid.js' manages how image tiles are mapped onto the map view and may need to accommodate non-square pixel sizes. Errors or missing logic in these areas would result in the described incomplete rendering of the COG.",
+        "bug_scenario": "The bug scenario involves loading a Cloud Optimized GeoTIFF (COG) image in an application using the OpenLayers library, where only the upper part of the image is displayed. In contrast, when the same COG is loaded in QGIS or geotiff.io, the entire image is shown as expected. The attached image shows correct rendering in QGIS, highlighting that OpenLayers is incorrectly handling the image\u2014likely due to issues managing non-square pixels (where the pixel width and height are not equal)."
+    }
+}

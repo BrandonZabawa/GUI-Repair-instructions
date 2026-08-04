@@ -1,0 +1,121 @@
+diff --git a/src/ol/interaction/Modify.js b/src/ol/interaction/Modify.js
+index 117340865d..04ba983984 100644
+--- a/src/ol/interaction/Modify.js
++++ b/src/ol/interaction/Modify.js
+@@ -365,7 +365,7 @@ class Modify extends PointerInteraction {
+     if (geometry) {
+       const writer = this.SEGMENT_WRITERS_[geometry.getType()];
+       if (writer) {
+-        writer(feature, geometry);
++        writer(feature, geometry, undefined);
+       }
+     }
+     const map = this.getMap();
+@@ -522,7 +522,7 @@ class Modify extends PointerInteraction {
+    * @param {Point} geometry Geometry.
+    * @private
+    */
+-  writePointGeometry_(feature, geometry) {
++  writePointGeometry_(feature, geometry, depth) {
+     const coordinates = geometry.getCoordinates();
+ 
+     /** @type {SegmentData} */
+@@ -530,6 +530,7 @@ class Modify extends PointerInteraction {
+       feature: feature,
+       geometry: geometry,
+       segment: [coordinates, coordinates],
++      depth: depth,
+     };
+ 
+     this.rBush_.insert(geometry.getExtent(), segmentData);
+@@ -563,7 +564,7 @@ class Modify extends PointerInteraction {
+    * @param {import("../geom/LineString.js").default} geometry Geometry.
+    * @private
+    */
+-  writeLineStringGeometry_(feature, geometry) {
++  writeLineStringGeometry_(feature, geometry, depth) {
+     const coordinates = geometry.getCoordinates();
+     for (let i = 0, ii = coordinates.length - 1; i < ii; ++i) {
+       const segment = coordinates.slice(i, i + 2);
+@@ -574,6 +575,7 @@ class Modify extends PointerInteraction {
+         geometry: geometry,
+         index: i,
+         segment: segment,
++        depth: depth,
+       };
+ 
+       this.rBush_.insert(boundingExtent(segment), segmentData);
+@@ -585,7 +587,7 @@ class Modify extends PointerInteraction {
+    * @param {import("../geom/MultiLineString.js").default} geometry Geometry.
+    * @private
+    */
+-  writeMultiLineStringGeometry_(feature, geometry) {
++  writeMultiLineStringGeometry_(feature, geometry, depth) {
+     const lines = geometry.getCoordinates();
+     for (let j = 0, jj = lines.length; j < jj; ++j) {
+       const coordinates = lines[j];
+@@ -596,7 +598,7 @@ class Modify extends PointerInteraction {
+         const segmentData = {
+           feature: feature,
+           geometry: geometry,
+-          depth: [j],
++          depth: (depth ? depth.concat([j]) : [j]),
+           index: i,
+           segment: segment,
+         };
+@@ -611,7 +613,7 @@ class Modify extends PointerInteraction {
+    * @param {import("../geom/Polygon.js").default} geometry Geometry.
+    * @private
+    */
+-  writePolygonGeometry_(feature, geometry) {
++  writePolygonGeometry_(feature, geometry, depth) {
+     const rings = geometry.getCoordinates();
+     for (let j = 0, jj = rings.length; j < jj; ++j) {
+       const coordinates = rings[j];
+@@ -622,7 +624,7 @@ class Modify extends PointerInteraction {
+         const segmentData = {
+           feature: feature,
+           geometry: geometry,
+-          depth: [j],
++          depth: (depth ? depth.concat([j]) : [j]),
+           index: i,
+           segment: segment,
+         };
+@@ -637,7 +639,7 @@ class Modify extends PointerInteraction {
+    * @param {import("../geom/MultiPolygon.js").default} geometry Geometry.
+    * @private
+    */
+-  writeMultiPolygonGeometry_(feature, geometry) {
++  writeMultiPolygonGeometry_(feature, geometry, depth) {
+     const polygons = geometry.getCoordinates();
+     for (let k = 0, kk = polygons.length; k < kk; ++k) {
+       const rings = polygons[k];
+@@ -650,7 +652,7 @@ class Modify extends PointerInteraction {
+           const segmentData = {
+             feature: feature,
+             geometry: geometry,
+-            depth: [j, k],
++            depth: (depth ? depth.concat([j, k]) : [j, k]),
+             index: i,
+             segment: segment,
+           };
+@@ -714,12 +716,15 @@ class Modify extends PointerInteraction {
+    * @param {import("../geom/GeometryCollection.js").default} geometry Geometry.
+    * @private
+    */
+-  writeGeometryCollectionGeometry_(feature, geometry) {
++  writeGeometryCollectionGeometry_(feature, geometry, depth) {
+     const geometries = geometry.getGeometriesArray();
+     for (let i = 0; i < geometries.length; ++i) {
+-      const geometry = geometries[i];
+-      const writer = this.SEGMENT_WRITERS_[geometry.getType()];
+-      writer(feature, geometry);
++      const childGeometry = geometries[i];
++      const writer = this.SEGMENT_WRITERS_[childGeometry.getType()];
++      // Pass depth to child writers, append current index
++      if (writer) {
++        writer(feature, childGeometry, (depth ? depth.concat([i]) : [i]));
++      }
+     }
+   }
+ 

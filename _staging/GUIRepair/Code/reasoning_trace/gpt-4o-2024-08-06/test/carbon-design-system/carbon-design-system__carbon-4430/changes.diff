@@ -1,0 +1,51 @@
+diff --git a/packages/react/src/components/DataTable/DataTable.js b/packages/react/src/components/DataTable/DataTable.js
+index 69b3dc30..d93b550d 100644
+--- a/packages/react/src/components/DataTable/DataTable.js
++++ b/packages/react/src/components/DataTable/DataTable.js
+@@ -424,19 +424,33 @@ export default class DataTable extends React.Component {
+   /**
+    * Handler for toggling the selection state of all rows in the database
+    */
+-  handleSelectAll = () => {
+-    this.setState(state => {
+-      const { rowIds, rowsById } = state;
+-      const selectableRows = rowIds.reduce((acc, rowId) => {
+-        return (acc += rowsById[rowId].disabled ? 0 : 1);
+-      }, 0);
+-      const isSelected = this.getSelectedRows().length !== selectableRows;
+-      return {
+-        shouldShowBatchActions: isSelected,
+-        ...this.setAllSelectedState(state, isSelected),
+-      };
+-    });
+-  };
++handleSelectAll = () => {
++  this.setState(state => {
++    const { rowIds, rowsById, filterInputValue, cellsById } = state;
++    const filteredRowIds = typeof filterInputValue === 'string'
++      ? this.props.filterRows({
++          rowIds,
++          headers: this.props.headers,
++          cellsById,
++          inputValue: filterInputValue,
++        })
++      : rowIds;
++    const selectableRows = filteredRowIds.reduce((acc, rowId) => {
++      return (acc += rowsById[rowId].disabled ? 0 : 1);
++    }, 0);
++    const isSelected = this.getSelectedRows().length !== selectableRows;
++    return {
++      shouldShowBatchActions: isSelected,
++      rowsById: filteredRowIds.reduce((acc, id) => ({
++        ...acc,
++        [id]: {
++          ...rowsById[id],
++          isSelected: !rowsById[id].disabled && isSelected,
++        },
++      }), {}),
++    };
++  });
++};
+ 
+   /**
+    * Handler for toggling the selection state of a given row.

@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "core/audits/no-unload-listeners.js//NoUnloadListeners",
+            "core/gather/gatherers/global-listeners.js//GlobalListeners"
+        ],
+        "bug_functions": [
+            "core/gather/gatherers/global-listeners.js//GlobalListeners.getArtifact"
+        ],
+        "explanation": "The class 'NoUnloadListeners' in 'core/audits/no-unload-listeners.js' is directly responsible for the audit that checks for 'unload' event listeners; it relies on the 'GlobalListeners' artifact. The class 'GlobalListeners' in 'core/gather/gatherers/global-listeners.js' gathers information about globally registered event listeners but currently only queries the main execution context's window object. The method 'GlobalListeners.getArtifact' is responsible for collecting event listeners from the window object in the current context and is the key function where context cycling should be implemented to detect listeners registered in extension (isolated) contexts. These are the primary code elements that would need to be modified to fix the issue described in the bug report: specifically, 'getArtifact' should iterate over all relevant execution contexts (including isolated worlds injected by extensions) to properly detect all 'unload' event listeners, and 'NoUnloadListeners' should be updated to consume this improved artifact.",
+        "bug_scenario": "The bug scenario involves a Lighthouse audit that incorrectly reports the presence of an 'unload' event listener (which prevents bfcache usage) due to an extension injecting such a listener in an isolated content script context. The 'bfcache' audit fails because it detects the unload handler, but the 'no-unload-listeners' audit passes, misleading the user into thinking there are no unload listeners. This discrepancy happens because the current listener detection logic does not account for listeners registered in extension content script contexts, making them invisible in the normal DevTools context and thus difficult to debug."
+    },
+    "2": {
+        "bug_classes": [
+            "core/audits/no-unload-listeners.js//NoUnloadListeners",
+            "core/gather/gatherers/global-listeners.js//GlobalListeners"
+        ],
+        "bug_functions": [
+            "core/gather/gatherers/global-listeners.js//GlobalListeners.getArtifact"
+        ],
+        "explanation": "The class 'NoUnloadListeners' in 'core/audits/no-unload-listeners.js' is responsible for the audit that should detect 'unload' event listeners, but currently misses those registered in isolated extension contexts. The class 'GlobalListeners' in 'core/gather/gatherers/global-listeners.js' is used to gather global event listener information, but only queries the default/main execution context for listeners. The 'getArtifact' method in 'GlobalListeners' is the function that fetches listeners from the window object, but it only does so in the main context and not in all possible execution contexts (such as those created by extensions). To fix the bug, both the audit and the gatherer would need to be updated to enumerate and check all execution contexts for 'unload' listeners, not just the default one.",
+        "bug_scenario": "The bug scenario is that a page fails the Back/Forward Cache (bfcache) audit due to an 'unload' event handler in the main frame, but the Lighthouse 'no-unload-listeners' audit incorrectly passes, and DevTools does not show any unload listeners. This is because an extension injects an 'unload' handler in an isolated context, making it undetectable by the current audit and DevTools approach, leading to confusion and making this issue hard to debug."
+    }
+}

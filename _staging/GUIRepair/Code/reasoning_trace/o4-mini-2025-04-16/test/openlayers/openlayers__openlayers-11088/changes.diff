@@ -1,0 +1,56 @@
+diff --git a/src/ol/proj/proj4.js b/src/ol/proj/proj4.js
+index 099c80ece1..fa7b031df6 100644
+--- a/src/ol/proj/proj4.js
++++ b/src/ol/proj/proj4.js
+@@ -25,20 +25,22 @@ export function register(proj4) {
+   const projCodes = Object.keys(proj4.defs);
+   const len = projCodes.length;
+   let i, j;
+-  for (i = 0; i < len; ++i) {
+-    const code = projCodes[i];
+-    if (!get(code)) {
+-      const def = proj4.defs(code);
+-      addProjection(
+-        new Projection({
+-          code: code,
+-          axisOrientation: def.axis,
+-          metersPerUnit: def.to_meter,
+-          units: def.units,
+-        })
+-      );
+-    }
+-  }
++        for (i = 0; i < len; ++i) {
++          const code = projCodes[i];
++          if (!get(code)) {
++            const def = proj4.defs(code);
++            addProjection(
++              new Projection({
++                code: code,
++                // proj4js ≥2.6.1 may report “ne”/“nw” axis orders,
++                // but OL historically always treats coords as [x, y].
++                axisOrientation: 'enu',
++                metersPerUnit: def.to_meter,
++                units: def.units,
++              })
++            );
++          }
++        }
+   for (i = 0; i < len; ++i) {
+     const code1 = projCodes[i];
+     const proj1 = get(code1);
+diff --git a/src/ol/tilegrid/WMTS.js b/src/ol/tilegrid/WMTS.js
+index 565864b378..dce6233827 100644
+--- a/src/ol/tilegrid/WMTS.js
++++ b/src/ol/tilegrid/WMTS.js
+@@ -129,8 +129,8 @@ export function createFromCapabilitiesMatrixSet(
+       code.replace(/urn:ogc:def:crs:(\w+):(.*:)?(\w+)$/, '$1:$3')
+     ) || getProjection(code);
+   const metersPerUnit = projection.getMetersPerUnit();
+-  // swap origin x and y coordinates if axis orientation is lat/long
+-  const switchOriginXY = projection.getAxisOrientation().substr(0, 2) == 'ne';
++  // Always treat TopLeftCorner as [x, y], ignore proj4js’s axis flag
++  const switchOriginXY = false;
+ 
+   matrixSet[matrixIdsPropName].sort(function (a, b) {
+     return b[scaleDenominatorPropName] - a[scaleDenominatorPropName];

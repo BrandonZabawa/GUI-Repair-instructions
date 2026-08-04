@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//Driver._waitForFCP",
+            "lighthouse-core/gather/driver.js//Driver._waitForFullyLoaded",
+            "lighthouse-core/gather/driver.js//Driver.gotoURL",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage"
+        ],
+        "explanation": "These methods compose the core of Lighthouse\u2019s loading and tracing logic, and are directly responsible for the new 60 s hang when FCP never occurs. Driver.gotoURL is where the waitForFCP flag is set (after PR #6944), Driver._waitForFullyLoaded orchestrates waiting for load-event, network/CPU idle, and\u2014conditionally\u2014FCP, and Driver._waitForFCP installs the listener for the paint event without its own timeout. GatherRunner.loadPage is the entry point for the defaultPass that invokes driver.gotoURL. To fix the bug we need to adjust these routines to enforce a configurable maxWaitForFCP or to disable the FCP wait for the defaultPass so that the flow does not hang until the 60 s protocol timeout.",
+        "bug_scenario": "After merging PR #6944 Lighthouse\u2019s defaultPass loadPage step now waits for the First-Contentful-Paint (FCP) event before ending its trace. If a page never fires FCP (or fires it after the maxWaitForLoad timeout), the driver will continue tracing until the hard 60 s protocol timeout on Tracing.end is hit. In production this surfaces as a sudden jump in the 95th-percentile \u201cloadPage-defaultPass\u201d timing to ~40 s and then errors at 60 s, and our render error rate spikes accordingly."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//Driver._waitForFullyLoaded",
+            "lighthouse-core/gather/driver.js//Driver._waitForFCP",
+            "lighthouse-core/gather/driver.js//Driver.sendCommand",
+            "lighthouse-core/gather/driver.js//Driver.setNextProtocolTimeout",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage"
+        ],
+        "explanation": "\u2022 Driver._waitForFullyLoaded - now includes an unconditional waitForFCP branch when tracing, so pages without an FCP event hang here until maxWaitForLoaded or forever.  \n\u2022 Driver._waitForFCP - the promise that resolves on the first FCP lifecycle event; if it never fires, the entire _waitForFullyLoaded chain is delayed.  \n\u2022 Driver.sendCommand - used to send Tracing.end; it relies on the default 60 s protocol timeout, so a stalled _waitForFCP pushes us into this timeout and yields PROTOCOL_TIMEOUT.  \n\u2022 Driver.setNextProtocolTimeout - configures the timeout used by the next sendCommand; in our flow we never bump this past the 60 s default for Tracing.end.  \n\u2022 GatherRunner.loadPage - the entrypoint in gather-runner that begins tracing (via driver.beginTrace) and then invokes driver.gotoURL/ _waitForFullyLoaded; it inherits the new waitForFCP behavior and is the user-facing path that now times out at 60 s rather than unconditionally stopping at onLoad.",
+        "bug_scenario": "After merging #6944 (\u201ccore(driver): waitForFCP when tracing\u201d), the defaultPass loadPage path in Lighthouse will reliably wait for the Chrome First-Contentful-Paint event before ending its trace. On pages that never fire FCP (or fire it after our maxWaitForLoad), the driver\u2019s _waitForFCP promise never resolves, so Tracing.end is not sent until the default 60 000 ms DevTools protocol timeout. In practice this jumps our \u201cloadPage-defaultPass\u201d timings up to ~40 s and produces hard PROTOCOL_TIMEOUT errors at 60 s when no FCP is observed."
+    }
+}

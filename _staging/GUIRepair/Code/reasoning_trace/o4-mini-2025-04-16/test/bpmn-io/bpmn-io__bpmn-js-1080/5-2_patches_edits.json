@@ -1,0 +1,66 @@
+{
+    "1/1": {
+        "lib/features/rules/BpmnRules.js": [
+            {
+                "SEARCH": [
+                    "function canConnectMessageFlow(source, target) {",
+                    "",
+                    "// handle the case where target does not have a parent,",
+                    "// because it is not dropped within the diagram (bpmn-io/bpmn-js#1033)",
+                    "if (!target.parent) {",
+                    "return false;",
+                    "}",
+                    "",
+                    "return (",
+                    "isMessageFlowSource(source) &&",
+                    "isMessageFlowTarget(target) &&",
+                    "!isSameOrganization(source, target)",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function canConnectMessageFlow(source, target) {",
+                    "",
+                    "  // treat lane shapes as participant boundaries",
+                    "  var actualTarget = is(target, 'bpmn:Lane') && target.parent",
+                    "    ? target.parent",
+                    "    : target;",
+                    "",
+                    "  // handle the case where target does not have a parent,",
+                    "  // because it is not dropped within the diagram (bpmn-io/bpmn-js#1033)",
+                    "  if (!actualTarget.parent) {",
+                    "    return false;",
+                    "  }",
+                    "",
+                    "  return (",
+                    "    isMessageFlowSource(source) &&",
+                    "    isMessageFlowTarget(actualTarget) &&",
+                    "    !isSameOrganization(source, actualTarget)",
+                    "  );",
+                    "}"
+                ]
+            }
+        ],
+        "lib/features/snapping/BpmnConnectSnapping.js": [
+            {
+                "SEARCH": [
+                    "var connectionAttrs = rules.allowed('connection.create', {",
+                    "source: source,",
+                    "target: target",
+                    "});"
+                ],
+                "REPLACE": [
+                    "    var connectionAttrs = rules.allowed('connection.create', {",
+                    "      source: source,",
+                    "      target: target",
+                    "    });",
+                    "",
+                    "    // when drawing a message flow over a lane, snap to the parent pool",
+                    "    if (isType(connectionAttrs, 'bpmn:MessageFlow') && is(target, 'bpmn:Lane')) {",
+                    "      target = context.target = target.parent;",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

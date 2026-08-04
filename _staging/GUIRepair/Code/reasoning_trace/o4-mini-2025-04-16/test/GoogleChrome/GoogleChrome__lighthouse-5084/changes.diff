@@ -1,0 +1,29 @@
+diff --git a/lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js b/lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js
+index e7c32eba4..3d0caaaf5 100644
+--- a/lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js
++++ b/lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js
+@@ -148,8 +148,23 @@ class UnusedBytes extends Audit {
+       0
+     );
+ 
++    // Fallback: compute savings based on end of graph (max endTime across all nodes),
++    // useful when there are no long tasks to delay (e.g. a single network request).
++    let endOfGraphBefore = 0;
++    let endOfGraphAfter = 0;
++    for (const timing of simulationBeforeChanges.nodeTimings.values()) {
++      endOfGraphBefore = Math.max(endOfGraphBefore, timing.endTime || 0);
++    }
++    for (const timing of simulationAfterChanges.nodeTimings.values()) {
++      endOfGraphAfter = Math.max(endOfGraphAfter, timing.endTime || 0);
++    }
++    const savingsOnEndOfGraph = Math.max(endOfGraphBefore - endOfGraphAfter, 0);
++
++    // Use the larger of the TTI‐based and end‐of‐graph savings.
++    const savings = Math.max(savingsOnTTI, savingsOnEndOfGraph);
++
+     // Round waste to nearest 10ms
+-    return Math.round(savingsOnTTI / 10) * 10;
++    return Math.round(savings / 10) * 10;
+   }
+ 
+   /**

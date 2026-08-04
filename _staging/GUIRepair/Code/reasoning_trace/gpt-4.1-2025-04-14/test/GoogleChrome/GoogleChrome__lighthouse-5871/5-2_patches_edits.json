@@ -1,0 +1,101 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "async beginEmulation(settings) {",
+                    "if (!settings.disableDeviceEmulation) {",
+                    "await emulation.enableNexus5X(this);",
+                    "}",
+                    "",
+                    "await this.setThrottling(settings, {useThrottling: true});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  async beginEmulation(settings) {",
+                    "    if (!settings.disableDeviceEmulation) {",
+                    "      // Store the emulated user agent for later reporting",
+                    "      this._emulatedUserAgent = emulation.NEXUS5X_UA;",
+                    "      await emulation.enableNexus5X(this);",
+                    "    } else {",
+                    "      this._emulatedUserAgent = null;",
+                    "    }",
+                    "",
+                    "    await this.setThrottling(settings, {useThrottling: true});",
+                    "  }",
+                    "",
+                    "  /**",
+                    "   * @return {string|undefined}",
+                    "   */",
+                    "  getEmulatedUserAgent() {",
+                    "    return this._emulatedUserAgent;",
+                    "  }"
+                ]
+            }
+        ],
+        "lighthouse-core/gather/gather-runner.js": [
+            {
+                "SEARCH": [
+                    "static async getBaseArtifacts(options) {",
+                    "return {",
+                    "fetchTime: (new Date()).toJSON(),",
+                    "LighthouseRunWarnings: [],",
+                    "UserAgent: await options.driver.getUserAgent(),",
+                    "traces: {},",
+                    "devtoolsLogs: {},",
+                    "settings: options.settings,",
+                    "URL: {requestedUrl: options.requestedUrl, finalUrl: ''},",
+                    "};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  static async getBaseArtifacts(options) {",
+                    "    return {",
+                    "      fetchTime: (new Date()).toJSON(),",
+                    "      LighthouseRunWarnings: [],",
+                    "      UserAgent: await options.driver.getUserAgent(),",
+                    "      EmulatedUserAgent: options.driver.getEmulatedUserAgent && options.driver.getEmulatedUserAgent(),",
+                    "      traces: {},",
+                    "      devtoolsLogs: {},",
+                    "      settings: options.settings,",
+                    "      URL: {requestedUrl: options.requestedUrl, finalUrl: ''},",
+                    "    };",
+                    "  }"
+                ]
+            }
+        ],
+        "lighthouse-core/report/html/renderer/report-renderer.js": [
+            {
+                "SEARCH": [
+                    "const envValues = Util.getEnvironmentDisplayValues(report.configSettings || {});",
+                    "[",
+                    "{name: 'URL', description: report.finalUrl},",
+                    "{name: 'Fetch time', description: Util.formatDateTime(report.fetchTime)},",
+                    "...envValues,",
+                    "{name: 'User agent', description: report.userAgent},",
+                    "].forEach(runtime => {",
+                    "const item = this._dom.cloneTemplate('#tmpl-lh-env__items', env);",
+                    "this._dom.find('.lh-env__name', item).textContent = `${runtime.name}:`;",
+                    "this._dom.find('.lh-env__description', item).textContent = runtime.description;",
+                    "env.appendChild(item);",
+                    "});"
+                ],
+                "REPLACE": [
+                    "    const envValues = Util.getEnvironmentDisplayValues(report.configSettings || {});",
+                    "    [",
+                    "      {name: 'URL', description: report.finalUrl},",
+                    "      {name: 'Fetch time', description: Util.formatDateTime(report.fetchTime)},",
+                    "      ...envValues,",
+                    "      {name: 'User agent (browser)', description: report.userAgent},",
+                    "      ...(report.emulatedUserAgent ? [{name: 'User agent (emulated)', description: report.emulatedUserAgent}] : []),",
+                    "    ].forEach(runtime => {",
+                    "      const item = this._dom.cloneTemplate('#tmpl-lh-env__items', env);",
+                    "      this._dom.find('.lh-env__name', item).textContent = `${runtime.name}:`;",
+                    "      this._dom.find('.lh-env__description', item).textContent = runtime.description;",
+                    "      env.appendChild(item);",
+                    "    });"
+                ]
+            }
+        ]
+    }
+}

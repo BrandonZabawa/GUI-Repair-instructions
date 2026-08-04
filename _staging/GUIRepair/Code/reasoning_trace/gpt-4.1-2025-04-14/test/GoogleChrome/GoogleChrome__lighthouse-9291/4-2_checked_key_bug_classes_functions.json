@@ -1,0 +1,115 @@
+{
+    "bug_classes": {
+        "1": {
+            "class_name": "LighthouseError",
+            "file_path": "lighthouse-core/lib/lh-error.js",
+            "class_details": [
+                {
+                    "name": "LighthouseError",
+                    "start_line": 55,
+                    "end_line": 95,
+                    "methods": [
+                        {
+                            "name": "constructor",
+                            "start_line": 60,
+                            "end_line": 70
+                        },
+                        {
+                            "name": "fromProtocolMessage",
+                            "start_line": 77,
+                            "end_line": 94
+                        }
+                    ],
+                    "isExported": false
+                }
+            ],
+            "class_code": [
+                "class LighthouseError extends Error {",
+                "  /**",
+                "   * @param {LighthouseErrorDefinition} errorDefinition",
+                "   * @param {Record<string, string|boolean|undefined>=} properties",
+                "   */",
+                "  constructor(errorDefinition, properties) {",
+                "    super(errorDefinition.code);",
+                "    this.name = 'LHError';",
+                "    this.code = errorDefinition.code;",
+                "    // Insert the i18n reference with errorCode and all additional ICU replacement properties.",
+                "    this.friendlyMessage = str_(errorDefinition.message, {errorCode: this.code, ...properties});",
+                "    this.lhrRuntimeError = !!errorDefinition.lhrRuntimeError;",
+                "    if (properties) Object.assign(this, properties);",
+                "",
+                "    Error.captureStackTrace(this, LighthouseError);",
+                "  }",
+                "",
+                "  /**",
+                "   * @param {string} method",
+                "   * @param {{message: string, data?: string|undefined}} protocolError",
+                "   * @return {Error|LighthouseError}",
+                "   */",
+                "  static fromProtocolMessage(method, protocolError) {",
+                "    // extract all errors with a regex pattern to match against.",
+                "    const protocolErrors = Object.values(LighthouseError.errors).filter(e => e.pattern);",
+                "    // if we find one, use the friendly LighthouseError definition",
+                "    const matchedErrorDefinition = protocolErrors.find(e => e.pattern.test(protocolError.message));",
+                "    if (matchedErrorDefinition) {",
+                "      return new LighthouseError(matchedErrorDefinition, {",
+                "        protocolMethod: method,",
+                "        protocolError: protocolError.message,",
+                "      });",
+                "    }",
+                "",
+                "    // otherwise fallback to building a generic Error",
+                "    let errMsg = `(${method}): ${protocolError.message}`;",
+                "    if (protocolError.data) errMsg += ` (${protocolError.data})`;",
+                "    const error = new Error(`Protocol error ${errMsg}`);",
+                "    return Object.assign(error, {protocolMethod: method, protocolError: protocolError.message});",
+                "  }",
+                "}"
+            ]
+        }
+    },
+    "bug_functions": {
+        "2": {
+            "function_name": "printRuntimeErrorAndExit",
+            "file_path": "lighthouse-cli/run.js",
+            "function_details": [
+                {
+                    "name": "printRuntimeErrorAndExit",
+                    "start_line": 81,
+                    "end_line": 87
+                }
+            ],
+            "function_code": [
+                "function printRuntimeErrorAndExit(err) {",
+                "  console.error('Runtime error encountered:', err.friendlyMessage || err.message);",
+                "  if (err.stack) {",
+                "    console.error(err.stack);",
+                "  }",
+                "  return process.exit(_RUNTIME_ERROR_CODE);",
+                "}"
+            ]
+        },
+        "3": {
+            "function_name": "printErrorAndExit",
+            "file_path": "lighthouse-cli/run.js",
+            "function_details": [
+                {
+                    "name": "printErrorAndExit",
+                    "start_line": 93,
+                    "end_line": 101
+                }
+            ],
+            "function_code": [
+                "function printErrorAndExit(err) {",
+                "  if (err.code === 'ECONNREFUSED') {",
+                "    return printConnectionErrorAndExit();",
+                "  } else if (err.code === 'CRI_TIMEOUT') {",
+                "    return printProtocolTimeoutErrorAndExit();",
+                "  } else {",
+                "    return printRuntimeErrorAndExit(err);",
+                "  }",
+                "}"
+            ]
+        }
+    }
+}

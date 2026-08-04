@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Text.js//Text",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder",
+            "src/ol/render/canvas/Executor.js//Executor"
+        ],
+        "bug_functions": [
+            "src/ol/style/Text.js//setTextAlign",
+            "src/ol/render/canvas/TextBuilder.js//setTextStyle",
+            "src/ol/render/canvas/Executor.js//horizontalTextAlign"
+        ],
+        "explanation": "\u2022 Text (src/ol/style/Text.js) is the high-level style API that defines the textAlign option ('start'/'end') and provides setter/getter methods. If its values for line placement are wrong or never conveyed, the rendering will be off.\n\u2022 CanvasTextBuilder (src/ol/render/canvas/TextBuilder.js) takes the Text style and encodes the textAlign into drawing instructions via TEXT_ALIGN. If setTextStyle doesn\u2019t map 'start'/'end' properly into TEXT_ALIGN, the executor will never see the correct alignment.\n\u2022 Executor (src/ol/render/canvas/Executor.js) is responsible for interpreting those instructions and positioning text. The helper horizontalTextAlign maps CanvasTextAlign strings to numeric offsets. A bug in horizontalTextAlign (e.g. not distinguishing 'start' vs. 'end' on a path) directly causes the labels to render at the wrong end of the line.",
+        "bug_scenario": "In the rendering test \u201ctext-style-linestring-nice\u201d, two text labels along a line are mis-aligned when using textAlign 'start' or 'end'. The \u201cSmall text\u201d label that should hug the beginning of the line is drawn at the far end, and the \u201cnegative offsetX\u201d label that should sit just beyond the start is likewise inverted. In short, for line placements the 'start' and 'end' textAlign values are swapped or not applied correctly."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Text.js//Text",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder",
+            "src/ol/render/canvas/Executor.js//Executor"
+        ],
+        "bug_functions": [
+            "src/ol/style/Text.js//setTextAlign",
+            "src/ol/render/canvas/TextBuilder.js//setTextStyle",
+            "src/ol/render/canvas/Executor.js//horizontalTextAlign",
+            "src/ol/render/canvas/Executor.js//drawLabelWithPointPlacement_"
+        ],
+        "explanation": "The Text class defines and stores the textAlign option but does not distinguish 'start'/'end' for line placement versus point placement. CanvasTextBuilder.setTextStyle reads that value into its TextState and emits it to the executor, but the TEXT_ALIGN mapping and downstream executor logic never handle 'start' and 'end' differently from 'left'/'right'. In Executor.horizontalTextAlign the align value is converted to a numeric offset without support for 'start'/'end', and drawLabelWithPointPlacement_ uses that offset to position the label anchor. Together these four methods control how 'start'/'end' alignments are interpreted and rendered, so they must be updated to respect path direction for line-placed text and to map 'start'/'end' correctly in both CanvasTextBuilder and Executor.",
+        "bug_scenario": "When using a Text style on a LineString with textAlign set to 'start' or 'end', labels that should appear at the beginning or end of the line are rendered on the opposite end (or centered), as shown by the two test cases 'Small text' and 'negative offsetX' in test/rendering/cases/text-style-linestring-nice. The regression causes 'start'/'end' alignments to be treated incorrectly."
+    }
+}

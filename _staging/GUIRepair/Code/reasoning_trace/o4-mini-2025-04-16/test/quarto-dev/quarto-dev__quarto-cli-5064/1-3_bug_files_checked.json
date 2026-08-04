@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/code-annotation.lua",
+            "src/execute/ojs/annotate-source.ts"
+        ],
+        "explanation": "\u2022 resources/filters/quarto-pre/code-annotation.lua: This Lua filter is responsible for scanning code blocks in the Pandoc pipeline, extracting trailing comment markers (e.g. \u201c-- <1>\u201d or \u201c// <2>\u201d) and replacing them with circled numbers inline. The fact that VHDL (\u201cvhdl\u201d) and C++ (\u201ccpp\u201d/\u201cc++\u201d) blocks still dump raw comments indicates that the language\u2010recognition (or comment\u2010regex) in this filter needs to be extended to handle those languages\u2019 comment syntax.\n\n\u2022 src/execute/ojs/annotate-source.ts: When Quarto renders code blocks using the OJS (Quarto\u2019s native HTML) engine, this TypeScript module re-implements much of the same annotation extraction logic on the client side. It currently handles languages like JavaScript/TypeScript/R/Python but doesn\u2019t detect VHDL or C++ comment-styles there. Both server-side (Lua) and client-side (TS) routines must be updated so that \u201c-- <n>\u201d and \u201c// <n>\u201d in vhdl/cpp blocks produce the same circled labels as R and Python.",
+        "bug_scenario": "When you author code\u2010annotation blocks for VHDL or C/C++ in a .qmd and render to HTML, Quarto still recognizes the \u201c-- <1>\u201d or \u201c// <1>\u201d markers but never replaces them with circled labels inline. Instead you just get the comment blocks collected underneath the code, without any inline \u201c\u2460\u201d in the code. The exact same syntax works correctly for R, Python, TypeScript, etc., so the problem must lie in the code\u2010annotation logic\u2019s support for C++/VHDL languages."
+    },
+    "2": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/code-annotation.lua",
+            "src/resources/filters/customnodes/decoratedcodeblock.lua",
+            "src/execute/ojs/annotate-source.ts"
+        ],
+        "explanation": "All of the code-annotation work happens in a Lua filter (code-annotation.lua) that scans code fences for comment markers and emits special Pandoc nodes, and in the custom-nodes definition (decoratedcodeblock.lua) which knows how to collect and render those annotation nodes under the block. Once the Lua side has labelled the annotated code, the TypeScript file annotate-source.ts (used during OJS execution) strips the markers and wires in the HTML wrappers (data-target-annotation attributes, circled numbers, etc.). Currently the Lua filter only recognizes certain languages/comment styles (R, Python, etc.) and never kicks in for C++ (\u201c//\u201d) or VHDL (\u201c--\u201d) blocks. To fix this bug you must update code-annotation.lua to recognize those comment prefixes (and possibly extend decoratedcodeblock.lua if it hard-codes allowed languages), and ensure annotate-source.ts handles the extra fence languages so that the annotation circles and list HTML are injected correctly.",
+        "bug_scenario": "When you render a .qmd document with \u201ccode-annotations: below\u201d (or hover/select) you expect every code block comment of the form \u201c// <1>\u201d or \u201c-- <2>\u201d to be turned into numbered circles and linked into an annotation list under the block. In the two screenshots you can see that R and Python chunks get their annotations replaced with circled numbers and lists correctly, but C++, VHDL (and any chunk using \u201c// <n>\u201d or \u201c-- <n>\u201d) still leave the raw \u201c// <1>\u201d or \u201c-- <2>\u201d inline and do not generate the annotation list at all."
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Vector.js//VectorLayer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer",
+            "src/ol/layer/BaseVector.js//BaseVectorLayer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/BaseVector.js//setStyle",
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame",
+            "src/ol/renderer/canvas/VectorLayer.js//renderDeclutter"
+        ],
+        "explanation": "The bug is triggered by changing opacity via setOpacity on a VectorLayer with decluttering enabled. The core classes involved are: VectorLayer (the user-facing vector layer), BaseVectorLayer (which manages common vector layer properties, including declutter), and CanvasVectorLayerRenderer (which handles the actual rendering, including how opacity and declutter are dealt with). The functions most likely involved are: setStyle (from BaseVectorLayer, as style management might interplay with rendering and opacity), renderFrame (the main rendering loop in CanvasVectorLayerRenderer, where opacity changes are likely to be handled and bugs may manifest if declutter is enabled), and renderDeclutter (also in CanvasVectorLayerRenderer, as it renders decluttered items and may mishandle opacity). The bug is likely due to a missing, incorrect, or bypassed handling of opacity in the declutter rendering path.",
+        "bug_scenario": "When using OpenLayers v9.0, calling setOpacity on a VectorLayer with 'declutter' enabled causes the layer to disappear, instead of simply updating opacity as expected. The typical scenario is: a vector layer with declutter:true is added, and after calling setOpacity (e.g., to 0.5), the layer vanishes from the map display."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame",
+            "src/ol/renderer/canvas/VectorLayer.js//renderWorlds",
+            "src/ol/renderer/canvas/VectorLayer.js//renderDeclutter"
+        ],
+        "explanation": "The core of the bug involves rendering of vector layers when both 'declutter' is enabled and 'setOpacity' is called. The CanvasVectorLayerRenderer class in src/ol/renderer/canvas/VectorLayer.js is responsible for rendering vector layers on the canvas, and it contains methods directly involved in frame rendering and decluttering. The renderFrame function is the main entry point for drawing the layer, and any issues with opacity are likely to manifest here. The renderWorlds and renderDeclutter functions are also highly relevant since they handle rendering across world extents and decluttered items, respectively. These methods need to properly respect opacity settings even when declutter is used, and a bug here could easily result in the layer disappearing when opacity is changed. The other files (src/ol/layer/Vector.js and src/ol/layer/BaseVector.js) are higher-level and primarily set up options or delegate to the renderer, so the critical bug logic is in the renderer class and its key methods listed above.",
+        "bug_scenario": "When using a VectorLayer in OpenLayers with the 'declutter' option enabled, calling setOpacity on the layer causes the entire layer to disappear instead of correctly updating its opacity. This happens after a short delay when setOpacity is called in an example involving vector labels."
+    }
+}

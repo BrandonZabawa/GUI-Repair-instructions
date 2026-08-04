@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint",
+            "src/ol/render/canvas/ImageBuilder.js//drawMultiPoint"
+        ],
+        "explanation": "The Icon class (src/ol/style/Icon.js) is responsible for icon rendering, including handling scaling and anchoring; negative scale values could be mishandled here, affecting both rendering and hit detection. CanvasImageBuilder (src/ol/render/canvas/ImageBuilder.js) manages how icons are drawn on the canvas, especially in drawPoint and drawMultiPoint, which apply scale and anchor logic. If negative scales are not properly accounted for during coordinate or bounding box calculation, icons may not render or receive hits correctly. The problem likely arises from these components not considering negative scale implications, such as flipping the image or adjusting the anchor/origin, which impacts both visual rendering and hit detection. The hit detection logic itself (in src/ol/render/canvas/hitdetect.js) seems to rely on the style/image information generated in these classes, so fixing the bug would require changes to how scale is interpreted and passed through the rendering pipeline in Icon and CanvasImageBuilder, specifically in their drawing functions.",
+        "bug_scenario": "When an icon is rendered with a negative scale and no rotation, hit detection fails (clicks do not register on the icon), and the icon is not partially rendered at the edge of the map\u2014it disappears instead of being clipped as expected. The bug report describes this happening in a demo where a penguin icon, when scaled negatively, cannot be selected (hit detection) and is not rendered correctly at the map edge."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//getAnchor",
+            "src/ol/style/Icon.js//getOrigin",
+            "src/ol/style/Icon.js//getSize",
+            "src/ol/style/Icon.js//getScale",
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint",
+            "src/ol/render/canvas/ImageBuilder.js//drawMultiPoint",
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle"
+        ],
+        "explanation": "The core classes and functions are involved in rendering and hit detection for icons on the map:\n\n1. 'src/ol/style/Icon.js//Icon' is the class responsible for icon styling, including placement, scaling, and origin. Its methods like 'getAnchor', 'getOrigin', 'getSize', and 'getScale' control how the icon is drawn and how its hit area is computed. Handling of negative scale values should be in these methods to ensure that anchor points and image sub-rectangles are computed correctly for flipped icons, both for rendering and hit detection.\n\n2. 'src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder' is responsible for actually rendering icons onto the canvas. The methods 'drawPoint' and 'drawMultiPoint' use anchors, origins, sizes, and scales from the icon style to render the icon and set up hit detection instructions. If negative scales are not handled correctly in these functions, icons may not render or have their hit areas computed incorrectly. The 'setImageStyle' function is where the anchor, size, origin, and scale are transferred from the style to the builder; thus, it must correctly handle negative scales.\n\nThese classes and methods are bug-related because the symptoms described (incorrect hit detection and rendering when scale is negative) are direct consequences of how these calculations are performed. Ensuring correct handling of negative scales in these locations would likely resolve both the rendering and hit detection issues described in the bug report.",
+        "bug_scenario": "The bug scenario involves a map application where icons with a negative scale and zero rotation are not detected for hits (i.e., clicking on the icon does not register), and the icon is not rendered partially at the map's edge, instead disappearing completely when moved to the edge. The expected behavior is that hit detection should work regardless of the icon scale, and the icon should be clipped (partially rendered) at the edge, not disappear entirely."
+    }
+}

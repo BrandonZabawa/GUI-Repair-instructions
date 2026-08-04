@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor",
+            "src/format/reveal/format-reveal.ts//applyStretch"
+        ],
+        "explanation": "The post-processing step in `format-reveal.ts` includes an `applyStretch` function (invoked from `revealHtmlPostprocessor`) that moves single images up to be direct children of the slide `<section>`\u2014but it only skips images inside known layout panels (.columns). Custom divs (e.g. `.qrcodeblock`) are not recognized as layout containers, so `applyStretch` treats their images as candidates and lifts them out of the div. By extending the screening logic in `applyStretch` (or its caller `revealHtmlPostprocessor`) to skip images in any arbitrary user div, the image will remain correctly nested in the custom block.",
+        "bug_scenario": "In the generated Reveal.js slides, when an image is placed inside a user-defined div (e.g. `::: {.qrcodeblock}` or `:::: {.anotherblocks}`) the image \u201cescapes\u201d that div and is rendered below it (after the slide text). In contrast, if the image is inside a `.columns`/`.column` layout, it stays correctly inside the container. The screenshots show Test A (custom block) and Test C (outer div) where the image is bumped out of the div, but Test B (columns) works as expected."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/layout/layout.lua//requiresPanelLayout",
+            "src/format/reveal/format-reveal.ts//applyStretch"
+        ],
+        "explanation": "The layout.lua filter defines layoutPanels() which only transforms a Div into a layout panel if requiresPanelLayout(divEl) returns true. That function currently only recognizes Quarto\u2019s built-in layout attributes (e.g. .columns) or tbl-parent, so custom div classes like .qrcodeblock are never treated as panels. As a result, the image remains in a plain Div. Later, the reveal post-processing (applyStretch in format-reveal.ts) looks for slides with exactly one image and pulls that image out of its parent unless that parent is a known layout panel or column. Because custom divs aren\u2019t recognized as panels, applyStretch moves the image to the end of the slide. Fixing either requiresPanelLayout (to include arbitrary div classes) or applyStretch (to respect any user div as a valid container) will restore the intended behavior.",
+        "bug_scenario": "When you put an image inside a custom div (e.g. ::: {.qrcodeblock} or ::::: {.anotherblocks}), the image ends up being rendered after the div instead of between the \u201cOh hello\u201d and \u201cWhy not?\u201d. In contrast, when you use the built-in .columns container, the image stays where you expect. The three screenshots show Slide A (custom block) and Slide C (outer div) with the image dropped to the bottom of the slide, whereas Slide B (columns) correctly wraps the image between the two paragraphs."
+    }
+}

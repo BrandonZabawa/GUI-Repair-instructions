@@ -1,0 +1,48 @@
+diff --git a/lighthouse-core/audits/uses-rel-preconnect.js b/lighthouse-core/audits/uses-rel-preconnect.js
+index 8b652ebcf..d842b53f5 100644
+--- a/lighthouse-core/audits/uses-rel-preconnect.js
++++ b/lighthouse-core/audits/uses-rel-preconnect.js
+@@ -133,7 +133,15 @@ class UsesRelPreconnectAudit extends Audit {
+       });
+ 
+     const preconnectLinks = artifacts.LinkElements.filter(el => el.rel === 'preconnect');
+-    const preconnectOrigins = new Set(preconnectLinks.map(link => URL.getOrigin(link.href || '')));
++    // Build a set of objects with both origin and crossOrigin for accurate matching
++    const preconnectOrigins = new Set(
++      preconnectLinks.map(link => {
++        const origin = URL.getOrigin(link.href || '');
++        // Normalize crossOrigin: treat undefined/null/empty as 'none'
++        const crossOrigin = (link.crossOrigin || '').toLowerCase() || 'none';
++        return `${origin}|${crossOrigin}`;
++      })
++    );
+ 
+     /** @type {Array<{url: string, wastedMs: number}>}*/
+     let results = [];
+@@ -165,8 +173,24 @@ class UsesRelPreconnectAudit extends Audit {
+       const wastedMs = Math.min(connectionTime, timeBetweenMainResourceAndDnsStart);
+       if (wastedMs < IGNORE_THRESHOLD_IN_MS) return;
+ 
+-      if (preconnectOrigins.has(securityOrigin)) {
+-        // Add a warning for any origin the user tried to preconnect to but failed
++      // Determine if this origin is cross-origin relative to the main resource
++      const isCrossOrigin = mainResource.parsedURL.securityOrigin !== securityOrigin;
++      // For cross-origin, require 'anonymous' or 'use-credentials' as crossOrigin attribute
++      const expectedCrossOrigin = isCrossOrigin ? 'anonymous' : 'none';
++
++      if (
++        preconnectOrigins.has(`${securityOrigin}|${expectedCrossOrigin}`) ||
++        // Also allow 'use-credentials' for cross-origin
++        (isCrossOrigin && preconnectOrigins.has(`${securityOrigin}|use-credentials`))
++      ) {
++        // Preconnect is present and has correct crossOrigin attribute
++        return;
++      }
++
++      // If preconnect is present but with wrong crossOrigin, warn
++      if (
++        preconnectLinks.some(link => URL.getOrigin(link.href || '') === securityOrigin)
++      ) {
+         warnings.push(str_(UIStrings.crossoriginWarning, {securityOrigin}));
+         return;
+       }

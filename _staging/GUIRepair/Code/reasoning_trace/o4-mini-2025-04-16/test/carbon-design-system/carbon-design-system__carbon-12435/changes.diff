@@ -1,0 +1,303 @@
+diff --git a/packages/react/src/components/MultiSelect/MultiSelect.js b/packages/react/src/components/MultiSelect/MultiSelect.js
+index ae686e94..0df1d9b9 100644
+--- a/packages/react/src/components/MultiSelect/MultiSelect.js
++++ b/packages/react/src/components/MultiSelect/MultiSelect.js
+@@ -70,6 +70,10 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+     onMenuChange,
+     direction,
+     selectedItems: selected,
++    /**
++     * Specify whether the control is read-only.
++     */
++    readOnly,
+   },
+   ref
+ ) {
+@@ -138,6 +142,8 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+     `${prefix}--list-box__wrapper`,
+     [enabled ? containerClassName : null],
+     {
++      // new readonly wrapper style
++      [`${prefix}--multi-select__wrapper--readonly`]: readOnly,
+       [`${prefix}--multi-select__wrapper--inline`]: inline,
+       [`${prefix}--list-box__wrapper--inline`]: inline,
+       [`${prefix}--multi-select__wrapper--inline--invalid`]: inline && invalid,
+@@ -163,6 +169,8 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+     `${prefix}--multi-select`,
+     [enabled ? null : containerClassName],
+     {
++      // new readonly style class
++      [`${prefix}--multi-select--readonly`]: readOnly,
+       [`${prefix}--multi-select--invalid`]: invalid,
+       [`${prefix}--multi-select--warning`]: showWarning,
+       [`${prefix}--multi-select--inline`]: inline,
+@@ -220,7 +228,8 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+   }
+ 
+   const onKeyDown = (e) => {
+-    if (match(e, keys.Delete) && !disabled) {
++    // no clear when readonly
++    if (match(e, keys.Delete) && !disabled && !readOnly) {
+       clearSelection();
+       e.stopPropagation();
+     }
+@@ -245,20 +254,21 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+           </span>
+         )}
+       </label>
+-      <ListBox
+-        onFocus={isFluid ? handleFocus : null}
+-        onBlur={isFluid ? handleFocus : null}
+-        type={type}
+-        size={size}
+-        className={className}
+-        disabled={disabled}
+-        light={light}
+-        invalid={invalid}
+-        invalidText={invalidText}
+-        warn={warn}
+-        warnText={warnText}
+-        isOpen={isOpen}
+-        id={id}>
++        <ListBox
++          onFocus={isFluid ? handleFocus : null}
++          onBlur={isFluid ? handleFocus : null}
++          type={type}
++          size={size}
++          className={className}
++          // disable entire listbox when readonly
++          disabled={disabled || readOnly}
++          light={light}
++          invalid={invalid}
++          invalidText={invalidText}
++          warn={warn}
++          warnText={warnText}
++          isOpen={isOpen}
++          id={id}>
+         {invalid && (
+           <WarningFilled className={`${prefix}--list-box__invalid-icon`} />
+         )}
+@@ -270,17 +280,19 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+         <button
+           type="button"
+           className={`${prefix}--list-box__field`}
+-          disabled={disabled}
+-          aria-disabled={disabled}
++          // disable toggling when readonly
++          disabled={disabled || readOnly}
++          aria-disabled={disabled || readOnly}
+           {...toggleButtonProps}
+           ref={mergeRefs(toggleButtonProps.ref, ref)}
+           onKeyDown={onKeyDown}>
+           {selectedItems.length > 0 && (
+             <ListBox.Selection
+-              clearSelection={!disabled ? clearSelection : noop}
++              // prevent clear in readonly
++              clearSelection={!disabled && !readOnly ? clearSelection : noop}
+               selectionCount={selectedItems.length}
+               translateWithId={translateWithId}
+-              disabled={disabled}
++              disabled={disabled || readOnly}
+             />
+           )}
+           <span id={fieldLabelId} className={`${prefix}--list-box__label`}>
+@@ -361,6 +373,11 @@ MultiSelect.propTypes = {
+    */
+   disabled: PropTypes.bool,
+ 
++  /**
++   * Specify whether the control is read-only.
++   */
++  readOnly: PropTypes.bool,
++
+   /**
+    * Additional props passed to Downshift
+    */
+@@ -502,6 +519,8 @@ MultiSelect.propTypes = {
+ MultiSelect.defaultProps = {
+   compareItems: defaultCompareItems,
+   disabled: false,
++  // default to interactive
++  readOnly: false,
+   locale: 'en',
+   itemToString: defaultItemToString,
+   initialSelectedItems: [],
+diff --git a/packages/react/src/components/MultiSelect/MultiSelect.stories.js b/packages/react/src/components/MultiSelect/MultiSelect.stories.js
+index dedac74e..945a7fe4 100644
+--- a/packages/react/src/components/MultiSelect/MultiSelect.stories.js
++++ b/packages/react/src/components/MultiSelect/MultiSelect.stories.js
+@@ -119,92 +119,99 @@ export const Playground = (args) => {
+   );
+ };
+ 
+-Playground.argTypes = {
+-  selectionFeedback: {
+-    options: ['top', 'fixed', 'top-after-reopen'],
+-    control: { type: 'select' },
+-  },
+-  size: {
+-    options: ['sm', 'md', 'lg'],
+-    control: { type: 'select' },
+-    defaultValue: 'md',
+-  },
+-  direction: {
+-    options: ['top', 'bottom'],
+-    control: { type: 'radio' },
+-  },
+-  type: {
+-    options: ['inline', 'default'],
+-    control: { type: 'radio' },
+-    defaultValue: 'default',
+-  },
+-  titleText: {
+-    control: {
+-      type: 'text',
++  Playground.argTypes = {
++    selectionFeedback: {
++      options: ['top', 'fixed', 'top-after-reopen'],
++      control: { type: 'select' },
+     },
+-    defaultValue: 'This is a MultiSelect Title',
+-  },
+-  disabled: {
+-    control: {
+-      type: 'boolean',
++    size: {
++      options: ['sm', 'md', 'lg'],
++      control: { type: 'select' },
++      defaultValue: 'md',
+     },
+-    defaultValue: false,
+-  },
+-  hideLabel: {
+-    control: {
+-      type: 'boolean',
++    direction: {
++      options: ['top', 'bottom'],
++      control: { type: 'radio' },
+     },
+-    defaultValue: false,
+-  },
+-  invalid: {
+-    control: {
+-      type: 'boolean',
++    type: {
++      options: ['inline', 'default'],
++      control: { type: 'radio' },
++      defaultValue: 'default',
+     },
+-    defaultValue: false,
+-  },
+-  warn: {
+-    control: {
+-      type: 'boolean',
++    titleText: {
++      control: {
++        type: 'text',
++      },
++      defaultValue: 'This is a MultiSelect Title',
+     },
+-    defaultValue: false,
+-  },
+-  warnText: {
+-    control: {
+-      type: 'text',
++    disabled: {
++      control: {
++        type: 'boolean',
++      },
++      defaultValue: false,
+     },
+-    defaultValue: 'whoopsie!',
+-  },
+-  invalidText: {
+-    control: {
+-      type: 'text',
++    /** NEW: readOnly control */
++    readOnly: {
++      control: {
++        type: 'boolean',
++      },
++      defaultValue: false,
+     },
+-    defaultValue: 'whoopsie!',
+-  },
+-  label: {
+-    control: {
+-      type: 'text',
++    hideLabel: {
++      control: {
++        type: 'boolean',
++      },
++      defaultValue: false,
+     },
+-    defaultValue: 'This is a label',
+-  },
+-  clearSelectionDescription: {
+-    control: {
+-      type: 'text',
++    invalid: {
++      control: {
++        type: 'boolean',
++      },
++      defaultValue: false,
+     },
+-    defaultValue: 'Total items selected: ',
+-  },
+-  useTitleInItem: {
+-    control: {
+-      type: 'text',
++    warn: {
++      control: {
++        type: 'boolean',
++      },
++      defaultValue: false,
+     },
+-    defaultValue: 'this is the item title',
+-  },
+-  clearSelectionText: {
+-    control: {
+-      type: 'text',
++    warnText: {
++      control: {
++        type: 'text',
++      },
++      defaultValue: 'whoopsie!',
+     },
+-    defaultValue: 'To clear selection, press Delete or Backspace,',
+-  },
+-};
++    invalidText: {
++      control: {
++        type: 'text',
++      },
++      defaultValue: 'whoopsie!',
++    },
++    label: {
++      control: {
++        type: 'text',
++      },
++      defaultValue: 'This is a label',
++    },
++    clearSelectionDescription: {
++      control: {
++        type: 'text',
++      },
++      defaultValue: 'Total items selected: ',
++    },
++    useTitleInItem: {
++      control: {
++        type: 'text',
++      },
++      defaultValue: 'this is the item title',
++    },
++    clearSelectionText: {
++      control: {
++        type: 'text',
++      },
++      defaultValue: 'To clear selection, press Delete or Backspace,',
++    },
++  };
+ 
+ export const Default = () => {
+   return (

@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/tree-select/tree-select.jsx//TreeSelect"
+        ],
+        "bug_functions": [
+            "src/tree-select/tree-select.jsx//getKeysByValue",
+            "src/tree-select/tree-select.jsx//getData",
+            "src/tree-select/tree-select.jsx//renderPreview"
+        ],
+        "explanation": "The duplicate\u2010key warning and repeated tags come from the data flow inside TreeSelect: 1) getKeysByValue maps the provided defaultValue (including disabled nodes) into a set of internal node keys, but doesn\u2019t dedupe them. 2) getData takes those keys and converts them back into data objects for rendering\u2014again without filtering out repeats. 3) renderPreview iterates the data array to render a tag per entry, so any duplicate entries produce duplicate tags with the same key. Fixing this requires deduplicating the key list (or data list) before rendering preview tags, ideally in getKeysByValue or getData, and/or adding a guard in renderPreview to filter out repeated nodes.",
+        "bug_scenario": "When TreeSelect is used in multiple\u2010select mode (treeCheckable) with a defaultValue that includes a disabled leaf node, the preview area renders duplicate tags for that node. The screenshot shows two identical \u201cInput\u201d tags and a console warning about duplicate keys (\u201c4\u201d)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/tree-select/tree-select.jsx//TreeSelect"
+        ],
+        "bug_functions": [
+            "src/tree-select/tree-select.jsx//constructor",
+            "src/tree-select/tree-select.jsx//componentWillReceiveProps",
+            "src/tree-select/tree-select.jsx//updateCache",
+            "src/tree-select/tree-select.jsx//getKeysByValue",
+            "src/tree-select/tree-select.jsx//getValueByKeys",
+            "src/tree-select/tree-select.jsx//getData",
+            "src/tree-select/tree-select.jsx//getValueForSelect",
+            "src/tree-select/tree-select.jsx//render"
+        ],
+        "explanation": "All of these methods participate in turning the user-provided defaultValue array into the list of tags shown in the Select component. \u2022 constructor / componentWillReceiveProps call updateCache() to build an internal map of nodes (including disabled ones). \u2022 getKeysByValue / getValueByKeys look up keys from the provided values, but under treeCheckable+disabled paths they can return the same value twice. \u2022 getData and getValueForSelect transform those keys back into data objects for the Select tags and also decide which property to use for the React key. \u2022 Finally, render passes that list into the Select, which uses the value property as the React key, so duplicate entries produce duplicate-key warnings and render the same tag twice. Fixing this requires deduplication in getKeysByValue / getData (or using a truly unique key like the position string) and filtering out disabled entries that have already been included.",
+        "bug_scenario": "When you render a TreeSelect with treeCheckable and a defaultValue that includes a disabled leaf node (in this case value \u201c4\u201d), the input area (the tag list) initialises with that same disabled item rendered twice. You see two \u201cInput\u00d7\u201d tags for the same leaf, and React logs a \u201cduplicate key: '4'\u201d warning. The tree data only defines that leaf once, so somewhere in the TreeSelect logic the disabled node is being added into the selected\u2010tags list twice."
+    }
+}

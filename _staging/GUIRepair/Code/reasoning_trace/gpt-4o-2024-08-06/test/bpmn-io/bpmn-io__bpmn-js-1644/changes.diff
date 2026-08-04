@@ -1,0 +1,81 @@
+diff --git a/lib/features/modeling/Modeling.js b/lib/features/modeling/Modeling.js
+index 0c7619e6..28ab6863 100644
+--- a/lib/features/modeling/Modeling.js
++++ b/lib/features/modeling/Modeling.js
+@@ -87,11 +87,15 @@ Modeling.prototype.connect = function(source, target, attrs, hints) {
+ 
+ 
+ Modeling.prototype.updateModdleProperties = function(element, moddleElement, properties) {
+-  this._commandStack.execute('element.updateModdleProperties', {
+-    element: element,
+-    moddleElement: moddleElement,
+-    properties: properties
+-  });
++// Preserve multi-instance properties
++var existingProperties = getModdleProperties(moddleElement, Object.keys(properties));
++var updatedProperties = Object.assign({}, existingProperties, properties);
++
++this._commandStack.execute('element.updateModdleProperties', {
++element: element,
++moddleElement: moddleElement,
++properties: updatedProperties
++});
+ };
+ 
+ Modeling.prototype.updateProperties = function(element, properties) {
+@@ -199,4 +203,4 @@ Modeling.prototype.setColor = function(elements, colors) {
+     elements: elements,
+     colors: colors
+   });
+-};
++};
+\ No newline at end of file
+diff --git a/lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js b/lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js
+index 023f13ca..ab5901d6 100644
+--- a/lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js
++++ b/lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js
+@@ -17,9 +17,13 @@ UpdateModdlePropertiesHandler.$inject = ['elementRegistry'];
+ 
+ UpdateModdlePropertiesHandler.prototype.execute = function(context) {
+ 
+-  var element = context.element,
+-      moddleElement = context.moddleElement,
+-      properties = context.properties;
++var element = context.element,
++moddleElement = context.moddleElement,
++properties = context.properties;
++
++// Preserve existing multi-instance properties
++var existingProperties = getModdleProperties(moddleElement, Object.keys(properties));
++properties = Object.assign({}, existingProperties, properties);
+ 
+   if (!moddleElement) {
+     throw new Error('<moddleElement> required');
+@@ -87,4 +91,4 @@ function getAllDataObjectReferences(dataObject, elementRegistry) {
+           getBusinessObject(element).dataObjectRef === dataObject
+     );
+   });
+-}
++}
+\ No newline at end of file
+diff --git a/lib/features/modeling/cmd/UpdatePropertiesHandler.js b/lib/features/modeling/cmd/UpdatePropertiesHandler.js
+index 437c4d0b..8d612c03 100644
+--- a/lib/features/modeling/cmd/UpdatePropertiesHandler.js
++++ b/lib/features/modeling/cmd/UpdatePropertiesHandler.js
+@@ -62,9 +62,13 @@ UpdatePropertiesHandler.$inject = [
+  */
+ UpdatePropertiesHandler.prototype.execute = function(context) {
+ 
+-  var element = context.element,
+-      changed = [ element ],
+-      translate = this._translate;
++var element = context.element,
++changed = [ element ],
++translate = this._translate;
++
++// Preserve existing properties
++var existingProperties = getProperties(element, Object.keys(context.properties));
++context.properties = Object.assign({}, existingProperties, context.properties);
+ 
+   if (!element) {
+     throw new Error(translate('element required'));

@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/import/BpmnTreeWalker.js"
+        ],
+        "bug_functions": [
+            "lib/import/BpmnTreeWalker.js//handleFlowElements",
+            "lib/import/BpmnTreeWalker.js//handleBoundaryEvent",
+            "lib/import/BpmnTreeWalker.js//handleDataAssociation"
+        ],
+        "explanation": "All of the logic that reads and enqueues boundary event and association DI lives in BpmnTreeWalker.js. In handleFlowElements the code special\u2010cases boundary events but never properly defers or applies their data associations in the same way as other flow nodes. handleBoundaryEvent only draws the event itself (visitIfDi) and handleDataAssociation is called immediately rather than deferred \u2013 breaking the correct render order or context for boundary event associations. To fix the missing associations you need to adjust handleFlowElements/handleBoundaryEvent to defer and bind the boundary event\u2019s dataInputAssociations and dataOutputAssociations exactly as other flow node associations, using handleDataAssociation, so that they will be picked up and rendered on import.",
+        "bug_scenario": "When you model a signal boundary event on a task and draw a data\u2010object association from that boundary event to a data object, everything looks correct before export. But after exporting to XML, refreshing, and re\u2010importing, the dashed association from the boundary event to the data object no longer renders. The boundary event itself reappears on the task, but its data\u2010object association is missing."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/import/BpmnTreeWalker.js"
+        ],
+        "bug_functions": [
+            "BpmnTreeWalker//handleFlowElements",
+            "BpmnTreeWalker//handleBoundaryEvent",
+            "BpmnTreeWalker//handleDataAssociation"
+        ],
+        "explanation": "The import logic in BpmnTreeWalker.js is responsible for rendering both boundary events and their data associations. In handleFlowElements, boundary events are deferred for drawing, but their associated DataInputAssociations and DataOutputAssociations are invoked immediately, often before the boundary event\u2019s DI context has been registered. As a result, visitIfDi in handleDataAssociation finds no DI for the association and skips rendering it. The boundary event itself is rendered later (via handleBoundaryEvent), but its association has already been ignored. To fix this, the handling of e.dataInputAssociations/e.dataOutputAssociations for boundary events must be deferred (or sequenced after handleBoundaryEvent) so that the DI for both the boundary event and the association are available when visitIfDi is called.",
+        "bug_scenario": "A BPMN diagram with a task and a signal boundary event attached to it is created and a data object is associated to the boundary event via a data association (dotted arrow). On export and re-import into the modeler, the boundary event remains, but the association line connecting it to the data object is not rendered."
+    }
+}

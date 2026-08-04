@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/ImageArcGISRest.js",
+            "src/ol/layer/Image.js",
+            "src/ol/renderer/canvas/ImageLayer.js",
+            "src/ol/renderer/Layer.js"
+        ],
+        "explanation": "1. src/ol/source/ImageArcGISRest.js: This file implements the ImageArcGISRest source, where the 'ratio' parameter and its usage are defined. Since the bug stems from how 'ratio' is set and handled (default is 1.5), this file is directly involved. 2. src/ol/layer/Image.js: This file defines the Image layer logic, which consumes sources like ImageArcGISRest. Alignment and rendering settings of the layer relative to the map projection, resolution, and scaling are usually managed here. 3. src/ol/renderer/canvas/ImageLayer.js: Contains the rendering logic for image layers (including those using ImageArcGISRest) on the canvas, which is where layer/map alignment issues after scaling or rotating the map are likely handled or could be fixed. 4. src/ol/renderer/Layer.js: This is the base renderer for layers and may manage transformations and calculations that impact how an ImageArcGISRest layer is displayed in relation to the map under scaling and rotation conditions. All these files could require inspection and/or modification to properly fix the layer/map mismatch bug.",
+        "bug_scenario": "The issue concerns a mismatch between ArcGIS MapServer image layers and the base map when using the OpenLayers 7.4 ImageArcGISRest source if the 'ratio' parameter is not set to 1. This problem is especially evident at screen scaling factors not equal to 100% (e.g., 150%) and is exacerbated when the map is rotated, causing layers to not align properly with the map."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/ImageArcGISRest.js",
+            "src/ol/layer/Image.js",
+            "src/ol/renderer/canvas/ImageLayer.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/renderer/Map.js"
+        ],
+        "explanation": "1. src/ol/source/ImageArcGISRest.js: This is the primary source file handling ImageArcGISRest layers, including the 'ratio' parameter implementation. The default and handling logic for ratio are set here. Adjustments to properly compute bounding boxes or requests for non-1/1.5 ratios would be handled in this code.\n\n2. src/ol/layer/Image.js: This file is the layer implementation for single image layers, including ArcGISRest images. It may interact with the source regarding pixel ratios, extent, and visibility, passing in or interpreting the 'ratio' value and translating map view state to the renderer.\n\n3. src/ol/renderer/canvas/ImageLayer.js: As the default renderer for Image layers, this file handles the logic around getting the image from the source and drawing it onto the canvas. Errors in how the image is positioned, sized, or rotated on the main map canvas may exist here \u2013 especially with respect to map display scaling or rotation.\n\n4. src/ol/renderer/Layer.js: This is a key part of the rendering pipeline, responsible for image-to-map alignment logic and managing intermediate transforms for all layer types, including image layers. Mistakes or oversights here (regarding display scaling, coordinate transforms, or rotation handling) can manifest as layer-map mismatch issues for image sources when 'ratio' is not 1.\n\n5. src/ol/renderer/Map.js: This is the main map renderer, managing overall state, transforms, pixel ratios, and orchestration between view, layers, and source images. Scaling/matching problems arising from non-100% display zoom or after rotation may be the result of unforeseen interactions here, and so this file should be reviewed to provide a correct, global fix for this scenario.\n\nAll these files either deal directly with the ArcGISRest image source or are crucial to how images are rendered and aligned with the map view, especially when transformation (scaling/rotation) is involved.",
+        "bug_scenario": "When using OpenLayers 7.4's ImageArcGISRest source, the default 'ratio' parameter is set to 1.5. On computers where the display scaling/zoom is not the default 100% (such as 150%), setting 'ratio' to a value different from 1 (including the default 1.5 or even 2) leads to misalignment or rendering errors: the ArcGIS MapServer layer does not line up correctly with the map, especially after map rotation. As a workaround, users have been setting the ratio to 1, but this is not ideal since the default should work correctly regardless of OS zoom/scale or map rotation. The bug manifests as a mismatch between the rendered image layer and the map view, especially at non-default display scales or after rotating the map."
+    }
+}

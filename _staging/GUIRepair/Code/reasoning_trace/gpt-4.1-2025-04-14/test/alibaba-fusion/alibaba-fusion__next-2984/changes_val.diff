@@ -1,0 +1,25 @@
+diff --git a/src/cascader/cascader.jsx b/src/cascader/cascader.jsx
+index e7a093798..f1cbbf4ca 100644
+--- a/src/cascader/cascader.jsx
++++ b/src/cascader/cascader.jsx
+@@ -24,15 +24,17 @@ const flatDataSource = (data, prefix = '0', v2n = {}, p2n = {}) => {
+         const { value, children } = item;
+         const pos = `${prefix}-${index}`;
+         const newValue = String(value);
+-        item.value = newValue;
++        // Do not mutate the original item, create a shallow copy
++        const itemCopy = { ...item, value: newValue };
+         v2n[newValue] = p2n[pos] = {
+-            ...item,
++            ...itemCopy,
+             pos,
+             _source: item,
+         };
+ 
+         if (children && children.length) {
+-            flatDataSource(children, pos, v2n, p2n);
++            // Use itemCopy.children in case children is also frozen
++            flatDataSource(itemCopy.children || children, pos, v2n, p2n);
+         }
+     });
+ 

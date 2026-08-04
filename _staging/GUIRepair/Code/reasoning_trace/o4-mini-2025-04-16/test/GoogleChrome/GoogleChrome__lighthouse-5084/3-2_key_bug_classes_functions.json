@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.computeWasteWithTTIGraph",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.createAuditProduct"
+        ],
+        "explanation": "computeWasteWithTTIGraph is responsible for estimating ms savings by looking at the last long\u2010task end times in the simulated graph, but it ignores pure network delays when no CPU tasks are present. Because createAuditProduct relies on that ms value for rawValue and scoring, any animated\u2010GIF-only scenario shows zero savings. To fix the bug, computeWasteWithTTIGraph (or its caller createAuditProduct) must detect a network-only graph and fall back to measuring the delta between the end of the entire graph (or the load event) before and after applying the byte-savings, rather than only looking at long CPU tasks.",
+        "bug_scenario": "When auditing a page with only a single large animated GIF (e.g. https://gif.ski/demo.gif), Lighthouse\u2019s \u201cUse a video format for animated content\u201d audit correctly computes ~4.8 MB of byte savings but then reports a perfect 100 score (0 ms savings). Under the hood, ByteEfficiencyAudit.createAuditProduct calls UnusedBytes.computeWasteWithTTIGraph, which measures time savings by comparing the end of the last long CPU task before and after applying the byte\u2010savings simulation. In a graph with only one network node and no CPU tasks, getLastLongTaskEndTime returns 0 both before and after, so wastedMs is 0\u2014even though the network-only graph actually finishes ~23 seconds later."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//computeWasteWithTTIGraph",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//createAuditProduct"
+        ],
+        "explanation": "The core of the bug lives in byte-efficiency-audit.js\u2019s UnusedBytes class: its computeWasteWithTTIGraph method only looks at the time of the last long task (via Interactive.getLastLongTaskEndTime) before and after applying byte savings. In a graph with only one network node and no CPU tasks, that difference is zero, so wastedMs is zero. Then createAuditProduct uses wastedMs as rawValue (and to compute the score), producing a perfect 100 despite multi-second savings. To fix this, computeWasteWithTTIGraph (or createAuditProduct) needs a fallback that uses the overall graph completion time (e.g. simulation.timeInMs difference) when no long\u2010tasks are present, or otherwise measure impact at the end of the graph rather than only at TTI.",
+        "bug_scenario": "When running the \u201cUse a video formats for animated content\u201d audit (efficient-animated-content) against a single large GIF with no CPU tasks (for example https://gif.ski/demo.gif), Lighthouse correctly calculates ~4.8 MB of byte savings but then shows a perfect 100 score (0 ms savings). Under the hood, UnusedBytes.computeWasteWithTTIGraph only measures the difference in the last long\u2010task end times before and after applying byte savings. Because there are no long tasks in the graph, both measurements are zero\u2014so wastedMs is zero, resulting in a perfect score despite a ~23 s difference in the overall end-of-graph time."
+    }
+}

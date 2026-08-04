@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js"
+        ],
+        "explanation": "1. lib/features/modeling/behavior/ReplaceConnectionBehavior.js\n   - This behavior orchestrates the actual removal of the old connection and the construction of the new one when you choose \u201cReplace with\u2026\u201d on a connection. It is responsible for wiring up source/target, DI updates and semantic reparenting. Because the replacement logic here does not compute the correct process\u2010level parent for a sequence flow (it leaves it at the Collaboration level), the new flow never becomes part of the Participant\u2019s process container.\n\n2. lib/features/replace/BpmnReplace.js\n   - This module drives the replace operation for BPMN elements. It invokes the handlers defined in ReplaceOptions and uses ReplaceConnectionBehavior internally for edges. The default logic here does not distinguish that a sequence flow needs to be placed into the target process rather than the collaboration, so the wrong semantic parent is selected.\n\n3. lib/features/replace/ReplaceOptions.js\n   - This file declares the mapping between source element type (message flow) and target type (sequence flow). It can provide hints such as the container to use when creating the new element. Because it currently doesn\u2019t specify that the new sequence flow should live in the target Participant\u2019s process, the replace engine applies the wrong parent. Adjusting or extending these options to select the correct process container is necessary to fix the bug.",
+        "bug_scenario": "When replacing a message flow (a collaboration\u2010level connection between two Participants) with a sequence flow (a process\u2010level connection), the newly created sequence flow is neither attached to the target Participant\u2019s process nor moved into that process\u2019s semantic container. In the old 3.3.x behavior the modeler correctly re\u2010parented the new connection into the second Participant\u2019s process. On master the sequence flow stays at the Collaboration root (or even crashes the diagram when the original source was a Participant), so it is not rendered inside the second Participant and may break the modeling state."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js",
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "explanation": "\u2022 ReplaceConnectionBehavior.js triggers the connection\u2010replacement interaction. It decides when a dropped message flow should become a sequence flow but never adjusts the new flow\u2019s parent properly.  \n\u2022 BpmnReplace.js (with ReplaceOptions.js) contains the core logic for swapping out BPMN elements. It builds the new sequence flow but doesn\u2019t instruct the modeling command stack to put it into the target participant\u2019s process.  \n\u2022 UpdateSemanticParentHandler.js is the generic handler that should update the new sequence flow\u2019s semantic parent (its BPMN XML container), but it\u2019s not being invoked (or is invoked with the wrong container) in this replacement path.  \n\u2022 BpmnUpdater.js finally writes out the DI (diagram interchange) parent into the BPMNPlane for rendering. Since the flow was never re-parented semantically, the DI update leaves it outside the second participant and even leads to inconsistent model state.",
+        "bug_scenario": "When you reconnect a message flow from one participant (A) into another participant (B), the modeler replaces the message flow with a sequence flow but does not re-parent that new sequence flow into the target participant\u2019s process. In the GIFs you see: \u2022 On the left, you drag the dashed message flow from A down into B, and it correctly becomes a sequence flow inside B\u2019s process. \u2022 On the right (current master), the same action replaces the flow but leaves it orphaned (or even crashes when the source was a Participant)."
+    }
+}

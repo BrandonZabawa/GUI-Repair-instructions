@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/TileWMS.js//TileWMS",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/source/TileWMS.js//getGutter",
+            "src/ol/source/TileWMS.js//getTilePixelRatio",
+            "src/ol/source/TileWMS.js//tileUrlFunction",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame"
+        ],
+        "explanation": "The issue is about the handling of the gutter option, which is defined in TileWMS (src/ol/source/TileWMS.js), so the TileWMS class and its methods that expose gutter (getGutter) and tile size (getTilePixelRatio, tileUrlFunction) are directly related. The WebGLTileLayer class (src/ol/layer/WebGLTile.js) is the layer that uses the source and passes it to the renderer. The core bug is in the WebGL renderer (src/ol/renderer/webgl/TileLayer.js), specifically in WebGLTileLayerRenderer, which is responsible for uploading images as textures to the GPU and rendering them; it should be clipping out the gutter region before creating textures, but currently does not. The renderFrame function is the main rendering method where gutter clipping logic would likely need to be applied. Fixing the bug will require changes in how the renderer processes tile images from sources with a gutter, ensuring that the gutter is not included in the GPU texture.",
+        "bug_scenario": "The bug is that when using a WebGLTile layer (ol/layer/WebGLTile) to render WMS tiles from TileWMS (ol/source/TileWMS), the renderer does not clip the image gutter before creating textures. As a result, the gutter region (which should be ignored to avoid edge artifacts) is included in the textures, leading to misplacement and duplication of tile edges in the rendered map. The expected behavior is that the gutter should be clipped (accounting for pixel ratio) so that the output matches the regular tile rendering (ol/layer/Tile)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/TileWMS.js//TileWMS",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/source/TileWMS.js//getGutter",
+            "src/ol/source/TileWMS.js//getTilePixelRatio",
+            "src/ol/source/TileWMS.js//tileUrlFunction",
+            "src/ol/layer/WebGLTile.js//getRenderSource",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame"
+        ],
+        "explanation": "The bug is due to the WebGLTile layer renderer not being aware of or not handling the gutter option provided by TileWMS tiles. The key classes and functions are:\n\n- TileWMS (src/ol/source/TileWMS.js): This is the source class that defines the WMS tile behavior, including handling the gutter option. Methods like getGutter, getTilePixelRatio, and tileUrlFunction are responsible for configuring and generating tile requests, including guttered image tiles.\n\n- WebGLTileLayer (src/ol/layer/WebGLTile.js): This is the layer class that connects the source to the WebGL renderer. The getRenderSource method is used to get the source (e.g., TileWMS) for rendering. If the layer or its renderer does not correctly account for the gutter, rendered tiles will be misaligned.\n\n- WebGLTileLayerRenderer (src/ol/renderer/webgl/TileLayer.js): This is the renderer that takes tiles from the source and creates WebGL textures. The renderFrame method is the entry point for drawing each frame, and it is where gutter clipping should happen. If the renderer does not crop the gutter before uploading to the GPU, the textures will include unwanted edge pixels, causing artifacts.\n\nThese classes and methods are directly responsible for the bug because they manage tile image creation, transfer, and rendering. The fix would likely involve changes to WebGLTileLayerRenderer's handling of the source tiles, ensuring that the gutter is cropped out before the image is uploaded as a WebGL texture, as well as ensuring the gutter value is passed through from the TileWMS source.",
+        "bug_scenario": "The bug scenario involves using the ol/source/TileWMS with a non-zero gutter option together with ol/layer/WebGLTile. The expected behavior is that, for tiled WMS layers using a gutter (extra pixels around tile edges to prevent visual artifacts), the WebGL renderer should properly clip out the gutter before creating textures, resulting in correct tile placement, seamless joins, and no duplication or misalignment. However, the current implementation does not do this: the gutter is not clipped, so the rendered tiles can overlap, be misaligned, or show duplicated edge artifacts when displayed using a WebGLTile layer."
+    }
+}

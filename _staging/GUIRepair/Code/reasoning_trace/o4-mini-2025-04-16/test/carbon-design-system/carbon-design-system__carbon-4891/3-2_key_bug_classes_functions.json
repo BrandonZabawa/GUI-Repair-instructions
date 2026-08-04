@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Search/Search.js//Search",
+            "packages/components/src/components/search/search.js//Search"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Search/Search.js//render()",
+            "packages/components/src/components/search/search.js//constructor"
+        ],
+        "explanation": "Both the React and vanilla JS implementations of the Search component render or manage an <input> element that Chrome autofills with a sky-blue background. In the React version (Search.js), the render() method\u2019s <input> tag lacks the WebKitBoxShadow override needed to force the original white/light background behind the clear icon. In the vanilla JS version (search.js), the constructor selects the input but does not apply any style overrides to neutralize Chrome\u2019s autofill background. Patching these two locations (the render function in the React class and the constructor in the vanilla JS class) to inject the WebKitBoxShadow and WebkitTextFillColor fix restores the intended background color under autofill, ensuring the clear icon remains high contrast.",
+        "bug_scenario": "When you use the Carbon Search component in Chrome and trigger autofill, Chrome paints the input\u2019s background with its default sky-blue autofill color. That sky-blue layer sits behind the clear (\u201c\u00d7\u201d) icon, which is white, so the icon does not meet contrast requirements (it becomes hard to see against the sky-blue fill). The screenshot shows a partly filled input with a pale blue background behind a white clear icon, illustrating the poor color contrast."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Search/Search.js//Search"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Search/Search.js//render"
+        ],
+        "explanation": "The issue lives in the React Search component \u2013 specifically its render() method, which outputs the <input> and the clear (close) button. In the uncompressed source there is inline styling (WebkitBoxShadow and WebkitTextFillColor) on the <input> to override Chrome\u2019s blue autofill background and preserve icon contrast. That styling is missing in the compressed code, so the clear icon ends up with poor contrast when autofill is active. Restoring or adjusting that styling in Search.render() is the key to fixing the problem.",
+        "bug_scenario": "The screenshot shows that when Chrome\u2019s autofill kicks in (the sky-blue background behind the typed text), the Search component\u2019s clear-(cancel) icon button loses contrast and becomes nearly invisible against that background."
+    }
+}

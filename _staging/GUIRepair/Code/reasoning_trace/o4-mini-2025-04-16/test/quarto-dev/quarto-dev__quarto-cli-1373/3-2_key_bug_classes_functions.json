@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/command/render/codetools.ts"
+        ],
+        "bug_functions": [
+            "formatHasCodeTools",
+            "resolveKeepSource",
+            "resolveCodeTools",
+            "codeToolsPostprocessor"
+        ],
+        "explanation": "All of the key bug elements live in codetools.ts: \n\n\u2022 formatHasCodeTools(format) determines whether code-tools should be shown at all (it gates HTML and Bootstrap).\n\u2022 resolveKeepSource(format, engine, target) is responsible for honoring the user request to keep and embed source code when code-tools.source is set. Currently it only treats `source === true` or `source` omitted as valid, ignoring string URLs.\n\u2022 resolveCodeTools(format, doc) resolves whether toggles and source should be available; it initially reads the raw `code-tools.source` (including strings) but then forces `codeToolsResolved.source = !!format.render[kKeepSource]`, which is never set for string URLs, disabling source entirely.\n\u2022 codeToolsPostprocessor(format) builds the actual menu and \u201cView Source\u201d logic only if `format.render[kKeepSource]` or toggle flags are true.\n\nBecause string URLs for `source` aren\u2019t treated in resolveKeepSource, `kKeepSource` is never set and thus the downstream logic in resolveCodeTools and codeToolsPostprocessor never inserts the code-tools UI. The fix is to update resolveKeepSource (and possibly resolveCodeTools) to accept string values for `source` and set `format.render[kKeepSource]` accordingly.",
+        "bug_scenario": "The user has enabled code-tools in an HTML Quarto document and passed a remote URL string for the `source` option (e.g. `source: \"https://github.com/quarto-dev/quarto-web/blob/main/index.md\"`). When rendered, no code-tools menu or \u201cView Source\u201d button appears, even though the same document with `source: true` works as expected."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/command/render/codetools.ts//formatHasCodeTools",
+            "src/command/render/codetools.ts//resolveKeepSource",
+            "src/command/render/codetools.ts//resolveCodeTools"
+        ],
+        "explanation": "All the core Code Tools logic lives in codetools.ts. \n\u2022 formatHasCodeTools(format) determines whether any code-tools UI should be injected (it only checks for a truthy boolean codeTools config, not a string URL). As a result, codeTools.source:string isn\u2019t recognized as enabling Code Tools. \n\n\u2022 resolveKeepSource(format, engine, target) sets format.render[kKeepSource] only when codeTools is true or an object with source===undefined or source===true. It never marks keep-source for string URLs, so no embedded source is generated. \n\n\u2022 resolveCodeTools(format, doc) then sees keepSource unset and disables both \u201csource\u201d and \u201ctoggle\u201d in the resolved CodeTools object, so the UI button never appears. \n\nFixing the conditions in resolveKeepSource (and updating formatHasCodeTools/resolveCodeTools to treat string source URLs like true) will restore the menu when source=URL.",
+        "bug_scenario": "The user has enabled the HTML \u201ccode-tools\u201d feature in a Quarto .qmd document and pointed its \u201csource\u201d option at an external URL (e.g. a GitHub raw.md file). In the rendered HTML the Code Tools dropdown button never appears (no menu toggle), whereas using \u201csource: true\u201d works correctly (the button and menu show up). From the screenshots we see the title bar shows just the title and no \u201c</> Code\u201d button when source is a string URL."
+    }
+}

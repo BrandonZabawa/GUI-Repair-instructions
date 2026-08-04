@@ -1,0 +1,40 @@
+diff --git a/lib/features/modeling/behavior/DropOnFlowBehavior.js b/lib/features/modeling/behavior/DropOnFlowBehavior.js
+index a08947d2..6e36e6d9 100644
+--- a/lib/features/modeling/behavior/DropOnFlowBehavior.js
++++ b/lib/features/modeling/behavior/DropOnFlowBehavior.js
+@@ -39,6 +39,16 @@ export default function DropOnFlowBehavior(eventBus, bpmnRules, modeling) {
+ 
+     var mid;
+ 
++    // --- PATCH START: Track if targetFlow is default for its source gateway ---
++    var sourceBo = source && source.businessObject;
++    var isDefaultFlow = false;
++    var defaultGateway = null;
++    if (sourceBo && sourceBo.$type === 'bpmn:ExclusiveGateway' && sourceBo['default'] === targetFlow.businessObject) {
++      isDefaultFlow = true;
++      defaultGateway = source;
++    }
++    // --- PATCH END ---
++
+     if (isNumber(positionOrBounds.width)) {
+       mid = getMid(positionOrBounds);
+     } else {
+@@ -109,6 +119,18 @@ export default function DropOnFlowBehavior(eventBus, bpmnRules, modeling) {
+     if (duplicateConnections.length) {
+       modeling.removeElements(duplicateConnections);
+     }
++
++    // --- PATCH START: Restore default property if needed ---
++    // If the original flow was the default for a gateway, restore the default property to the new connection
++    if (isDefaultFlow && defaultGateway) {
++      // The outgoingConnection is the new connection from the gateway to the target
++      // If outgoingConnection is not set, fallback to targetFlow (if it was not replaced)
++      var newDefaultFlow = outgoingConnection ? outgoingConnection.businessObject : (targetFlow && targetFlow.businessObject);
++      if (newDefaultFlow) {
++        defaultGateway.businessObject['default'] = newDefaultFlow;
++      }
++    }
++    // --- PATCH END ---
+   }
+ 
+   this.preExecute('elements.move', function(context) {

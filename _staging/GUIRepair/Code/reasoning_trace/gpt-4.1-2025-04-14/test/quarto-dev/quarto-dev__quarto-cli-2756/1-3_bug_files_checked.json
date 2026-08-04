@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/crossref/crossref.lua",
+            "src/resources/filters/crossref/theorems.lua",
+            "src/resources/filters/common/list.lua",
+            "src/resources/filters/crossref/refs.lua",
+            "src/command/render/crossref.ts"
+        ],
+        "explanation": "1. resources/filters/crossref/crossref.lua: This is referenced by the stack trace and appears to be the main Lua filter responsible for cross-referencing, header evaluation, and handling of theorems and captions. The issue happens during filter execution at line 97 (tprepend), indicating manipulation of table/list structures for theorems/proofs is broken when label/header is missing or misparsed.\n\n2. resources/filters/crossref/theorems.lua: As this file handles logic related to theorem processing and cross-referencing, it would be directly involved when parsing and rendering theorem environments (especially when interleaved with lists or missing metadata).\n\n3. resources/filters/common/list.lua: Since the bug is about improper handling of lists and headers within theorem divs, the core list handling/filter logic is likely contributing to (or being misused by) the theorem filter.\n\n4. resources/filters/crossref/refs.lua: This module deals with resolving and rendering references, which is involved in rendering captions and possibly relating to how theorems and their headers/labels are referenced and separated from body content.\n\n5. src/command/render/crossref.ts: This TypeScript source is most likely responsible for integrating, configuring, and invoking the crossref Lua filters in the rendering pipeline, managing data passed to/from them. Any format or integration error, especially regarding when code blocks or captions are missing, could be rooted here as well.\n\nThese files together govern how theorems (with/without labels), captions, code blocks, and lists are parsed and rendered, and are the locations where this bug is likely caused/fixed.",
+        "bug_scenario": "The attached image and bug report together make two key issues clear: (1) when code blocks or theorems are used without a proper label/header, the Lua crossref filter errors out (specifically in crossref.lua), and (2) when headings are used inside theorem divs that contain lists (ordered or unordered), the theorem caption/heading incorrectly becomes the first list item, i.e., it appears in the generated output as part of the list rather than as a separate caption. The image confirms this by showing theorem captions rendered as list items with bullets or numbers."
+    },
+    "2": {
+        "bug_files": [
+            "src/resources/filters/crossref/crossref.lua",
+            "src/resources/filters/crossref/theorems.lua",
+            "src/resources/filters/common/list.lua",
+            "src/resources/filters/common/layout.lua"
+        ],
+        "explanation": "1. resources/filters/crossref/crossref.lua: The error stack trace directly points at this file (line 97) as producing a Lua filter error when processing theorems/proofs without headers or labels, so a logic bug or a safeguard is missing here. As the main cross-referencing logic, it would also be responsible for how theorem headers/labels are processed or expected.\n2. resources/filters/crossref/theorems.lua: Handles the specifics for theorem/proof blocks and likely manipulates their headers/captions. A bug in how it nests or attaches these captions to lists would cause the bullet/numbering issue illustrated in the screenshot.\n3. resources/filters/common/list.lua: Handles transformation, rendering, or flattening of lists and might be implicated if list structures are incorrectly including theorem titles as items.\n4. resources/filters/common/layout.lua: Is relevant if the presentation/layout logic influences how headers or captions are grouped with body content, possibly failing to separate the header from the body list in theorem blocks. This file should be reviewed for logic that attaches or separates block elements when laying out theorem divs.",
+        "bug_scenario": "The bug concerns how theorems and proofs are rendered in Quarto documents. Specifically, when using a code block without a header/label inside theorem/proof containers, a Lua filter (crossref.lua) errors out due to a nil value being handled incorrectly. Furthermore, when lists (ordered or unordered) are included within theorem containers, the caption/header is rendered as part of the list, so the theorem/proof label wrongly receives a bullet or a number as shown in the attached image. This is a rendering bug and a code processing logic flaw likely within Lua filters responsible for theorems and cross-referencing."
+    }
+}

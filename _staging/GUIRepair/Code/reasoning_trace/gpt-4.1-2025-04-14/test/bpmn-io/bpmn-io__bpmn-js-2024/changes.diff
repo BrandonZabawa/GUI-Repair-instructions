@@ -1,0 +1,43 @@
+diff --git a/lib/draw/BpmnRenderer.js b/lib/draw/BpmnRenderer.js
+index a344b152..18ad6a31 100644
+--- a/lib/draw/BpmnRenderer.js
++++ b/lib/draw/BpmnRenderer.js
+@@ -2251,6 +2251,31 @@ BpmnRenderer.prototype.drawShape = function(parentGfx, element, attrs = {}) {
+ 
+   var handler = this._renderer(type);
+ 
++  // Check for Pool or Lane and handle vertical label rendering
++  if ((type === 'bpmn:Participant' || type === 'bpmn:Lane') && element.di && element.di.isHorizontal === false) {
++    // Draw the shape as usual
++    var shape = handler(parentGfx, element, attrs);
++
++    // Find the label node (assuming it's the last child, or use a selector if available)
++    var label = parentGfx.lastChild;
++    if (label && label.tagName === 'text') {
++      // Get the bounding box of the pool/lane
++      var width = element.width;
++      var height = element.height;
++
++      // Rotate the label -90deg and reposition it to be centered along the vertical pool
++      label.setAttribute('transform',
++        'rotate(-90 ' + (width / 2) + ' ' + (height / 2) + ') ' +
++        'translate(' + (-(height - width) / 2) + ' ' + (height / 2 - width / 2) + ')'
++      );
++      // Optionally, adjust text-anchor and alignment-baseline for better centering
++      label.setAttribute('text-anchor', 'middle');
++      label.setAttribute('alignment-baseline', 'middle');
++    }
++
++    return shape;
++  }
++
+   return handler(parentGfx, element, attrs);
+ };
+ 
+@@ -2310,4 +2335,4 @@ function pickAttrs(attrs, keys = []) {
+ 
+     return pickedAttrs;
+   }, {});
+-}
+\ No newline at end of file
++}

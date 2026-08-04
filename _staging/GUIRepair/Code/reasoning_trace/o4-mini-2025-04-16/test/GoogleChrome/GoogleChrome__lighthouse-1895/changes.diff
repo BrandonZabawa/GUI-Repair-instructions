@@ -1,0 +1,32 @@
+diff --git a/lighthouse-core/gather/computed/trace-of-tab.js b/lighthouse-core/gather/computed/trace-of-tab.js
+index 4ec5cba45..26982f0ea 100644
+--- a/lighthouse-core/gather/computed/trace-of-tab.js
++++ b/lighthouse-core/gather/computed/trace-of-tab.js
+@@ -54,11 +54,22 @@ class TraceOfTab extends ComputedArtifact {
+     // Filter to just events matching the frame ID for sanity
+     const frameEvents = keyEvents.filter(e => e.args.frame === startedInPageEvt.args.data.page);
+ 
+-    // Find our first paint of this frame
+-    const firstPaint = frameEvents.find(e => e.name === 'firstPaint');
+-    // Our navStart will be the latest one before fP.
+-    const navigationStart = frameEvents.filter(e =>
+-        e.name === 'navigationStart' && e.ts < firstPaint.ts).pop();
++    // Find our first paint of this frame, fall back to firstContentfulPaint if needed.
++    const firstPaint = frameEvents.find(e => e.name === 'firstPaint') ||
++                       frameEvents.find(e => e.name === 'firstContentfulPaint');
++
++    // Our navStart will be the latest one before fP if fP exists,
++    // otherwise just the last navigationStart in the trace.
++    let navigationStart;
++    if (firstPaint) {
++      navigationStart = frameEvents
++        .filter(e => e.name === 'navigationStart' && e.ts < firstPaint.ts)
++        .pop();
++    } else {
++      navigationStart = frameEvents
++        .filter(e => e.name === 'navigationStart')
++        .pop();
++    }
+ 
+     // FCP will follow at/after the FP
+     const firstContentfulPaint = frameEvents.find(e =>

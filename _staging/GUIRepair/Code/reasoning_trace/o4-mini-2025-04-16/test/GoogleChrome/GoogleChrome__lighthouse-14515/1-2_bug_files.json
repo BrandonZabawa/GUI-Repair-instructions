@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "core/gather/gatherers/viewport-dimensions.js",
+            "report/generator/report-generator.js",
+            "report/renderer/report-renderer.js"
+        ],
+        "explanation": "1. core/gather/gatherers/viewport-dimensions.js: this gatherer is responsible for grabbing the emulated viewport width, height and devicePixelRatio/deviceScaleFactor from Chrome (the source of truth for screen dimensions), so it must continue to collect and expose those values.\n2. report/generator/report-generator.js: the generator turns the raw RunnerResult (including artifacts) into the JSON blob that the HTML report embeds. We need to pick up the viewportDimensions artifact here and attach its width, height and deviceScaleFactor to the report meta data so the renderer can see them.\n3. report/renderer/report-renderer.js: this is where the \u201cdevices\u201d tooltip is constructed. Currently it only reads CPU/Memory Power, CPU throttling and Axe version. We will update its meta\u2010block rendering logic (around lines 138\u2013140) to read the injected width/height and deviceScaleFactor fields and append them into the tooltip string alongside the other metrics.",
+        "bug_scenario": "When you generate a Lighthouse HTML report with screen emulation (e.g. mobile formFactor and explicit screenEmulation.width, height, deviceScaleFactor), the little tooltip on the \u201cEmulated \u2026 with Lighthouse X.X.X\u201d label in the report\u2019s meta\u2010information only shows CPU/Memory Power, CPU throttling and Axe version. It never displays the actual emulated screen width\u00d7height or the deviceScaleFactor. The ticket requests that we surface those two values alongside the other details in that devices tooltip."
+    },
+    "2": {
+        "bug_files": [
+            "report/renderer/report-renderer.js",
+            "report/renderer/i18n.js"
+        ],
+        "explanation": "report-renderer.js is responsible for building and rendering the meta-information tooltip under the device label. It currently only pulls and displays CPU/Memory power, CPU throttling, and Axe version from the LHR settings. To include the emulated screen width, height, and deviceScaleFactor, we must update this file to read settings.screenEmulation.width, .height, and .deviceScaleFactor and append them to the tooltip. i18n.js contains the localized string definitions used by report-renderer.js for each line in that tooltip; new entries must be added there for the dimension and DPR labels so they can be properly internationalized.",
+        "bug_scenario": "In the Lighthouse HTML report\u2019s meta\u2010information bar, the \u201cEmulated <device> with Lighthouse X.X.X\u201d tooltip currently only displays CPU/Memory Power, CPU throttling, and Axe version. The emulated screen dimensions (width \u00d7 height) and the deviceScaleFactor (DPR) are missing and need to be added to that tooltip."
+    }
+}

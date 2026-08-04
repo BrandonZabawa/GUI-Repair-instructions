@@ -1,0 +1,125 @@
+{
+    "1/1": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "function getResolution(image, referenceImage) {",
+                    "try {",
+                    "return image.getResolution(referenceImage)[0];",
+                    "} catch (_) {",
+                    "return (",
+                    "referenceImage.fileDirectory.ImageWidth / image.fileDirectory.ImageWidth",
+                    ");",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function getResolution(image, referenceImage) {",
+                    "  try {",
+                    "    // return both X and Y resolution",
+                    "    return image.getResolution(referenceImage);",
+                    "  } catch (_) {",
+                    "    // fallback: compute [xRes, yRes] from pixel counts",
+                    "    const fd = image.fileDirectory;",
+                    "    const rfd = referenceImage.fileDirectory;",
+                    "    return [",
+                    "      rfd.ImageWidth  / fd.ImageWidth,",
+                    "      rfd.ImageLength / fd.ImageLength",
+                    "    ];",
+                    "  }",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (!resolutions) {",
+                    "resolutions = sourceResolutions;",
+                    "this.resolutionFactors_[sourceIndex] = 1;",
+                    "} else {",
+                    "if (resolutions.length - minZoom > sourceResolutions.length) {",
+                    "minZoom = resolutions.length - sourceResolutions.length;",
+                    "}",
+                    "const resolutionFactor =",
+                    "resolutions[resolutions.length - 1] /",
+                    "sourceResolutions[sourceResolutions.length - 1];",
+                    "this.resolutionFactors_[sourceIndex] = resolutionFactor;",
+                    "const scaledSourceResolutions = sourceResolutions.map(",
+                    "(resolution) => (resolution *= resolutionFactor)",
+                    ");",
+                    "const message = `Resolution mismatch for source ${sourceIndex}, got [${scaledSourceResolutions}] but expected [${resolutions}]`;",
+                    "assertEqual(",
+                    "resolutions.slice(minZoom, resolutions.length),",
+                    "scaledSourceResolutions,",
+                    "0.02,",
+                    "message,",
+                    "this.viewRejector",
+                    ");",
+                    "}",
+                    "// \u2026"
+                ],
+                "REPLACE": [
+                    "      if (!resolutions) {",
+                    "        resolutions = sourceResolutions;",
+                    "        // first (reference) source has identity factors",
+                    "        this.resolutionFactors_[sourceIndex] = [1, 1];",
+                    "      } else {",
+                    "        if (resolutions.length - minZoom > sourceResolutions.length) {",
+                    "          minZoom = resolutions.length - sourceResolutions.length;",
+                    "        }",
+                    "        // compute separate X/Y resolution factors",
+                    "        const refRes = resolutions[resolutions.length - 1];                // scalar res (X)",
+                    "        const srcRes = sourceResolutions[sourceResolutions.length - 1];   // [xRes, yRes]",
+                    "        const factorX = refRes / srcRes[0];",
+                    "        const factorY = refRes / srcRes[1];",
+                    "        this.resolutionFactors_[sourceIndex] = [factorX, factorY];",
+                    "        // scale sourceResolutions for check",
+                    "        const scaledSourceResolutions = sourceResolutions.map(",
+                    "          ([xRes, yRes]) => [xRes * factorX, yRes * factorY]",
+                    "        );",
+                    "        const message = `Resolution mismatch for source ${sourceIndex}, got [${scaledSourceResolutions}] but expected [${resolutions}]`;",
+                    "        assertEqual(",
+                    "          resolutions.slice(minZoom, resolutions.length),",
+                    "          scaledSourceResolutions,",
+                    "          0.02,",
+                    "          message,",
+                    "          this.viewRejector",
+                    "        );",
+                    "      }",
+                    "      // \u2026"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const source = sourceInfo[sourceIndex];",
+                    "const resolutionFactor = this.resolutionFactors_[sourceIndex];",
+                    "const pixelBounds = [",
+                    "Math.round(x * (size[0] * resolutionFactor)),",
+                    "Math.round(y * (size[1] * resolutionFactor)),",
+                    "Math.round((x + 1) * (size[0] * resolutionFactor)),",
+                    "Math.round((y + 1) * (size[1] * resolutionFactor)),",
+                    "];",
+                    "const image = this.sourceImagery_[sourceIndex][z];",
+                    "// \u2026",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "      const source = sourceInfo[sourceIndex];",
+                    "      // destructure the [factorX, factorY] we stored above",
+                    "      const [factorX, factorY] = this.resolutionFactors_[sourceIndex];",
+                    "      const pixelBounds = [",
+                    "        // use factorX for X, factorY for Y",
+                    "        Math.round(x * size[0] * factorX),",
+                    "        Math.round(y * size[1] * factorY),",
+                    "        Math.round((x + 1) * size[0] * factorX),",
+                    "        Math.round((y + 1) * size[1] * factorY),",
+                    "      ];",
+                    "      const image = this.sourceImagery_[sourceIndex][z];",
+                    "      // \u2026",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

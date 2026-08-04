@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js//CriticalRequestChainRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js//createChainNode"
+        ],
+        "explanation": "The renderer\u2019s createChainNode method is responsible for appending the duration and size text to each chain node. Instead of using the node\u2019s actual or accumulated transferSize (e.g. segment.transferSize or node.request.transferSize), it always formats and displays details.longestChain.transferSize for every leaf. That is why all sizes appear identical. To fix this, createChainNode should use the per-node (or per-chain) transferSize value from the segment rather than the global longestChain.transferSize.",
+        "bug_scenario": "The screenshots show a list of actual resource sizes (e.g. svtvideoplayer.js is 822.2 KB, vendor\u2026js is 134 KB, various font files around 17\u201318 KB, etc.), but in the Lighthouse \u201cCritical Request Chains\u201d panel every entry (and the longest\u2010chain summary) displays the same size (38.18 KB). In the UI tree, each leaf node shows \u201c- X ms, 38.18 KB\u201d regardless of the true transfer size."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js//CriticalRequestChainRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js//CriticalRequestChainRenderer.createChainNode"
+        ],
+        "explanation": "In createChainNode the code appends the size text using details.longestChain.transferSize (the total size of the longest chain) for every node, rather than using the segment\u2019s own transferSize or the individual request.transferSize. As a result, every leaf shows the same number. To fix this, createChainNode should use segment.transferSize (or node.request.transferSize) when formatting the size for each node, not details.longestChain.transferSize.",
+        "bug_scenario": "When viewing the Critical Request Chains waterfall the UI shows the same \u201c38.18KB\u201d size on every resource in the chain, even though each actual resource has a different transfer size (e.g. 120KB, 822KB, 134KB, etc.). The screenshots demonstrate that each leaf node in the chain is rendered with the identical total\u2010chain size, instead of its own cumulative or per-request size."
+    }
+}

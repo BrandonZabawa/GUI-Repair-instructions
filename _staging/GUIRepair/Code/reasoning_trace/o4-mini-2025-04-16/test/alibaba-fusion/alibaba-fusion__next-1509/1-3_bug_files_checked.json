@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/dialog/inner.jsx",
+            "src/dialog/show.jsx",
+            "lib/dialog/inner.js",
+            "lib/dialog/show.js"
+        ],
+        "explanation": "Both Inner (the React component that renders the Dialog via the Overlay gateway) and the static show/confirm methods bypass the ConfigProvider popupContainer. inner.jsx/js renders the mask and panel into document.body by default because it never passes the popupContainer prop into the Overlay or Gateway. show.jsx/js similarly uses Overlay.add without specifying the container. These four files must be updated to retrieve popupContainer from ConfigProvider.getContext() (or from props) and forward it into Overlay/Gateway so that Dialog\u2019s floating layers mount into the configured container rather than document.body.",
+        "bug_scenario": "The reproduction wraps a <Dialog> inside a <ConfigProvider popupContainer=\"test\"> but the Dialog\u2019s overlay (mask and modal container) is still mounted to document.body by default, so the DatePicker popup (which honors the popupContainer) renders inside the \u201ctest\u201d div and appears behind the Dialog\u2019s mask. ConfigProvider\u2019s popupContainer should also control where the Dialog\u2019s floating layers are mounted, but Dialog (both its <Inner> implementation and its static show/confirm methods) never reads or passes the context\u2019s popupContainer, causing the layering issue shown."
+    },
+    "2": {
+        "bug_files": [
+            "src/dialog/index.jsx",
+            "src/dialog/inner.jsx",
+            "src/dialog/show.jsx"
+        ],
+        "explanation": "The Dialog component\u2019s code lives in src/dialog/*. Unlike other overlay components (e.g. Select or DatePicker) which consume the popupContainer context and pass it into their Overlay gateway, Dialog never reads or forwards the ConfigProvider.popupContainer value. index.jsx is the entry point for the Dialog HOC and must be wrapped so that it receives context props (including popupContainer). inner.jsx is responsible for rendering the Portal/Overlay for the dialog content, but currently always mounts to the default container. show.jsx implements the static Dialog.show/confirm API which likewise bypasses the configured container. To fix this bug you need to adjust these three files to pull popupContainer from context (via getContextProps or props) and pass it down into the Overlay/Gateway so that Dialog respects the ConfigProvider.popupContainer setting.",
+        "bug_scenario": "When you wrap your App with <ConfigProvider popupContainer=\"test\"> and render a Dialog inside a scrollable <div id=\"test\">, the Dialog overlay (and any nested floating panels, like the DatePicker calendar) still mounts to document.body rather than into #test. As a result the dialog and its popups are not clipped or scrolled together with the container, leading to visual and scroll\u2010out\u2010of\u2010sync issues (as shown in the screenshot)."
+    }
+}

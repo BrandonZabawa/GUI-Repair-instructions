@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/rating/rating.jsx",
+            "src/rating/mobile/index.jsx"
+        ],
+        "explanation": "核心逻辑都在 rating.jsx 中：当用户传入 id 时，组件会渲染一个关联了 htmlFor 的隐藏<input>以支持键盘/屏幕阅读器，同时也在星星元素上注册了点击 onChange。点击星星时既触发了星星上的 onClick 也触发了隐藏<input>的 change 事件，造成了回调的双重执行。mobile 目录下的实现同样包含这段逻辑，应同步修改。",
+        "bug_scenario": "当给 Rating 组件传入 id 属性后，每次点击切换评分时，控制台会打印两次 onChange 回调。排查发现，组件在有 id 时，会额外为了无障碍渲染一个隐藏的<input>（并绑定同样的 onChange），再加上星星本身的点击事件，在一次点击中分别触发了星星点击的 onChange 和隐藏<input>的 onChange，导致回调被触发两次。"
+    },
+    "2": {
+        "bug_files": [
+            "src/rating/index.jsx",
+            "src/rating/rating.jsx"
+        ],
+        "explanation": "这两个文件中分别负责把用户传入的 props（包括 id 和 onChange）向下传递以及在内部为点击星星绑定事件处理器。\n\n1. src/rating/index.jsx\n   • 该文件将外部传入的 props 直接 spread 到组件的根节点，导致 id 被错误地同时应用到多个 DOM 元素上（容器节点与子元素），进而触发了两次事件冒泡。\n\n2. src/rating/rating.jsx\n   • 该文件是核心逻辑实现，负责渲染各个可点击的星星并注册 onClick/onChange 事件。由于 id 被同时赋给了父层元素和子层 input（或 button）等可交互元素，从而导致对同一个点击行为绑定了多次回调，最终 onChange 被调用两次。\n\n要修复此问题，需要在 index.jsx 中对 id 做特殊处理——只传给最外层容器或最内部的可控元素，不再批量 spread；并在 rating.jsx 中检查只给一个元素绑定 onChange，而不是父子元素同时绑定。",
+        "bug_scenario": "在不传 id 属性时，Rating 组件点击任意星星只会触发一次 onChange 回调；但当给 Rating 传入 id（例如 id=\"score\"）后，每次点击星星时控制台打印了两条日志，说明 onChange 触发了两次。"
+    }
+}

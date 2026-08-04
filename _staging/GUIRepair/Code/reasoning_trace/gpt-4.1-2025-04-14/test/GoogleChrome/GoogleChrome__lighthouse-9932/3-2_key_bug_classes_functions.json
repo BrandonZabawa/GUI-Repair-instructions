@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//ConnectionPool"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//_initializeConnections"
+        ],
+        "explanation": "The core of the bug lies in how the ConnectionPool class (in connection-pool.js) initializes its internal connection objects for each network request. In the _initializeConnections function, it iterates over all records and assigns an additional RTT and a server response time based on the origin, regardless of whether the request is a data URI or not. This results in data URIs being treated as network requests with a non-zero server response time, which is incorrect. The code should specifically detect data URIs (or other non-network protocols) and avoid assigning them a server response time. No changes are required in the other files, as the bug's logic and impact are contained within this initialization logic.",
+        "bug_scenario": "The bug scenario is that data URIs (e.g., URLs beginning with 'data:') are being treated as network requests in the simulator, and thus are being assigned server response times. This is visible in the bug scenario image, which shows a network request object for a data URI with protocol 'data', but a non-zero server response time is being set. Data URIs should not have any server response time because they do not involve a network fetch\u2014they are processed locally. However, the current simulation code assigns them default network timings as if they were real external requests."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//ConnectionPool"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js//_initializeConnections"
+        ],
+        "explanation": "The key issue is that the simulation code does not distinguish between network requests that go over the network and local data URIs (or similar URLs). In the file 'connection-pool.js', within the ConnectionPool class, the _initializeConnections function is responsible for setting up connection objects for all network requests, including assigning a server response time. From the bug scenario and the image, it is clear that even requests with protocol 'data' (i.e., data URIs) are being grouped and assigned a default server response time (30ms or from options). The bug should be fixed by detecting such local protocols (like data, blob, etc.) and skipping the assignment of server response time, or treating them with a negligible/zero response time. That logic belongs in the ConnectionPool class, especially in _initializeConnections, which is where the bug manifests.",
+        "bug_scenario": "The bug scenario is that 'data:' URIs (data URLs) are being treated as actual network requests in the simulator, resulting in the assignment of a server response time. In reality, data URIs are local resources and should not incur any server response time. The bug report and the debugging screenshot show that a NetworkRequest with protocol 'data' is being processed, with server response time being applied, which is not correct."
+    }
+}

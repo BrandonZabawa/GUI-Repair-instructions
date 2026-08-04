@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/Form/Form.js//Form"
+        ],
+        "bug_functions": [
+            "src/js/components/Form/Form.js//validateForm",
+            "src/js/components/Form/Form.js//validateName",
+            "src/js/components/Form/Form.js//setFieldValue"
+        ],
+        "explanation": "The core Form component in Form.js is responsible for managing form state, running validations, and cleaning up when fields are unmounted. \n\n\u2022 validateForm: orchestrates running all validation rules and should drop validation results for fields no longer present in the value object, but the current implementation fails to purge the old \u2018alias\u2019 error.  \n\u2022 validateName: applies per-field validation (including required checks) and contributes error entries that must be removed when a field is removed.  \n\u2022 setFieldValue: handles updating the form\u2019s value object when inputs change or unmount; it should delete the key for removed dynamic fields but isn\u2019t fully syncing with validation state.  \n\nFixing the bug will involve adjusting these functions so that whenever a field is unmounted (its key removed from the form value), its prior validation result is also deleted, allowing the form\u2019s overall valid flag to update correctly.",
+        "bug_scenario": "In the Codesandbox demo the author dynamically adds and removes a required \u201calias\u201d field via a checkbox toggle. When the checkbox is unchecked, the \u201calias\u201d FormField appears and, as expected, the form becomes invalid until an alias is entered. However, when the checkbox is checked again, removing the alias field, the form remains stuck in an invalid state even though that required field no longer exists. The form\u2019s onValidate still reports invalid, meaning the component did not clear out the stale validation error for the removed field."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/Form/Form.js//Form"
+        ],
+        "bug_functions": [
+            "src/js/components/Form/Form.js//validateForm"
+        ],
+        "explanation": "The core of the issue lives in Form.js. The Form component mounts dynamic fields and tracks validation results in its internal state. In particular, the validateForm function is responsible for recalculating all field errors and\u2014per its comments\u2014should \u201cRemove previous errors and infos for keys no longer in the form.\u201d In this dynamic scenario, validateForm is not properly pruning the validation results for the removed \u201calias\u201d key, so the form continues to report invalid even after the field is unmounted. By updating validateForm\u2019s cleanup logic to drop validation entries for fields that no longer appear in the current formValue, the form will correctly reset to valid once the required field is removed.",
+        "bug_scenario": "In the provided GIF and CodeSandbox, toggling the \u201chave alias?\u201d checkbox dynamically adds or removes a required \u201cAlias\u201d field inside the Grommet Form. When the alias field is shown but left empty, the form correctly becomes invalid. However, when the alias field is then removed by re-toggling the checkbox, the Form\u2019s validation does not clear the previous error and the form remains invalid even though no required field is missing."
+    }
+}

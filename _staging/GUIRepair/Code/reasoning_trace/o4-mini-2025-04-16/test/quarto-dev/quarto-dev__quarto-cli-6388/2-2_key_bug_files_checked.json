@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/format/markdown/format-markdown.ts",
+            "src/execute/markdown.ts"
+        ],
+        "explanation": "The file src/format/markdown/format-markdown.ts defines how Quarto renders Markdown, including a flag to disable output divs (kOutputDivs) and a shortcode unescape postprocessor, but that postprocessor never runs in the markdown engine. The markdown engine in src/execute/markdown.ts returns the raw partitioned markdown and has an empty postprocess hook, so the cell output blocks (Divs) remain and indent their contents. As a result, lists coming out of pander end up inside an indented Div, causing nested sub\u2013bullets rather than top-level bullets. Fixing this requires invoking the format\u2019s postprocessors (or stripping the wrapping Div) in execute/markdown.ts so that lists are unindented.",
+        "bug_scenario": "When you run pander::pander(list(\"1\",\"2\",3,c(1,2))) in a .qmd file under Quarto\u2019s markdown engine, the knitted intermediate Markdown shows the list items indented inside the cell div (rendered as nested sub\u2013bullets) instead of at the top level. When you manually knit with knitr, the list is correctly unindented. In Quarto\u2019s pipeline the output cell is wrapped and indented, so each list item gets prefixed by two spaces, turning them into sub\u2013bullets."
+    }
+}

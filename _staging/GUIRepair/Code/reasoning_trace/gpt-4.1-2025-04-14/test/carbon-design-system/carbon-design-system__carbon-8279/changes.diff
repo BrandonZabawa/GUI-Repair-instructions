@@ -1,0 +1,64 @@
+diff --git a/packages/react/src/components/Tile/Tile.js b/packages/react/src/components/Tile/Tile.js
+index 83c39b07..14d25dab 100644
+--- a/packages/react/src/components/Tile/Tile.js
++++ b/packages/react/src/components/Tile/Tile.js
+@@ -287,30 +287,43 @@ export class SelectableTile extends Component {
+   handleClick = (evt) => {
+     evt.preventDefault();
+     evt.persist();
+-    this.setState(
+-      {
+-        selected: !this.state.selected,
+-      },
+-      () => {
+-        this.props.handleClick(evt);
+-        this.props.onChange(evt);
+-      }
+-    );
+-  };
+-
+-  handleKeyDown = (evt) => {
+-    evt.persist();
+-    if (matches(evt, [keys.Enter, keys.Space])) {
+-      evt.preventDefault();
++    const isControlled = this.props.selected !== undefined;
++    if (isControlled) {
++      // Just call handlers, parent will update selected prop
++      this.props.handleClick(evt);
++      this.props.onChange(evt);
++    } else {
+       this.setState(
+         {
+           selected: !this.state.selected,
+         },
+         () => {
+-          this.props.handleKeyDown(evt);
++          this.props.handleClick(evt);
+           this.props.onChange(evt);
+         }
+       );
++    }
++  };
++
++  handleKeyDown = (evt) => {
++    evt.persist();
++    if (matches(evt, [keys.Enter, keys.Space])) {
++      evt.preventDefault();
++      const isControlled = this.props.selected !== undefined;
++      if (isControlled) {
++        this.props.handleKeyDown(evt);
++        this.props.onChange(evt);
++      } else {
++        this.setState(
++          {
++            selected: !this.state.selected,
++          },
++          () => {
++            this.props.handleKeyDown(evt);
++            this.props.onChange(evt);
++          }
++        );
++      }
+     } else {
+       this.props.handleKeyDown(evt);
+     }

@@ -1,0 +1,354 @@
+{
+    "1/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const expectedDataSize = size[0] * size[1] * bandCount;",
+                    "if (data.length < expectedDataSize) {",
+                    "console.warn('Data size is less than expected, filling with zeros');",
+                    "const paddedData = new (data.constructor)(expectedDataSize);",
+                    "paddedData.set(data);",
+                    "data = paddedData;",
+                    "}",
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const requiredDataLength = size[0] * size[1] * (textureType === gl.FLOAT ? 4 : 1);",
+                    "if (data.length >= requiredDataLength) {",
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");",
+                    "} else {",
+                    "console.warn(`Insufficient data provided for texture upload: expected ${requiredDataLength}, got ${data.length}`);",
+                    "// Fallback or handle the insufficient data scenario",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const adjustedWidth = Math.min(size[0], data.length / bandCount);",
+                    "const adjustedHeight = Math.min(size[1], data.length / (bandCount * size[0]));",
+                    "",
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "adjustedWidth,",
+                    "adjustedHeight,",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const paddedData = padDataToSize(data, size, bandCount);  // Add a utility to pad data",
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "paddedData",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const adjustedWidth = size[0] + (size[0] % 2 === 0 ? 0 : 1);",
+                    "const adjustedHeight = size[1] + (size[1] % 2 === 0 ? 0 : 1);",
+                    "const adjustedData = new (data instanceof Float32Array ? Float32Array : Uint8Array)(",
+                    "adjustedWidth * adjustedHeight * (data.byteLength / (size[0] * size[1]))",
+                    ");",
+                    "adjustedData.set(data);",
+                    "",
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "adjustedWidth,",
+                    "adjustedHeight,",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "adjustedData",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "const data = tile.getData();",
+                    "const isFloat = data instanceof Float32Array;",
+                    "const pixelCount = this.size[0] * this.size[1];",
+                    "// Float arrays feature four bytes per element,",
+                    "//  BYTES_PER_ELEMENT throws a TypeScript exception but would handle",
+                    "//  this better for more varied typed arrays.",
+                    "this.bandCount = data.byteLength / (isFloat ? 4 : 1) / pixelCount;"
+                ],
+                "REPLACE": [
+                    "const data = tile.getData();",
+                    "const isFloat = data instanceof Float32Array;",
+                    "const pixelCount = this.size[0] * this.size[1];",
+                    "",
+                    "// Use BYTES_PER_ELEMENT for better handling of varied typed arrays",
+                    "const bytesPerElement = isFloat ? Float32Array.BYTES_PER_ELEMENT : Uint8Array.BYTES_PER_ELEMENT;",
+                    "this.bandCount = data.byteLength / bytesPerElement / pixelCount;"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ],
+                "REPLACE": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data.subarray(0, size[0] * size[1] * bandCount) // Ensure correct data length",
+                    ");"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.coords = coords;",
+                    "this.setTile(tile);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "this.coords = coords;",
+                    "this.setTile(tile);",
+                    "this.tile.addEventListener(EventType.CHANGE, this.handleTileChange_); // Ensure event listener is added",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "uploadDataTexture(helper, texture, data, this.size, this.bandCount);"
+                ],
+                "REPLACE": [
+                    "const texSize = Math.min(data.length / this.bandCount, this.size[0] * this.size[1]);",
+                    "uploadDataTexture(helper, texture, data.subarray(0, texSize * this.bandCount), this.size, this.bandCount);"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// Calculate the expected data size for the texture",
+                    "const expectedDataSize = size[0] * size[1] * bandCount;",
+                    "const actualDataSize = data ? data.length : 0;",
+                    "",
+                    "// Ensure the provided data matches the expected size",
+                    "if (actualDataSize >= expectedDataSize) {",
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");",
+                    "} else {",
+                    "console.warn('Insufficient data size for texture upload', {",
+                    "expected: expectedDataSize,",
+                    "actual: actualDataSize",
+                    "});",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/webgl/TileTexture.js": [
+            {
+                "SEARCH": [
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "size[0],",
+                    "size[1],",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// Validate and correct size mismatch if necessary",
+                    "const width = size[0];",
+                    "const height = size[1];",
+                    "",
+                    "if (data.length < width * height * bandCount) {",
+                    "const paddedData = new Uint8Array(width * height * bandCount);",
+                    "paddedData.set(data);",
+                    "data = paddedData;",
+                    "}",
+                    "",
+                    "gl.texImage2D(",
+                    "gl.TEXTURE_2D,",
+                    "0,",
+                    "format,",
+                    "width,",
+                    "height,",
+                    "0,",
+                    "format,",
+                    "textureType,",
+                    "data",
+                    ");"
+                ]
+            }
+        ]
+    }
+}

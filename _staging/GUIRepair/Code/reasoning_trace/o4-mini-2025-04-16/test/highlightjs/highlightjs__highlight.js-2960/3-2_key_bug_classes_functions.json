@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/perl.js//default export function"
+        ],
+        "explanation": "All Perl regex matching support in highlight.js lives in the anonymous default export function in src/languages/perl.js. In that function, the PERL_DEFAULT_CONTAINS array defines two regexp containers. The second container \u2013 with begin: /(m|qr)?\\// \u2013 only matches m or qr followed by a slash, so patterns like m(/\u2026/) or m#\u2026# or m{\u2026} are not recognized. To fix the bug, this export function needs to be updated: its regexp container definitions must allow arbitrary delimiters for m and qr operators, not just slashes.",
+        "bug_scenario": "The screenshot shows a Perl code snippet being highlighted by highlight.js. The line \u201c$d .= '/' if $d !~ m(/$);\u201d uses the m operator with a slash-delimited regex. However, only the literal '/$' is highlighted as a string, not recognized as a full regex. The highlighter fails to detect m-style regex when the delimiter is not the default slash or when arbitrary delimiters (e.g. m|\u2026|, m#\u2026# or m{\u2026}) are used."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/perl.js//export default function(hljs)"
+        ],
+        "explanation": "Within the default export function in perl.js the PERL_DEFAULT_CONTAINS array defines a \u2018regexp\u2019 container with:\n  begin:   /(m|qr)?\\//\n  end:     regex.concat(/\\//, REGEX_MODIFIERS)\nThis only matches regexes delimited by '/', so any m operator with other delimiters (|, #, {, etc.) won\u2019t be recognized. To fix the bug, this rule must be extended to detect the full m<delim>\u2026<delim> syntax, not just m/\u2026/.",
+        "bug_scenario": "In the user\u2019s screenshot, an m\u2010style regex using slash delimiters (m(/$)) is not being highlighted correctly. The highlighter only understands m// and doesn\u2019t allow m with other delimiters (|, #, {, etc.), so constructs like m|/$| or m#/$# also fail."
+    }
+}

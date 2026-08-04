@@ -1,0 +1,64 @@
+diff --git a/packages/react/src/components/UIShell/SideNav.js b/packages/react/src/components/UIShell/SideNav.js
+index e5ae895e..aede35d3 100644
+--- a/packages/react/src/components/UIShell/SideNav.js
++++ b/packages/react/src/components/UIShell/SideNav.js
+@@ -5,7 +5,7 @@
+  * LICENSE file in the root directory of this source tree.
+  */
+ 
+-import React, { useState, useRef } from 'react';
++import React, { useState, useRef, createContext } from 'react';
+ import { settings } from 'carbon-components';
+ import cx from 'classnames';
+ import PropTypes from 'prop-types';
+@@ -70,7 +70,7 @@ const SideNav = React.forwardRef(function SideNav(props, ref) {
+   });
+ 
+   return (
+-    <>
++    <SideNavContext.Provider value={{ expanded, isRail }}>
+       {isFixedNav ? null : <div className={overlayClassName} />}
+       <nav
+         ref={ref}
+@@ -82,7 +82,7 @@ const SideNav = React.forwardRef(function SideNav(props, ref) {
+         onMouseLeave={() => handleToggle(false)}>
+         {children}
+       </nav>
+-    </>
++    </SideNavContext.Provider>
+   );
+ });
+ 
+diff --git a/packages/react/src/components/UIShell/SideNavMenu.js b/packages/react/src/components/UIShell/SideNavMenu.js
+index aa5b25d4..345e1ed7 100644
+--- a/packages/react/src/components/UIShell/SideNavMenu.js
++++ b/packages/react/src/components/UIShell/SideNavMenu.js
+@@ -10,6 +10,7 @@ import { settings } from 'carbon-components';
+ import cx from 'classnames';
+ import PropTypes from 'prop-types';
+ import React from 'react';
++import { SideNavContext } from './SideNav';
+ import SideNavIcon from './SideNavIcon';
+ 
+ const { prefix } = settings;
+@@ -76,6 +77,11 @@ export class SideNavMenu extends React.Component {
+       title,
+     } = this.props;
+     const { isExpanded } = this.state;
++    // if we’re in rail‐mode & the rail is collapsed, force submenu closed
++    const actualExpanded =
++      (this.context && this.context.isRail && !this.context.expanded)
++        ? false
++        : isExpanded;
+ 
+     let hasActiveChild;
+     if (children && typeof children === Object) {
+@@ -98,7 +104,7 @@ export class SideNavMenu extends React.Component {
+       <li className={className}>
+         <button
+           aria-haspopup="true"
+-          aria-expanded={isExpanded}
++          aria-expanded={actualExpanded}
+           className={`${prefix}--side-nav__submenu`}
+           onClick={this.handleToggleExpand}
+           ref={buttonRef}

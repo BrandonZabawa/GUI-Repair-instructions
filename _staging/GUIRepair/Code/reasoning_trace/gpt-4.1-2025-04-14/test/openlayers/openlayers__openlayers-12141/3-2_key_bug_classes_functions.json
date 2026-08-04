@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/Vector.js//VectorSource"
+        ],
+        "bug_functions": [
+            "src/ol/featureloader.js//xhr",
+            "src/ol/featureloader.js//loadFeaturesXhr",
+            "src/ol/source/Vector.js//VectorSource.addFeatures"
+        ],
+        "explanation": "The core of the bug lies in the incorrect order of operations when loading features with the XHR feature loader: the success callback is called before features are added to the VectorSource. This means that any code (such as event listeners) that tries to access the extent of the source at that moment receives an empty extent. The main functions involved are:\n- src/ol/featureloader.js//xhr: This function creates the feature loader, and contains the logic order for calling the success callback and adding features.\n- src/ol/featureloader.js//loadFeaturesXhr: This is the underlying function that loads features and invokes the callback.\n- src/ol/source/Vector.js//VectorSource: The class whose addFeatures method populates the source and enables getExtent to return real values.\nTo fix the bug, the order in xhr's callback should be reversed: features must be added (source.addFeatures) before the success callback is invoked, ensuring that any inspection of the source in the callback (such as getExtent) sees the correct state.",
+        "bug_scenario": "The bug occurs when trying to get the extent of a VectorSource in the featuresloadend callback. Instead of returning the actual extent, VectorSource.getExtent() returns [Infinity,Infinity,-Infinity,-Infinity], which is the default empty extent and indicates that features have not yet been added to the source when the callback is called. The provided image highlights the order in which features are added and the callback is invoked, suggesting that the success callback is called before features are actually added to the source."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/featureloader.js//"
+        ],
+        "bug_functions": [
+            "src/ol/featureloader.js//xhr",
+            "src/ol/featureloader.js//loadFeaturesXhr"
+        ],
+        "explanation": "The key bug is in the function returned by 'xhr' (in src/ol/featureloader.js) and the 'loadFeaturesXhr' function. In 'xhr', the callback provided to 'loadFeaturesXhr' calls 'success(features)' before 'source.addFeatures(features)'. This sequence means that when the 'success' callback (which leads to the 'featuresloadend' event) is executed, the VectorSource hasn't yet been updated with the new features, so its extent is still invalid. To fix the bug, 'source.addFeatures(features)' should be called before 'success(features)', ensuring the source is up-to-date when the callback is fired. The functions in src/ol/featureloader.js directly control the loading process and the order of these operations, which is why they are the bug-related elements.",
+        "bug_scenario": "The bug occurs when attempting to get the extent of a VectorSource inside the 'featuresloadend' callback function. The returned extent is [Infinity, Infinity, -Infinity, -Infinity], which indicates that the source does not yet contain any features at the time the callback is triggered. The expected behavior is for VectorSource.getExtent() to return the correct extent after features are loaded. The provided image highlights that 'success(features)' is called before 'source.addFeatures(features)', meaning the source hasn't updated with the new features when the callback executes, causing the returned extent to be empty or invalid."
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/BaseVector.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/layer/MapboxVector.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "\u2022 src/ol/layer/BaseVector.js and src/ol/layer/Vector.js: these define the generic VectorLayer class and its constructor/options, including the new \u201cbackground\u201d option that layers can carry.  \n\n\u2022 src/ol/layer/MapboxVector.js: this subclass of VectorLayer pulls in Mapbox style layers and specifically surfaces the Mapbox \u201cbackground\u201d style layer through the VectorLayer API.  \n\n\u2022 src/ol/renderer/canvas/VectorLayer.js: this is where useContainer() is called to draw a layer\u2019s background onto an off\u2010screen canvas before compositing. it invokes asArray() on the layer.getBackground() value, but because the Mapbox style background comes through as an Expression or unsupported object instead of a raw CSS color string or array, the color parser throws an assertion and the layer never renders over the layer below.",
+        "bug_scenario": "When a styled vector layer with a background (for example a MapboxVector layer using a style that defines a background color) is placed on top of another layer (such as an OSM tile layer), rendering fails with an assertion error coming out of CanvasVectorLayerRenderer.useContainer. The stack trace shows that a color\u2010parsing helper (asArray / fromStringInternal_) is fed something it can\u2019t handle (the background style expression), and the layer never paints on top of the tile layer."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/canvas/VectorImageLayer.js",
+            "src/ol/layer/BaseVector.js",
+            "src/ol/layer/MapboxVector.js",
+            "src/ol/colorlike.js"
+        ],
+        "explanation": "These files are all directly involved in the new \u2018background container\u2019 feature for vector layers that was introduced in #13085/#13178 and is responsible for the assertion error: 1) VectorLayer.js and VectorImageLayer.js (in src/ol/renderer/canvas) contain the useContainer() logic that sets up and fills a secondary canvas for the layer background\u2014and they invoke asArray(fromStringInternal_) on the style\u2019s background color. 2) BaseVector.js defines the get/set background handling for all vector layers (including the default VectorLayer), so any bug in how the background string is passed or normalized originates here. 3) MapboxVector.js pulls in a default background fill via its Mapbox style and sits on top of BaseVector, so it exhibits the bug first. 4) colorlike.js (the fromStringInternal_ and asArray implementations) is where invalid or unexpected CSS color strings ultimately trigger the assertion failure.",
+        "bug_scenario": "When you put a vector layer that has a non-transparent background on top of another layer (for example, an OSM tile layer), the OpenLayers canvas renderer for vector layers enters its \u201cuseContainer\u201d path and tries to parse or apply the background fill to a separate internal container. That leads to an assertion failure in the color-parsing code (fromStringInternal_ \u2192 asArray) and the whole render frame breaks. This happens in both MapboxVector layers (which always carry a background in their style URL) and in plain ol/layer/Vector layers as of PR #13178."
+    }
+}

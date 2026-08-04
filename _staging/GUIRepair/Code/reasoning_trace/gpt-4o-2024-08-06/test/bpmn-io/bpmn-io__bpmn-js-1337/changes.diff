@@ -1,0 +1,77 @@
+diff --git a/lib/features/rules/BpmnRules.js b/lib/features/rules/BpmnRules.js
+index cf323041..91309a41 100644
+--- a/lib/features/rules/BpmnRules.js
++++ b/lib/features/rules/BpmnRules.js
+@@ -651,33 +651,41 @@ function canReplace(elements, target, position) {
+ 
+   forEach(elements, function(element) {
+ 
+-    if (!isEventSubProcess(target)) {
++if (!isEventSubProcess(target)) {
+ 
+-      if (is(element, 'bpmn:StartEvent') &&
+-          element.type !== 'label' &&
+-          canDrop(element, target)) {
++if (is(element, 'bpmn:StartEvent') &&
++element.type !== 'label' &&
++canDrop(element, target)) {
+ 
+-        // replace a non-interrupting start event by a blank interrupting start event
+-        // when the target is not an event sub process
+-        if (!isInterrupting(element)) {
+-          canExecute.replacements.push({
+-            oldElementId: element.id,
+-            newElementType: 'bpmn:StartEvent'
+-          });
+-        }
++// Disallow typed start events inside non-event-based sub-processes
++if (hasEventDefinition(element, 'bpmn:MessageEventDefinition') ||
++hasEventDefinition(element, 'bpmn:TimerEventDefinition') ||
++hasEventDefinition(element, 'bpmn:ConditionalEventDefinition') ||
++hasEventDefinition(element, 'bpmn:SignalEventDefinition')) {
++return false;
++}
+ 
+-        // replace an error/escalation/compensate start event by a blank interrupting start event
+-        // when the target is not an event sub process
+-        if (hasErrorEventDefinition(element) ||
+-            hasEscalationEventDefinition(element) ||
+-            hasCompensateEventDefinition(element)) {
+-          canExecute.replacements.push({
+-            oldElementId: element.id,
+-            newElementType: 'bpmn:StartEvent'
+-          });
+-        }
+-      }
+-    }
++// replace a non-interrupting start event by a blank interrupting start event
++// when the target is not an event sub process
++if (!isInterrupting(element)) {
++canExecute.replacements.push({
++oldElementId: element.id,
++newElementType: 'bpmn:StartEvent'
++});
++}
++
++// replace an error/escalation/compensate start event by a blank interrupting start event
++// when the target is not an event sub process
++if (hasErrorEventDefinition(element) ||
++hasEscalationEventDefinition(element) ||
++hasCompensateEventDefinition(element)) {
++canExecute.replacements.push({
++oldElementId: element.id,
++newElementType: 'bpmn:StartEvent'
++});
++}
++}
++}
+ 
+     if (!is(target, 'bpmn:Transaction')) {
+       if (hasEventDefinition(element, 'bpmn:CancelEventDefinition') &&
+@@ -926,4 +934,4 @@ function areOutgoingEventBasedGatewayConnections(connections) {
+ 
+ function getRootElement(element) {
+   return getParent(element, 'bpmn:Process') || getParent(element, 'bpmn:Collaboration');
+-}
++}
+\ No newline at end of file

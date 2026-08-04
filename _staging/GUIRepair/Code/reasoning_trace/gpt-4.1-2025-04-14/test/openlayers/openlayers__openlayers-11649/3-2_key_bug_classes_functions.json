@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/proj/proj4.js//register",
+            "src/ol/proj/Projection.js//Projection"
+        ],
+        "bug_functions": [
+            "src/ol/proj/proj4.js//register"
+        ],
+        "explanation": "The 'register' function in src/ol/proj/proj4.js is responsible for converting proj4js definitions into OpenLayers Projection objects. This function directly maps proj4js definition properties (such as units and axis) to the Projection constructor. However, proj4js definitions for geographic CRSs often omit the 'units' and 'axis' fields, leaving them undefined in the resulting Projection. The Projection class in src/ol/proj/Projection.js then uses these undefined values, defaulting axisOrientation to 'enu' and leaving units as undefined. To fix the bug, the register function should provide sensible defaults ('degrees' for units and 'neu' for axisOrientation) when these fields are missing in proj4js definitions. Thus, both the register function itself and the Projection class constructor are core elements related to this bug.",
+        "bug_scenario": "The bug scenario shows that when defining a new geographic CRS (e.g., EPSG:4258) using proj4js and registering it in OpenLayers via ol.proj.proj4.register, the resulting projection has missing or incorrect parameters. Specifically, required parameters such as 'units' are undefined and 'axisOrientation' defaults to 'enu' instead of the expected 'neu'. This leads to broken map projections and incorrect rendering, as visualized by the screenshots showing OpenLayers projections with undefined units and wrong axis orientation."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/proj/proj4.js//(no class, but the register(proj4) function)",
+            "src/ol/proj/Projection.js//Projection"
+        ],
+        "bug_functions": [
+            "src/ol/proj/proj4.js//register"
+        ],
+        "explanation": "The main bug is in 'src/ol/proj/proj4.js' in the 'register' function. This function reads definitions from proj4js and passes them to create OpenLayers Projection objects. However, when proj4js definitions lack explicit 'units' or 'axis', 'register' does not supply defaults ('degrees' for geographic projections, 'neu' for axisOrientation). This leads to OpenLayers projections with 'units: undefined' and wrong 'axisOrientation'. Fixing this requires modifying 'register' to set appropriate defaults when 'def.units' or 'def.axis' are not present. The 'Projection' class in 'src/ol/proj/Projection.js' is also central because it holds these configuration fields, so the interaction between the register function and this class is key. However, the bug is triggered and fixable via logic in 'register', not the class itself.",
+        "bug_scenario": "The scenario shows that when registering a new geographic projection in OpenLayers using Proj4js (e.g., EPSG:4258), the resulting projection object in OpenLayers has undefined 'units' and an incorrect 'axisOrientation' (defaults to 'enu' instead of the correct value such as 'neu'). This leads to broken map projections, as required parameters are not set correctly. The images confirm that the Proj4js definition for EPSG:4258 does not specify 'units' or 'axis', but OpenLayers does not provide correct defaults ('degrees' for units, 'neu' for axisOrientation) when these are missing, resulting in a projection object missing essential configuration."
+    }
+}

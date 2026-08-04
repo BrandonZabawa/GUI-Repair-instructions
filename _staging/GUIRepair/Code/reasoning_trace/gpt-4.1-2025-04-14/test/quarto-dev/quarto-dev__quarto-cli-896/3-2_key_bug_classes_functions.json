@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/layout/layout.lua",
+            "src/resources/filters/layout/html.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/layout/layout.lua//layoutPanels",
+            "src/resources/filters/layout/layout.lua//partitionCells",
+            "src/resources/filters/layout/layout.lua//layoutCells",
+            "src/resources/filters/layout/html.lua//htmlPanel"
+        ],
+        "explanation": "The key problem is that images placed inside generic divs in revealjs slides are not rendered inside the div block, but instead are moved after the div content. This suggests an issue in how the filter or layout logic processes arbitrary divs versus special layout containers like columns. In the compressed bug files, the core panel and layout logic is in layout.lua, specifically:\n- layoutPanels: Handles Div elements and decides when to apply special panel layout logic.\n- partitionCells: Splits content into preamble/cells/caption and manipulates div content for layout.\n- layoutCells: Arranges div content into rows/columns as needed for layout panels.\n\nIn html.lua, the htmlPanel function is responsible for rendering the layout structure for HTML (and thus revealjs) output. If images are getting 'bumped' outside of divs, it's likely due to a logic path in these functions where generic divs are not treated as layout panels, or their content is not correctly preserved/nested in HTML output. The bug does not appear to stem from the revealjs format TypeScript, as the core DOM/HTML structure is already set up by the Lua filters. The columns case works because it triggers the specific columns panel logic, but generic divs do not, leading to this issue. Thus, the Lua classes/functions above are the key bug-related elements requiring attention.",
+        "bug_scenario": "The bug scenario is that in a Quarto document rendered with the revealjs format, users expect that when they place an image inside a custom div (with arbitrary class), the image should appear within the div between surrounding text, as written in the markdown. However, when rendered, the image is displayed outside the custom div, after the text. This issue does not occur with columns (where the image is correctly placed inside the column div), but does occur for arbitrary divs both at the block and nested levels. This is clearly shown in the screenshots: only the columns layout (Test B) works as expected; the custom div and nested divs (Test A and C) show the image outside the intended div block."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/layout/layout.lua//function layoutPanels",
+            "src/resources/filters/layout/layout.lua//function partitionCells",
+            "src/resources/filters/layout/layout.lua//function layoutCells",
+            "src/resources/filters/layout/html.lua//function htmlPanel"
+        ],
+        "bug_functions": [
+            "src/resources/filters/layout/layout.lua//function layoutPanels",
+            "src/resources/filters/layout/layout.lua//function partitionCells",
+            "src/resources/filters/layout/layout.lua//function layoutCells",
+            "src/resources/filters/layout/html.lua//function htmlPanel"
+        ],
+        "explanation": "The bug is related to how custom div blocks are handled during the panel/layout processing in Quarto's Revealjs format. \n\n- The `layoutPanels` function in layout.lua is the entry point for special panel/block layout handling and decides when to apply custom layout logic to divs (including those with arbitrary classes). If this logic is not triggered for custom divs, their content (like images) may not be grouped as expected.\n- The `partitionCells` function is responsible for splitting the div content into preamble, cells, and captions. If it doesn't properly treat all blocks (including images) as cell content, or if it mishandles the structure, images could be separated from their intended div container.\n- The `layoutCells` function determines how the cells are arranged within the div. Any issue here could result in children (like images) not being nested correctly.\n- The `htmlPanel` function in html.lua is responsible for rendering the panel layout as HTML. If it assumes a structure that only works for columns or fails to wrap non-column divs correctly, the image will not appear in the correct place.\n\nThe bug is likely a result of inconsistent handling between custom divs and column divs in these layout functions, leading to improper grouping of images with their containing text. Fixing the logic in these functions to treat arbitrary divs with arbitrary classes more like columns (or to ensure their children are grouped together in the output HTML) would address the issue.",
+        "bug_scenario": "The bug scenario is that when placing an image inside a custom div block (with an arbitrary class) in a Quarto Revealjs presentation, the image does not appear inside the div as expected. Instead, the image is rendered outside or after the div. This issue is not present when using the .columns block, where the image is rendered in the correct position inside the column div. The provided images show that in slide Test A (custom block) and Test C (outer div), the image is placed after the text (and possibly outside the intended div), while in Test B (columns), the image is correctly within the div/column, as expected."
+    }
+}

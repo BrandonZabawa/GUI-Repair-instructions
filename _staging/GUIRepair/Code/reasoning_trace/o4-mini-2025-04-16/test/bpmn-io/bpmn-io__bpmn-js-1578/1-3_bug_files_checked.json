@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js",
+            "lib/features/modeling/behavior/UnclaimIdBehavior.js"
+        ],
+        "explanation": "The logic in BpmnCopyPaste.js drives the copy/paste lifecycle, including invoking the ModdleCopy utility, which currently clones elements (and their IDs) without assigning new ones. ModdleCopy.js carries out the deep copy of the BPMN elements but doesn\u2019t remap or regenerate IDs. UnclaimIdBehavior.js is responsible for removing ID claims on new elements to allow the modeller to generate fresh IDs, but it does not fire for top-level process elements on paste. Together these three files govern ID handling during copy/paste, and must be updated to ensure that any duplicated pool (process) and its children always receive unique IDs upon paste.",
+        "bug_scenario": "When copying and pasting a Pool (which corresponds to a BPMN process) the copy-paste feature duplicates the element IDs verbatim. As a result, after a copy/paste operation the original and the copied Pool (and its child Task) both carry the same ID (e.g. \u201cProcess_17iojvx\u201d). When exporting to BPMN XML this leads to two <bpmn:process> elements having identical IDs, violating BPMN uniqueness constraints."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js"
+        ],
+        "explanation": "The root of the duplicate-id issue lies in the copy-paste feature: BpmnCopyPaste.js is responsible for the high-level orchestration of copying and pasting BPMN elements (including Pools/Processes), and it delegates the deep cloning of BPMN moddle elements to ModdleCopy.js. Currently, ModdleCopy.js blindly clones the \u2018id\u2019 attribute of every element, so when a Pool (with its child Process) is pasted, its original id is carried over instead of generating a fresh one. To fix this, you need to update these files so that, during paste, new unique ids are generated (for example, by leveraging the BPMN factory id generator or unclaiming the old id) for Pools, Processes and their contained flow nodes.",
+        "bug_scenario": "When you create a Pool (BPMN Participant) containing a Task, copy that Pool and paste it, then export the diagram, the generated BPMN-XML shows two <bpmn:process> elements with the exact same id. Because the pasted Pool is a copy of the original, its underlying Process id (and its child element ids) are not being refreshed. The result is duplicate Process ids in the exported XML, violating BPMN uniqueness requirements."
+    }
+}

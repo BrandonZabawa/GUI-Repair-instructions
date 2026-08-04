@@ -1,0 +1,93 @@
+diff --git a/packages/react/src/components/MultiSelect/MultiSelect.js b/packages/react/src/components/MultiSelect/MultiSelect.js
+index ae686e94..f316c8e8 100644
+--- a/packages/react/src/components/MultiSelect/MultiSelect.js
++++ b/packages/react/src/components/MultiSelect/MultiSelect.js
+@@ -86,7 +86,7 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+     onItemChange,
+     clearSelection,
+   } = useSelection({
+-    disabled,
++    disabled: disabled || readOnly,
+     initialSelectedItems,
+     onChange,
+     selectedItems: selected,
+@@ -169,6 +169,7 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+       [`${prefix}--multi-select--selected`]:
+         selectedItems && selectedItems.length > 0,
+       [`${prefix}--list-box--up`]: direction === 'top',
++      [`${prefix}--multi-select--readonly`]: readOnly,
+     }
+   );
+ 
+@@ -270,17 +271,18 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+         <button
+           type="button"
+           className={`${prefix}--list-box__field`}
+-          disabled={disabled}
+-          aria-disabled={disabled}
+-          {...toggleButtonProps}
++          disabled={disabled || readOnly}
++          aria-disabled={disabled || readOnly}
++          tabIndex={readOnly ? -1 : undefined}
++          {...(!readOnly ? toggleButtonProps : {})}
+           ref={mergeRefs(toggleButtonProps.ref, ref)}
+-          onKeyDown={onKeyDown}>
++          onKeyDown={readOnly ? undefined : onKeyDown}>
+           {selectedItems.length > 0 && (
+             <ListBox.Selection
+-              clearSelection={!disabled ? clearSelection : noop}
++              clearSelection={!disabled && !readOnly ? clearSelection : noop}
+               selectionCount={selectedItems.length}
+               translateWithId={translateWithId}
+-              disabled={disabled}
++              disabled={disabled || readOnly}
+             />
+           )}
+           <span id={fieldLabelId} className={`${prefix}--list-box__label`}>
+@@ -291,17 +293,18 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+         <ListBox.Menu aria-multiselectable="true" {...getMenuProps()}>
+           {isOpen &&
+             sortItems(items, sortOptions).map((item, index) => {
++              const isChecked =
++                selectedItems.filter((selected) => isEqual(selected, item))
++                  .length > 0;
+               const itemProps = getItemProps({
+                 item,
+                 // we don't want Downshift to set aria-selected for us
+                 // we also don't want to set 'false' for reader verbosity's sake
+                 ['aria-selected']: isChecked ? true : null,
+-                disabled: item.disabled,
++                disabled: item.disabled || readOnly,
++                tabIndex: readOnly ? -1 : undefined,
+               });
+               const itemText = itemToString(item);
+-              const isChecked =
+-                selectedItems.filter((selected) => isEqual(selected, item))
+-                  .length > 0;
+               return (
+                 <ListBox.MenuItem
+                   key={itemProps.id}
+@@ -341,6 +344,11 @@ MultiSelect.displayName = 'MultiSelect';
+ MultiSelect.propTypes = {
+   ...sortingPropTypes,
+ 
++  /**
++   * Specify if the MultiSelect should be read-only
++   */
++  readOnly: PropTypes.bool,
++
+   /**
+    * Specify the text that should be read for screen readers that describes total items selected
+    */
+@@ -498,8 +506,10 @@ MultiSelect.propTypes = {
+    */
+   warnText: PropTypes.node,
+ };
+-
+ MultiSelect.defaultProps = {
++  readOnly: false,
++  // ...other defaultProps
++...
+   compareItems: defaultCompareItems,
+   disabled: false,
+   locale: 'en',

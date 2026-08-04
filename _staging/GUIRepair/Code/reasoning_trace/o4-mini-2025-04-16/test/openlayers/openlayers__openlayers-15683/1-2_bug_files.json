@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "Both of these modules participate in sizing and drawing the canvas that backs a vector layer when a frame is composed. In Layer.js the canvas width/height are computed before drawing, and in VectorLayer.js that canvas is actually populated with feature geometries. The regression in v9.1.0 removed or altered the logic that grew the canvas dimensions to account for rotation, so a rotated view now draws into too\u2010small a canvas. Restoring or updating the size calculations here will prevent the cropping of large polygons under rotation.",
+        "bug_scenario": "When you rotate the map (e.g. with shift+ALT+drag) and have a large vector feature that spans the full width, the drawn polygon is clipped against the vector\u2010layer\u2019s canvas edges. In effect, the canvas backing the vector layer is not being resized to the larger, rotated bounding box and so parts of the feature fall outside the canvas and are cropped."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/render/canvas.js"
+        ],
+        "explanation": "The core of the bug is in the canvas-based vector renderer. In src/ol/renderer/canvas/VectorLayer.js the offscreen canvas dimensions are computed from the unrotated view extent (plus a static buffer), so when the map rotates the axis-aligned canvas no longer covers the rotated viewport. src/ol/renderer/canvas/Layer.js contains shared logic for resizing and clearing these canvases and must be updated to grow the buffer to the rotated bounds. Finally, src/ol/render/canvas.js applies the transform for rotation and scaling; any miscalculation there of the transform origin or matrix will exacerbate the clipping by not centering the rotated draw onto the expanded canvas.",
+        "bug_scenario": "When the map is rotated (using Shift+Alt+Drag), the offscreen canvas used by the vector layer is not grown to cover the newly rotated viewport. As a result, a large polygon that once filled the map when un-rotated becomes clipped at the edges of its fixed-size canvas and appears cropped."
+    }
+}

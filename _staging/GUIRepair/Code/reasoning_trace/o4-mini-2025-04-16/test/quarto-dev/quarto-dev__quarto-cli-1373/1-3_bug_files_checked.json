@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/config/format.ts",
+            "src/config/types.ts",
+            "src/command/render/codetools.ts",
+            "src/resources/formats/html/quarto.js"
+        ],
+        "explanation": "1. src/config/format.ts and src/config/types.ts define and validate the HTML format options (including the code-tools.source setting). Currently they only recognize a boolean for source, so when you supply a string URL it is dropped at parse time. 2. src/command/render/codetools.ts contains the server-side logic that injects the code-tools markup into the Pandoc AST. It only checks for source === true, never for a string, so no menu HTML is generated when you supply a URL. 3. resources/formats/html/quarto.js is the client script that wires up the \u201c<> Code\u201d button and, in theory, would fetch a remote URL if provided. Because no data-source attribute is emitted for string URLs, this code never runs. Together these files explain why only the boolean form works and why the URL form is ignored.",
+        "bug_scenario": "When you set code-tools.source to a URL (for example \u201chttps://github.com/quarto-dev/quarto-web/blob/main/index.md\u201d) the interactive \u201c<> Code\u201d dropdown never appears in HTML output. If you use code-tools.source: true (the boolean form) the menu renders and works correctly, but passing a string URL is silently ignored."
+    },
+    "2": {
+        "bug_files": [
+            "src/command/render/codetools.ts",
+            "src/format/html/format-html-shared.ts",
+            "src/resources/filters/quarto-post/quarto-post.lua"
+        ],
+        "explanation": "The code-tools feature is wired up in three places:\n\n\u2022 src/command/render/codetools.ts\n  This file reads the user\u2019s code-tools.source option and emits the pipeline steps for injecting source code into the document. It currently only knows how to handle boolean or local file paths and ignores string values that look like URLs.\n\n\u2022 src/format/html/format-html-shared.ts\n  This is where the HTML format adds its code-tools dependencies (scripts/styles) to the page. It checks for a true/false value on source but doesn\u2019t include the client-side fetch logic or runtime hook needed to load a remote URL.\n\n\u2022 resources/filters/quarto-post/quarto-post.lua\n  The Lua filter that actually annotates code blocks with the menu (copy, run, source, etc.) reads the source option and reads the file\u2019s contents. Right now it only opens a local path; it needs to detect an HTTP(S) URL and emit JavaScript that fetches the remote file instead.\n\nTogether these are the pieces you\u2019d need to modify so that when a URL is passed in, the renderer still wires up and fetches the source and displays the code-tools menu.",
+        "bug_scenario": "When you set code-tools.source to a remote URL (for example, \u201chttps://github.com/quarto-dev/quarto-web/blob/main/index.md\u201d), the code-tools drop-down never appears in the rendered HTML. If you switch to a local source (source: true) it works as expected."
+    }
+}

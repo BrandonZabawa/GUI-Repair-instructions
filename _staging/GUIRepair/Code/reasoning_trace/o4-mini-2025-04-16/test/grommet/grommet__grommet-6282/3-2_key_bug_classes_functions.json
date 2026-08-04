@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/js/components/DataTable/buildState.js//datumValue",
+            "src/js/components/DataTable/buildState.js//filterAndSortData"
+        ],
+        "explanation": "The sorting logic in filterAndSortData uses datumValue to retrieve cell values, but datumValue returns undefined for null or undefined properties. In filterAndSortData\u2019s comparator, undefined values fall through the string and numeric branches and return 0, so rows with null/undefined never move. Treating null/undefined as an empty string (e.g. normalizing datumValue to return '' when its result is nullish) inside these two functions will ensure the localeCompare path handles them correctly and restores proper ordering.",
+        "bug_scenario": "In the DataTable screenshot the \u201cParent\u201d column is sorted ascending (arrow up), but rows where parent_id is null or undefined (rendered as \u201c--\u201d) remain at the top and the remaining rows do not get re-ordered by their actual parent_id values. Null/undefined values aren\u2019t being normalized to empty strings, so the sort comparator in buildState.js skips or treats them improperly, breaking the sort order."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/js/components/DataTable/buildState.js//datumValue",
+            "src/js/components/DataTable/buildState.js//filterAndSortData"
+        ],
+        "explanation": "The datumValue function returns undefined for null or missing properties, so when filterAndSortData\u2019s sort comparator retrieves d1Val or d2Val for a property that is null or undefined, it doesn\u2019t coerce it to an empty string. As a result, comparisons like undefined > \"someString\" and undefined < \"someString\" both yield false, so the comparator returns 0 and leaves those rows in place. To fix the bug, datumValue or filterAndSortData should normalize null/undefined values to \"\" before comparing, ensuring undefined properties sort as empty strings.",
+        "bug_scenario": "When sorting the \u201cParent\u201d column in a DataTable, rows whose parent_id is null or undefined are not treated as empty strings and therefore never move in the sorted order. In the screenshot, items with a null parent_id stay pinned at the top instead of being ordered around the non-null parent_id rows."
+    }
+}

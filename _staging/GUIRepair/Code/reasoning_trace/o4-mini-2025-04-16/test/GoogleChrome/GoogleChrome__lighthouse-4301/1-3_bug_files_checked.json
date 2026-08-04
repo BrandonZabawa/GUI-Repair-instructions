@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/runner.js",
+            "lighthouse-core/gather/gatherers/service-worker.js",
+            "lighthouse-core/gather/gatherers/offline.js",
+            "lighthouse-core/gather/gatherers/start-url.js"
+        ],
+        "explanation": "\u2022 driver.js contains the logic to navigate the browser to the target URL and wait for the onload event. There\u2019s no built-in timeout around the loadEventFired promise, so if the event never fires the code blocks indefinitely.  \n\u2022 gather-runner.js drives the overall gather phase, calling driver.goToURL and then invoking each PWA gatherer in turn. If goToURL never returns, gather-runner never proceeds to any audit or error path.  \n\u2022 runner.js is the high-level coordinator that instantiates the driver and gather-runner; a hang here bubbles all the way up into the CLI or extension with no fallback.  \n\u2022 The service-worker, offline and start-url gatherers are the first PWA-category gatherers run against the page. If any of these register a SW, intercept requests, or tee up navigation in a way that prevents the load event, the hang shows up here.  \nTogether these files form the path from triggering the audit, driving Chrome to load your page, and invoking the PWA gatherers\u2014so they\u2019re the prime suspects for fixing the indefinite hang on onload.",
+        "bug_scenario": "When you kick off the \u201cProgressive Web App\u201d category audit (either from DevTools or via the extension) against a page that registers or talks to a service worker, the progress UI gets stuck forever at \u201cLoading page & waiting for onload.\u201d In our reproducible case (using chrome-launcher + lighthouse), Lighthouse calls driver.goToURL to navigate to the start URL, then waits for the DevTools \u201cPage.loadEventFired\u201d event\u2014but that promise never resolves, so the entire audit hangs with no timeout or error."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/gatherers/service-worker.js",
+            "lighthouse-core/gather/gatherers/offline.js",
+            "lighthouse-core/gather/gatherers/start-url.js"
+        ],
+        "explanation": "The hang at \u201cLoading page & waiting for onload\u201d indicates that the code responsible for navigation and waiting for the page\u2019s load event isn\u2019t resolving. \n\n\u2022 driver.js defines how Lighthouse drives Chrome via the DevTools protocol\u2014most notably Page.navigate and waiting for the loadEventFired event. A missing or never-fired loadEventFired would leave this promise unresolved.  \n\u2022 gather-runner.js kicks off the navigation and load-event wait via driver.js and then dispatches to the category-specific gatherers. If the initial load promise never resolves, the rest of the gatherers never run.  \n\u2022 The three PWA\u2010specific gatherers (service-worker.js, offline.js, start-url.js) are only loaded when the \u201cProgressive Web App\u201d category is selected. They each set up additional network or service-worker hooks that may interfere with the normal loadEventFired or introduce their own waits without timeouts. If any of those waits never complete, the CLI will stay indefinitely on the same loading screen.  \n\nBecause the hang only reproduces when PWA audits are enabled, the problem surface spans both the generic navigation/load logic (driver.js, gather-runner.js) and the PWA gatherers that attach extra listeners and waits.  \n\nFixing this will likely involve adding proper timeouts or error handling in driver.waitForLoadEvent (driver.js), ensuring gather-runner doesn\u2019t wait forever, and verifying that the PWA gatherers clean up or resolve their promises if their events never fire.",
+        "bug_scenario": "When you run Lighthouse (either as a Chrome DevTools native audit or with the Lighthouse extension) on the URL \u201chttps://nicolas-hoizey.com/2017/01/how-much-data-should-my-service-worker-put-upfront-in-the-offline-cache.html\u201d with only the \u201cProgressive Web App\u201d category enabled, Lighthouse never completes the \u201cLoading page & waiting for onload\u201d step. It spins indefinitely without throwing an error."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "core/lib/tracehouse/trace-processor.js//TraceProcessor"
+        ],
+        "bug_functions": [
+            "core/lib/tracehouse/trace-processor.js//TraceProcessor.findMainFramePidTids"
+        ],
+        "explanation": "The root of the failure is in TraceProcessor.findMainFramePidTids. It only looks for e.args.data.processId on FrameCommittedInBrowser events, but new Chrome emits processPseudoId instead. As a result mainFramePids becomes [undefined], the lookup for the renderer main thread (CrRendererMain) fails (no e.pid matches undefined), and Lighthouse throws the error. To fix it, the code in findMainFramePidTids must be updated to fall back to processPseudoId when processId is missing (e.g. use e.args.data.processId || e.args.data.processPseudoId).",
+        "bug_scenario": "When Lighthouse processes a DevTools trace for https://treo.sh, the \u201cFrameCommittedInBrowser\u201d event in the trace only contains args.data.processPseudoId (no args.data.processId). The helper TraceProcessor.findMainFramePidTids() calls frameCommittedEvts.map(e \u21d2 e.args.data.processId), so it builds mainFramePids = [undefined]. On the next loop it tries to find the CrRendererMain thread by matching e.pid === undefined, finds nothing, and throws \u201cUnable to determine tid for renderer process.\u201d"
+    },
+    "2": {
+        "bug_classes": [
+            "core/lib/tracehouse/trace-processor.js//TraceProcessor"
+        ],
+        "bug_functions": [
+            "core/lib/tracehouse/trace-processor.js//TraceProcessor.findMainFramePidTids"
+        ],
+        "explanation": "The heart of the failure is in TraceProcessor.findMainFramePidTids. It builds an array of mainFramePids by reading evt.args.data.processId from FrameCommittedInBrowser events\u2014but Chrome now emits processPseudoId instead of processId. Because processId is missing, all entries are undefined. findMainFramePidTids then fails to locate the renderer thread (CrRendererMain) for pid undefined and throws the error. Updating this function (and the FrameCommittedEvent typedef) to fallback to args.data.processPseudoId when processId is absent will resolve the issue.",
+        "bug_scenario": "When Lighthouse processes the DevTools trace for https://treo.sh, the \u201cFrameCommittedInBrowser\u201d event only provides args.data.processPseudoId (no args.data.processId). The existing code in TraceProcessor.findMainFramePidTids reads evt.args.data?.processId, yielding undefined for every frame. As a result, mainFramePids becomes [undefined], no CrRendererMain thread is matched, and Lighthouse throws \u201cUnable to determine tid for renderer process.\u201d"
+    }
+}

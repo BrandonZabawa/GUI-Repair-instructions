@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "resources/filters/quarto-pre/table-captions.lua",
+            "resources/filters/layout/table.lua"
+        ],
+        "explanation": "The file `resources/filters/quarto-pre/table-captions.lua` is the Lua pre-filter that picks up the `tbl-cap` cell attribute and injects it into the Pandoc AST as a plain string caption. Because it never runs that string back through Pandoc\u2019s Markdown/LaTeX parser, any markup remains literal. The file `resources/filters/layout/table.lua` is responsible for taking that caption AST node and rendering it in the final HTML/LaTeX table. It currently treats the caption node as raw text and escapes any markup. To fix markdown styling in table captions you need to update these two filters so that the caption string is reparsed into Pandoc inline elements (or LaTeX commands) rather than rendered verbatim.",
+        "bug_scenario": "When you add markdown styling (e.g. _italics_ or ^superscript^) to a table caption via the `#| tbl-cap:` attribute, Quarto drops all markdown and just prints a plain text caption. The same styling works fine in figure captions. In the HTML output you end up with a `<div>` or `<caption>` containing your literal markdown, rather than parsed emphasis or superscript. The attached screenshot shows a cars-table with the caption \u201cCan\u2019t use ^superscript^ or _italics_ in table caption\u201d rendered verbatim (no formatting), whereas the figure below it properly shows italic and superscript in its caption."
+    },
+    "2": {
+        "bug_files": [
+            "resources/filters/quarto-pre/table-captions.lua",
+            "resources/filters/common/tables.lua"
+        ],
+        "explanation": "The file table-captions.lua is the lua filter that reads the \u2018tbl-cap\u2019 attribute off the Div and then emits a Para containing the caption. Its implementation simply wraps the caption string in pandoc.Str (plain text) instead of parsing it into inline elements, so any _italics_, ^superscript^, or other markdown is never interpreted. The common/tables.lua filter contains the general Pandoc table\u2010handling logic and can introduce or strip caption metadata during block construction; although it\u2019s less directly responsible, it works in tandem with table-captions.lua and may need adjustments if caption AST structures change. Both should be updated so that captions are parsed (for example via pandoc.read or pandoc.utils.blocksFromCaption) into inline elements before being inserted back into the document AST.",
+        "bug_scenario": "When you set a table caption in a .qmd with \u201c#| tbl-cap: !expr caption_table\u201d, the final HTML shows the caption text in plain paragraphs inside a div, and any markdown or superscript syntax in that caption (e.g. _italics_, ^superscript^) is not being rendered. In contrast, figure captions (set with \u201c#| fig-cap\u201d) correctly allow inline markdown. The intermediate .md shows the caption as a raw attribute on a Div, but the lua filter that picks up that attribute and injects it into the AST converts the entire caption into a single literal Str rather than parsing its markdown, so all styling is lost."
+    }
+}

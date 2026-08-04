@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-jsx.js"
+        ],
+        "bug_functions": [
+            "components/prism-jsx.js//Prism.languages.insertBefore('inside','attr-name',{ spread: { pattern: /\\{\\s*\\.{3}\\s*[a-z_$][\\w$]*(?:\\.[a-z_$][\\w$]*)*\\s*\\}/, ... } })",
+            "components/prism-jsx.js//Prism.languages.insertBefore('inside','attr-value',{ script: { pattern: /=(?:\\{(?:\\{(?:\\{[^{}]*\\}|[^{}])*\\}|[^{}])+\\})/i, ... } })"
+        ],
+        "explanation": "The \u2018spread\u2019 grammar (inserted before \u2039attr-name\u203a) only matches simple identifier or member-expression spreads (e.g. {...foo} or {...obj.prop}), but not a nested object literal like {...{onClick, disabled}}. Because it never recognizes the nested-object spread, the tag parser never closes the attribute list correctly and the rest of the markup is tokenized as plain text. The adjacent \u2018script\u2019 grammar (inserted before \u2039attr-value\u203a) handles nested brace blocks but isn\u2019t applied to the spread pattern. Fixing or extending these two regex patterns so that nested object spreads are recognized will restore correct JSX highlighting.",
+        "bug_scenario": "In the JSX test page the first <Button> uses a prop\u2010spread with an inline object literal ({...{onClick, disabled}}). Prism\u2019s JSX grammar doesn\u2019t recognize that nested spread form, so it fails to tokenize the rest of the tag correctly and all following tokens lose their normal syntax highlighting. By contrast, the second <Button> with explicit onClick={\u2026} disabled={\u2026} still highlights properly."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-jsx.js//Prism.languages.insertBefore('inside','attr-name',{ spread: {...} }, Prism.languages.jsx.tag)",
+            "components/prism-jsx.js//Prism.languages.insertBefore('inside','attr-value',{ script: {...} }, Prism.languages.jsx.tag)",
+            "components/prism-jsx.js//stringifyToken(token)",
+            "components/prism-jsx.js//walkTokens(tokens)",
+            "components/prism-jsx.js//Prism.hooks.add('after-tokenize', callback)"
+        ],
+        "explanation": "The core of the problem lies in how Prism\u2019s JSX grammar defines and post-processes spread attributes and embedded script inside tags. The insertBefore calls that add the \u2018spread\u2019 pattern (to match {...foo}) and the \u2018script\u2019 pattern (to match ={...}) do not fully account for nested object destructuring, so the tokenizer miscalculates when it has entered or left JSX braces. As a result, walkTokens (and its helper stringifyToken) treats the spread block as plain text and strips away the normal tag/attribute tokens. Finally, the after-tokenize hook uses walkTokens to merge or drop tokens, so once spread is mis-tokenized, everything in the tag loses its highlighting. Adjusting the \u2018spread\u2019 and \u2018script\u2019 regex patterns or the brace-tracking logic in walkTokens will fix the highlighting of JSX spread props.",
+        "bug_scenario": "When using JSX spread props (e.g. <Button {...{onClick, disabled}}>), Prism\u2019s JSX grammar fails to properly tokenize the tag contents, causing all of the first <Button> component to render as un-colored plain text. In the screenshots you can see that the second <Button onClick={onClick} disabled={disabled}> highlights correctly, while the first with {...{onClick, disabled}} loses all syntax coloring."
+    }
+}

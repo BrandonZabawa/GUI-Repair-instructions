@@ -1,0 +1,25 @@
+diff --git a/src/ol/proj/proj4.js b/src/ol/proj/proj4.js
+index 1726c5d7ce..de66b785c4 100644
+--- a/src/ol/proj/proj4.js
++++ b/src/ol/proj/proj4.js
+@@ -31,12 +31,17 @@ export function register(proj4) {
+     const code = projCodes[i];
+     if (!get(code)) {
+       const def = proj4.defs(code);
++      // if proj4 def has no units, assume degrees; geographic longlat should be "neu"
++      const units = def.units || 'degrees';
++      const axisOrientation = def.axis || (units === 'degrees' ? 'neu' : 'enu');
++      // def.to_meter only applies for linear units; for degrees, Projection will pick up METERS_PER_UNIT
++      const metersPerUnit = def.to_meter;
+       addProjection(
+         new Projection({
+           code: code,
+-          axisOrientation: def.axis,
+-          metersPerUnit: def.to_meter,
+-          units: def.units,
++          units: units,
++          axisOrientation: axisOrientation,
++          metersPerUnit: metersPerUnit,
+         })
+       );
+     }

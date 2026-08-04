@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/ImageArcGISRest.js"
+        ],
+        "explanation": "The file ImageArcGISRest.js in the src/ol/source directory is where the default ratio parameter is set (currently to 1.5). This value drives the size of the export requests sent to the ArcGIS REST API and thus controls the pixel resolution of the returned image. Because it doesn\u2019t account for device or browser zoom factors properly, setting it to 1.5 at 150% zoom produces tiles at the wrong size, causing the observed layer\u2010map mismatch. Adjusting the default ratio here (or making it derive from window.devicePixelRatio) is required to fix the misalignment issues.",
+        "bug_scenario": "When using an ImageArcGISRest source in OpenLayers 7.4 on a system scaled above 100% (e.g. 150%), the default ratio value of 1.5 causes the ArcGIS MapServer layer to be requested and rendered at the wrong resolution. This results in the layer drifting out of sync with the base map both on initial load and again after rotating the map. Scenario screenshots show the layer shifted relative to map features, and the misalignment persists or worsens upon rotation. The current workaround of forcing ratio=1 restores correct alignment."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/ImageArcGISRest.js",
+            "src/ol/renderer/canvas/ImageLayer.js"
+        ],
+        "explanation": "1. src/ol/source/ImageArcGISRest.js defines the default ratio parameter for ArcGIS REST image requests (ratio = 1.5). This is the root cause \u2013 the code always asks the server for images at 1.5\u00d7 resolution, then draws them into the map at the view\u2019s resolution, leading to scale mismatches. 2. src/ol/renderer/canvas/ImageLayer.js is responsible for drawing those returned images into the canvas. It assumes the pixel dimensions of the returned image match the view\u2019s resolution and does not correct the transform when a non-unit ratio is used, so rotated and scaled views expose the misalignment. Both files must be updated (change the default ratio to 1, and/or correctly incorporate the ratio into the transform in the renderer) to fully resolve the layer-map mismatch.",
+        "bug_scenario": "When using an ImageArcGISRest source in OL 7.4 on a display scale other than 100% (for example, 150% zoom or DPI scaling), the image tiles returned from the ArcGIS MapServer are requested at 1.5\u00d7 the resolution (the hard-coded default ratio). This causes the layer to draw at the wrong size relative to the base map \u2013 you see misaligned or offset images. Worse, if you then rotate the view, the images no longer line up with the rotated map, because the rendering code doesn\u2019t compensate for the non-unit ratio. The only current workaround is to force the ratio option to 1 when constructing the source, which bypasses the problem entirely."
+    }
+}

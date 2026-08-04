@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Image.js",
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/BuilderGroup.js",
+            "src/ol/render/canvas/ExecutorGroup.js"
+        ],
+        "explanation": "1. src/ol/style/Image.js and src/ol/style/Text.js: These are the style classes for images and text. They must expose a new boolean ignorePlacement option so that users can specify \u2018do not declutter me\u2019 on a per-style basis.  \n2. src/ol/render/canvas/ImageBuilder.js and src/ol/render/canvas/TextBuilder.js: These builders produce the per-feature draw instructions and currently always include both image and text in the same declutter group. They need to read the new ignorePlacement flag from the style and conditionally omit the placement entries for that symbol type.  \n3. src/ol/render/canvas/BuilderGroup.js: This module creates the combined declutter groups (arrays of entries to test for collisions). It must be updated to skip adding entries for any symbol whose ignorePlacement is true, so that those icons or labels do not participate in decluttering.  \n4. src/ol/render/canvas/ExecutorGroup.js: This executor runs through the declutter groups and performs the actual placement tests. It needs to respect the ignorePlacement flag to allow icons or text to always draw even when other symbols in their group are hidden by decluttering.",
+        "bug_scenario": "When using a layer style function that returns both an ol.style.Image and an ol.style.Text on the same geometry, the existing decluttering logic in OpenLayers treats the two symbol types as one unit. As a result, if you turn declutterMode on (true) you end up decluttering images when you only meant to declutter text, or vice-versa. The requested behavior is to be able to ignore placement (declutter) on one style type (e.g. images) while still decluttering the other (e.g. labels)."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Image.js",
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/BuilderGroup.js",
+            "src/ol/render/canvas/ExecutorGroup.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "\u2022 src/ol/style/Image.js & src/ol/style/Text.js: these define the style options for points and labels and need the new \u2018ignorePlacement\u2019 flag to let users skip decluttering for one type without affecting the other.\n\u2022 src/ol/render/canvas/ImageBuilder.js & src/ol/render/canvas/TextBuilder.js: these builders generate the draw instructions for images and text. They must check the new ignorePlacement option when adding declutter boxes and skip placement tests accordingly.\n\u2022 src/ol/render/canvas/BuilderGroup.js & src/ol/render/canvas/ExecutorGroup.js: these orchestrate the grouping and rendering of all image/text instructions under declutter mode. They currently treat all instructions the same; they need branching to handle ignorePlacement per style and avoid removing icons when only text should be decluttered.\n\u2022 src/ol/renderer/canvas/VectorLayer.js: this is where the layer\u2019s declutterMode flag is read and passed down to the builder/executor group. It must be updated to accept more granular declutterMode values (e.g. \u2018none\u2019, \u2018text\u2019, \u2018geometry\u2019, \u2018all\u2019) or to respect the new ignorePlacement per-style setting.",
+        "bug_scenario": "When a vector layer is styled with both an Icon (image) and a Text label and the layer\u2019s declutterMode is set to anything other than plain \u201cdeclutter,\u201d the placement and rendering routines mis\u2010order or drop symbols incorrectly. In particular, users who only want to declutter the text end up with icons being hidden or text overlapping icons because the existing placement logic doesn\u2019t distinguish between image and text decluttering or provide a way to ignore placement for one or the other."
+    }
+}

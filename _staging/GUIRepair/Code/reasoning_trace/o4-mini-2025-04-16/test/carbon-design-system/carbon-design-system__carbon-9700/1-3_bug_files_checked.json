@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Modal/Modal.js",
+            "packages/react/src/components/ComposedModal/ComposedModal.js"
+        ],
+        "explanation": "1. Modal.js defines ModalBody and respects the hasForm prop to adjust the wrapper class; a mistake here means the 20% padding isn\u2019t being toggled off for form content. 2. ComposedModal.js orchestrates how ModalBody is rendered inside the composed variant; it must pass hasForm through and apply the correct className. 3. _modal.scss holds the CSS rules that add/remove the right\u2010hand padding when a form is present; if the selector or properties here are incorrect or missing, the input container will remain narrower than intended.",
+        "bug_scenario": "When you render a TextInput inside a ComposedModal (or Modal) with the hasForm prop, the input should stretch to the full width of the modal\u2019s content area (i.e. remove the default 20% right\u2010hand padding) so the field and its container line up with the modal header text. In the current regression the hasForm flag is not removing that padding, so even setting style={{width: '100%'}} on the input still leaves it too narrow and misaligned."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ComposedModal/ComposedModal.js"
+        ],
+        "explanation": "\n1) ModalBody.js is the React wrapper that reads the hasForm prop and is supposed to switch off the default right-hand content padding on its inner container.  If it fails to add or apply the `.bx--modal-content--with-form` modifier class correctly, any child\u2014no matter how wide\u2014is still clipped by that 20% padding.\n\n2) ComposedModal.js is the component that renders <ModalBody hasForm> and must forward the prop exactly as ModalBody expects.  If it ever omits or mangles that flag when rendering its children, the style override never happens.\n\n3) _modal-body.scss contains the core CSS for `.bx--modal-content--with-form` (and `.bx--modal-content__text`/`.bx--modal-content__regular-content`).  If the SCSS rule doesn\u2019t actually remove or override `padding-right: 20%` for the form state, no amount of React-side wiring will let a 100%-wide input truly reach the right edge.  Fixing the rules here\u2014so that `.bx--modal-content--with-form` zeroes out that right padding\u2014will restore full-width inputs as documented.",
+        "bug_scenario": "When you drop a full-width TextInput into a ComposedModal (or Modal) with hasForm set, the input still sits inside the 20% right padding reserved for non-form content and never actually spans the full width of the modal.  Even though you pass style={{width: '100%'}} to <TextInput>, its container still has the default modal content padding on the right, so the field only fills about 80% of the modal body instead of edge-to-edge (minus the 16px gutters)."
+    }
+}

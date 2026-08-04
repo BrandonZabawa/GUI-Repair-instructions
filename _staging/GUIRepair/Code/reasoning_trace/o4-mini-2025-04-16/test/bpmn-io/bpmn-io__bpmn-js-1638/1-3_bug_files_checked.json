@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/util/DiUtil.js",
+            "lib/features/modeling/behavior/RemoveEmbeddedLabelBoundsBehavior.js",
+            "lib/features/label-editing/LabelUtil.js"
+        ],
+        "explanation": "\u2022 UpdateLabelHandler.js is the command that applies label changes. It currently nulls out the DI label entry when the text is empty, but never fully removes the DI node.\n\u2022 DiUtil.js contains helpers to add or remove DiagramInterchange pieces; it needs to be used to delete the `di.label` property rather than setting it to `null`.\n\u2022 RemoveEmbeddedLabelBoundsBehavior.js listens for label removals and clears bounds on the embedded DI, but does not delete the `di.label` element itself.\n\u2022 LabelUtil.js (feature label\u2010editing) computes label positioning and synchronizes the business object with its DI. It must be updated so that when the label text is empty, the DI label element is removed entirely.",
+        "bug_scenario": "When you clear the text of a Task\u2019s label in the modeler UI, the underlying BPMN DI Shape keeps a `label` entry \u2013 but its value becomes `null`. You can see this in the console (right side of your screenshot) after you hit enter on an empty label. The linter then flags this unexpected `null`\u2010valued `di.label`. What you expect is that, once the user removes the label text, the DI entry for the label should be completely removed, not left behind as `null`."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js",
+            "lib/util/DiUtil.js"
+        ],
+        "explanation": "\u2022 UpdateLabelHandler.js (in features/label-editing) is the entry point that reacts to user edit operations and calls into the modeling commands to set or clear the label. When you clear the label, it ends up issuing an update that writes `label: null` instead of removing the property.  \n\u2022 UpdateModdlePropertiesHandler.js (in features/modeling/cmd) is the generic handler that actually applies the new property value to the underlying moddle instance. It naively writes `null` into the DI\u2019s property bag instead of omitting the entry when `null` is passed.  \n\u2022 DiUtil.js (in util) contains helpers for reading and writing DI elements/properties. Any code that serializes or normalizes DI properties will go through DiUtil. We need to extend it so that, whenever `label` is `null` or `undefined`, it simply deletes that key rather than preserving a `null` attribute.",
+        "bug_scenario": "When you clear out the label of a BPMN Task via the in-canvas label editor, the underlying BPMN DI object (`di`) retains a property `label: null` instead of dropping the label entry altogether. As soon as you remove the text, you end up with e.g.\n\n  <bpmn:task id=\"Task_1\">\n    \u2026\n    <bpmndi:BPMNShape id=\"Task_1_di\" bpmnElement=\"Task_1\" label=\"null\">\n      \u2026\n    </bpmndi:BPMNShape>\n  </bpmn:task>\n\nThat stray `label=\"null\"` trips up downstream tools (lint, serializers, etc.), because a null-valued attribute is still an explicit attribute. The expected behavior is that once you clear the task\u2019s label, the DI should have no `label` attribute at all."
+    }
+}

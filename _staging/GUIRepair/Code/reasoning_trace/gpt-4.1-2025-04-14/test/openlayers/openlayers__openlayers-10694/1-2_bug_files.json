@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Image.js",
+            "src/ol/style/Icon.js",
+            "src/ol/style/RegularShape.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/style/Style.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/Immediate.js"
+        ],
+        "explanation": "The files in src/ol/style/ (Image.js, Icon.js, RegularShape.js, IconImage.js, Style.js) define and manage the image-based feature styles and their APIs (including setOpacity). Any bug relating to setOpacity not having an effect is highly likely to trace to logic in these files, either in how opacity is stored, set, or propagated. Additionally, rendering of styled images is handled by the canvas renderers (ImageBuilder.js, Immediate.js), which read style parameters including opacity and draw the images/features accordingly. If setOpacity is ignored, bug could exist in the propagation from the style to the renderer, or in the renderer failing to update the canvas correctly. These files encapsulate the management and rendering of image opacity for feature styles.",
+        "bug_scenario": "After updating to version 6.2.0, the setOpacity function on the image of a style has no effect on the UI. In version 6.1.1, setting the opacity via setOpacity makes the feature blink (indicating the opacity change is visible), but in 6.2.0, changing the opacity does not affect rendering. The expected behavior is that opacity should update as the style changes. The issue centers on the feature style system, particularly image/icon styles and their rendering pipelines."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Image.js",
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/style/RegularShape.js",
+            "src/ol/style/Style.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/Immediate.js"
+        ],
+        "explanation": "The bug concerns the setOpacity method for images in feature styles, which is implemented in the image style classes. The relevant code that could affect setOpacity and how it is rendered includes:\n- src/ol/style/Image.js: Base class for image styles, including setOpacity and related properties/methods.\n- src/ol/style/Icon.js: Handles icon style images; must ensure setOpacity propagates.\n- src/ol/style/IconImage.js: Deals with icon image resources, and is involved with rendering and caching; could be caching images with opacity and missing updates.\n- src/ol/style/RegularShape.js: Custom image shapes may have their own opacity handling.\n- src/ol/style/Style.js: High-level entry point for assigning styles and their images to features.\n- src/ol/render/canvas/ImageBuilder.js: Renderer component for image styles; must apply opacity when drawing.\n- src/ol/render/canvas/Immediate.js: Handles immediate rendering of images (common in style debugging and direct rendering); should respect opacity property.\nIf setOpacity is not reflected on the UI, the issue is highly likely to be due to improper propagation from image style classes (Image.js, Icon.js, RegularShape.js) through to the rendering pipeline (ImageBuilder.js, Immediate.js), or due to stale/cached IconImage instances not updating with the new opacity. Style.js is included because it orchestrates style application on features.",
+        "bug_scenario": "The bug report describes an issue that arose after upgrading from version 6.1.1 to 6.2.0, where calling setOpacity on the image of a feature style no longer visually affects the feature on the UI. Previously (6.1.1), applying setOpacity would cause the feature to blink (opacity changes reflected), but in 6.2.0 the UI does not reflect the opacity change. The expected behavior is that opacity modifications should update the visual appearance of styled image features."
+    }
+}

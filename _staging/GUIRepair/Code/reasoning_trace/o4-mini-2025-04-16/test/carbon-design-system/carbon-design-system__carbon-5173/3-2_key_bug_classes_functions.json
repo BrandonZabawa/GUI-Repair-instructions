@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Tab/Tab.js//Tab",
+            "packages/react/src/components/Tabs/Tabs.js//Tabs"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tab/Tab.js//render",
+            "packages/react/src/components/Tabs/Tabs.js//render (tabsWithProps mapping)"
+        ],
+        "explanation": "The Tab component\u2019s render() builds the anchorProps with aria-posinset and aria-setsize, but it relies on a totalTabs prop. In the Tabs component\u2019s render (in the tabsWithProps mapping), totalTabs is never passed into each cloned Tab, so Tab.props.totalTabs is undefined and aria-setsize isn\u2019t set. To fix the VoiceOver announcement, Tabs.render must supply totalTabs (e.g. this.getTabs().length) when cloning each Tab so that Tab.render includes the correct aria-posinset/aria-setsize attributes.",
+        "bug_scenario": "When navigating tabs with VoiceOver, each tab announces \u201c1 of 1\u201d instead of its position within the full set (e.g. \u201c4 of 4\u201d). In the demo, although the JSX example renders four tabs, the screen reader only hears the current tab as the lone item\u2014indicating that the ARIA setsize/posinset attributes are never correctly applied."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Tabs/Tabs.js//Tabs",
+            "packages/react/src/components/Tab/Tab.js//Tab"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tabs/Tabs.js//render (cloneElement mapping)",
+            "packages/react/src/components/Tab/Tab.js//render (anchorProps builder)"
+        ],
+        "explanation": "VoiceOver relies on the ARIA properties aria-posinset and aria-setsize to announce \u201cX of Y.\u201d The Tab component\u2019s render method correctly injects aria-posinset (index+1) and aria-setsize (totalTabs) into its anchorProps, but totalTabs is never passed in from the parent Tabs component. In Tabs.js, when we clone each <Tab> via React.cloneElement, we provide index, selected, handlers, and tabIndex\u2014but omit totalTabs. As a result, Tab.props.totalTabs is undefined (falling back to 1), so aria-setsize is wrong and VoiceOver reads \u201c1 of 1.\u201d Fixing the bug requires: 1) updating Tabs.js\u2019s render/cloneElement call to include totalTabs: this.getTabs().length, and 2) ensuring Tab.js\u2019s render method applies ['aria-posinset'] and ['aria-setsize'] from its props so VoiceOver can announce the correct position and size.",
+        "bug_scenario": "When navigating the Carbon React Tabs with VoiceOver, the screen reader always announces \u201ctab, 1 of 1\u201d regardless of the actual number of tabs. In the attached GIF you can see the fourth tab gets focused, but VoiceOver still says \u201c1 of 1\u201d instead of \u201c4 of 4.\u201d"
+    }
+}

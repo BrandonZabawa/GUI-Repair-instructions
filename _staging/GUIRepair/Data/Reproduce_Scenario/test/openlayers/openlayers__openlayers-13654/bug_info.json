@@ -1,0 +1,18 @@
+{
+    "repo": "openlayers/openlayers",
+    "instance_id": "openlayers__openlayers-13654",
+    "base_commit": "3bf5dd6537e3887ef3308efb7bcf1b19b651d2f8",
+    "patch": "",
+    "test_patch": "",
+    "problem_statement": "Reprojection for WebGlTile layer\n*I'm not sure I'm on the right track here and whether this is a bug or a feature or just my lack of knowledge:*\r\n\r\nI'm trying to show a UTM COG on an EPSG:3857 (or 4326) map, but I can't get it working. Nothing shows up for the COG, but OSM and fitting the view to the COG extent works. I assume it doesn't support automatic reprojection or is there a way to do that? A potential use case could be showing two COGs from different UTM zones on a map.\r\n\r\nHere's a repro based on the COG example:\r\n```html\r\n<!DOCTYPE html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"UTF-8\">\r\n    <title>Cloud Optimized GeoTIFF (COG)</title>    \r\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.10.0/css/ol.css\" type=\"text/css\">\r\n    <script src=\"https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.10.0/build/ol.js\"></script>\r\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js\"></script>\r\n  </head>\r\n  <body>\r\n    <div id=\"map\" style=\"height: 400px; width: 100%; border: 1px solid black\"></div>\r\n    <script>\r\n    // Add CRS definition for COG\r\n    proj4.defs(\"EPSG:32636\",\"+proj=utm +zone=36 +datum=WGS84 +units=m +no_defs\");\r\n    ol.proj.proj4.register(proj4);\r\n    let cogProj = ol.proj.get(\"EPSG:32636\");\r\n  \r\n    // COG source\r\n    const source = new ol.source.GeoTIFF({\r\n      sources: [\r\n        {\r\n          url: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/2020/S2A_36QWD_20200701_0_L2A/TCI.tif',\r\n        }\r\n      ],\r\n//    projection: cogProj\r\n    });\r\n    \r\n    // Create map\r\n    const map = new ol.Map({\r\n      target: 'map',\r\n      layers: [\r\n        new ol.layer.Tile({\r\n          source: new ol.source.OSM()\r\n        }),\r\n        new ol.layer.WebGLTile({\r\n          source: source\r\n        })\r\n      ],\r\n      view: new ol.View({\r\n        projection: \"EPSG:4326\" // CRS for map\r\n      })\r\n    });\r\n    \r\n    // Fit to bounds of COG\r\n    source.getView().then(view => {\r\n      // Fit to COG extent\r\n      let fromLonLat = ol.proj.getTransform(view.projection, map.getView().getProjection());\r\n      let extent = ol.extent.applyTransform(view.extent, fromLonLat);\r\n      map.getView().fit(extent);\r\n    });\r\n    </script>\r\n  </body>\r\n</html>\r\n```\n",
+    "hints_text": "",
+    "created_at": "",
+    "image_assets": "{\"problem_statement\": []}",
+    "version": "",
+    "FAIL_TO_PASS": "",
+    "PASS_TO_PASS": "",
+    "pull_url": null,
+    "issue_url": "",
+    "reproduce_url": "",
+    "interaction": ""
+}

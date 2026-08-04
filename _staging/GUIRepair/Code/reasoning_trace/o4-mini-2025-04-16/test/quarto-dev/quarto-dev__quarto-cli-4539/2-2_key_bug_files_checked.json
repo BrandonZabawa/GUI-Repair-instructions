@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/table-captions.lua",
+            "src/resources/filters/common/tables.lua",
+            "src/resources/filters/quarto-pre/table-rawhtml.lua",
+            "src/format/html/format-html-scss.ts"
+        ],
+        "explanation": "All of the HTML caption logic lives in table-captions.lua (in applyTableCaptions and the RawBlock handler), which always injects <caption> immediately after the opening <table>. The common tables.lua defines the htmlTablePattern and htmlTableCaptionPattern that drive that insertion. table-rawhtml.lua merges and post-processes GT\u2019s raw HTML (and re-specifies CSS selectors), which can shift where captions and spanner rows end up, and format-html-scss.ts contains the SCSS rules that style table captions. To correctly position and style captions when a spanner row is present, you\u2019ll need to adjust the insertion point in table-captions.lua (or the matching in tables.lua), and possibly tweak the CSS rules in format-html-scss.ts, with reference to how table-rawhtml.lua restructures raw HTML blocks.",
+        "bug_scenario": "When you call gt() with both a tab_spanner (e.g. \"Subheader\" over columns x and y) and a quarto caption (tbl-cap: \"Caption\"), the rendered HTML \u201c<caption>\u201d tag is always injected immediately after the <table> tag \u2014 i.e. above the spanner row \u2014 rather than below it (or styled in the correct position). The first screenshot shows the caption up at the very top of the table, above the spanner. The second screenshot shows the desired behavior: the spanner header spans the two columns, with its own divider lines, and then the caption appears in the proper place relative to that spanner. This only happens when both spanners and captions are present \u2013 the caption-injection/filter logic and/or the CSS for captions doesn\u2019t account for spanner rows."
+    }
+}

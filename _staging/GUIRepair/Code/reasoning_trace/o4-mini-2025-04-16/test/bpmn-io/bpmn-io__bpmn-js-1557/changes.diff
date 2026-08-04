@@ -1,0 +1,39 @@
+diff --git a/lib/features/modeling/BpmnUpdater.js b/lib/features/modeling/BpmnUpdater.js
+index bfdb0113..f1d85602 100644
+--- a/lib/features/modeling/BpmnUpdater.js
++++ b/lib/features/modeling/BpmnUpdater.js
+@@ -400,17 +400,23 @@ BpmnUpdater.prototype.updateDiConnection = function(connection, newSource, newTa
+ };
+ 
+ 
+-BpmnUpdater.prototype.updateDiParent = function(di, parentDi) {
+-
+-  if (parentDi && !is(parentDi, 'bpmndi:BPMNPlane')) {
+-    parentDi = parentDi.$parent;
+-  }
+-
+-  if (di.$parent === parentDi) {
+-    return;
+-  }
+-
+-  var planeElements = (parentDi || di.$parent).get('planeElement');
++  BpmnUpdater.prototype.updateDiParent = function(di, parentDi) {
++  
++    if (parentDi && !is(parentDi, 'bpmndi:BPMNPlane')) {
++      parentDi = parentDi.$parent;
++    }
++  
++    if (di.$parent === parentDi) {
++      return;
++    }
++  
++    // guard against missing DI parent
++    var container = parentDi || di.$parent;
++    if (!container || typeof container.get !== 'function') {
++      return;
++    }
++  
++    var planeElements = container.get('planeElement');
+ 
+   if (parentDi) {
+     planeElements.push(di);

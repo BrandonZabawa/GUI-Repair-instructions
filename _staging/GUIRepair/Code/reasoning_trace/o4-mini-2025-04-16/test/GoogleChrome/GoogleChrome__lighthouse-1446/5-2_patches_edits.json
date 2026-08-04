@@ -1,0 +1,41 @@
+{
+    "1/1": {
+        "lighthouse-core/third_party/traceviewer-js/extras/importer/trace_event_importer.js": [
+            {
+                "SEARCH": [
+                    "var eventSizeInBytes;",
+                    "if (trackDetailedModelStats)",
+                    "eventSizeInBytes = JSON.stringify(event).length;",
+                    "else",
+                    "eventSizeInBytes = undefined;"
+                ],
+                "REPLACE": [
+                    "            var eventSizeInBytes;",
+                    "            if (trackDetailedModelStats)",
+                    "                eventSizeInBytes = JSON.stringify(event).length;",
+                    "            else",
+                    "                eventSizeInBytes = undefined;",
+                    "",
+                    "            // --- NEW: convert any ph==='R' mark events into X-marker annotations ---",
+                    "            if (event.ph === 'R') {",
+                    "                // record it in stats",
+                    "                modelStats.willProcessBasicTraceEvent(",
+                    "                  'marker',",
+                    "                  event.cat,",
+                    "                  event.name,",
+                    "                  event.ts,",
+                    "                  eventSizeInBytes",
+                    "                );",
+                    "                // create an XMarkerAnnotation at the right timestamp",
+                    "                var tsModel = this.toModelTimeFromUs_(event.ts);",
+                    "                var annotation = new tr.model.XMarkerAnnotation(tsModel);",
+                    "                this.model_.addAnnotation(annotation);",
+                    "                // skip all other processing for this event",
+                    "                continue;",
+                    "            }",
+                    "            // --------------------------------------------------------------------------"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-fsharp.js",
+            "components/prism-fsharp.min.js"
+        ],
+        "explanation": "Both prism-fsharp.js and its minified counterpart define the F# language grammar in Prism, including the regular expression that matches F# comments of the form \"(* ... *)\". Because the current pattern unconditionally treats any \"(* ... *)\" as a comment, it misclassifies the operator-as-function syntax \"(*)\" (which is not a comment) as an empty comment. To fix the highlighting bug, those files (the F# language definition) must be updated to distinguish an operator-call \"(*)\" from a comment delimiter.",
+        "bug_scenario": "In the F# snippet shown, the idiomatic conversion of the multiplication operator into a function (using (*) ) is being mis-highlighted by Prism\u2019s F# syntax highlighter. Prism treats every \"(* ... *)\" pair as a multi-line comment\u2014so when you write \"|> (*) (int cat)\", the parser sees the \"(*\" from your operator function notation and the next \")\" as the closing of a comment, and highlights the entire expression as a comment instead of recognizing it as a function call."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-fsharp.js",
+            "components/prism-fsharp.min.js"
+        ],
+        "explanation": "The bug stems from the F# language definition in prism-fsharp.js (and its minified counterpart). In that file the regex for F# block comments uses a pattern like /\\(\\*[\\s\\S]*?\\*\\)/ to match nested comments. This pattern doesn\u2019t distinguish the section operator syntax '(*)' from the comment opener '(*', so any use of '(*' as an operator is treated as a comment. To fix this, the comment regex in prism-fsharp.js must be refined (for example, by requiring a non-word boundary or lookbehind) so it only matches actual comments and not the operator form.",
+        "bug_scenario": "When highlighting F# code that uses the sectioned multiplier operator syntax (*) (wrapped in parentheses to convert the infix operator into a function), Prism\u2019s F# highlighter misinterprets \"(*\" as the start of a block comment. In the user\u2019s snippet the expression \"|> (*) (int cat)\" causes Prism to think a multiline comment begins at \"(*\" and it highlights everything that follows as a comment."
+    }
+}

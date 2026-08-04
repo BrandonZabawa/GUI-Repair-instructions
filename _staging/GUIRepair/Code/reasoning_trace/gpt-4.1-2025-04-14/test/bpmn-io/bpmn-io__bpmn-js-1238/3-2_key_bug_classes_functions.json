@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateParent",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateSemanticParent"
+        ],
+        "explanation": "The bug is related to updating the parent of association elements when their source or target moves outside the current parent (e.g., subprocess). In the skeleton for BpmnUpdater.js, there are methods specifically for updating parent relationships: 'updateParent' and 'updateSemanticParent'. These functions are responsible for ensuring that the semantic and DI (diagram interchange) parents are correctly updated when elements move. The current bug occurs because these functions likely do not handle updating the associations' parent when their source/target moves to a new parent. These methods need to be fixed to ensure that associations are re-parented correctly, preventing their deletion when the old parent (e.g., subprocess) is removed. The class BpmnUpdater groups all these logic elements related to updating BPMN model relationships, making it the root of the bug fix.",
+        "bug_scenario": "The bug scenario, as shown in the image and described in the report, involves moving the source and target of an association (dotted line) out of a subprocess container. However, after the move, the association's parent remains the subprocess. When the subprocess is deleted, the association is also deleted, even though its source and target have been moved outside, so it should not be deleted. The expected behavior is that the association's parent updates to match the new parent of its source/target."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnUpdater.js//updateParent",
+            "lib/features/modeling/BpmnUpdater.js//updateSemanticParent"
+        ],
+        "explanation": "The bug is about the association's parent not being updated when its source/target are moved. The BpmnUpdater.js file contains functions responsible for updating parents and semantic parents of elements (updateParent, updateSemanticParent), which are directly relevant to fixing the parent relationship of associations. The UpdateSemanticParentHandler.js class is also involved, as it orchestrates calls to BpmnUpdater's updateSemanticParent and updateDiParent, handling the semantic and DI parent updates for moved elements. These classes and functions need to be edited to ensure associations are re-parented correctly when their endpoints change parents.",
+        "bug_scenario": "The animation shows a subprocess containing two elements connected by an association. When both source and target are moved out of the subprocess, the association visually follows but its parent remains the subprocess. Deleting the subprocess then incorrectly deletes the association, even though its source and target are now outside the subprocess. The association's parent should be updated when its endpoints move to a new parent."
+    }
+}

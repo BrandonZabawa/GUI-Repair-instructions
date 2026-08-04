@@ -1,0 +1,169 @@
+{
+    "bug_classes": {
+        "1": {
+            "class_name": "  (not found) ",
+            "file_path": "src/utils/front-matter/print.js",
+            "class_details": [
+                {
+                    "name": " ",
+                    "start_line": 1,
+                    "end_line": 17
+                }
+            ],
+            "class_code": [
+                "import { hardline, markAsRoot } from \"../../document/builders.js\";",
+                "",
+                "async function print(node, textToDoc) {",
+                "  if (node.lang === \"yaml\") {",
+                "    const value = node.value.trim();",
+                "    const doc = value ? await textToDoc(value, { parser: \"yaml\" }) : \"\";",
+                "    return markAsRoot([",
+                "      node.startDelimiter,",
+                "      hardline,",
+                "      doc,",
+                "      doc ? hardline : \"\",",
+                "      node.endDelimiter,",
+                "    ]);",
+                "  }",
+                "}",
+                "",
+                "export default print;"
+            ]
+        },
+        "2": {
+            "class_name": "  (not found) ",
+            "file_path": "src/utils/front-matter/parse.js",
+            "class_details": [
+                {
+                    "name": " ",
+                    "start_line": 1,
+                    "end_line": 48
+                }
+            ],
+            "class_code": [
+                "const frontMatterRegex = new RegExp(",
+                "  String.raw`^(?<startDelimiter>-{3}|\\+{3})` +",
+                "    // trailing spaces after delimiters are allowed",
+                "    String.raw`(?<language>[^\\n]*)` +",
+                "    String.raw`\\n(?:|(?<value>.*?)\\n)` +",
+                "    // In some markdown processors such as pandoc,",
+                "    // \"...\" can be used as the end delimiter for YAML front-matter.",
+                "    // Adding `\\.{3}` make the regex matches `+++\\n...`, but we'll exclude it later",
+                "    String.raw`(?<endDelimiter>\\k<startDelimiter>|\\.{3})` +",
+                "    String.raw`[^\\S\\n]*(?:\\n|$)`,",
+                "  \"s\",",
+                ");",
+                "",
+                "function parse(text) {",
+                "  const match = text.match(frontMatterRegex);",
+                "  if (!match) {",
+                "    return { content: text };",
+                "  }",
+                "",
+                "  const { startDelimiter, language, value = \"\", endDelimiter } = match.groups;",
+                "",
+                "  let lang = language.trim() || \"yaml\";",
+                "  if (startDelimiter === \"+++\") {",
+                "    lang = \"toml\";",
+                "  }",
+                "",
+                "  // Only allow yaml to parse with a different end delimiter",
+                "  if (lang !== \"yaml\" && startDelimiter !== endDelimiter) {",
+                "    return { content: text };",
+                "  }",
+                "",
+                "  const [raw] = match;",
+                "  const frontMatter = {",
+                "    type: \"front-matter\",",
+                "    lang,",
+                "    value,",
+                "    startDelimiter,",
+                "    endDelimiter,",
+                "    raw: raw.replace(/\\n$/, \"\"),",
+                "  };",
+                "",
+                "  return {",
+                "    frontMatter,",
+                "    content: raw.replaceAll(/[^\\n]/g, \" \") + text.slice(raw.length),",
+                "  };",
+                "}",
+                "",
+                "export default parse;"
+            ]
+        }
+    },
+    "bug_functions": {
+        "3": {
+            "function_name": "print",
+            "file_path": "src/utils/front-matter/print.js",
+            "function_details": [
+                {
+                    "name": "print",
+                    "start_line": 3,
+                    "end_line": 15
+                }
+            ],
+            "function_code": [
+                "async function print(node, textToDoc) {",
+                "  if (node.lang === \"yaml\") {",
+                "    const value = node.value.trim();",
+                "    const doc = value ? await textToDoc(value, { parser: \"yaml\" }) : \"\";",
+                "    return markAsRoot([",
+                "      node.startDelimiter,",
+                "      hardline,",
+                "      doc,",
+                "      doc ? hardline : \"\",",
+                "      node.endDelimiter,",
+                "    ]);",
+                "  }",
+                "}"
+            ]
+        },
+        "4": {
+            "function_name": "parse",
+            "file_path": "src/utils/front-matter/parse.js",
+            "function_details": [
+                {
+                    "name": "parse",
+                    "start_line": 14,
+                    "end_line": 46
+                }
+            ],
+            "function_code": [
+                "function parse(text) {",
+                "  const match = text.match(frontMatterRegex);",
+                "  if (!match) {",
+                "    return { content: text };",
+                "  }",
+                "",
+                "  const { startDelimiter, language, value = \"\", endDelimiter } = match.groups;",
+                "",
+                "  let lang = language.trim() || \"yaml\";",
+                "  if (startDelimiter === \"+++\") {",
+                "    lang = \"toml\";",
+                "  }",
+                "",
+                "  // Only allow yaml to parse with a different end delimiter",
+                "  if (lang !== \"yaml\" && startDelimiter !== endDelimiter) {",
+                "    return { content: text };",
+                "  }",
+                "",
+                "  const [raw] = match;",
+                "  const frontMatter = {",
+                "    type: \"front-matter\",",
+                "    lang,",
+                "    value,",
+                "    startDelimiter,",
+                "    endDelimiter,",
+                "    raw: raw.replace(/\\n$/, \"\"),",
+                "  };",
+                "",
+                "  return {",
+                "    frontMatter,",
+                "    content: raw.replaceAll(/[^\\n]/g, \" \") + text.slice(raw.length),",
+                "  };",
+                "}"
+            ]
+        }
+    }
+}

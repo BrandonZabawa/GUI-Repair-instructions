@@ -1,0 +1,103 @@
+diff --git a/packages/react/src/components/Accordion/Accordion.js b/packages/react/src/components/Accordion/Accordion.js
+index fb8a712e..2a5344ef 100644
+--- a/packages/react/src/components/Accordion/Accordion.js
++++ b/packages/react/src/components/Accordion/Accordion.js
+@@ -17,18 +17,23 @@ function Accordion({
+   className: customClassName,
+   disabled = false,
+   size = 'md',
++  isFlush = false,
+   ...rest
+ }) {
+   const prefix = usePrefix();
+   const className = cx(`${prefix}--accordion`, customClassName, {
+     [`${prefix}--accordion--${align}`]: align,
+     [`${prefix}--accordion--${size}`]: size,
++    [`${prefix}--accordion--flush`]: isFlush,
+   });
+   return (
+     <ul className={className} {...rest}>
+-      {disabled
++      {disabled || isFlush
+         ? React.Children.toArray(children).map((child) => {
+-            return React.cloneElement(child, { disabled });
++            return React.cloneElement(child, { 
++              disabled: disabled ? true : child.props.disabled, 
++              isFlush 
++            });
+           })
+         : children}
+     </ul>
+@@ -62,6 +67,11 @@ Accordion.propTypes = {
+   size: FeatureFlags.enabled('enable-v11-release')
+     ? PropTypes.oneOf(['sm', 'md', 'lg'])
+     : PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
++
++  /**
++   * Specify whether the accordion should use flush alignment (no left padding)
++   */
++  isFlush: PropTypes.bool,
+ };
+ 
+ export default Accordion;
+diff --git a/packages/react/src/components/Accordion/AccordionItem.js b/packages/react/src/components/Accordion/AccordionItem.js
+index 136495fa..ec16205d 100644
+--- a/packages/react/src/components/Accordion/AccordionItem.js
++++ b/packages/react/src/components/Accordion/AccordionItem.js
+@@ -27,6 +27,7 @@ function AccordionItem({
+   renderToggle,
+   title = 'title',
+   disabled,
++  isFlush = false,
+   ...rest
+ }) {
+   const [isOpen, setIsOpen] = useState(open);
+@@ -39,6 +40,7 @@ function AccordionItem({
+     [`${prefix}--accordion__item--active`]: isOpen,
+     [`${prefix}--accordion__item--${animation}`]: animation,
+     [`${prefix}--accordion__item--disabled`]: disabled,
++    [`${prefix}--accordion__item--flush`]: isFlush,
+     [customClassName]: !!customClassName,
+   });
+ 
+@@ -83,16 +85,25 @@ function AccordionItem({
+         disabled={disabled}
+         aria-controls={id}
+         aria-expanded={isOpen}
+-        className={`${prefix}--accordion__heading`}
++        className={cx(
++          `${prefix}--accordion__heading`,
++          { [`${prefix}--accordion__heading--flush`]: isFlush }
++        )}
+         onClick={onClick}
+         onKeyDown={onKeyDown}
+         type="button">
+         <ChevronRight className={`${prefix}--accordion__arrow`} />
+-        <Text as="div" className={`${prefix}--accordion__title`}>
++        <Text as="div" className={cx(
++          `${prefix}--accordion__title`,
++          { [`${prefix}--accordion__title--flush`]: isFlush }
++        )}>
+           {title}
+         </Text>
+       </Toggle>
+-      <div id={id} className={`${prefix}--accordion__content`}>
++      <div id={id} className={cx(
++        `${prefix}--accordion__content`,
++        { [`${prefix}--accordion__content--flush`]: isFlush }
++      )}>
+         {children}
+       </div>
+     </li>
+@@ -149,6 +160,11 @@ AccordionItem.propTypes = {
+    * The accordion title.
+    */
+   title: PropTypes.node,
++
++  /**
++   * Specify whether the accordion item should use flush alignment (no left padding)
++   */
++  isFlush: PropTypes.bool,
+ };
+ 
+ export default AccordionItem;

@@ -1,0 +1,45 @@
+diff --git a/lib/features/rules/BpmnRules.js b/lib/features/rules/BpmnRules.js
+index 3d56d54d..b28b060c 100644
+--- a/lib/features/rules/BpmnRules.js
++++ b/lib/features/rules/BpmnRules.js
+@@ -480,15 +480,25 @@ function canDrop(element, target, position) {
+     return false;
+   }
+ 
+-  // drop flow elements onto flow element containers
+-  // and participants
+-  if (is(element, 'bpmn:FlowElement') && !is(element, 'bpmn:DataStoreReference')) {
+-    if (is(target, 'bpmn:FlowElementsContainer')) {
+-      return isExpanded(target);
+-    }
++// disallow dropping typed start events onto subprocesses
++if (is(element, 'bpmn:StartEvent') && hasOneOfEventDefinitions(element, [
++'bpmn:MessageEventDefinition',
++'bpmn:TimerEventDefinition',
++'bpmn:SignalEventDefinition',
++'bpmn:ConditionalEventDefinition'
++]) && is(target, 'bpmn:SubProcess')) {
++return false;
++}
+ 
+-    return isAny(target, [ 'bpmn:Participant', 'bpmn:Lane' ]);
+-  }
++// drop flow elements onto flow element containers
++// and participants
++if (is(element, 'bpmn:FlowElement') && !is(element, 'bpmn:DataStoreReference')) {
++if (is(target, 'bpmn:FlowElementsContainer')) {
++return isExpanded(target);
++}
++
++return isAny(target, [ 'bpmn:Participant', 'bpmn:Lane' ]);
++}
+ 
+   // account for the fact that data associations are always
+   // rendered and moved to top (Process or Collaboration level)
+@@ -945,4 +955,4 @@ function areOutgoingEventBasedGatewayConnections(connections) {
+ 
+ function getRootElement(element) {
+   return getParent(element, 'bpmn:Process') || getParent(element, 'bpmn:Collaboration');
+-}
++}
+\ No newline at end of file

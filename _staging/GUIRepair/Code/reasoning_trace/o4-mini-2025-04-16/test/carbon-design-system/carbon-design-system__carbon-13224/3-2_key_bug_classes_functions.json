@@ -1,0 +1,39 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.tsx//Dropdown",
+            "packages/react/src/components/Menu/Menu.js//Menu",
+            "packages/react/src/components/Menu/MenuItem.js//MenuItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.tsx//defaultItemToString",
+            "packages/react/src/components/Dropdown/Dropdown.tsx//useSelect (onSelectedItemChange handler)",
+            "packages/react/src/components/Menu/Menu.js//handleOpen",
+            "packages/react/src/components/Menu/Menu.js//handleClose",
+            "packages/react/src/components/Menu/Menu.js//calculatePosition",
+            "packages/react/src/components/Menu/MenuItem.js//handleClick",
+            "packages/react/src/components/Menu/MenuItem.js//openSubmenu"
+        ],
+        "explanation": "\u2022 Dropdown.tsx: The Dropdown component is the outer API for any combo-style button.  Its useSelect invocation and defaultItemToString helper govern how the selected item and arrow icon state are toggled.  If onSelectedItemChange or controlled selectedItem logic is off, the toggle arrow won\u2019t flip correctly or the menu won\u2019t close automatically.\n\n\u2022 Menu.js: The Menu component implements absolute positioning and show/hide behavior.  handleOpen and handleClose manage focus capture and return, while calculatePosition (and its helper fitValue) compute the left/top offsets.  Any error here will mis-place the menu relative to the button or leave it in an open state.\n\n\u2022 MenuItem.js: Although ComboButton only has a flat list, MenuItem\u2019s handleClick and openSubmenu logic still govern click and hover behavior.  If MenuItem thinks it\u2019s a submenu container, it won\u2019t bubble the click back to the root Menu, preventing the menu from closing when an item is selected.",
+        "bug_scenario": "The team is trying to deliver a \u201ccombo button\u201d \u2013 a primary button paired with a toggle\u2010down arrow that opens a contextual menu \u2013 but when they wire up Carbon\u2019s existing Dropdown/Menu code (or when they attempt to build their own Menu), the arrow flips at the wrong time, the popup menu is mis-positioned or clipped out of the button\u2019s boundaries, and closing/focus-return behavior is inconsistent.  In your repro code you end up with an absolutely positioned <div> menu under a <Button>, but in the real Carbon Dropdown you see the menu shifted off-axis, the toggle icon not updating correctly, and focus not returning to the button."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.tsx//Dropdown",
+            "packages/react/src/components/Menu/Menu.js//Menu",
+            "packages/react/src/components/Menu/MenuItem.js//MenuItem"
+        ],
+        "bug_functions": [
+            "Dropdown.defaultItemToString",
+            "Menu.handleOpen",
+            "Menu.handleClose",
+            "Menu.calculatePosition",
+            "Menu.fitValue",
+            "MenuItem.handleClick",
+            "MenuItem.openSubmenu",
+            "MenuItem.closeSubmenu"
+        ],
+        "explanation": "To support a split combo-button with correct positioning, open/close behavior, and focus management, we need changes in three areas:\n\n1. Dropdown (Dropdown.tsx)\n   - defaultItemToString: influences how menu entries are rendered as strings when using the Dropdown component for our list of options. If we adopt Dropdown under the hood for our combo-button, this function must be correctly wired.\n\n2. Menu (Menu.js)\n   - handleOpen / handleClose: govern when the menu is shown or hidden and where focus returns. Fixing these ensures the arrow flips state and focus is returned to the toggle when the menu closes.\n   - calculatePosition / fitValue: compute the x/y offsets so the dropdown aligns exactly with the toggle button and automatically flips direction if it would render offscreen.\n\n3. MenuItem (MenuItem.js)\n   - handleClick / openSubmenu / closeSubmenu: manage clicking into menu items, opening nested submenus on hover or arrow-key, and closing them correctly. Adjusting these ensures that submenu panels cascade from the correct anchor within our dark contextual panel.\n\nTogether, these classes and functions drive the core behavior\u2014rendering, positioning, and interaction\u2014of a menu attached to a combo button toggle, so they are the primary touch-points to repair the misalignment, accessibility, and animation issues described in the report.",
+        "bug_scenario": "The images show a \u201ccombo-button\u201d pattern made of two side-by-side buttons: a primary action on the left (\u201cButton\u201d) and a toggle arrow on the right. When the toggle is clicked, a dark contextual menu should drop down, the arrow should flip to indicate the open state, and the menu should position itself immediately below (or above, if it runs off-screen) the toggle. In the current implementation the menu can be misaligned (too far right or left), the arrow never flips, focus management on open/close is off, and submenu items don\u2019t cascade correctly."
+    }
+}

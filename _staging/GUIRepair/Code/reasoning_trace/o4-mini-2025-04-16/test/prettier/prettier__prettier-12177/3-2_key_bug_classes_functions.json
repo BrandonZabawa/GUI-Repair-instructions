@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-js/print/statement.js//printSwitchCaseConsequent",
+            "src/language-js/print/statement.js//printStatementSequence",
+            "src/language-js/print/comment.js//printComment"
+        ],
+        "explanation": "The logic that prints the body of a switch case lives in `printSwitchCaseConsequent`, which delegates to `printStatementSequence`. That sequence printer handles both code statements and comment-only statements in the `consequent` array. It currently breaks out the inline `//` comment on a `default:` into its own line. The actual rendering of comments is done by `printComment` in comment.js, which also controls line breaks and trimming. Together, these three functions determine whether a trailing comment stays on the same line as the `case`/`default` or is emitted as a separate line, making them the key spots to adjust to preserve inline comments after the colon.",
+        "bug_scenario": "When formatting a switch statement with an inline comment on the `case` and `default` labels, Prettier 2.3.2 preserves the comment after the colon on a `case`, but for the `default` branch it moves the `// comment` onto its own line below the `default:`. The screenshot shows:\n\n  switch (peek_keyword()) {\n    \u2026\n    default: // expression;\n      return ExpressionStatement.read();\n  }\n\nbeing reformatted to:\n\n  default:\n    // expression;\n    return ExpressionStatement.read();\n\ninstead of keeping the `// expression;` on the same line as `default:`."
+    },
+    "2": {
+        "bug_classes": [
+            "src/language-js/print/statement.js//printStatementSequence",
+            "src/language-js/print/statement.js//printSwitchCaseConsequent",
+            "src/language-js/print/comment.js//printComment"
+        ],
+        "bug_functions": [
+            "src/language-js/print/statement.js//printStatementSequence",
+            "src/language-js/print/statement.js//printSwitchCaseConsequent",
+            "src/language-js/print/comment.js//printComment"
+        ],
+        "explanation": "The formatting of comments inside switch-case consequents is controlled by printSwitchCaseConsequent, which delegates to printStatementSequence. That sequence logic determines how statements (including comments) in a case or default block are rendered, accidentally treating the default comment as a leading comment on the first statement rather than as a trailing comment on the label. The printComment function is responsible for rendering line comments and needs to respect the inline context for default labels. Fixing this requires adjusting printStatementSequence or printSwitchCaseConsequent to preserve comments on the same line for default branches, and/or updating printComment to detect and emit trailing comments correctly in this context.",
+        "bug_scenario": "In a switch statement with a default clause that has a trailing line comment (\"default: // comment\"), Prettier incorrectly moves the comment onto its own line above the `return` rather than preserving it on the same line as the `default:` label. In contrast, `case` clauses with comments stay correctly on the same line. The screenshot shows `default:` without its inline comment and the comment printed as a leading comment on the next line."
+    }
+}

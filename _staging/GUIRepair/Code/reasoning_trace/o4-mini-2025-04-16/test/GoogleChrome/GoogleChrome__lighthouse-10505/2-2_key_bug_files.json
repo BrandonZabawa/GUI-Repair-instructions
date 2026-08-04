@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/computed/metrics/interactive.js",
+            "lighthouse-core/computed/metrics/total-blocking-time.js",
+            "lighthouse-core/computed/metrics/timing-summary.js"
+        ],
+        "explanation": "1. computed/metrics/interactive.js: The core of TTI calculation lives here. Its findOverlappingQuietPeriods() requires both a network\u2010 and CPU\u2010quiet window of \u22655 s after FCP. In provided-throttling mode the page is idle immediately after paint but the trace ends too soon to satisfy the 5 s requirement, so it throws NO_TTI_CPU_IDLE_PERIOD.\n\n2. computed/metrics/total-blocking-time.js: TBT\u2019s observed metric depends on the result of the interactive metric (TTI). When interactive.request() rejects with NO_TTI_CPU_IDLE_PERIOD, total-blocking-time.computeObservedMetric() propagates the same error for TBT.\n\n3. computed/metrics/timing-summary.js: TimingSummary.summarize() wraps most metrics in a catch to return undefined on failure, but it calls TotalBlockingTime.request() without such a catch. As a result, any failure in TBT (and upstream in interactive) bubbles all the way out and causes the whole performance category to error. These three files would need to be updated\u2014in interactive.js to loosen or special-case the quiet-window logic under provided throttling, in total-blocking-time.js to guard against a missing TTI, and in timing-summary.js to catch TotalBlockingTime failures\u2014to prevent NO_TTI_CPU_IDLE_PERIOD in this scenario.",
+        "bug_scenario": "The attached screenshot shows a Lighthouse performance report where First Contentful Paint (FCP), Speed Index and Largest Contentful Paint (LCP) all complete successfully (~2.3 s), but both Time to Interactive (TTI) and Total Blocking Time (TBT) show an error \u201cNO_TTI_CPU_IDLE_PERIOD.\u201d In this reproducible case the page intentionally delays FCP by ~1.7 s and then does almost no work, so after paint the main thread is idle until trace end. The metric logic, however, insists on finding a 5 s quiet window after FCP and, because the trace ends shortly after paint, it never finds one and throws the error\u2014whereas in \u201cprovided\u201d throttling mode it should treat the remaining idle period as valid and report a timing rather than an error."
+    }
+}

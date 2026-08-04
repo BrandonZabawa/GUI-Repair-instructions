@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/label-editing/LabelUtil.js",
+            "lib/util/DiUtil.js"
+        ],
+        "explanation": "These files are likely related to how labels are updated and managed in the BPMN model and its DI representation. \n- 'lib/features/label-editing/cmd/UpdateLabelHandler.js' directly handles label updates and is the prime location for ensuring label properties are correctly set or removed on user actions like clearing a label.\n- 'lib/features/label-editing/LabelUtil.js' is utility logic for label handling and may play a role in sanitizing or managing the DI label property.\n- 'lib/util/DiUtil.js' is a general utility for working with Diagram Interchange objects and might have logic to get/set/remove DI properties, including the label. \nThese files together govern label editing, including how the absence or clearing of a label should propagate to the underlying diagram model.",
+        "bug_scenario": "The bug scenario is that when a user removes the label of a Task in the BPMN editor, the DI (Diagram Interchange) object still contains a 'label: null' property, instead of removing the property entirely. This causes issues, especially with external tools like linters that expect the absence of the property when not in use. The attached image demonstrates a user removing a task's label, followed by inline dev tools inspection, showing the property remains as 'null'. The linter success but with warnings is also shown, hinting further issues with improper null properties being present post-editing as expected by lint tools."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/util/DiUtil.js",
+            "lib/features/modeling/behavior/LabelBehavior.js"
+        ],
+        "explanation": "These files are bug related due to their involvement in updating and managing DI label properties:\n- lib/features/label-editing/cmd/UpdateLabelHandler.js: This file likely handles the logic for updating or clearing labels on elements. If removing a label does not delete the property, the issue is likely here.\n- lib/util/DiUtil.js: This utility manages access and mutation of DI properties, including labels. If label clean-up is not correct, this may need adjustment.\n- lib/features/modeling/behavior/LabelBehavior.js: As label DI support was mentioned as related to this regression, this file could be responsible for setting or removing DI label objects when modeling changes occur (e.g., when removing or editing labels).",
+        "bug_scenario": "The bug occurs when the label of a Task is removed: even after clearing it, the diagram information (di) object maintains a 'label' property set to null. This is unintended, as the property should be deleted entirely when the label is cleared. This issue interferes with downstream tools, such as linting utilities, which expect 'di.label' to not exist when cleared."
+    }
+}

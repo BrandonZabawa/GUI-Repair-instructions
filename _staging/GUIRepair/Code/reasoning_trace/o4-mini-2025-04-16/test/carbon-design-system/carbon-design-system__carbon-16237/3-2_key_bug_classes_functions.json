@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/TileGroup/TileGroup.tsx//TileGroup",
+            "packages/react/src/components/RadioTile/RadioTile.tsx//RadioTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/TileGroup/TileGroup.tsx//getRadioTilesWithWrappers",
+            "packages/react/src/components/TileGroup/TileGroup.tsx//handleChange",
+            "packages/react/src/components/RadioTile/RadioTile.tsx//handleOnChange",
+            "packages/react/src/components/RadioTile/RadioTile.tsx//handleOnKeyDown"
+        ],
+        "explanation": "TileGroup is responsible for propagating form-level props like required to its child RadioTiles; its getRadioTilesWithWrappers function currently spreads only value, name, checked, and onChange, but doesn\u2019t handle a group-level required attribute. handleChange drives selection logic but has no hook for required/validation. In RadioTile, the input element is rendered and hidden via CSS class (`bx--tile-input`) and the change/keydown handlers (handleOnChange, handleOnKeyDown) dispatch selection, but no positioning logic or required prop is applied. These components/functions are where the required attribute needs to be accepted and forwarded to exactly one radio input (or group-level input) and where the CSS positioning of the hidden input must be adjusted to sit at the bottom center of the tile group for proper display of native validation errors.",
+        "bug_scenario": "When a <TileGroup> of <RadioTile> components is marked required via native HTML validation, developers currently must apply the required attribute on every individual RadioTile rather than once on the TileGroup. Moreover, the hidden <input> that drives validation is positioned at the top of the first tile, so the browser\u2019s \u201cPlease select one of these options\u201d tooltip appears at the wrong spot (top-left) instead of at the bottom center of the group."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/TileGroup/TileGroup.tsx//TileGroup",
+            "packages/react/src/components/RadioTile/RadioTile.tsx//RadioTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/TileGroup/TileGroup.tsx//getRadioTilesWithWrappers"
+        ],
+        "explanation": "1. TileGroup (in TileGroup.tsx) never spreads unrecognized attributes (like required or style) onto the <fieldset>, so you can\u2019t mark the group required or position its container for the native input. It also renders the children wrapper without any positioning context for the hidden radio inputs.\n2. getRadioTilesWithWrappers only injects name, value, onChange, and checked into each RadioTile, so any required prop on the TileGroup is never propagated to the underlying <input>. \n3. RadioTile (in RadioTile.tsx) collects extra props (including required) as rest, but spreads them on the <label> rather than on the <input>, so the required attribute never makes it onto the native input element. Also there is no CSS or inline positioning applied here to place the hidden <input> at the bottom center of the tile or group.\n\nFixing this requires:\n- In TileGroup, spread unused props (e.g. required, style) onto the <fieldset> to allow marking the group required and positioning it (e.g. position: relative).\n- In RadioTile, explicitly pull out the required prop and pass it into the <input> (e.g. <input required={required} ...>), instead of letting it be spread only on the label.\n- Add styling or wrapper positioning so that the .bx--tile-input element is positioned at the bottom center of each tile or the fieldset.",
+        "bug_scenario": "When a TileGroup of RadioTiles is marked required (in React) and the form is submitted without selecting any tile, the browser\u2019s native validation error tooltip appears at the wrong spot. Because the actual <input type=\"radio\"> elements are invisible and by default positioned at the top-left of each tile container, the validation bubble is shown there instead of centered at the bottom of the group. Additionally, in React you must currently pass the required attribute on every RadioTile instead of just on the TileGroup."
+    }
+}

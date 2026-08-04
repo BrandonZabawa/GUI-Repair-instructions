@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/overlay/overlay.jsx//Overlay",
+            "src/overlay/popup.jsx//Popup",
+            "src/overlay/style.js"
+        ],
+        "bug_functions": [
+            "src/overlay/overlay.jsx//render",
+            "src/overlay/popup.jsx//renderPortal"
+        ],
+        "explanation": "The CSS for the overlay wrapper is imported in style.js (via main.scss) and defines the \u2018.next-overlay-wrapper\u2019 container without a width, so inline content collapses. The Overlay.render method actually outputs that wrapper div and applies any wrapperStyle prop. Popup.renderPortal is where wrapperStyle is passed into the Overlay without a default width. To fix the collapse bug you can either add `width: 100%` in the SCSS for .next-overlay-wrapper (style.js \u2192 main.scss) or inject a width into the wrapperStyle prop in Popup.renderPortal, both of which ensure the container spans the full available width for inline content.",
+        "bug_scenario": "In the provided screenshot, an Overlay with inline content is collapsing to zero width because the wrapper/container div has no explicit width set. As a result there is no room for the browser to render the inline content and the panel collapses (you can see the wrapper positioned at top-left with only padding showing). Adding a width:100% to the overlay\u2019s wrapper/container will allow inline content to take up the available horizontal space and prevent the collapse."
+    },
+    "2": {
+        "bug_classes": [
+            "src/overlay/overlay.jsx//Overlay"
+        ],
+        "bug_functions": [
+            "src/overlay/overlay.jsx//Overlay.renderPortal"
+        ],
+        "explanation": "The Overlay.renderPortal method in overlay.jsx generates the wrapperStyle object (defaulting to an empty object) and passes it to the root <Overlay> wrapper. Because no width is ever set, in inline contexts the absolutely positioned wrapper has zero width and the content collapses. Adding `width: 100%`\u2014either in the CSS for .next-overlay-wrapper (main.scss) or by augmenting wrapperStyle in renderPortal\u2014ensures the popup wrapper spans its container and prevents collapse.",
+        "bug_scenario": "When an Overlay is used inside an inline container (no block-level width constraint), its root wrapper collapses to zero width so its content cannot render properly. In the screenshot, the white popup is squeezed because its parent .next-overlay-wrapper is absolutely positioned without a width, so there\u2019s no horizontal space for the browser to display the inline content."
+    }
+}

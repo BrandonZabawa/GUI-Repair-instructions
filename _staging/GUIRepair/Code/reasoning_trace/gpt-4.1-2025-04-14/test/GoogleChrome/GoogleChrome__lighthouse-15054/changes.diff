@@ -1,0 +1,100 @@
+diff --git a/core/gather/gatherers/global-listeners.js b/core/gather/gatherers/global-listeners.js
+index 38f5eb4ca..4d5965150 100644
+--- a/core/gather/gatherers/global-listeners.js
++++ b/core/gather/gatherers/global-listeners.js
+@@ -61,30 +61,75 @@ class GlobalListeners extends FRGatherer {
+   async getArtifact(passContext) {
+     const session = passContext.driver.defaultSession;
+ 
+-    // Get a RemoteObject handle to `window`.
+-    const {result: {objectId}} = await session.sendCommand('Runtime.evaluate', {
+-      expression: 'window',
+-      returnByValue: false,
+-    });
+-    if (!objectId) {
+-      throw new Error('Error fetching information about the global object');
++    // Get all execution contexts for the main frame.
++    const {contexts} = await session.sendCommand('Runtime.enable').then(() =>
++      session.sendCommand('Runtime.getExecutionContexts')
++    );
++    // Fallback for environments where getExecutionContexts is not available.
++    const mainFrameId = passContext.driver.defaultSession.targetInfo.targetId;
++    const relevantContexts = contexts
++      ? contexts.filter(ctx => ctx.auxData && ctx.auxData.isDefault === false && ctx.origin && ctx.frameId === mainFrameId)
++      : [];
++
++    // Always include the default context.
++    const defaultContext = contexts
++      ? contexts.find(ctx => ctx.auxData && ctx.auxData.isDefault === true && ctx.frameId === mainFrameId)
++      : null;
++    if (defaultContext) relevantContexts.push(defaultContext);
++
++    // If getExecutionContexts is not available, fallback to just the default context.
++    if (!relevantContexts.length) {
++      const {result: {objectId}} = await session.sendCommand('Runtime.evaluate', {
++        expression: 'window',
++        returnByValue: false,
++      });
++      if (!objectId) {
++        throw new Error('Error fetching information about the global object');
++      }
++      const {listeners} = await session.sendCommand('DOMDebugger.getEventListeners', {objectId});
++      const filteredListeners = listeners.filter(GlobalListeners._filterForAllowlistedTypes)
++        .map(listener => {
++          const {type, scriptId, lineNumber, columnNumber} = listener;
++          return {
++            type,
++            scriptId,
++            lineNumber,
++            columnNumber,
++          };
++        });
++      return this.dedupeListeners(filteredListeners);
+     }
+ 
+-    // And get all its listeners of interest.
+-    const {listeners} = await session.sendCommand('DOMDebugger.getEventListeners', {objectId});
+-    const filteredListeners = listeners.filter(GlobalListeners._filterForAllowlistedTypes)
+-    .map(listener => {
+-      const {type, scriptId, lineNumber, columnNumber} = listener;
+-      return {
+-        type,
+-        scriptId,
+-        lineNumber,
+-        columnNumber,
+-      };
+-    });
++    // Collect listeners from all relevant contexts.
++    let allListeners = [];
++    for (const context of relevantContexts) {
++      try {
++        const {result: {objectId}} = await session.sendCommand('Runtime.evaluate', {
++          expression: 'window',
++          contextId: context.id,
++          returnByValue: false,
++        });
++        if (!objectId) continue;
++        const {listeners} = await session.sendCommand('DOMDebugger.getEventListeners', {objectId});
++        const filteredListeners = listeners.filter(GlobalListeners._filterForAllowlistedTypes)
++          .map(listener => {
++            const {type, scriptId, lineNumber, columnNumber} = listener;
++            return {
++              type,
++              scriptId,
++              lineNumber,
++              columnNumber,
++            };
++          });
++        allListeners = allListeners.concat(filteredListeners);
++      } catch (e) {
++        // Ignore errors from inaccessible contexts.
++        continue;
++      }
++    }
+ 
+     // Dedupe listeners with same underlying data.
+-    return this.dedupeListeners(filteredListeners);
++    return this.dedupeListeners(allListeners);
+   }
+ }
+ 

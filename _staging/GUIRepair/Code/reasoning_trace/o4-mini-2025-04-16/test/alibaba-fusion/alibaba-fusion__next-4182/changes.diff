@@ -1,0 +1,52 @@
+diff --git a/src/cascader-select/cascader-select.jsx b/src/cascader-select/cascader-select.jsx
+index 25bbe4168..73c5a3513 100644
+--- a/src/cascader-select/cascader-select.jsx
++++ b/src/cascader-select/cascader-select.jsx
+@@ -589,21 +589,41 @@ class CascaderSelect extends Component {
+         }
+     }
+ 
+-    handleAfterOpen() {
+-        if (!this.popup) {
++    // Support both old Popup(v1) and new Overlay(v2) APIs
++    handleAfterOpen(popupRef) {
++        // popupRef comes from v2; this.popup is the saved ref from v1
++        const popupInst = popupRef || this.popup;
++        if (!popupInst) {
+             return;
+         }
+ 
+         const { prefix, popupProps } = this.props;
+-        const dropDownNode = this.popup
+-            .getInstance()
+-            .overlay.getInstance()
+-            .getContentNode();
++        let dropDownNode;
++
++        // v1: Popup1 instance exposes getInstance().overlay.getInstance()
++        if (typeof popupInst.getInstance === 'function' && popupInst.getInstance().overlay) {
++            dropDownNode = popupInst
++                .getInstance()
++                .overlay.getInstance()
++                .getContentNode();
++        }
++        // v2: Overlay ref exposes getContentNode() directly
++        else if (typeof popupInst.getContentNode === 'function') {
++            dropDownNode = popupInst.getContentNode();
++        }
++        // some wrappers may put an `overlay` prop on the ref
++        else if (popupInst.overlay && typeof popupInst.overlay.getContentNode === 'function') {
++            dropDownNode = popupInst.overlay.getContentNode();
++        } else {
++            return;
++        }
++
+         const cascaderNode = dropDownNode.querySelector(`.${prefix}cascader`);
+         if (cascaderNode) {
+             this.cascaderHeight = getStyle(cascaderNode, 'height');
+         }
+ 
++        // call user-supplied afterOpen if provided
+         if (typeof popupProps.afterOpen === 'function') {
+             popupProps.afterOpen();
+         }

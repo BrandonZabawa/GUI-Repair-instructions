@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/reproj.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/DataTile.js",
+            "src/ol/reproj/Tile.js"
+        ],
+        "explanation": "All of the mis-alignment logic stems from how OpenLayers determines output pixel sizes and positions in reprojection. \n\n\u2022 In src/ol/reproj.js (\u201crender\u201d):\n  \u2013 pixelRound(...) unconditionally snaps target coordinates to integer pixel boundaries, making every pixel square in device space.  \n  \u2013 The canvas output size is Math.round(pixelRatio*width/height), forcing integer dimensions.  \n\n\u2022 In src/ol/reproj/Image.js, DataTile.js, and Tile.js:\n  \u2013 They compute the target width and height as getWidth/Height(targetExtent)/targetResolution and then immediately round both the canvas size and pixel coordinates, perpetuating the square-pixel assumption.  \n\nTo fix the bug, you must remove or relax the uniform rounding in reproj.js (and the callers in Image.js, DataTile.js, and Tile.js) so that horizontally and vertically the projected pixel grid can stretch to preserve the source pixel count and aspect ratio.",
+        "bug_scenario": "The reprojection of a 5\u00d75 PNG raster (each source pixel covering a 3 km\u00d72 km area in Lambert Conformal Conic) into Web Mercator shows correct vertical alignment but horizontal misalignment: OpenLayers forces \u201csquare\u201d output pixels. In the example, the first column of pixels is drawn twice, expanding the 5\u00d75 source into a 7\u00d75 result. The blue circles mark where the pixel centers should land; the rendered pixels are shifted east because every target pixel is rounded to an identical width/height in screen-space."
+    }
+}

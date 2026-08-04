@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "ComboBox/",
+            "ComboBox/tools/",
+            "TextInput/",
+            "ListBox/README.md",
+            "Dropdown/",
+            "ListBox/"
+        ],
+        "explanation": "• ComboBox/: Contains the component’s main implementation (event handling, state machine, render logic). Understanding how it hooks into the input element and intercepts key events is critical.  \n• ComboBox/tools/: Houses test helpers or fixtures that illustrate how ComboBox simulates user typing and selection; these may reference or mis-handle composition events.  \n• TextInput/: Implements the low-level input component that ComboBox extends or composes. Composition event support lives here, so you need this to trace where IME handling breaks down.  \n• ListBox/README.md & ListBox/: Provide context for how the list of options is shown/hidden and how focus/selection is managed—interactions which can prematurely steal focus or key events from the IME.  \n• Dropdown/: Manages the positioning and event layer of the popup menu; any global keydown or event suppression here will affect how IME commits are delivered to the input.",
+        "bug_scenario": "When a user focuses the ComboBox’s text input and uses a Chinese IME (for example Zhuyin/注音), each keystroke is treated like a committed character rather than part of an ongoing composition. In the first screenshot you can see the raw zhuyin symbols “ㄓㄨㄥ ㄨㄣˊㄘㄜˋㄕˋ” appear directly in the input. In the second screenshot, even when the IME popup correctly shows candidate Chinese characters, selecting one doesn’t replace the phonetic symbols—instead the component’s onChange handler fires too early and locks in the unconverted text. The root of the problem is that ComboBox (and its underlying TextInput) do not properly handle compositionstart/compositionupdate/compositionend events, so the IME never completes its commit to the native input element."
+    }
+}

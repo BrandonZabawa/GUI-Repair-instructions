@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/user-timings.js",
+            "lighthouse-core/formatters/user-timings.js"
+        ],
+        "explanation": "The most likely location for this bug is within the logic that parses trace events and calculates user timing marks and measures for the report. The file 'lighthouse-core/audits/user-timings.js' is directly responsible for extracting, normalizing, and calculating user timing data from the trace and will contain the code that could inadvertently produce negative values if start times or other offsets are mishandled. The file 'lighthouse-core/formatters/user-timings.js' is responsible for displaying these timing values in the report and may be formatting or presenting the bug as well. Issues in either of these files may result in negative timing values being surfaced in the UI, so both are suspicious and relevant to fixing this bug.",
+        "bug_scenario": "The bug scenario is that under the 'Performance: User Timing marks and measures' section of the report, certain 'Mark' entries are displaying negative timing values (e.g., Mark: -184.69ms) instead of the expected positive timings. This indicates that the calculation of user timing marks (likely based on trace event timestamps) is incorrect, possibly due to a wrong reference point or incorrect interpretation of trace data. The bug was observed when running the extension on https://www.chromestatus.com/features."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/user-timings.js",
+            "lighthouse-core/formatters/user-timings.js",
+            "lighthouse-core/lib/traces/tracing-processor.js"
+        ],
+        "explanation": "1. lighthouse-core/audits/user-timings.js: This file is directly responsible for collecting and auditing the User Timing marks and measures, and is the most likely place where the underlying timestamp calculation or normalization occurs. Any bug in how marks are processed could lead to negative values.\n2. lighthouse-core/formatters/user-timings.js: This file handles how User Timing results are displayed or formatted. If there's a bug in formatting, it could manifest as negative values being shown erroneously.\n3. lighthouse-core/lib/traces/tracing-processor.js: Trace data is often timestamped relative to the trace's 'start' time, especially in Chrome traces. If this code fails to correctly normalize timestamps, marks can appear negative if their base reference is off. Hence, an issue here could propagate to the final audit output.",
+        "bug_scenario": "The bug scenario involves the reporting of negative values for User Timing marks in the performance output. From the screenshot, it's clear that the 'Mark:' entries for `mark_features_unveil_start` and `mark_features_loaded_start` appear with negative millisecond values, which is not expected (timing marks should usually be non-negative). This suggests a bug in the way the timestamps for User Timing marks are calculated or reported, likely related to how trace or timing data is processed or interpreted within the audit or formatting logic."
+    }
+}

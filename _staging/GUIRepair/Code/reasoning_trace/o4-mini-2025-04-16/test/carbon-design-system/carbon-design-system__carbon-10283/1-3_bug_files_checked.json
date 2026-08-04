@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/components/src/components/date-picker/date-picker.js",
+            "packages/react/src/components/DatePicker/DatePicker.js",
+            "packages/react/src/components/DatePicker/plugins/fixEventsPlugin.js"
+        ],
+        "explanation": "1. packages/components/src/components/date-picker/date-picker.js  \n   - This is the core vanilla implementation of the Carbon date picker (Flatpickr wrapper). It wires up the toggle icon, open/close logic, and keyboard event handlers. The bug\u2014no keyboard navigation when opening via the icon\u2014originates here because focus is never moved to the calendar container on icon click.  \n2. packages/react/src/components/DatePicker/DatePicker.js  \n   - This React wrapper instantiates and configures the Flatpickr instance for carbon-components-react. It registers plugins (including the fixEventsPlugin) and passes focus-related props. Any omissions here (e.g. not forcing input focus on open via icon) contribute to the failure.  \n3. packages/react/src/components/DatePicker/plugins/fixEventsPlugin.js  \n   - This plugin is intended to correct Flatpickr\u2019s event wiring (key events, focus, arrow navigation). Because the plugin attaches handlers assuming the input has focus, opening via the icon bypasses the expected focus flow. The plugin needs adjustment to explicitly focus the calendar or input when opened by icon so Flatpickr\u2019s keyboard navigation will work.",
+        "bug_scenario": "When the user clicks the calendar icon in a Carbon date picker (v10.42.0), the calendar panel opens but arrow-key navigation does not work. If instead the user clicks directly on the input field, the same calendar panel opens and arrow-key navigation works as expected (the input receives focus and Flatpickr handles key events). The screenshots show:  \n\u2022 An open calendar (via icon) with no focused element; arrow keys do nothing.  \n\u2022 An open calendar (via input) with the input focused (blue outline); arrow keys navigate the calendar."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DatePicker/DatePicker.js",
+            "packages/react/src/components/DatePicker/plugins/fixEventsPlugin.js",
+            "packages/react/src/components/DatePickerInput/DatePickerInput.js"
+        ],
+        "explanation": "All of the React DatePicker code that wires up Flatpickr, attaches event plugins, and handles the calendar-icon click live in these files. DatePicker.js initializes Flatpickr with its plugins (including fixEventsPlugin.js, which is responsible for forwarding and normalizing keyboard events once the calendar is open). DatePickerInput.js renders the calendar icon button and calls Flatpickr\u2019s open method, but it never shifts focus back to the input or to the calendar container when the icon is clicked. Because Flatpickr only listens for keyboard events when the calendar widget or its input has focus, clicking the icon leaves focus on the button and disables arrow-key navigation. Fixing the bug requires updating the click handler in DatePickerInput.js (or adding focus management in DatePicker.js or fixEventsPlugin.js) so that when open() is called via the icon, focus is set to the Flatpickr input or calendar container to allow keyboard navigation.",
+        "bug_scenario": "When the calendar dropdown is opened by clicking on the calendar-icon button rather than in the text input, focus remains on the button and the Flatpickr calendar never receives keyboard input. As a result, the arrow keys have no effect. When the user clicks directly in the text field to open the menu, focus stays on the input and arrow-key navigation of the calendar works as expected."
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js"
+        ],
+        "explanation": "\u2022 SubProcessStartEventBehavior.js \u2014 this behavior listens for subprocess creation and adds the default start event. It works correctly on initial create (task\u2192subProcess) but is never triggered during replace. We\u2019ll need to hook it into the replace flow.  \n\u2022 BpmnReplace.js \u2014 this is where the replace feature actually constructs the new element (callActivity\u2192subProcess). It currently only creates the shape and moves children; it must be extended to invoke the start-event behavior after replacement.  \n\u2022 ReplaceOptions.js \u2014 the replace definitions for callActivity\u2192expanded subprocess live here. There is no configuration to add child elements (start event) on replace. We need to update this mapping so that expanded subprocess replacements include the start event by default.",
+        "bug_scenario": "When you morph a call activity into an expanded subprocess via the replace feature, the new subprocess is created without its default start event. Visually it looks like a plain task (no start circle), whereas if you morph a task into an expanded subprocess the engine automatically inserts a start event. This inconsistent UX happens because the replace logic for callActivity\u2192subProcessExpanded never invokes the SubProcessStartEventBehavior that normally adds the start event on process creation."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/modeling/behavior/ReplaceElementBehaviour.js",
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js"
+        ],
+        "explanation": "\u2022 BpmnReplace.js and ReplaceOptions.js define how BPMN elements are replaced (morphed) from one type to another. They currently handle the call activity \u2192 expanded subprocess mapping but do not signal that a start event must be added as part of the swap.\\n\u2022 ReplaceElementBehaviour.js wires up the replace operation in the modeling feature and reacts to the element.replace command. It invokes the replace implementation but does not trigger the SubProcessStartEventBehavior for expanded subprocesses on replace.\\n\u2022 SubProcessStartEventBehavior.js is responsible for automatically adding a default start event inside expanded subprocesses when they are created. However, this behavior is only hooked into the initial create operation, not into the replace operation.\\n\\nTogether, these files define the morphing workflow from call activity to subprocess and the automatic start event creation on create. To fix the bug, the replace logic (in BpmnReplace/ReplaceOptions) and/or ReplaceElementBehaviour must be extended to invoke the SubProcessStartEventBehavior when an element is replaced by an expanded subprocess.",
+        "bug_scenario": "When a user morphs a call activity into an expanded subprocess in the modeler, the resulting subprocess appears just like a plain task (a simple rounded rectangle) without a start event marker. This UX is confusing because expanded subprocesses should by default display a start event circle inside the container immediately upon expansion, just as they do when the user first creates an expanded subprocess from the palette."
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/cascader/cascader.jsx",
+            "src/cascader/item.jsx",
+            "src/cascader/index.jsx",
+            "types/cascader/index.d.ts"
+        ],
+        "explanation": "\n1. src/cascader/cascader.jsx  \n   - This is the main Cascader component where itemRender and other props are applied. If we want to introduce a new prop like `showTitle`, its default handling and prop forwarding logic needs to be updated here so that downstream components know whether to omit the title attribute.\n\n2. src/cascader/item.jsx  \n   - This file renders each individual item via <Menu.Item> (or CheckboxItem). It currently picks up all unspecified props (via pickOthers) which includes any leftover `title` attribute. We need to conditionally remove or override the `title` prop here when the new API indicates titles should be hidden.\n\n3. src/cascader/index.jsx  \n   - This is the ConfigProvider wrapper where legacy prop transforms happen. We should add handling for the new `showTitle` prop (and document any deprecations) so that consumers can pass it at the top\u2010level Cascader component.\n\n4. types/cascader/index.d.ts  \n   - Once we add a new `showTitle?: boolean` API, the TypeScript definitions for CascaderProps must be extended to include this flag. This ensures consumers get proper typing support for the new option.\n\nBy updating these four files, we can introduce and honor a `showTitle` (or similarly named) prop that disables the native title attribute on cascader menu items and prevents the unwanted grey tooltip from appearing.",
+        "bug_scenario": "In the screenshot we see a Cascader dropdown menu where hovering over an option shows two tooltips: a blue styled help tooltip (our own) and the default grey browser tooltip coming from the HTML \"title\" attribute on each menu item. The user provided a custom itemRender that returns only a <span>{data.label}</span>, but the Cascader code still attaches a native title attribute to every item. They want a new API (for example `showTitle={false}`) to disable that default title behavior."
+    }
+}

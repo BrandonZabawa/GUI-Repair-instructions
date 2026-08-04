@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Graticule.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/coordinate.js"
+        ],
+        "explanation": "\u2022 src/ol/layer/Graticule.js is where the graticule lines are generated. Its loaderFunction and createGraticule_ methods compute lon/lat intervals using the view extent; they do not currently split an extent that crosses the date line into two intervals, so meridians west of the wrap and the corresponding parallels are never produced. \n\u2022 src/ol/proj/Projection.js determines whether the projection can wrap horizontally via canWrapX(), based on the projection\u2019s global_ and extent_. Custom projections (like US National Atlas) often lack a full-world extent and thus canWrapX_ stays false, preventing Graticule.js from treating the horizontal span as a wrap and further cutting off lines at the date line. \n\u2022 src/ol/coordinate.js contains the degreesToStringHDMS function used to format the longitude/latitude labels. It normalizes all longitudes into \u2013180\u00b0\u2026+180\u00b0 using modulo, which causes labels on either side of the date line to jump (and in some environments even become garbled due to repeated normalization). Adjusting this normalization to honor the actual view interval (minLon > maxLon) will correct label continuity when crossing the date line.",
+        "bug_scenario": "When the map\u2019s view projection crosses the international date line, the orange graticule lines (meridians and parallels) come up incomplete or are pushed entirely to the dateline. In the first screenshot you can see that most meridians west of about 160\u00b0 W are missing and the parallels abruptly start at the date line rather than spanning the full visible extent. In the second screenshot the labeling is also broken \u2014 the latitude/longitude strings are mis-normalized around the wrap east/west boundary."
+    }
+}

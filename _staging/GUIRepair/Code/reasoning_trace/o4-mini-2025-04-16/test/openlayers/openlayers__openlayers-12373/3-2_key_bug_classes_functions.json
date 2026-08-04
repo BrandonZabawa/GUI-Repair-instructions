@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/TileDebug.js//TileDebug"
+        ],
+        "bug_functions": [
+            "src/ol/source/TileDebug.js//TileDebug.getTile",
+            "src/ol/tileurlfunction.js//createFromTemplate"
+        ],
+        "explanation": "TileDebug.getTile is responsible for rendering the debug text for each tile by calling getTileCoordForTileUrlFunction(tileCoord), but that method returns the un-inverted y index. As a result, the labels drawn by LabeledTile do not reflect the {-y} inversion used by the XYZ/TileImage source. The inversion logic for {-y} lives in tileurlfunction.js in createFromTemplate, but TileDebug never applies it when building its text. Fixing the bug requires updating TileDebug.getTile (or its helper getTileCoordForTileUrlFunction) to apply the same y \u2192 (range.getHeight()\u2013y\u20131) transformation that createFromTemplate uses for URL generation.",
+        "bug_scenario": "When using a TileDebug layer alongside a TileImage (XYZ) layer that uses the \u201c{-y}\u201d placeholder, the debug grid still labels tiles with the non-inverted y coordinate. In other words, the TileDebug overlay draws \u201cz:x:y\u201d text using the raw tile y value, but the actual image tiles are requested with an inverted y (via the {-y} URL template), so the debug labels do not match the served tiles\u2019 y indices."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/TileDebug.js//TileDebug"
+        ],
+        "bug_functions": [
+            "src/ol/source/TileDebug.js//TileDebug.getTile",
+            "src/ol/tileurlfunction.js//createFromTemplate"
+        ],
+        "explanation": "TileDebug.getTile is responsible for computing and drawing the text label for each tile using getTileCoordForTileUrlFunction, but it never applies the {-y} inversion logic. In contrast, createFromTemplate in tileurlfunction.js implements the {-y} placeholder substitution (flipping Y by computing range.getHeight() - y - 1) for tile URLs. To make the debug labels match the inverted-Y requests, TileDebug.getTile must incorporate the same inversion calculation (or call into createFromTemplate\u2019s logic) when forming its text label.",
+        "bug_scenario": "The map is rendered with two layers: a TileDebug overlay that draws tile boundaries and labels each tile with its z/x/y coordinates, and a TileImage (XYZ) base layer using an inverted Y tile URL ({-y}). While tile requests for the TileImage layer correctly calculate and request the flipped Y index, the TileDebug labels continue to show the un-inverted Y index. Thus the debug overlay\u2019s printed Y coordinate does not match the actual tile Y used by the URL template with {-y}."
+    }
+}

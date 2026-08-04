@@ -1,0 +1,127 @@
+{
+    "1/1": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "handleSourceUpdate_() {",
+                    "if (this.getSource()) {",
+                    "this.setStyle(this.style_);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  handleSourceUpdate_() {",
+                    "    if (this.getSource()) {",
+                    "      this.setStyle(this.style_);",
+                    "      // Clear the renderer's cache when the source changes",
+                    "      const renderer = this.getRenderer && this.getRenderer();",
+                    "      if (renderer && typeof renderer.clearTileTextureCache === 'function') {",
+                    "        renderer.clearTileTextureCache();",
+                    "      }",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "/**",
+                    "* @param {LayerType} tileLayer Tile layer.",
+                    "* @param {Options} options Options.",
+                    "*/",
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "  /**",
+                    "   * @param {LayerType} tileLayer Tile layer.",
+                    "   * @param {Options} options Options.",
+                    "   */",
+                    "  constructor(tileLayer, options) {",
+                    "    super(tileLayer, {",
+                    "      uniforms: options.uniforms,",
+                    "    });",
+                    "",
+                    "    /**",
+                    "     * The last used projection.",
+                    "     * @type {import(\"../../proj/Projection.js\").default|undefined}",
+                    "     * @private",
+                    "     */",
+                    "    this.lastProjection_ = undefined;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "/**",
+                    "* Render the layer.",
+                    "* @param {import(\"../../Map.js\").FrameState} frameState Frame state.",
+                    "* @return {HTMLElement} The rendered element.",
+                    "*/",
+                    "renderFrame(frameState) {",
+                    "this.frameState_ = frameState;",
+                    "this.renderComplete = true;",
+                    "const gl = this.helper.getGL();",
+                    "this.preRender(gl, frameState);"
+                ],
+                "REPLACE": [
+                    "  /**",
+                    "   * Render the layer.",
+                    "   * @param {import(\"../../Map.js\").FrameState} frameState Frame state.",
+                    "   * @return {HTMLElement} The rendered element.",
+                    "   */",
+                    "  renderFrame(frameState) {",
+                    "    // Clear cache if projection has changed",
+                    "    const projection = frameState.viewState.projection;",
+                    "    if (this.lastProjection_ && this.lastProjection_ !== projection) {",
+                    "      this.clearTileTextureCache();",
+                    "    }",
+                    "    this.lastProjection_ = projection;",
+                    "",
+                    "    this.frameState_ = frameState;",
+                    "    this.renderComplete = true;",
+                    "    const gl = this.helper.getGL();",
+                    "    this.preRender(gl, frameState);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "removeHelper() {",
+                    "if (this.helper) {",
+                    "const tileTextureCache = this.tileTextureCache_;",
+                    "tileTextureCache.forEach((tileTexture) => tileTexture.dispose());",
+                    "tileTextureCache.clear();",
+                    "}",
+                    "",
+                    "super.removeHelper();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  removeHelper() {",
+                    "    if (this.helper) {",
+                    "      const tileTextureCache = this.tileTextureCache_;",
+                    "      tileTextureCache.forEach((tileTexture) => tileTexture.dispose());",
+                    "      tileTextureCache.clear();",
+                    "    }",
+                    "",
+                    "    super.removeHelper();",
+                    "  }",
+                    "",
+                    "  /**",
+                    "   * Clear the tile texture cache and dispose all textures.",
+                    "   */",
+                    "  clearTileTextureCache() {",
+                    "    if (this.tileTextureCache_) {",
+                    "      this.tileTextureCache_.forEach((tileTexture) => tileTexture.dispose());",
+                    "      this.tileTextureCache_.clear();",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

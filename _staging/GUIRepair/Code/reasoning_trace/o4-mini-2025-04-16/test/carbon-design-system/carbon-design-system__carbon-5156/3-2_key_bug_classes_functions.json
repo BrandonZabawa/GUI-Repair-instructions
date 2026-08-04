@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Tile/Tile.js//SelectableTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.handleClick",
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.handleKeyDown"
+        ],
+        "explanation": "The SelectableTile class is responsible for managing tile selection and for calling back to the consumer via its onChange prop. Its internal handleClick and handleKeyDown methods toggle the visual state but do not call this.props.onChange. To fix the issue you need to update these two handlers (and/or the render method where the <input> lives) so that after updating internal state they also invoke props.onChange with the new selection and event object, matching the documented behavior.",
+        "bug_scenario": "The SelectableTile component renders as expected and its internal click and keyboard handlers fire (you can see the tile selecting visually), but the user-supplied onChange callback is never invoked. In the demo (Codesandbox) you can click or press space/enter on a tile, see handleClick/handleKeyDown in the console, but never see \u201conChange\u201d logged. The animated GIF and prop-dump confirm onChange is passed into the component, but it never gets called."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Tile/Tile.js//SelectableTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.render",
+            "packages/react/src/components/Tile/Tile.js//SelectableTile.getDerivedStateFromProps"
+        ],
+        "explanation": "The SelectableTile class is responsible for managing its own checked state and for wiring up user interactions (click and keyDown) to state changes. The static getDerivedStateFromProps hook adjusts internal state when the selected prop changes. The render method outputs the <input type=\u201ccheckbox\u201d> and applies event handlers, but it never invokes the onChange prop passed in by the consumer. As a result, although handleClick and handleKeyDown handlers fire, there is no code in render (or a dedicated handleChange) that calls this.props.onChange. To fix the issue, SelectableTile.render should be updated (or a handleChange method added) to call props.onChange whenever the internal checked state toggles.",
+        "bug_scenario": "In a Codesandbox using carbon\u2019s <SelectableTile> in \u201cmulti\u2010select\u201d mode, clicking or keyboard\u2010activating a tile toggles its checkmark (and you see handleClick/handleKeyDown fire in the console), but the user\u2010supplied onChange callback never fires."
+    }
+}

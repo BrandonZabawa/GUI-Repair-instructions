@@ -1,0 +1,32 @@
+diff --git a/components/index.js b/components/index.js
+index fe5940ae..39dda809 100644
+--- a/components/index.js
++++ b/components/index.js
+@@ -55,10 +55,16 @@ function loadLanguages(arr, withoutDependencies) {
+ 			loadLanguages(components.languages[language].require);
+ 		}
+ 
+-		var pathToLanguage = './prism-' + language;
+-		delete require.cache[require.resolve(pathToLanguage)];
+-		delete Prism.languages[language];
+-		require(pathToLanguage);
++// Support “gcode” → “reprap_gcode” aliasing
++var normalizedLang = language === 'gcode' ? 'reprap_gcode' : language;
++var pathToLanguage    = './prism-' + normalizedLang;
++delete require.cache[require.resolve(pathToLanguage)];
++delete Prism.languages[language];
++require(pathToLanguage);
++// If the user asked for “gcode”, copy the loaded reprap_gcode grammar
++if (language === 'gcode' && Prism.languages.reprap_gcode) {
++Prism.languages.gcode = Prism.languages.reprap_gcode;
++}
+ 
+ 		// Reload dependents
+ 		var dependents = getPeerDependents(language).filter(function (dependent) {
+@@ -79,4 +85,4 @@ function loadLanguages(arr, withoutDependencies) {
+ module.exports = function (arr) {
+ 	// Don't expose withoutDependencies
+ 	loadLanguages(arr);
+-};
+\ No newline at end of file
++};

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/common/figures.lua//isFigureImage",
+            "src/resources/filters/common/figures.lua//discoverFigure",
+            "src/resources/filters/quarto-pre/figures.lua//quarto_pre_figures"
+        ],
+        "explanation": "The functions isFigureImage and discoverFigure in src/resources/filters/common/figures.lua use the test `#el.caption > 0` (or `#image.caption > 0`) to decide whether an image counts as a figure. When fig-cap evaluates to a zero-length character vector, the image.caption list is empty, so these functions drop the image entirely. Similarly, the pre-render filter quarto_pre_figures in src/resources/filters/quarto-pre/figures.lua only propagates non-nil fig-cap attributes at the Div level and never treats an explicitly empty string or zero-length vector as a valid caption. Together, these functions are responsible for failing to render images whose fig-cap expression yields character(0).",
+        "bug_scenario": "The reproducible example.qmd renders two figures with knitr::include_graphics pointing at a remote image (a stylized cartoon pony playing a keyboard alongside Jigglypuff singing). In the first chunk, setting caption <- \"hello world\" displays the figure correctly with its caption. In the second chunk, setting caption <- character(0) (a zero-length caption) causes the figure to disappear entirely from the HTML output."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/common/figures.lua//discoverFigure",
+            "src/resources/filters/quarto-pre/figures.lua//quarto_pre_figures (Div filter)",
+            "src/resources/filters/quarto-pre/figures.lua//quarto_pre_figures (Para filter)"
+        ],
+        "explanation": "The common figures.lua filter\u2019s discoverFigure function insists on `#image.caption > 0`, so if fig-cap generates a zero-length caption the image is treated as having no caption and is skipped. Meanwhile, in the quarto-pre/figures.lua filter the Div handler only propagates a fig-cap attribute when it is non-nil, and the Para handler only wraps images when a caption exists or for TikZ. Together these two filters cause any figure whose caption expression yields an empty vector to be dropped. Fixing the bug requires changing discoverFigure to allow zero-length captions (or bypass the caption check) and updating the Div/Para handlers in quarto_pre_figures to propagate and render images even when the caption is empty.",
+        "bug_scenario": "When an R code chunk uses the chunk option \u201cfig-cap: !expr caption\u201d and the expression evaluates to a zero-length character vector, the image itself is dropped from the rendered output rather than appearing with an empty caption. In the reproduction you see the pony cartoon when \u2018caption\u2019 is non-empty, but when \u2018caption <- character(0)\u2019 the figure block is omitted entirely."
+    }
+}

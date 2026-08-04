@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/DataTable/DataTable.js",
+            "src/js/components/DataTable/Header.js",
+            "src/js/utils/router.js"
+        ],
+        "explanation": "\u2022 DataTable.js: this is the component that receives the external sort prop and even imports useLayoutEffect (presumably to synchronize side effects) but currently contains no logic to listen for browser navigation events (popstate) or to re-read the URL parameters when history changes. Without such an effect, the table never knows the URL has changed.\n\n\u2022 Header.js: this renders the arrow icon based strictly on the sort prop passed into DataTable. It has the correct rendering logic but can\u2019t react if the parent never updates the sort prop after a history navigation.\n\n\u2022 router.js (ROUTER_PROPS): despite defining prop types for routing props, it contains no implementation for subscribing to history/popstate or for mapping URL changes back into component props. This is where URL-based sorting should be hooked up so that navigation events actually cause the sort prop to update and trigger a re-render of the Header arrow icons.",
+        "bug_scenario": "In the screenshot we see the browser\u2019s URL query parameters reflecting the current sort (e.g. \u201c?property=b&direction=desc\u201d), and the DataTable header shows an arrow on column \u201cA\u201d (the previous sort) even after navigating back in history. Clicking column headers pushes the new sort into the URL and updates the arrow correctly, but using the browser\u2019s Back/Forward buttons changes the URL without ever updating the sort prop passed into the table, so the arrow icon in the header never moves to the column indicated by the new URL parameters."
+    }
+}

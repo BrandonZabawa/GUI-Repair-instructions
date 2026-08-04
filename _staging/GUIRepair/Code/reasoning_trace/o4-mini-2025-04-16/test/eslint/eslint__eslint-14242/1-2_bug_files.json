@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "bin/eslint.js",
+            "lib/cli.js",
+            "lib/cli-engine/cli-engine.js",
+            "conf/default-cli-options.js"
+        ],
+        "explanation": "\n\u2022 bin/eslint.js: This is the entry point that invokes the CLI runner. It grabs the parsed options (including quiet and max-warnings) and later decides process.exit(). We need to adjust it so that the max-warnings check cannot be bypassed by quiet.\n\n\u2022 lib/cli.js: Contains the main orchestration of parsing args, running the engine, filtering results (quiet) and computing the exit code. The logic here currently suppresses warnings before checking max-warnings. We need to change it to record the raw warning count and use that for the exit code even when quiet is set (or to turn off quiet when max-warnings is exceeded).\n\n\u2022 lib/cli-engine/cli-engine.js: The core CLIEngine filters out warning messages when options.quiet is true (at the very start of executeOnFiles), so by the time the summary and max-warnings check runs, warningCount is already zero. We need to preserve the original warning count internally or move the max-warnings check before the quiet filter.\n\n\u2022 conf/default-cli-options.js: Defines the default values for --quiet and --max-warnings. We may want to update this schema to reflect the new precedence (for example, warning that --quiet will be ignored when --max-warnings is used).  \n\nTogether, these files are responsible for parsing the flags, filtering warnings, printing output, and setting the exit code\u2014all the behaviors impacted by the interaction of quiet and max-warnings. Adjusting them will allow ESLint to error out when too many warnings occur, even under --quiet.",
+        "bug_scenario": "When running ESLint with both \u201c--max-warnings <N>\u201d and \u201c--quiet\u201d, warnings get filtered out entirely (because of --quiet) so the warning count never exceeds the threshold and ESLint exits with code 0, even though there were more than the allowed number of warnings. The desired behavior is that either\n1) \u201c--quiet\u201d is overridden when the total warnings exceed max-warnings (so warnings still get printed and exit code is 1), or\n2) at minimum ESLint should exit with code 1 when warnings > max-warnings, even if quiet suppresses output."
+    },
+    "2": {
+        "bug_files": [
+            "bin/eslint.js",
+            "lib/cli.js",
+            "lib/cli-engine/cli-engine.js"
+        ],
+        "explanation": "\u2022 bin/eslint.js is the top-level CLI launcher that parses flags (--quiet, --max-warnings) and calls into the internal CLI logic. This is where exit codes are finally applied.\n\u2022 lib/cli.js contains the main CLI workflow: it invokes the engine, prints results, and sets the process exit code based on errorCount and warningCount (and max-warnings). It currently sees zero warnings after quiet filtering and thus never errors out.\n\u2022 lib/cli-engine/cli-engine.js is where the --quiet filter is applied (it strips out all warnings) and where the total warningCount is tracked. Because the code applies the quiet filter before checking against max-warnings, the warningCount is always zero when quiet is on. Together, these three files govern how --quiet and --max-warnings interact and must be updated so that max-warnings is evaluated on the full warning set before applying the quiet filter (or at least triggers a nonzero exit code).",
+        "bug_scenario": "When you run ESLint with both --max-warnings and --quiet, all warnings get suppressed by --quiet and ESLint never notices that the total warnings exceeded the max-warnings threshold. In the screenshot you can see that \u201c--max-warnings 3\u201d by itself produces exit code 1 when there are 26 warnings, but adding \u201c--quiet\u201d silences every warning and yields exit code 0, so the max-warnings check never fires."
+    }
+}

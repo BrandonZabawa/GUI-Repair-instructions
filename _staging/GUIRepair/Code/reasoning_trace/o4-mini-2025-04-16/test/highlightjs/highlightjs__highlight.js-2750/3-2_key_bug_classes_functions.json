@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/javascript.js//SUBST",
+            "src/languages/javascript.js//TEMPLATE_STRING",
+            "src/languages/javascript.js//CSS_TEMPLATE",
+            "src/languages/javascript.js//HTML_TEMPLATE"
+        ],
+        "bug_functions": [
+            "src/languages/javascript.js//default export function"
+        ],
+        "explanation": "The heart of the problem is the SUBST mode in javascript.js, which is defined with begin: '${' and end: '}'. It does not track nested braces, so any '}' inside an object literal prematurely terminates the substitution. TEMPLATE_STRING, CSS_TEMPLATE, and HTML_TEMPLATE all embed SUBST inside their contains arrays, so they inherit the same bug. The default export function in javascript.js assembles these modes into the language definition; to fix the issue you\u2019ll need to update SUBST (and by extension any template modes that use it) to count nested braces or otherwise distinguish braces that belong to inner objects from the ones that close the substitution.",
+        "bug_scenario": "When you write a template\u2010tagged string like\n\n    tag`hello ${args > 0 ? { foo: 1 } : { bar: 2 }}!`\n\nthe highlighter\u2019s SUBST rule sees the first \u201c}\u201d of the object literal and thinks the ${\u2026} expression has ended. Everything after that brace (including nested templates) gets treated as plain string text until the next backtick. In the screenshots you can see that after the inner object literal closes, the rest of the substitution isn\u2019t highlighted as code, and nested css`\u2026` templates aren\u2019t recognized."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/javascript.js//SUBST",
+            "src/languages/javascript.js//TEMPLATE_STRING",
+            "src/languages/javascript.js//CSS_TEMPLATE",
+            "src/languages/javascript.js//HTML_TEMPLATE"
+        ],
+        "explanation": "The core of the problem lives in the SUBST definition in src/languages/javascript.js: its end pattern is a simple '}' that does not account for nested braces inside the expression, so any right curly in an object literal prematurely closes the mode. TEMPLATE_STRING, CSS_TEMPLATE, and HTML_TEMPLATE all include SUBST in their contains lists, so they all exhibit the same bug. To fix this, SUBST must be extended to track nested {\u2026} pairs (for example by adding a recursive brace rule) so that only the matching closing brace really ends the substitution mode.",
+        "bug_scenario": "When highlighting JavaScript/TypeScript code with tagged template literals that include nested object literals and even another tagged template literal inside the ${\u2026} substitution, the right curly brace of the inner object causes the highlighter\u2019s SUBST mode to think the substitution has ended. Everything after that brace is then treated as plain string content, and a nested template literal (e.g. css`\u2026`) inside the expression is also mis-parsed as ending the outer template literal. The provided screenshots show Highlight.js ending the substitution too early, whereas VS Code correctly continues to highlight the expression until the final `}`."
+    }
+}

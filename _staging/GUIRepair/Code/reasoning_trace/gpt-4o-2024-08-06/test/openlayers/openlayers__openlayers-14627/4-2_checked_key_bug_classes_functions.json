@@ -1,0 +1,149 @@
+{
+    "bug_classes": {
+        "1": {
+            "class_name": "EPSG3857Projection",
+            "file_path": "src/ol/proj/epsg3857.js",
+            "class_details": [
+                {
+                    "name": "EPSG3857Projection",
+                    "start_line": 43,
+                    "end_line": 59,
+                    "methods": [
+                        {
+                            "name": "constructor",
+                            "start_line": 47,
+                            "end_line": 58
+                        }
+                    ],
+                    "isExported": false
+                }
+            ],
+            "class_code": [
+                "class EPSG3857Projection extends Projection {",
+                "  /**",
+                "   * @param {string} code Code.",
+                "   */",
+                "  constructor(code) {",
+                "    super({",
+                "      code: code,",
+                "      units: 'm',",
+                "      extent: EXTENT,",
+                "      global: true,",
+                "      worldExtent: WORLD_EXTENT,",
+                "      getPointResolution: function (resolution, point) {",
+                "        return resolution / Math.cosh(point[1] / RADIUS);",
+                "      },",
+                "    });",
+                "  }",
+                "}"
+            ]
+        }
+    },
+    "bug_functions": {
+        "2": {
+            "function_name": "applyTransform",
+            "file_path": "src/ol/extent.js",
+            "function_details": [
+                {
+                    "name": "applyTransform",
+                    "start_line": 811,
+                    "end_line": 848
+                }
+            ],
+            "function_code": [
+                "export function applyTransform(extent, transformFn, dest, stops) {",
+                "  let coordinates = [];",
+                "  if (stops > 1) {",
+                "    const width = extent[2] - extent[0];",
+                "    const height = extent[3] - extent[1];",
+                "    for (let i = 0; i < stops; ++i) {",
+                "      coordinates.push(",
+                "        extent[0] + (width * i) / stops,",
+                "        extent[1],",
+                "        extent[2],",
+                "        extent[1] + (height * i) / stops,",
+                "        extent[2] - (width * i) / stops,",
+                "        extent[3],",
+                "        extent[0],",
+                "        extent[3] - (height * i) / stops",
+                "      );",
+                "    }",
+                "  } else {",
+                "    coordinates = [",
+                "      extent[0],",
+                "      extent[1],",
+                "      extent[2],",
+                "      extent[1],",
+                "      extent[2],",
+                "      extent[3],",
+                "      extent[0],",
+                "      extent[3],",
+                "    ];",
+                "  }",
+                "  transformFn(coordinates, coordinates, 2);",
+                "  const xs = [];",
+                "  const ys = [];",
+                "  for (let i = 0, l = coordinates.length; i < l; i += 2) {",
+                "    xs.push(coordinates[i]);",
+                "    ys.push(coordinates[i + 1]);",
+                "  }",
+                "  return _boundingExtentXYs(xs, ys, dest);",
+                "}"
+            ]
+        },
+        "3": {
+            "function_name": "getTransform",
+            "file_path": "src/ol/proj.js",
+            "function_details": [
+                {
+                    "name": "getTransform",
+                    "start_line": 483,
+                    "end_line": 487
+                }
+            ],
+            "function_code": [
+                "export function getTransform(source, destination) {",
+                "  const sourceProjection = get(source);",
+                "  const destinationProjection = get(destination);",
+                "  return getTransformFromProjections(sourceProjection, destinationProjection);",
+                "}"
+            ]
+        },
+        "4": {
+            "function_name": "fromEPSG4326",
+            "file_path": "src/ol/proj/epsg3857.js",
+            "function_details": [
+                {
+                    "name": "fromEPSG4326",
+                    "start_line": 84,
+                    "end_line": 106
+                }
+            ],
+            "function_code": [
+                "export function fromEPSG4326(input, output, dimension) {",
+                "  const length = input.length;",
+                "  dimension = dimension > 1 ? dimension : 2;",
+                "  if (output === undefined) {",
+                "    if (dimension > 2) {",
+                "      // preserve values beyond second dimension",
+                "      output = input.slice();",
+                "    } else {",
+                "      output = new Array(length);",
+                "    }",
+                "  }",
+                "  for (let i = 0; i < length; i += dimension) {",
+                "    output[i] = (HALF_SIZE * input[i]) / 180;",
+                "    let y = RADIUS * Math.log(Math.tan((Math.PI * (+input[i + 1] + 90)) / 360));",
+                "    if (y > MAX_SAFE_Y) {",
+                "      y = MAX_SAFE_Y;",
+                "    } else if (y < -MAX_SAFE_Y) {",
+                "      y = -MAX_SAFE_Y;",
+                "    }",
+                "    output[i + 1] = y;",
+                "  }",
+                "  return output;",
+                "}"
+            ]
+        }
+    }
+}

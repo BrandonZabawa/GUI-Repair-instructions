@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/discover_preview_images.lua",
+            "src/project/types/website/listing/website-listing-index.ts",
+            "src/project/types/website/listing/website-listing-project.ts",
+            "src/project/types/website/listing/website-listing-template.ts",
+            "src/core/url.ts"
+        ],
+        "explanation": "1. discover_preview_images.lua (under resources/filters/quarto-pre) is responsible for scanning the markdown AST for the first image in each document and writing its URL into the document metadata for use in grid previews. Its current pattern matching breaks on commas/colons and truncates the URL.  \n2. website-listing-index.ts, website-listing-project.ts and website-listing-template.ts read that metadata.previewImage and emit the <img src=\u2026> thumbnail in the generated grid. Because the filter has already mangled the URL, the <img> tag points at a non-existent path.  \n3. url.ts contains the core URL encoding/escaping logic used when turning metadata.href/path strings into HTML-safe URIs. It does not currently re-encode or percent-escape punctuation from the discovered previewImage path.  \nTogether these files form the pipeline that locates an image in your post, stores its raw URL, and emits it in the grid view. The bug lives in the discovery (Lua) and/or in the URL encoding step of the TypeScript renderer, so punctuation\u2010heavy URLs never survive intact into the final HTML.",
+        "bug_scenario": "When rendering a blog post with an \u201cimage grid\u201d (e.g. the default blog\u2010listing index that shows a preview thumbnail for each post), any image whose URL contains non-standard characters\u2014commas, colons, punctuation\u2014fails to appear (broken preview) even though the same URL works fine inline in the body of the post. In the repro the inline markdown image with URL \u201chttp://assets.bonappetit.com/photos/\u2026/5:4/w_1028,c_limit/koji-steak-1.jpg\u201d renders correctly in the post but the generated grid preview never loads."
+    },
+    "2": {
+        "bug_files": [
+            "src/core/url.ts",
+            "src/core/qualified-path.ts",
+            "src/project/types/website/listing/website-listing-project.ts",
+            "src/project/types/website/listing/website-listing-template.ts"
+        ],
+        "explanation": "1. src/core/url.ts: Contains the isUrl/normalizeUrl logic. It currently mis-identifies URLs that include commas or embedded colons (e.g. \u201c5:4/w_1028,c_limit/\u2026jpg\u201d) and treats them as file paths rather than HTTP URLs, so they never make it through the web-URL branch.\n2. src/core/qualified-path.ts: Responsible for qualifying local file paths and URLs. Because the URL was mis-classified, this module prefixes or rewrites it incorrectly (e.g. to a file:// URI), leading to a broken src in the grid view.\n3. src/project/types/website/listing/website-listing-project.ts: Extracts the \u201cpreview\u201d image for a post (by scanning metadata or the first image in the document). It relies on URL/path detection from url.ts and qualified-path.ts, so a bad classification there means no valid preview is returned.\n4. src/project/types/website/listing/website-listing-template.ts: Renders the HTML for each post tile in the grid, embedding the preview URL into an <img> tag. Since the URL coming from the prior step is incorrect or empty, the thumbnail is broken in the generated listing.",
+        "bug_scenario": "In the user\u2019s sample QMD post (\u201cClabbered milk\u201d), two images are embedded inline\u2014an external URL with non-standard punctuation (commas and colons) and a local asset. Both render correctly in the post body. However, when Quarto generates the website listing (the grid view of posts), the preview thumbnail for that post is broken (no image appears). The supplied screenshot shows the clabberedMilk.jpg inline, but on the grid/listing page the thumbnail slot is empty or shows a broken link icon."
+    }
+}

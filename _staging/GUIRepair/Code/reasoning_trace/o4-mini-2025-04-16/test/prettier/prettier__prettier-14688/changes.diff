@@ -1,0 +1,25 @@
+diff --git a/src/language-js/print/type-parameters.js b/src/language-js/print/type-parameters.js
+index c681f9a79..7a540c366 100644
+--- a/src/language-js/print/type-parameters.js
++++ b/src/language-js/print/type-parameters.js
+@@ -68,14 +68,17 @@ function printTypeParameters(path, options, print, paramsKey) {
+     ];
+   }
+ 
+-  // Keep comma if the file extension is .tsx and
++  // Keep comma if the file extension is .tsx or a TS module (.mts/.cts) and
+   // has one type parameter that isn't extend with any types.
+-  // Because, otherwise formatted result will be invalid as tsx.
++  // Because otherwise it will be invalid in tsx or trigger TS7060 in .mts/.cts.
++  const isModuleFile =
++    typeof options.filepath === "string" &&
++    /\.(?:m|c)ts$/.test(options.filepath)
+   const trailingComma =
+     node.type === "TSTypeParameterInstantiation" // https://github.com/microsoft/TypeScript/issues/21984
+       ? ""
+       : getFunctionParameters(node).length === 1 &&
+-        isTSXFile(options) &&
++        (isTSXFile(options) || isModuleFile) &&
+         !node[paramsKey][0].constraint &&
+         path.parent.type === "ArrowFunctionExpression"
+       ? ","

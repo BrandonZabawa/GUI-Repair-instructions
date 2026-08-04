@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-cli/run.js",
+            "lighthouse-core/lib/lh-error.js",
+            "lighthouse-cli/printer.js"
+        ],
+        "explanation": "\u2022 lighthouse-cli/run.js is the CLI entry point that catches all runtime errors and directly prints err.message (the raw ICU key) instead of invoking the i18n formatter.  \n\u2022 lighthouse-core/lib/lh-error.js defines the LHEError class and holds the ICU message templates, but its constructor never calls the i18n layer to swap the template key for a localized string.  \n\u2022 lighthouse-cli/printer.js is responsible for formatting CLI output; it should be updated to ensure that any error it prints (including fatal errors) is passed through the i18n formatter before going to stderr.",
+        "bug_scenario": "When you invoke the Lighthouse CLI with a URL that can\u2019t be loaded (for example \u201cnot-a-valid-url\u201d), the run.js script enters its fatal-error catch block and prints the raw ICU template identifier instead of a translated message. In the screenshot you can see:  \n\n  Runtime error encountered: lighthouse-core/lib/lh-error.js | urlInvalid # 0  \n  LHEError: INVALID_URL\n\nThis means the LHEError\u2019s ICU key (\"urlInvalid\") was never looked up in the locale files before being written to stderr."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-cli/run.js",
+            "lighthouse-cli/printer.js",
+            "lighthouse-core/lib/lh-error.js"
+        ],
+        "explanation": "\n\u2022 lighthouse-core/lib/lh-error.js is where LHEError is defined along with its ICU template key and friendlyMessage getter. On errors it holds both the template identifier and arguments used for i18n lookup.\n\u2022 lighthouse-cli/run.js is the entry point for CLI execution. It invokes the core runner, catches any thrown LHEError on a fatal path, and passes it along for printing \u2013 but it never triggers the i18n lookup before handing off the error.\n\u2022 lighthouse-cli/printer.js implements writeFatalError (and related routines) that format and dump the error to stderr. In the current code it prints err.message or raw err.code/template instead of using err.friendlyMessage (i.e. calling i18n.getFormatted). As a result the ICU identifier is shown instead of a localized string. To fix the bug, the run/printer code needs to import and swap to the correct locale at startup (via i18n.swapLocale) and then use err.friendlyMessage when printing fatal errors.",
+        "bug_scenario": "When you invoke the Lighthouse CLI with a URL that causes a fatal runtime error (for example \u201cnot-a-valid-url\u201d), the CLI\u2019s error handler prints the raw ICU template identifier and code (e.g. \u201clighthouse-core/lib/lh-error.js | urlInvalid # 0\u201d) instead of looking up and printing the human\u2010friendly, localized message. In other words, the i18n lookup never happens on the fatal\u2010error path, so users see the un-translated template key rather than a readable error."
+    }
+}

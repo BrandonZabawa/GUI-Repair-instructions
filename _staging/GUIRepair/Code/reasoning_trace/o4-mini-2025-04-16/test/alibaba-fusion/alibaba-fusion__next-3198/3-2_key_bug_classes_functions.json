@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/date-picker2/panels/time-panel.jsx//TimePanel"
+        ],
+        "bug_functions": [
+            "src/date-picker2/panels/time-panel.jsx//formater",
+            "src/date-picker2/util.js//setTime",
+            "src/date-picker2/picker.jsx//fmtValue",
+            "src/date-picker2/picker.jsx//checkDate"
+        ],
+        "explanation": "• TimePanel (in time-panel.jsx): this class renders the time panel header and delegates formatting to its formater method. Any mistake here (wrong format string or ignoring defaultValue) will display “Invalid Date.”\n• TimePanel.formater: builds a format string and calls v.format(fmt). If defaultValue isn’t passed through or if fmt is wrong (e.g. missing seconds), the format call yields invalid dates.\n• util.setTime (in util.js): used to merge a default time onto a date object. If setTime receives incompatible types (string vs Dayjs) it can produce an invalid Date.\n• fmtValue (in picker.jsx): responsible for converting a raw value into a display string/array. A bug here can turn valid Dayjs values into invalid strings before they reach the panel.\n• checkDate (in picker.jsx): normalizes arbitrary input into a Dayjs instance. If this validation/parsing logic mishandles a Dayjs input or custom‐formatted string, it may return null or an invalid object, causing the panel to show “Invalid Date.”\n\nTogether these classes/functions control how defaultValue is parsed, merged and formatted for the time panel. They must be adjusted so that a Dayjs instance or correctly formatted string passed via timePanelProps.defaultValue is honored rather than resulting in an invalid date display.",
+        "bug_scenario": "When using DatePicker2 with the `showTime` prop and passing a `timePanelProps.defaultValue`, the time‐picker panel’s header and cells render “Invalid Date” (and zeros in the columns) instead of the expected default time. In other words, the default time values aren’t being parsed or formatted correctly, so the time panel displays “Invalid Date.”"
+    },
+    "2": {
+        "bug_classes": [
+            "src/date-picker2/panels/time-panel.jsx//TimePanel"
+        ],
+        "bug_functions": [
+            "src/date-picker2/panels/time-panel.jsx//formater",
+            "src/date-picker2/util.js//setTime"
+        ],
+        "explanation": "1. TimePanel（位于 src/date-picker2/panels/time-panel.jsx）是渲染时间选择面板的容器，它内部把传入的 value 直接格式化显示，但并没有在 value 为空时去取 timePanelProps.defaultValue，所以当 value 没有携带时间（或者初始状态未设置 value）时，format(v) 会拿到 undefined，从而渲染出“Invalid Date”。\n\n2. formater 方法负责把内部的 Dayjs 对象 v 用合适的 fmt 字符串格式化成文本，但只针对 v 存在的情况，对 defaultValue 并无兼容逻辑。\n\n3. util.setTime（位于 src/date-picker2/util.js）是将用户传入的默认 timePanelProps.defaultValue 与日期面板选中的日期合并的工具函数，理论上它应该在 Picker 组件中被调用来给 value 补上默认的时分秒，但目前在整个流程里并未被正确调用或使用，导致 TimePanel 拿到的 value 不带用户预设的 defaultValue。\n\n综上，要修复此问题，需要\n1）在 Picker 组件初始化或 getDerivedStateFromProps 阶段调用 setTime，将面板选中的日期与 timePanelProps.defaultValue 合并生成真正的 value；\n2）在 TimePanel.formater 中，对未传入 value 时，优先使用 timePanelProps.defaultValue 来格式化；这样才能在初始渲染时正确显示用户预设的默认时间，而不会出现“Invalid Date”。",
+        "bug_scenario": "当用户在带有 showTime 的 DatePicker2 上通过 timePanelProps.defaultValue 传入一个 dayjs 实例（比如 dayjs('09:00:00','HH:mm:ss',true)）时，时间面板的头部右侧会显示“Invalid Date”而不是默认时间。"
+    }
+}

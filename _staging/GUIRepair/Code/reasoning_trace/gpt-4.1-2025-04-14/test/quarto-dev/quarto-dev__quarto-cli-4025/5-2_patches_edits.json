@@ -1,0 +1,79 @@
+{
+    "1/1": {
+        "src/resources/filters/common/figures.lua": [
+            {
+                "SEARCH": [
+                    "function discoverFigure(el, captionRequired)",
+                    "if el.t ~= \"Para\" then",
+                    "return nil",
+                    "end",
+                    "if captionRequired == nil then",
+                    "captionRequired = true",
+                    "end",
+                    "if #el.content == 1 and el.content[1].t == \"Image\" then",
+                    "local image = el.content[1]",
+                    "if not captionRequired or #image.caption > 0 then",
+                    "return image",
+                    "else",
+                    "return nil",
+                    "end",
+                    "else",
+                    "return nil",
+                    "end",
+                    "end"
+                ],
+                "REPLACE": [
+                    "function discoverFigure(el, captionRequired)",
+                    "  if el.t ~= \"Para\" then",
+                    "    return nil",
+                    "  end",
+                    "  if captionRequired == nil then",
+                    "    captionRequired = true",
+                    "  end",
+                    "  -- Only treat as a figure if there is exactly one image and all other elements are empty strings or spaces",
+                    "  local image = nil",
+                    "  for i, elem in ipairs(el.content) do",
+                    "    if elem.t == \"Image\" then",
+                    "      if image ~= nil then",
+                    "        -- More than one image, not a single figure",
+                    "        return nil",
+                    "      end",
+                    "      image = elem",
+                    "    elseif elem.t ~= \"Str\" and elem.t ~= \"Space\" then",
+                    "      -- Non-image, non-empty, non-space element",
+                    "      return nil",
+                    "    end",
+                    "  end",
+                    "  if image ~= nil and (not captionRequired or #image.caption > 0) then",
+                    "    return image",
+                    "  else",
+                    "    return nil",
+                    "  end",
+                    "end"
+                ]
+            }
+        ],
+        "src/resources/filters/crossref/figures.lua": [
+            {
+                "SEARCH": [
+                    "Para = function(el)",
+                    "local image = discoverFigure(el)",
+                    "if image and isFigureImage(image) then",
+                    "processFigure(image, image.caption)",
+                    "end",
+                    "return el",
+                    "end"
+                ],
+                "REPLACE": [
+                    "    Para = function(el)",
+                    "      local image = discoverFigure(el)",
+                    "      if image and isFigureImage(image) and #image.caption > 0 then",
+                    "        processFigure(image, image.caption)",
+                    "      end",
+                    "      return el",
+                    "    end"
+                ]
+            }
+        ]
+    }
+}

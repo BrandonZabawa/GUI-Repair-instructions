@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/TableExpandHeader.js",
+            "packages/react/src/components/DataTable/TableExpandRow.js",
+            "packages/react/src/components/DataTable/DataTable.js",
+            "packages/react/src/components/DataTable/tools/instanceId.js"
+        ],
+        "bug_functions": [
+            "TableExpandHeader",
+            "TableExpandRow",
+            "DataTable#getExpandHeaderProps",
+            "setupGetInstanceId"
+        ],
+        "explanation": "\u2022 TableExpandHeader: the <th> component that should expose an id for row cells to reference. It currently only spreads whatever id the consumer passes; when no id is provided it renders no id at all.  \n\u2022 TableExpandRow: uses an expandHeader prop (defaulting to 'expand') passed to its inner TableCell, setting headers=\"expand\" on the <td>. Without a corresponding <th id=\"expand\"> this is invalid.  \n\u2022 DataTable#getExpandHeaderProps: the method that supplies props for the expand header (including id) is not automatically assigning a unique id. Consumers using the default expansion story never get an id on the header.  \n\u2022 setupGetInstanceId: the utility for generating unique instance IDs is wired up but never used to auto-populate an id on the TableExpandHeader.  \nTo fix the a11y violation, DataTable#getExpandHeaderProps (or TableExpandHeader itself) must invoke setupGetInstanceId and pass an auto-generated id to the <th> so that every <td headers=\"\u2026\"> reference resolves to a real header element.",
+        "bug_scenario": "On the Expansion variant of the DataTable, every expandable row\u2019s first cell is rendered with a headers=\"expand\" attribute, but there is no matching <th id=\"expand\"> in the table head. The IBM Equal Access checker flags each <td headers=\"expand\"> as invalid because the referenced id does not exist in the document. In short: cells point to a non-existent header ID."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/TableExpandHeader.js//TableExpandHeader",
+            "packages/react/src/components/DataTable/TableExpandRow.js//TableExpandRow",
+            "packages/react/src/components/DataTable/DataTable.js//DataTable"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/DataTable.js//getExpandHeaderProps",
+            "packages/react/src/components/DataTable/DataTable.js//getRowProps"
+        ],
+        "explanation": "The accessibility violation stems from a mismatch between the \u201cheaders\u201d attribute on TableExpandRow\u2019s <td> (driven by its expandHeader prop) and the id on the corresponding <th> in TableExpandHeader. TableExpandHeader needs to accept or generate an id that matches each row cell\u2019s headers attribute. TableExpandRow\u2019s default expandHeader prop (\u2018expand\u2019) is hard-coded and may not be synchronized with the actual th#id. The DataTable component\u2019s getExpandHeaderProps and getRowProps methods are responsible for producing matching ids for each header\u2013cell pair; they must be updated to generate a unique id (or propagate a user\u2010supplied id) to both the <th> (via TableExpandHeader) and the <td headers> attribute (via TableExpandRow) so that screen readers can associate them properly.",
+        "bug_scenario": "On expansion\u2010enabled DataTable examples, each expandable row\u2019s first cell renders as <td headers=\"expand\">\u2026</td>, but the matching <th> in the table head either isn\u2019t rendered with an id or uses a different id than \u201cexpand.\u201d IBM Equal Access flags that the td.headers value does not reference a valid th#id in the document, breaking the required relationship between data cells and header cells for screen readers."
+    }
+}

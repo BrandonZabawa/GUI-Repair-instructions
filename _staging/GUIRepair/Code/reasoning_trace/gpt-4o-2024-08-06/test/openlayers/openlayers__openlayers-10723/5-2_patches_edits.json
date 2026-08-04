@@ -1,0 +1,471 @@
+{
+    "1/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const maxLat = validExtent[3];",
+                    "const maxLon = validExtent[2];",
+                    "const minLat = validExtent[1];",
+                    "const minLon = validExtent[0];",
+                    "",
+                    "// Create meridians",
+                    "",
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);",
+                    "",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, 0);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon != this.minLon_ && cnt++ < maxLines) {",
+                    "lon = Math.max(lon - interval, this.minLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon != this.maxLon_ && cnt++ < maxLines) {",
+                    "lon = Math.min(lon + interval, this.maxLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const maxLat = validExtent[3];",
+                    "const maxLon = validExtent[2];",
+                    "const minLat = validExtent[1];",
+                    "const minLon = validExtent[0];",
+                    "",
+                    "// Adjust for dateline crossing",
+                    "if (minLon > maxLon) {",
+                    "maxLon += 360;",
+                    "}",
+                    "",
+                    "// Create meridians",
+                    "",
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);",
+                    "",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, 0);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon > this.minLon_ && cnt++ < maxLines) {",
+                    "lon = Math.max(lon - interval, this.minLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon < this.maxLon_ && cnt++ < maxLines) {",
+                    "lon = Math.min(lon + interval, this.maxLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);",
+                    "",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, 0);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon != this.minLon_ && cnt++ < maxLines) {",
+                    "lon = Math.max(lon - interval, this.minLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);"
+                ],
+                "REPLACE": [
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "lon = clamp(centerLon, -180, 180);  // Adjust to dateline properly",
+                    "",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, 0);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon > this.minLon_ && cnt++ < maxLines) {  // Correct sign for longitude iteration",
+                    "lon = lon - interval;",
+                    "if (lon < -180) lon += 360;  // Wrap around the dateline",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "lon = clamp(centerLon, -180, 180);  // Ensure proper clamping"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "validExtent = transformExtent(validExtent, this.projection_, 'EPSG:4326');",
+                    "const maxLat = validExtent[3];",
+                    "const maxLon = validExtent[2];",
+                    "const minLat = validExtent[1];",
+                    "const minLon = validExtent[0];",
+                    "",
+                    "// Create meridians"
+                ],
+                "REPLACE": [
+                    "validExtent = transformExtent(validExtent, this.projection_, 'EPSG:4326');",
+                    "",
+                    "// Adjust for dateline crossing by checking if the extent cross dateline",
+                    "const crossesDateline = validExtent[0] > validExtent[2];",
+                    "const minLon = crossesDateline ? -180 : validExtent[0];",
+                    "const maxLon = crossesDateline ? 180 : validExtent[2];",
+                    "const maxLat = validExtent[3];",
+                    "const minLat = validExtent[1];",
+                    "",
+                    "// Create meridians"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const maxLon = validExtent[2];",
+                    "const minLon = validExtent[0];",
+                    "",
+                    "...",
+                    "",
+                    "// Create meridians",
+                    "",
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);"
+                ],
+                "REPLACE": [
+                    "const maxLon = validExtent[2];",
+                    "const minLon = validExtent[0];",
+                    "",
+                    "// Ensure longitudes wrap properly across the dateline",
+                    "const lonSpan = this.maxLon_ - this.minLon_;",
+                    "const adjustedCenterLon = ((centerLon - this.minLon_) % lonSpan + lonSpan) % lonSpan + this.minLon_;",
+                    "centerLon = Math.floor(adjustedCenterLon / interval) * interval;",
+                    "lon = clamp(adjustedCenterLon, this.minLon_, this.maxLon_);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "// Create parallels",
+                    "",
+                    "centerLat = Math.floor(centerLat / interval) * interval;",
+                    "lat = clamp(centerLat, this.minLat_, this.maxLat_);",
+                    "",
+                    "idx = this.addParallel_(lat, minLon, maxLon, squaredTolerance, extent, 0);"
+                ],
+                "REPLACE": [
+                    "let lonStretch = this.minLon_ < 0 ? 360 : 0;",
+                    "",
+                    "// Create parallels",
+                    "",
+                    "centerLat = Math.floor(centerLat / interval) * interval;",
+                    "lat = clamp(centerLat, this.minLat_, this.maxLat_);",
+                    "",
+                    "// Adjust parallels for longitude wrapping",
+                    "minLon -= lonStretch;",
+                    "maxLon += lonStretch;",
+                    "",
+                    "idx = this.addParallel_(lat, minLon, maxLon, squaredTolerance, extent, 0);"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);",
+                    "",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, 0);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon != this.minLon_ && cnt++ < maxLines) {",
+                    "lon = Math.max(lon - interval, this.minLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon != this.maxLon_ && cnt++ < maxLines) {",
+                    "lon = Math.min(lon + interval, this.maxLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "this.meridians_.length = idx;",
+                    "if (this.meridiansLabels_) {",
+                    "this.meridiansLabels_.length = idx;",
+                    "}",
+                    "",
+                    "// Create parallels",
+                    "",
+                    "centerLat = Math.floor(centerLat / interval) * interval;",
+                    "lat = clamp(centerLat, this.minLat_, this.maxLat_);"
+                ],
+                "REPLACE": [
+                    "if (this.maxLonP_ < this.minLonP_) {",
+                    "if (centerLon < 0) {",
+                    "centerLon = 360 + centerLon;",
+                    "}",
+                    "this.minLon_ = 0;",
+                    "this.maxLon_ = 360;",
+                    "}",
+                    "",
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "",
+                    "idx = this.addMeridian_(centerLon, minLat, maxLat, squaredTolerance, extent, 0);",
+                    "",
+                    "cnt = 0;",
+                    "lon = centerLon;",
+                    "while (cnt++ < maxLines) {",
+                    "lon = (lon - interval + 360) % 360;",
+                    "if (lon < this.minLon_ || lon > this.maxLon_) {",
+                    "break;",
+                    "}",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "lon = centerLon;",
+                    "cnt = 0;",
+                    "while (cnt++ < maxLines) {",
+                    "lon = (lon + interval) % 360;",
+                    "if (lon < this.minLon_ || lon > this.maxLon_) {",
+                    "break;",
+                    "}",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "this.meridians_.length = idx;",
+                    "if (this.meridiansLabels_) {",
+                    "this.meridiansLabels_.length = idx;",
+                    "}",
+                    "",
+                    "// Create parallels",
+                    "",
+                    "centerLat = Math.floor(centerLat / interval) * interval;",
+                    "if (centerLat < this.minLatP_ || centerLat > this.maxLatP_) {",
+                    "centerLat = Math.max(this.minLatP_, Math.min(this.maxLatP_, centerLat));",
+                    "}",
+                    "lat = clamp(centerLat, this.minLat_, this.maxLat_);"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const validExtent = [",
+                    "Math.max(extent[0], this.minLonP_),",
+                    "Math.max(extent[1], this.minLatP_),",
+                    "Math.min(extent[2], this.maxLonP_),",
+                    "Math.min(extent[3], this.maxLatP_)",
+                    "];",
+                    "",
+                    "validExtent = transformExtent(validExtent, this.projection_, 'EPSG:4326');",
+                    "const maxLat = validExtent[3];",
+                    "const maxLon = validExtent[2];",
+                    "const minLat = validExtent[1];",
+                    "const minLon = validExtent[0];"
+                ],
+                "REPLACE": [
+                    "let validExtent = transformExtent(extent, this.projection_, 'EPSG:4326');",
+                    "const maxLat = Math.min(validExtent[3], this.maxLat_);",
+                    "const maxLon = Math.min(validExtent[2], this.maxLon_);",
+                    "const minLat = Math.max(validExtent[1], this.minLat_);",
+                    "const minLon = Math.max(validExtent[0], this.minLon_);",
+                    "if (maxLon < minLon) {",
+                    "validExtent = [-180, validExtent[1], 180, validExtent[3]];",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);"
+                ],
+                "REPLACE": [
+                    "lon = Math.floor(centerLon / interval) * interval;",
+                    "if (lon < this.minLon_) {",
+                    "lon += 360;",
+                    "} else if (lon > this.maxLon_) {",
+                    "lon -= 360;",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "lat = clamp(centerLat, this.minLat_, this.maxLat_);"
+                ],
+                "REPLACE": [
+                    "lat = Math.floor(centerLat / interval) * interval;"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "validExtent = transformExtent(validExtent, this.projection_, 'EPSG:4326');",
+                    "const maxLat = validExtent[3];",
+                    "const maxLon = validExtent[2];",
+                    "const minLat = validExtent[1];",
+                    "const minLon = validExtent[0];",
+                    "",
+                    "// Create meridians",
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);"
+                ],
+                "REPLACE": [
+                    "validExtent = transformExtent(validExtent, this.projection_, 'EPSG:4326');",
+                    "const maxLat = validExtent[3];",
+                    "const maxLon = validExtent[2];",
+                    "const minLat = validExtent[1];",
+                    "const minLon = validExtent[0];",
+                    "",
+                    "// Adjust longitude range to handle dateline crossing",
+                    "if (maxLon > 180) {",
+                    "minLon -= 360;",
+                    "}",
+                    "",
+                    "// Create meridians",
+                    "centerLon = Math.floor(centerLon / interval) * interval;",
+                    "lon = centerLon; // Remove clamping for longitude"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const flatCoordinates = meridian(lon, minLat, maxLat, this.projection_, squaredTolerance);",
+                    "let lineString = this.meridians_[index];",
+                    "if (!lineString) {",
+                    "lineString = new LineString(flatCoordinates, GeometryLayout.XY);",
+                    "this.meridians_[index] = lineString;",
+                    "} else {",
+                    "lineString.setFlatCoordinates(GeometryLayout.XY, flatCoordinates);",
+                    "lineString.changed();",
+                    "}",
+                    "return lineString;"
+                ],
+                "REPLACE": [
+                    "// Handle normalized lon values for meridian",
+                    "const adjustedLon = lon > 180 ? lon - 360 : lon;",
+                    "const flatCoordinates = meridian(adjustedLon, minLat, maxLat, this.projection_, squaredTolerance);",
+                    "let lineString = this.meridians_[index];",
+                    "if (!lineString) {",
+                    "lineString = new LineString(flatCoordinates, GeometryLayout.XY);",
+                    "this.meridians_[index] = lineString;",
+                    "} else {",
+                    "lineString.setFlatCoordinates(GeometryLayout.XY, flatCoordinates);",
+                    "lineString.changed();",
+                    "}",
+                    "return lineString;"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "while (lon != this.minLon_ && cnt++ < maxLines) {",
+                    "lon = Math.max(lon - interval, this.minLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "lon = clamp(centerLon, this.minLon_, this.maxLon_);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon != this.maxLon_ && cnt++ < maxLines) {",
+                    "lon = Math.min(lon + interval, this.maxLon_);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "while (lon > -180 && cnt++ < maxLines) {",
+                    "lon = Math.max(lon - interval, -180);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}",
+                    "",
+                    "lon = clamp(centerLon, -180, 180);",
+                    "",
+                    "cnt = 0;",
+                    "while (lon < 180 && cnt++ < maxLines) {",
+                    "lon = Math.min(lon + interval, 180);",
+                    "idx = this.addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, idx);",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "validExtent = transformExtent(validExtent, this.projection_, 'EPSG:4326');",
+                    "const maxLat = validExtent[3];",
+                    "const maxLon = validExtent[2];",
+                    "const minLat = validExtent[1];",
+                    "const minLon = validExtent[0];"
+                ],
+                "REPLACE": [
+                    "const maxLat = Math.min(validExtent[3], 90);",
+                    "const maxLon = Math.min(validExtent[2], 180);",
+                    "const minLat = Math.max(validExtent[1], -90);",
+                    "const minLon = Math.max(validExtent[0], -180);"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "let validExtent = [",
+                    "Math.max(extent[0], this.minLonP_),",
+                    "Math.max(extent[1], this.minLatP_),",
+                    "Math.min(extent[2], this.maxLonP_),",
+                    "Math.min(extent[3], this.maxLatP_)",
+                    "];",
+                    "",
+                    "validExtent = transformExtent(validExtent, this.projection_, 'EPSG:4326');"
+                ],
+                "REPLACE": [
+                    "if (extent[0] > extent[2]) {",
+                    "// Wraps the dateline",
+                    "let validExtent1 = [",
+                    "extent[0],",
+                    "Math.max(extent[1], this.minLatP_),",
+                    "this.maxLonP_,",
+                    "Math.min(extent[3], this.maxLatP_)",
+                    "];",
+                    "let validExtent2 = [",
+                    "this.minLonP_,",
+                    "Math.max(extent[1], this.minLatP_),",
+                    "extent[2],",
+                    "Math.min(extent[3], this.maxLatP_)",
+                    "];",
+                    "validExtent1 = transformExtent(validExtent1, this.projection_, 'EPSG:4326');",
+                    "validExtent2 = transformExtent(validExtent2, this.projection_, 'EPSG:4326');",
+                    "validExtent = validExtent1.concat(validExtent2);",
+                    "} else {",
+                    "let validExtent = [",
+                    "Math.max(extent[0], this.minLonP_),",
+                    "Math.max(extent[1], this.minLatP_),",
+                    "Math.min(extent[2], this.maxLonP_),",
+                    "Math.min(extent[3], this.maxLatP_)",
+                    "];",
+                    "validExtent = transformExtent(validExtent, this.projection_, 'EPSG:4326');",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

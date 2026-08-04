@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "report/html/renderer/pwa-category-renderer-test.js",
+            "report/html/renderer/category-renderer-test.js",
+            "report/html/renderer/performance-category-renderer-test.js",
+            "lib/icons-test.js",
+            "report/html/renderer/report-renderer-test.js",
+            "test-utils.js"
+        ],
+        "explanation": "1) report/html/renderer/pwa-category-renderer-test.js: Validates how the PWA gauge should be constructed (colors, arc, icon), so it\u2019s the first place to verify expected DOM and style injections.\n2) report/html/renderer/category-renderer-test.js: Contains the shared gauge-drawing logic (SVG arc, stroke, thresholds) used by all categories; comparing its behavior to the PWA renderer reveals what\u2019s skipped.\n3) report/html/renderer/performance-category-renderer-test.js: Demonstrates a working category gauge (Performance) including colored arc and score; useful for side-by-side template/logic comparison.\n4) lib/icons-test.js: Tests how the PWA icon is loaded/injected; if the gauge path overlay or styling relies on that same icon logic, it may shed light on missing hooks.\n5) report/html/renderer/report-renderer-test.js: Renders the full report including all category headers; ensures the PWA renderer is actually invoked and that the container markup is correct.\n6) test-utils.js: Provides DOM parsing and fixture helpers used across renderer tests\u2014useful for reproducing the render in isolation and probing for missing elements.\n\nReviewing these files will surface how the PWA gauge diverges from other category gauges, and pinpoint whether the arc is never created, receives the wrong CSS class, or the PWA renderer fails to call the generic gauge routine.",
+        "bug_scenario": "The screenshot shows the Lighthouse report\u2019s PWA category \u201cgauge\u201d rendered differently from the other category gauges. The Performance, Accessibility, Best Practices, and SEO categories all have colored circular arcs indicating the score, but the PWA gauge is empty/gray with just the PWA icon and no colored arc. In other words, the PWA header gauge\u2019s styling or drawing logic isn\u2019t firing, so it never paints the colored segment.\n\nKey elements in the buggy image:\n- The <div> or <svg> container for the PWA gauge renders the PWA icon inside.\n- No colored arc/path element is drawn around the PWA icon (unlike the other gauges).\n- The CSS class or inline style that normally sets stroke color and dash-array for the gauge path is missing or mis-applied.\n- The DOM structure for category-renderer is likely correct, but the PWA-specific renderer is not injecting the gauge arc.\n"
+    }
+}

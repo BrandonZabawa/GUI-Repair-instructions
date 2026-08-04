@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DatePicker/DatePicker.js",
+            "packages/react/src/components/DatePicker/plugins/fixEventsPlugin.js",
+            "packages/react/src/components/DatePickerInput/DatePickerInput.js"
+        ],
+        "explanation": "\u2022 DatePicker.js \u2014 this is the React wrapper that initializes Flatpickr and installs plugins for both \u201csingle\u201d and \u201crange\u201d modes. In the single-picker path it\u2019s still grabbing its \u201cstart\u201d input reference incorrectly, so the downstream plugin gets the wrong object instead of an HTMLInputElement.\n\n\u2022 fixEventsPlugin.js \u2014 this plugin is responsible for adding keydown handlers on the Flatpickr inputs. Its init() unconditionally calls inputFrom.addEventListener(...). When inputFrom isn\u2019t a real DOM node (as is happening in the single-picker flow today) that call throws the TypeError.\n\n\u2022 DatePickerInput.js \u2014 this component is supposed to forward a ref to the underlying <input> so that DatePicker.js can look up the DOM node. If ref forwarding isn\u2019t wired up or if the lookup logic in DatePicker.js is off, the plugin ends up receiving an invalid value. Ensuring that DatePickerInput correctly uses React.forwardRef (and that DatePicker.js queries the ref rather than a child value) will prevent start from ever being undefined or non-DOM.",
+        "bug_scenario": "When you render a <DatePicker datePickerType=\u201csingle\u201d> with a single DatePickerInput, the component immediately throws \u201cTypeError: start.addEventListener is not a function\u201d at DatePicker.js:316. In other words, on mount the DatePicker bootstraps Flatpickr, wires up its fixEventsPlugin with the wrong \u201cstart\u201d reference, and when that plugin calls start.addEventListener(...) it isn\u2019t a DOM node and the widget crashes."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DatePicker/DatePicker.js",
+            "packages/react/src/components/DatePicker/plugins/rangePlugin.js",
+            "packages/react/src/components/DatePicker/plugins/fixEventsPlugin.js"
+        ],
+        "explanation": "\u2022 DatePicker.js is the core component that reads the `datePickerType` prop, finds its child `<DatePickerInput>`s, and unconditionally wires up both the rangePlugin and the fixEventsPlugin. In single mode that logic still tries to treat a non-DOM value as the range \u2018start\u2019 input.\n\u2022 plugins/rangePlugin.js configures Flatpickr for a two-input date range; it expects both a \u201cfrom\u201d and \u201cto\u201d input to exist.\n\u2022 plugins/fixEventsPlugin.js binds keyboard event listeners to both the `inputFrom` and `inputTo` elements. When only one input exists, the plugin is still registered and attempts to call `addEventListener` on an undefined or non-element value.\n\nAll three files participate in selecting and hooking up two inputs even in single-date mode. Guarding the plugin registration in DatePicker.js (or splitting out a simple single-date plugin configuration) will prevent the erroneous calls to `addEventListener` on a non-DOM object and stop the crash.",
+        "bug_scenario": "Using the `<DatePicker datePickerType=\\\"single\\\">` variation on Safari causes the component to crash immediately on load with the error \u201cTypeError: start.addEventListener is not a function.\u201d Because the code that wires up Flatpickr\u2019s range & keyboard\u2010event plugins always assumes two `<input>` elements (a start and an end input), when only a single input is provided the code picks up the wrong value for `start` (it isn\u2019t a DOM node) and then calls `addEventListener` on it."
+    }
+}

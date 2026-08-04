@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Image.js//ImageStyle",
+            "src/ol/style/Text.js//Text",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Image.js//ImageStyle.constructor",
+            "src/ol/style/Image.js//ImageStyle.getDeclutterMode",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder.setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder.drawPoint",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder.drawMultiPoint",
+            "src/ol/style/Text.js//Text.constructor",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.setTextStyle"
+        ],
+        "explanation": "The bug is related to how decluttering is handled when rendering both images and labels (text) together. The ImageStyle and Text classes are directly responsible for storing and exposing the 'declutterMode' property and related style options. Their constructors and 'getDeclutterMode' (for ImageStyle) are key to reading and setting the relevant style configuration. The CanvasImageBuilder and CanvasTextBuilder classes are responsible for rendering images and texts, respectively, on the canvas. Their setImageStyle/setTextStyle methods fetch and handle the declutter options from the style objects, so they are central to ensuring the correct decluttering logic is applied during rendering. The drawPoint and drawMultiPoint methods in CanvasImageBuilder are where actual rendering instruction logic is created, and thus are key to implementing or fixing how declutter modes are respected during rendering. Since the bug is about how these options interact and are propagated to rendering, all these classes and methods are relevant for any fix.",
+        "bug_scenario": "The bug concerns the incorrect handling of rendering combinations of image and label (text) styles in OpenLayers when the 'declutterMode' option is set to something other than 'declutter'. The user wants to be able to declutter only text or only images, not both, and the current implementation does not allow for this granularity. This affects how point markers and their associated labels are rendered and possibly overlapped, especially when users want to declutter text but not images (or vice versa). The bug corresponds to rendering and style-handling logic for images and texts, especially their interaction regarding decluttering options."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Image.js//ImageStyle",
+            "src/ol/style/Text.js//Text"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle",
+            "src/ol/render/canvas/TextBuilder.js//setTextStyle"
+        ],
+        "explanation": "The bug is rooted in how declutter options are implemented in the rendering and style classes:\n\n- src/ol/style/Image.js//ImageStyle: This is the base class for image styles (such as icons and shapes) and currently holds the 'declutterMode' option. To support the new 'ignorePlacement' or more flexible declutter logic, this class needs to accept and store the new option and expose it via its API.\n- src/ol/style/Text.js//Text: This class manages text styling for features. It also needs to be updated to support the new 'ignorePlacement' or more granular declutter mode for text labels.\n- src/ol/render/canvas/ImageBuilder.js//setImageStyle: This function reads style options from ImageStyle and passes them into the rendering instructions (specifically the declutterMode). It must be updated to handle the new decluttering logic and possibly ignore placement for images if specified.\n- src/ol/render/canvas/TextBuilder.js//setTextStyle: Analogous to setImageStyle, but for label rendering. It will need to respect the new declutterMode or ignorePlacement property when generating rendering instructions for text.\n\nIn summary, both the style definition classes (ImageStyle and Text) and the canvas rendering builder functions (setImageStyle, setTextStyle) are key to implementing the requested fix, as they determine how declutter logic is specified in the style and then enacted in rendering.",
+        "bug_scenario": "The bug scenario is about improving the declutter logic for image+label combinations in vector styling in OpenLayers. Currently, the 'declutter' option, which aims to avoid overlapping of labels and markers, is too broad. The user requests the ability to declutter only text (labels) or only geometry (images), instead of both together, by providing a more flexible 'declutterMode' option. The bug report suggests that in scenarios where both an image (marker) and a label (text) are rendered for a feature, users want to choose whether to declutter both, only text, only images, or none. The current implementation does not support this granularity, leading to unwanted hiding of images or text when only one should be decluttered."
+    }
+}

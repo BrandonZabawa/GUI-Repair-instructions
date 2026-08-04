@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/php.js",
+            "src/languages/php-template.js"
+        ],
+        "explanation": "Both files define how PHP code is tokenized and highlighted. \n\n1. src/languages/php.js \u2013 This is the main grammar for PHP in the highlighter. It must be extended to recognize the `fn` keyword followed by `(...) => expression` as an anonymous arrow function and to treat `$x`, `$y`, and inline comments as variables and comments rather than titles. Without updating php.js, arrow functions will continue to fall back to a generic \u2018function title\u2019 rule.\n\n2. src/languages/php-template.js \u2013 This file embeds the PHP mode inside HTML templates. It reuses the PHP grammar from php.js, so any fixes to arrow\u2010function recognition also need to be propagated here. Otherwise, code samples in templating contexts will still mis\u2010highlight anonymous arrow functions.",
+        "bug_scenario": "When highlighting PHP arrow (fn) functions without a {} block, the highlighter treats the anonymous fn as if it had a name. Variables and comments inside the expression are incorrectly tagged as \u201ctitle\u201d tokens instead of as variables or comments. In other words, the pattern for PHP\u2019s `fn($x) => $x + $y;` is not recognized, and everything after the arrow is mis\u2010classified, leading comments and variables to show up in the wrong color."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/php.js",
+            "src/languages/php-template.js"
+        ],
+        "explanation": "Both php.js and php-template.js define the PHP grammar (including how \u2018=>\u2019 and variables are tokenized). Currently the arrow function syntax \u2018fn(...) => \u2026\u2019 isn\u2019t handled specially, so \u2018=>\u2019 falls through to the array key/value rule and the RHS variables are mis-classified as titles. To fix this bug you must update php.js (and its template derivative) to recognise \u2018fn(...)=\u203a\u2026\u2019 as an arrow function construct, giving it higher precedence and correct variable highlighting rather than the existing array/\u2018title\u2019 rules.",
+        "bug_scenario": "When using PHP\u2019s short arrow functions (fn($x) => $x + $y) without a {} block the highlighter mis\u2010parses the body. The arrow (=>) is treated as an array key/value marker and the variables after it ($x and $y) get classified as \u201ctitle\u201d tokens instead of simple variables. In the screenshots you can see that the first example marks $x and $y as title, while the expected behavior is to highlight them both as variables."
+    }
+}

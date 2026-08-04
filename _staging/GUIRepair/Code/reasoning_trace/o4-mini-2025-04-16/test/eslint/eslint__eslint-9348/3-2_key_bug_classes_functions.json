@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/rules/no-this-before-super.js"
+        ],
+        "bug_functions": [
+            "lib/rules/no-this-before-super.js//isCalled",
+            "lib/rules/no-this-before-super.js//onCodePathSegmentStart"
+        ],
+        "explanation": "The error \u2018Cannot read property \u2018superCalled\u2019 of undefined\u2019 comes from the helper function `isCalled(segment)`, which does `segInfoMap[segment.id].superCalled`. Because `segInfoMap` isn\u2019t populated for every code-path segment (the initialization in `onCodePathSegmentStart` only runs for derived-class constructors), some segments have no entry in `segInfoMap`. When `isCalled` is invoked on such a segment, `segInfoMap[segment.id]` is undefined, causing the crash. Fixing this requires ensuring `segInfoMap[segment.id]` always exists before reading `superCalled`, or adding a guard in `isCalled` against missing entries.",
+        "bug_scenario": "The screenshot shows a small JS file (bug.js) defining a base class `Extender` and a derived class `BugProof` with a constructor that calls `super(props)` followed by a simple `try`/`for\u2026of` block. ESLint (using the `react-app` config and `babel-eslint` parser) reports a parsing error (\u201cCannot read property 'superCalled' of undefined\u201d) at an empty line after the class body. This error originates from the `no-this-before-super` rule attempting to access an uninitialized code-path segment in its internal `segInfoMap`."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/rules/no-this-before-super.js"
+        ],
+        "bug_functions": [
+            "lib/rules/no-this-before-super.js//isCalled",
+            "lib/rules/no-this-before-super.js//isBeforeCallOfSuper",
+            "lib/rules/no-this-before-super.js//onCodePathSegmentStart",
+            "lib/rules/no-this-before-super.js//\"CallExpression:exit\""
+        ],
+        "explanation": "The crash happens because `segInfoMap[segment.id]` is undefined when `isCalled(segment)` tries to read `.superCalled`. In `onCodePathSegmentStart`, entries in `segInfoMap` are only created when inside a derived-class constructor; any segments visited before that (for example, the loop\u2019s code\u2010path segments) remain uninitialized. Later, `isBeforeCallOfSuper` and the CallExpression handler invoke `isCalled` on those uninitialized segments. To fix this, the rule needs to either initialize `segInfoMap` entries for all segments or add a guard in `isCalled` to handle missing entries before accessing `.superCalled`.",
+        "bug_scenario": "When ESLint runs against a subclass constructor that contains a loop (for\u2026of) inside a try/catch, the no-this-before-super rule crashes with `Cannot read property 'superCalled' of undefined`. The stack trace and screenshot point to the `isCalled` helper in `lib/rules/no-this-before-super.js`, indicating that a code path segment was never initialized in `segInfoMap` before being read."
+    }
+}

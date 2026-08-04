@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/auto-place/AutoPlace.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/util/DiUtil.js"
+        ],
+        "explanation": "\n1) lib/features/auto-place/AutoPlace.js \u2013 this is where the append operation is triggered. It calls modeling.connect to wire the new task to the old one and therefore is where the illegal mid-segment (and its waypoints array) first shows up.\n\n2) lib/features/modeling/BpmnUpdater.js \u2013 the updater hook that listens for new connections ends up copying the connection\u2019s diagram waypoints onto the SequenceFlow businessObject, instead of routing them into a proper BPMNEdge DI element.\n\n3) lib/util/DiUtil.js \u2013 serializes DI information. Because the SequenceFlow businessObject now carries a raw `waypoints` property, moddle dutifully writes it out as an XML attribute. The fix is to strip `waypoints` off the BPMN element (or never attach it) and only emit the bend points inside `<bpmndi:BPMNEdge><di:waypoint\u2026/>` elements.",
+        "bug_scenario": "A new task is appended to an existing task via the \u201c+\u201d auto-place handle, and because the two tasks sit at different vertical positions the connecting sequenceFlow acquires a middle bend. Under the hood Diagram-JS tracks that bend in a `waypoints` array on the connection graphic, but the BPMN updater code mistakes that for a business-object property and pushes it onto the SequenceFlow element itself. When the XML is written out, moddle sees this unknown `waypoints` field on the SequenceFlow BPMN element and serializes it as an attribute \u2014 yielding the invalid `waypoints=\"[object Object],[object Object],\u2026\"` on `<sequenceFlow>` instead of proper DI waypoints in a `<bpmndi:BPMNEdge>`."
+    },
+    "2": {
+        "bug_files": [
+            "lib/modeling/behavior/AppendBehavior.js",
+            "lib/modeling/Modeling.js",
+            "lib/modeling/BpmnLayouter.js",
+            "lib/util/DiUtil.js",
+            "lib/modeling/behavior/ReplaceConnectionBehavior.js"
+        ],
+        "explanation": "\n\u2022 AppendBehavior.js: this behavior wires up the \u201cappend\u201d handle and ultimately calls into the connection creation routine when you drag out a new task. It is the entry point for the faulty flow.  \n\n\u2022 Modeling.js: defines the connect/createConnection command \u2013 it\u2019s where the connection\u2019s businessObject is instantiated and where any extra properties (including an errant `waypoints` prop) may end up on the sequenceFlow.  \n\n\u2022 BpmnLayouter.js: computes the actual bend points for multi-segment flows. It hands back an array of point objects, but those are only supposed to be used when writing the DI, not grafted onto the businessObject.  \n\n\u2022 DiUtil.js: responsible for creating/updating the BPMN DI edge (<bpmndi:BPMNEdge>) and serializing <di:waypoint> children. This is where the computed waypoints should go. Because the modeler has also attached waypoints to the businessObject, moddle serializes them as an illegal attribute.  \n\n\u2022 ReplaceConnectionBehavior.js: in certain repointing scenarios (e.g. reconnect or replace), existing connections get cloned and waypoints get copied verbatim \u2013 again onto the businessObject rather than solely into the DI.  \n\nIn short, these modules jointly compute and propagate waypoint data. Right now they accidentally stash that data on the SequenceFlow model (so moddle renders it as an invalid `waypoints` attribute) instead of only on the BPMN DI edge. Fixing this requires stripping or preventing the `waypoints` property on the businessObject and pushing it exclusively into the DI via DiUtil.",
+        "bug_scenario": "When you use the little \u201c+\u201d handle on an existing task to append a new task, the modeler computes a bent connection (i.e. a sequenceFlow with a middle segment) and ends up writing a non-standard waypoints attribute onto the bpmn:SequenceFlow itself. In the exported XML you see this:\n\n  <sequenceFlow id=\"...\" sourceRef=\"...\" targetRef=\"...\" waypoints=\"[object Object],[object Object],[object Object],[object Object]\"/>\n\nThose waypoint objects belong in the BPMN DI (bpmndi:BPMNEdge) as <di:waypoint> children \u2013 not on the business object. The result is invalid XML."
+    }
+}

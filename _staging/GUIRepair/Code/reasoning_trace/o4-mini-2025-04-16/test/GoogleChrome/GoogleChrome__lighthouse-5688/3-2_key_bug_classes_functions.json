@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js//UsesWebPImages"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js//static audit_(artifacts)",
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js//static computeSavings(image)"
+        ],
+        "explanation": "The UsesWebPImages audit is responsible for scanning all images and recommending conversions to WebP. Its audit_ method filters out images it can\u2019t decode and those whose savings would fall below the threshold. Because BMP inputs currently fail the decode step, they get dropped (warnings are merely logged) instead of being reported as candidates for next-gen formats. To fix this, audit_ must explicitly detect BMP (x-ms-bmp) URLs and include them as an opportunity, and computeSavings may need to handle uncompressed formats differently when webpSize isn\u2019t available.",
+        "bug_scenario": "When running Lighthouse on a page containing a BMP image (x-ms-bmp), the \u201cServe images in next-gen formats\u201d audit does not report the BMP file as an opportunity to serve a modern image format (e.g. WebP). The screenshot shows JPEGs correctly flagged, but the sails.bmp image is silently ignored\u2014despite being a legacy format that could be better delivered."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js//UsesWebPImages"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js//UsesWebPImages.audit_",
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js//UsesWebPImages.computeSavings"
+        ],
+        "explanation": "The UsesWebPImages class implements the \u201cServe images in next-gen formats\u201d audit. Its audit_ method loops over all images in the OptimizedImages artifact but implicitly only handles images that can be decoded and compared to WebP. Since BMP (x-ms-bmp) is considered a \u2018legacy\u2019 or non-JPEG/PNG format in the underlying artifact generator, it never reaches the savings calculation. computeSavings is responsible for measuring potential bytes saved by WebP conversion. To include BMPs in this audit, audit_ must be updated to treat .bmp URLs as candidates (regardless of whether OptimizedImages currently decodes them), and computeSavings should handle their size comparison. These are the key points to modify so that BMPs get flagged under this audit.",
+        "bug_scenario": "When running Lighthouse on a page that includes a BMP image (x-ms-bmp), the \u201cServe images in next-gen formats\u201d audit does not flag that BMP image (e.g. sails.bmp) as an opportunity to convert to WebP or another modern format. The screenshot shows only JPEGs being flagged, and the BMP is silently ignored."
+    }
+}

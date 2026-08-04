@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Tile/Tile.js//ExpandableTile",
+            "packages/react/src/components/Tile/Tile.js//TileAboveTheFoldContent",
+            "packages/react/src/components/Tile/Tile.js//TileBelowTheFoldContent"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tile/Tile.js//ExpandableTile.render",
+            "packages/react/src/components/Tile/Tile.js//ExpandableTile.handleClick",
+            "packages/react/src/components/Tile/Tile.js//ExpandableTile.handleKeyDown"
+        ],
+        "explanation": "All of the accessibility failures stem from the ExpandableTile component in Tile.js. The render() method sets role=\"button\" and aria-expanded but never hides the below-the-fold content from assistive technologies when collapsed, so screen readers see and announce it out of turn. The aria-labelledby points at the SVG icon ID rather than the actual text label, so initial focus lands on a plain span of text instead of the interactive element. The handleClick and handleKeyDown handlers toggle visual expansion but do not manage aria-hidden or focus of the newly revealed content, nor do they trigger an announcement of aria-expanded at the correct time. The TileAboveTheFoldContent and TileBelowTheFoldContent wrapper components likewise lack any aria-hidden toggling, so the collapsed pane remains exposed to the accessibility tree even when it is not visible.",
+        "bug_scenario": "When VoiceOver or JAWS first enters the ExpandableTile, focus lands on the static text (\u201cAbove the fold content here\u201d) and announces \u201cYou are currently on a text element\u201d instead of announcing the button or its aria-expanded state. When you arrow through, the chevron button label is read but aria-expanded=false is never announced. Worse yet, the \u201cBelow the fold content\u201d is exposed in the accessibility tree even when the tile is collapsed, so the screen reader will announce that hidden content prematurely."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Tile/Tile.js//ExpandableTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tile/Tile.js//ExpandableTile.render",
+            "packages/react/src/components/Tile/Tile.js//ExpandableTile.handleKeyDown",
+            "packages/react/src/components/Tile/Tile.js//ExpandableTile.handleClick"
+        ],
+        "explanation": "All of the screen-reader symptoms stem from how ExpandableTile declares and wires up its interactive element. In render(), it uses a <div role=\"button\"> with tabIndex and onKeyPress rather than a native <button> or proper onKeyDown handler, so VoiceOver/JAWS never focuses or announces the container as a button or its aria-expanded state. The nested <button> element duplicatively carries aria-attributes but isn\u2019t the primary focus target. The handleKeyDown method is bound on keyPress instead of keyDown, so the toggle key events aren\u2019t reliably caught by screen readers. The handleClick toggles expansion but without updating focus or notifying assistive technology in the right sequence. By refactoring render() to expose a single focusable <button> with correct aria-labels/expanded attributes and by moving keyboard handling into an onKeyDown handler in ExpandableTile.handleKeyDown (and aligning handleClick to trigger announcements), the tile will be correctly announced and navigable.",
+        "bug_scenario": "When a user enters the Expandable Tile in VoiceOver or JAWS, no focus announcement is made on entry, and navigating with arrow keys treats the \u201cabove the fold\u201d panel as a plain text element rather than the toggle control. VO does eventually announce the nested Chevron button as \u201cExpand button main,\u201d but it never speaks its aria-expanded state (false), and the \u201cbelow the fold\u201d content gets announced before the tile is truly expanded. The expected behavior is: on entry, the tile\u2019s toggle button (with its label and aria-expanded=false) should be focused and announced; after activation, aria-expanded=true should be spoken before the below-the-fold content receives focus."
+    }
+}

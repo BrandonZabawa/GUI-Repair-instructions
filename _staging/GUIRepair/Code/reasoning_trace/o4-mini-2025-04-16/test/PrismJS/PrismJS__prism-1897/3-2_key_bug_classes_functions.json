@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-markdown.js//italic",
+            "components/prism-markdown.js//bold",
+            "components/prism-markdown.js//strike"
+        ],
+        "bug_functions": [],
+        "explanation": "The core of the problem lies in the regex patterns for the 'italic', 'bold', and 'strike' tokens in components/prism-markdown.js. Each pattern uses a greedy quantifier and a capture group for its own delimiters ([*_], ** or __, ~~), but allows any character\u2014including additional markers\u2014as part of the inner content. As a result, the italic rule ([*_]) will match \u201c*__foo__*\u201d as one unit, rather than recognizing the nested bold markers. Similarly, bold and strike use the same greedy approach. To fix this, the regex must be tightened so that it only treats the first and last single/double markers as punctuation (e.g. by capturing leading and trailing delimiters separately and restricting the inner content), preventing the outer rule from swallowing nested markers.",
+        "bug_scenario": "In the Markdown preview, nested emphasis markers like \u201c*__foo__*\u201d or \u201c_**bar**_\u201d are highlighted incorrectly. The single-asterisk or underscore italic pattern greedily consumes the entire \u201c__foo__\u201d or \u201c**bar**\u201d sequence, so instead of parsing \u201c__foo__\u201d as bold inside italic, the italic rule swallows the extra delimiters."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-markdown.js//italic",
+            "components/prism-markdown.js//bold",
+            "components/prism-markdown.js//strike"
+        ],
+        "bug_functions": [],
+        "explanation": "The keys \u2018italic\u2019, \u2018bold\u2019, and \u2018strike\u2019 in components/prism-markdown.js each define the regular\u2010expression patterns that Prism uses to recognize emphasis and strikethrough. The reported bug arises because the \u2018italic\u2019 pattern (and similarly the nested interactions with \u2018bold\u2019) is too greedy and will match multiple leading/trailing asterisks or underscores, so constructs like *__foo__* or _**bar**_ are not tokenized correctly. To fix the issue, the regex in the \u2018italic\u2019 definition (and potentially the related lookbehind/greedy settings in \u2018bold\u2019 and \u2018strike\u2019) must be adjusted to limit emphasis markers to a single leading and trailing character, as suggested in the report\u2019s example pattern.",
+        "bug_scenario": "When parsing nested or combined emphasis in Markdown (e.g., *__foo__* or _**bar**_), the current italic token regex in Prism\u2019s Markdown grammar greedily swallows too many leading or trailing `*` and `_` punctuation, causing incorrect tokenization of nested or adjacent emphasis markers."
+    }
+}

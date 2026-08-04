@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/lib/python.js"
+        ],
+        "explanation": "The Python language definition in python.js contains a mode for decorators (className: 'meta') that matches the \u2018@\u2026\u2019 syntax and, in its current form, will consume the rest of the line, including any \u2018#\u2019 comment marker. As a result, the inline comment is never recognized by the separate comment rule. Adjusting the decorator mode (for example by ending it before a \u2018#\u2019) or reordering the match so that the comment rule runs first will resolve the issue. This file is the single source of the Python grammar and thus where the fix must be applied.",
+        "bug_scenario": "In Python code highlighted by highlight.js, an inline comment placed on the same line as a decorator (e.g. @pytest.mark.asyncio  # note use of pytest-asyncio marker) is being styled with the hljs-meta class (the decorator style) rather than as a comment (hljs-comment). The comment on a normal line (e.g. for an async def) is picked up correctly, but on a decorator line the decorator mode swallows the \u201c#\u201d and everything after it, so the comment never gets its own hljs-comment span."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/python.js",
+            "src/languages/python-repl.js"
+        ],
+        "explanation": "Both python.js and python-repl.js define the Python dialect\u2019s syntax rules. In python.js there is a rule that classifies a decorator (lines starting with \u201c@\u2026\u201d) as meta, but its current begin/end regex spans the whole line, swallowing any \u201c#\u2026\u201d comment that follows. The python-repl.js file wraps the same modes for REPL input, so it inherits the same broken behavior. Those are the only two files defining Python parsing logic, and updating their decorator rule to stop before the \u201c#\u201d will allow the comment rule to match properly.",
+        "bug_scenario": "In Python code, when you put an inline comment on the same line as a decorator (e.g. \u201c@pytest.mark.asyncio  # note use of pytest-asyncio marker\u201d), the comment is being styled with the \u201chljs-meta\u201d class instead of \u201chljs-comment\u201d. By contrast, the same comment syntax on a normal \u201casync def \u2026\u201d line is highlighted correctly as a comment. The decorator\u2010matching rule in the Python highlighter is greedily consuming everything to end of line, including the \u201c# \u2026\u201d comment, preventing the comment rule from ever firing."
+    }
+}

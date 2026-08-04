@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js//DeleteLaneBehavior",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js//ResizeLaneHandler"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js//compensateLaneDelete",
+            "lib/features/modeling/util/LaneUtil.js//getChildLanes",
+            "lib/features/modeling/util/LaneUtil.js//computeLanesResize",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js//resizeBalanced",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js//resizeSpace"
+        ],
+        "explanation": "DeleteLaneBehavior is responsible for adjusting (compensating) the positions and sizes of sibling lanes when one is removed. Its private function compensateLaneDelete uses getChildLanes (from LaneUtil.js) to collect the remaining lanes and then relies on spaceTool adjustments. If compensateLaneDelete miscalculates offsets or applies them in the wrong order the lanes will overlap. LaneUtil\u2019s getChildLanes and computeLanesResize define which lanes are considered and how resizing deltas are computed, so any error there propagates into delete compensation. ResizeLaneHandler\u2019s resizeBalanced and resizeSpace also apply similar logic when lanes are resized; inconsistencies between deletion versus resize logic can cause mismatches in spacing rules. Together these classes/functions govern the layout shifts on remove/resize and are the primary points to fix the deformation bug.",
+        "bug_scenario": "In the BPMN editor, when you delete a child lane out of a parent lane containing multiple nested lanes, the remaining lanes collapse and overlap rather than closing the gap cleanly. In the \u201cbefore\u201d image lanes are evenly stacked; in the \u201cafter\u201d image the siblings and diagram elements shift unpredictably, deforming the swimlane layout."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js//DeleteLaneBehavior",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js//ResizeLaneHandler"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js//compensateLaneDelete",
+            "lib/features/modeling/util/LaneUtil.js//getChildLanes",
+            "lib/features/modeling/util/LaneUtil.js//computeLanesResize",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js//resizeBalanced",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js//resizeSpace"
+        ],
+        "explanation": "DeleteLaneBehavior.postExecuted('shape.delete') invokes compensateLaneDelete to shift and resize sibling lanes after a lane is removed. It relies on getChildLanes (from LaneUtil) to find which lanes sit above or below the deleted lane, then calculates an offset and applies spaceTool adjustments. If getChildLanes or the logic in compensateLaneDelete misidentifies siblings (especially in nested scenarios) or computes the wrong offset, remaining lanes slide or collapse incorrectly. computeLanesResize and ResizeLaneHandler.resizeBalanced/resizeSpace implement similar resize logic for manual lane resizing; discrepancies between balanced resizing and delete\u2010time compensation can further misalign lanes. Together, these classes and functions form the core of post\u2010deletion layout adjustment and are the primary suspects in this deformation bug.",
+        "bug_scenario": "When deleting a child lane from a BPMN diagram that has multiple nested lanes, the remaining lanes are not properly resized or repositioned. In the \u201cbefore\u201d image, lanes are neatly stacked inside their parent; in the \u201cafter\u201d image, lane boundaries overlap, indentations multiply, and the diagram becomes unusable."
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//FilterableMultiSelect"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//constructor",
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//render"
+        ],
+        "explanation": "The root of the duplication bug is in FilterableMultiSelect: it uses the user-provided id prop verbatim for multiple elements (the input, the menu container, aria-controls targets, and aria-labelledby references). When two instances are given the same id prop, both their input and menu elements receive identical id attributes, leading to duplicate id violations and broken WAI-ARIA relationships. To fix this, the constructor (where we store an instanceId) and the render method (where we build labelId = `${id}-label`, input id = id, menu id = `${id}-menu`, aria-controls, etc.) must be updated to append a unique suffix (for example the instanceId) to each id-based attribute when rendering, ensuring each component instance has unique DOM ids.",
+        "bug_scenario": "The screenshot shows two instances of the FilterableMultiSelect component rendered side by side in Storybook with the same id=\"carbon-multiselect-example\". The DAP accessibility scanner flags duplicate id attributes on the <input> element (and by extension on its related aria-controls and aria-labelledby attributes), as well as mis-nested option roles because both menus share the same id and thus the same aria-controls target."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//FilterableMultiSelect"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//render",
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js//constructor"
+        ],
+        "explanation": "FilterableMultiSelect is the component that directly uses the id prop for multiple DOM elements (input, menu, label, helper). In its constructor and render method it assigns the same id to each <MultiSelect.Filterable> instance. To fix this bug, the id generation or usage in constructor/render must be revised (for example by appending the instance id, auto-generating unique sub-ids, or validating uniqueness of the passed id prop). These methods are the points where the duplicate id values originate.",
+        "bug_scenario": "The screenshot and report show two <MultiSelect.Filterable> components rendered with the exact same id prop. Both render an <input> (and its associated menu, label, helper elements) using that id to generate DOM ids (e.g. id, id-menu, id-label). Passing duplicate ids causes duplicate DOM element id attributes, leading to WAI-ARIA and accessibility violations (\u201cid attribute values must be unique within a document\u201d) and mis-wired aria controls."
+    }
+}

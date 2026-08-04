@@ -1,0 +1,46 @@
+diff --git a/lighthouse-core/computed/load-simulator.js b/lighthouse-core/computed/load-simulator.js
+index af34f9d1d..6a41d63a3 100644
+--- a/lighthouse-core/computed/load-simulator.js
++++ b/lighthouse-core/computed/load-simulator.js
+@@ -58,7 +58,10 @@ class LoadSimulator {
+         if (throttling) {
+           options.rtt = throttling.rttMs;
+           options.throughput = throttling.throughputKbps * 1024;
++          // Lantern: account for both CPU and layout slowdown so simulated tasks
++          // run longer and late layout shifts show up in CLS.
+           options.cpuSlowdownMultiplier = throttling.cpuSlowdownMultiplier;
++          options.layoutTaskMultiplier = throttling.cpuSlowdownMultiplier;
+         }
+         break;
+       default:
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index a32313c5a..a3a275275 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -973,16 +973,19 @@ class Driver {
+    * @return {Promise<void>}
+    */
+   async setThrottling(settings, passConfig) {
+-    if (settings.throttlingMethod !== 'devtools') {
++    // Only 'provided' runs with no in-page emulation.  Both 'devtools' and
++    // 'simulate' should now throttle the real page so network-quiet waits
++    // include those slow images/overlays that cause late layout shifts.
++    if (settings.throttlingMethod === 'provided') {
+       return emulation.clearAllNetworkEmulation(this);
+     }
+ 
+-    const cpuPromise = passConfig.useThrottling ?
+-        emulation.enableCPUThrottling(this, settings.throttling) :
+-        emulation.disableCPUThrottling(this);
+-    const networkPromise = passConfig.useThrottling ?
+-        emulation.enableNetworkThrottling(this, settings.throttling) :
+-        emulation.clearAllNetworkEmulation(this);
++    const cpuPromise = passConfig.useThrottling
++      ? emulation.enableCPUThrottling(this, settings.throttling)
++      : emulation.disableCPUThrottling(this);
++    const networkPromise = passConfig.useThrottling
++      ? emulation.enableNetworkThrottling(this, settings.throttling)
++      : emulation.clearAllNetworkEmulation(this);
+ 
+     await Promise.all([cpuPromise, networkPromise]);
+   }

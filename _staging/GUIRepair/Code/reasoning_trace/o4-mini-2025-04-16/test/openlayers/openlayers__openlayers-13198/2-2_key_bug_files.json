@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/BaseVector.js",
+            "src/ol/layer/MapboxVector.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/colorlike.js"
+        ],
+        "explanation": "1. BaseVector.js (src/ol/layer/BaseVector.js) introduced a new `background` option on vector layers and stores its value unconditionally, even when set to `false`.  2. MapboxVector.js (src/ol/layer/MapboxVector.js) configures that background (via ol-mapbox-style) and passes it through to the underlying VectorTile source. 3. CanvasVectorLayerRenderer.js (src/ol/renderer/canvas/VectorLayer.js) sees the layer\u2019s background property and unconditionally calls `context.fillStyle = <background>` before drawing, without checking for boolean or undefined values. 4. colorlike.js (src/ol/colorlike.js)\u2019s `asColorLike` simply returns non-array inputs (including `false` or `undefined`), so Canvas ends up calling the internal color parser (`fromStringInternal_`) on a non-string/invalid value, triggering the assertion. Together these cause any vector layer with a background (or a disabled background via `false`) to throw when rendered over another layer.",
+        "bug_scenario": "A user adds a MapboxVector layer (with a background) on top of an OSM TileLayer and sees an assertion failure instead of the vector layer: \u201cAssertion failed. See https://openlayers.org/en/latest/doc/errors/#14\u201d. This happens in the Canvas renderer when setting up the layer\u2019s background and it crashes in the color\u2010parsing code. No map image is drawn, and the console shows a stack trace through CanvasVectorLayerRenderer.useContainer \u2192 renderFrame \u2192 fromStringInternal_."
+    }
+}

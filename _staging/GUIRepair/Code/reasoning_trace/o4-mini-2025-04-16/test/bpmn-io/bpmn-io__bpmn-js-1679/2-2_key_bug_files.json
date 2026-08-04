@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/context-pad/ContextPadProvider.js",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/BpmnFactory.js"
+        ],
+        "explanation": "\u2022 ContextPadProvider.js: this module defines and wires up the context pad entries for adding/toggling multi\u2010instance loops (parallel vs sequential). If its action handler never invokes the correct modeling command or passes the isSequential flag through, the loop will appear toggled visually but never be applied to the businessObject.\n\n\u2022 UpdateModdlePropertiesHandler.js: this command interceptor is responsible for setting moddle properties such as loopCharacteristics and isSequential on the businessObject. If it doesn\u2019t detect or correctly handle nested elements (creating or updating the multiInstanceLoopCharacteristics child), the XML won\u2019t be updated even though the modeling command fires.\n\n\u2022 BpmnUpdater.js: after the businessObject changes, BpmnUpdater must mirror those changes into the DI (diagram interchange) / XML structure. It currently lacks specific handling for multiInstanceLoopCharacteristics (and its isSequential attribute), so no new XML element gets inserted or updated.\n\n\u2022 BpmnFactory.js: when new BPMN elements are created (e.g. a new <multiInstanceLoopCharacteristics>), BpmnFactory must instantiate them via moddle.create(...) and assign IDs. If it isn\u2019t invoked for loop toggles or doesn\u2019t generate the correct element type/attributes, no entity ends up in the model.",
+        "bug_scenario": "The user opens the context pad on a BPMN activity, clicks the \u201cMulti\u2010Instance Loop\u201d icon, and then toggles between Parallel and Sequential loop modes. In the UI the icons switch correctly, but the underlying BPMN XML does not get updated: no <bpmn:multiInstanceLoopCharacteristics> element (or its isSequential attribute) ever shows up in the serialized XML."
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-bash.js"
+        ],
+        "bug_functions": [
+            "components/prism-bash.js//Prism.languages.bash.string",
+            "components/prism-bash.js//insideString.entity"
+        ],
+        "explanation": "Prism.languages.bash defines its \u2018string\u2019 patterns to cover heredocs and normal single- or double-quoted strings, but it has no branch for the $'\u2026' (ANSI-C quoting) form. As a result the engine never enters the insideString mode for $'\u2026', so escape sequences like \\n aren\u2019t tokenized by insideString.entity and the ending quote isn\u2019t found. To fix this bug, the \u2018string\u2019 array in Prism.languages.bash must be extended with a pattern that matches $'\u2026' strings (greedy) and applies the existing insideString rules (including entity) to handle all \\-escapes properly.",
+        "bug_scenario": "The user is writing a Bash command using ANSI-C quoting ($'\u2026') to emit a JavaScript module with embedded \\n escape sequences. In the screenshot you can see that after the initial $' the Prism-based highlighter fails to treat the entire quoted block (including its \\n sequences and escaped quotes) as one continuous string. Instead it prematurely ends the string and mis-colors subsequent tokens, so none of the ANSI-C escapes or the closing quote is recognized correctly."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-bash.js//insideString"
+        ],
+        "bug_functions": [
+            "components/prism-bash.js//Prism.languages.bash"
+        ],
+        "explanation": "All of the Bash string-highlighting logic lives in Prism.languages.bash (the \u2018string\u2019 token) and in the helper object insideString. The regex that matches ordinary quoted strings doesn\u2019t look for a leading $ before the opening quote, so $'\u2026' strings are only partially consumed. The \\n escape is defined in insideString.entity but once the main string regex fails to keep the $'\u2026' form open across lines, the escape rules never apply as part of the same token. To fix this, the string patterns in Prism.languages.bash (and the insideString definitions if necessary) must be extended to recognize ANSI-C quoting ($'\u2026') so that \\n stays inside the string token.",
+        "bug_scenario": "In Bash ANSI-C quoting (the $'\u2026' form), escaped newlines like \u201c\\n\u201d aren\u2019t being treated as part of a single string. In the screenshot you can see that as soon as \u201c\\n\u201d appears, the highlighter closes the string and the rest of the code is mis-colored. The Prism Bash grammar defines generic single- and double-quoted strings but doesn\u2019t recognize the special $'\u2026' quoting syntax, so it loses track of the string when it sees the escaped newline."
+    }
+}

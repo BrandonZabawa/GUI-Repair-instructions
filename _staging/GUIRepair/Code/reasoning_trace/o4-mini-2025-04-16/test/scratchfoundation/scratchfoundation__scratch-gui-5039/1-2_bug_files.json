@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/components/sprite-selector-item/sprite-selector-item.jsx",
+            "src/containers/sprite-selector-item.jsx",
+            "src/components/context-menu/context-menu.jsx"
+        ],
+        "explanation": "The sprite-selector-item component and its container are responsible for rendering each sprite thumbnail and for hooking up the onContextMenu handler that summons the Scratch menu. After a drag-and-drop reorder, that handler either isn\u2019t re-attached or the event is being swallowed by the drag/drop overlay, so the OS context menu fires. The context-menu component itself also participates in positioning and showing the menu, so it\u2019s worth checking there that it isn\u2019t confused by the changed target after a drop. These three files together define and display the right-click menu for sprites, so they must be updated to correctly capture and prevent the native contextmenu event after any reorder.",
+        "bug_scenario": "After you drag a sprite thumbnail to reorder it in the sprite selector pane, the next time you right-click that sprite the Scratch custom context menu (duplicate / export / delete) no longer appears \u2014 instead the browser\u2019s native context menu pops up. On first load (before any drag), right-click works as expected."
+    },
+    "2": {
+        "bug_files": [
+            "src/components/sprite-selector-item/sprite-selector-item.jsx",
+            "src/containers/sprite-selector-item.jsx",
+            "src/components/asset-panel/sortable-asset.jsx",
+            "src/lib/drag-recognizer.js",
+            "src/lib/drop-area-hoc.jsx",
+            "src/components/context-menu/context-menu.jsx"
+        ],
+        "explanation": "\u2022 sprite-selector-item.jsx (and its container counterpart) is where we attach our onContextMenu handler to each sprite thumbnail. If the event never reaches this component, our menu never shows.  \n\u2022 sortable-asset.jsx wraps each asset (including sprites) to make them draggable. Its mouse handlers currently swallow or fail to forward right-click events once a drag has occurred, so the contextmenu event never bubbles up to sprite-selector-item.  \n\u2022 drag-recognizer.js is the low-level utility that interprets mouse/touch events as drags. It currently treats the right button as part of a drag in some code paths, inadvertently preventing the contextmenu event on mouseup or click.  \n\u2022 drop-area-hoc.jsx decorates panels (including the sprite pane) with drag-over and drop handlers. It too can intercept contextmenu events on areas where no asset is present, causing the OS menu to appear in the gap.  \n\u2022 context-menu.jsx is our menu renderer; it never receives the Redux action to open because the right-click handler upstream never fires after dragging.  \nAll of these files participate in detecting and forwarding or blocking mouse events on sprite tiles. Fixing the event propagation in sortable-asset (and related drag utilities) so that right-click always invokes the onContextMenu logic in sprite-selector-item will restore the custom menu after any drag operation.",
+        "bug_scenario": "When you first right-click a sprite thumbnail in the sprite pane, our custom \u201cduplicate / export / delete\u201d context menu appears as expected. But once you drag that same sprite tile to reorder it in the list, subsequent right-clicks bring up the browser\u2019s default menu instead of our custom one. In other words, after a drag, the onContextMenu handler on that tile no longer fires."
+    }
+}

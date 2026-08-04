@@ -1,0 +1,63 @@
+diff --git a/components/prism-cshtml.js b/components/prism-cshtml.js
+index a917626a..20630d7e 100644
+--- a/components/prism-cshtml.js
++++ b/components/prism-cshtml.js
+@@ -122,10 +122,12 @@
+ 				/(^|[^@])@/.source +
+ 				'(?:' +
+ 				[
+-					// @{ ... }
+-					curly,
+-					// @code{ ... }
+-					/(?:code|functions)\s*/.source + curly,
++// @{ ... }
++curly,
++// @code{ ... }
++/(?:code|functions)\s*/.source + curly,
++// @helper ... { ... }
++/helper\s+\w+\s*\([^)]*\)\s*/.source + curly,
+ 					// @for (...) { ... }
+ 					/(?:for|foreach|lock|switch|using|while)\s*/.source + round + /\s*/.source + curly,
+ 					// @do { ... } while (...);
+@@ -155,21 +157,26 @@
+ 			}
+ 		},
+ 
+-		'value': {
+-			pattern: RegExp(
+-				/(^|[^@])@/.source +
+-				/(?:await\b\s*)?/.source +
+-				'(?:' + /\w+\b/.source + '|' + round + ')' +
+-				'(?:' + /[?!]?\.\w+\b/.source + '|' + round + '|' + square + '|' + angle + round + ')*'
+-			),
+-			lookbehind: true,
+-			greedy: true,
+-			alias: 'variable',
+-			inside: {
+-				'keyword': /^@/,
+-				'csharp': cs
+-			}
+-		},
++'value': {
++// Improved pattern to match Razor expressions in HTML attributes and elsewhere
++pattern: RegExp(
++/(^|[^@])@/.source +
++/(?:await\b\s*)?/.source +
++'(?:' +
++// Match @(...) or @identifier or @identifier(...)
++/\([\s\S]*?\)/.source + '|' +
++/\w+\b(?:\s*\([\s\S]*?\))?/.source +
++')' +
++'(?:' + /[?!]?\.\w+\b/.source + '|' + round + '|' + square + '|' + angle + round + ')*'
++),
++lookbehind: true,
++greedy: true,
++alias: 'variable',
++inside: {
++'keyword': /^@/,
++'csharp': cs
++}
++},
+ 
+ 		'delegate-operator': {
+ 			pattern: /(^|[^@])@(?=<)/,

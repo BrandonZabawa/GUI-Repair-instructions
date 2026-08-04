@@ -1,0 +1,53 @@
+diff --git a/packages/react/src/components/Pagination/Pagination.js b/packages/react/src/components/Pagination/Pagination.js
+index 130fbc3b..cdb7e2b5 100644
+--- a/packages/react/src/components/Pagination/Pagination.js
++++ b/packages/react/src/components/Pagination/Pagination.js
+@@ -24,10 +24,10 @@ export default class Pagination extends Component {
+   constructor(props) {
+     super(props);
+     const { pageSizes, page, pageSize } = this.props;
++    const initialPageSize = pageSizes.find(size => size.value === pageSize) || pageSizes[0];
+     this.state = {
+       page: page,
+-      pageSize:
+-        pageSize && pageSizes.includes(pageSize) ? pageSize : pageSizes[0],
++      pageSize: initialPageSize.value,
+       prevPageSizes: pageSizes,
+       prevPage: page,
+       prevPageSize: pageSize,
+@@ -116,7 +116,12 @@ export default class Pagination extends Component {
+     /**
+      * The choices for `pageSize`.
+      */
+-    pageSizes: PropTypes.arrayOf(PropTypes.number).isRequired,
++    pageSizes: PropTypes.arrayOf(
++      PropTypes.shape({
++        value: PropTypes.number.isRequired,
++        text: PropTypes.string.isRequired,
++      })
++    ).isRequired,
+ 
+     /**
+      * The translatable text showing the current page.
+@@ -176,7 +181,7 @@ export default class Pagination extends Component {
+   }
+ 
+   handleSizeChange = (evt) => {
+-    const pageSize = Number(evt.target.value);
++    const pageSize = pageSizes.find(size => size.value === Number(evt.target.value)).value;
+     this.setState({ pageSize, page: 1 });
+     this.props.onChange({ page: 1, pageSize });
+   };
+@@ -288,9 +293,9 @@ export default class Pagination extends Component {
+             onChange={this.handleSizeChange}
+             disabled={pageInputDisabled || disabled}
+             value={statePageSize}>
+-            {pageSizes.map((size) => (
+-              <SelectItem key={size} value={size} text={String(size)} />
+-            ))}
++    {pageSizes.map((size) => (
++      <SelectItem key={size.value} value={size.value} text={size.text} />
++    ))}
+           </Select>
+           <span
+             className={`${prefix}--pagination__text ${prefix}--pagination__items-count`}>

@@ -1,0 +1,34 @@
+diff --git a/src/ol/renderer/webgl/Layer.js b/src/ol/renderer/webgl/Layer.js
+index a6d9b1c1b4..121d210f36 100644
+--- a/src/ol/renderer/webgl/Layer.js
++++ b/src/ol/renderer/webgl/Layer.js
+@@ -156,15 +156,26 @@ class WebGLLayerRenderer extends LayerRenderer {
+       this.helper.dispose();
+       delete this.helper;
+     }
+-  }
+-
+   /**
+    * Determine whether renderFrame should be called.
+    * @param {import("../../PluggableMap.js").FrameState} frameState Frame state.
+    * @return {boolean} Layer is ready to be rendered.
+    */
+   prepareFrame(frameState) {
+-    if (this.getLayer().getRenderSource()) {
++    const layer = this.getLayer();
++    // hide if layer (or its parent group) is not visible
++    const layerState = frameState.layerStatesArray.find(function(state) {
++      return state.layer === layer;
++    });
++    if (!layerState || !layerState.visible) {
++      // drop our helper so the canvas will be removed
++      this.removeHelper();
++      return false;
++    }
++
++    if (layer.getRenderSource()) {
++      let incrementGroup = true;
++      // …
+       let incrementGroup = true;
+       let groupNumber = -1;
+       let className;

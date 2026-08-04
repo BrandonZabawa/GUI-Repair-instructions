@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/language-js/index.js",
+            "src/language-js/parser-babel.js"
+        ],
+        "bug_functions": [
+            "src/language-js/index.js//parsers",
+            "src/language-js/index.js//languages",
+            "src/language-js/parser-babel.js//createParse",
+            "src/language-js/parser-babel.js//parse",
+            "src/language-js/parser-babel.js//parseFlow"
+        ],
+        "explanation": "The core of the bug is the slow parsing performance due to reliance on Babylon as the primary parser for JavaScript/JSX/Flow in Prettier. The file 'src/language-js/index.js' serves as the main entry point for defining available parsers (including Babel, Espree, Flow, TypeScript, etc.) and the languages they are mapped to. To switch to Cherow or add it as an option, modifications would need to be made to the 'parsers' (and possibly 'languages') object in this file. The file 'src/language-js/parser-babel.js' implements the actual parsing logic for Babel (and Flow), with key functions such as 'createParse', 'parse', and 'parseFlow' responsible for invoking the parser and returning ASTs. If Cherow is to be integrated, analogous logic would need to be added either here or in a similar new file, and the parser registration in 'index.js' would need to reference it. These classes and functions are central to integrating a new parser and managing the parser selection logic, making them the key bug-related elements for this performance improvement.",
+        "bug_scenario": "The bug scenario revolves around improving the performance of Prettier's JavaScript parsing by considering switching from the currently used Babylon parser to the Cherow parser. Benchmark results (shown in the image) indicate that Cherow is about 40% faster than Babylon, which can significantly enhance the speed of Prettier, especially in format-on-save workflows. However, Cherow does not yet support Flow syntax, which is a blocker for some use cases."
+    },
+    "2": {
+        "bug_classes": [
+            "src/language-js/index.js"
+        ],
+        "bug_functions": [
+            "src/language-js/index.js//parsers"
+        ],
+        "explanation": "The main logic for selecting and exposing available JavaScript parsers within Prettier is in the 'parsers' object in 'src/language-js/index.js'. This is where new parsers (e.g., Cherow) would be added or swapped in place of Babylon. The bug report and performance image motivate switching to or supporting Cherow for speed, and this is the exact code location where such a change must be made to affect which parser Prettier uses for JavaScript. The rest of the code (babel, espree, flow, typescript, etc.) interfaces through this dictionary. No other classes or functions from the provided skeletons are relevant to the act of integrating a new parser. Logic for parsing, as well as parser-specific feature support (such as Flow), is determined here.",
+        "bug_scenario": "The scenario involves improving the performance of the Prettier JavaScript parser by potentially switching from Babylon to Cherow, which is shown to be about 40% faster in benchmarks. However, Cherow does not fully support Flow syntax, which is a blocker for some use cases. The provided benchmarking image demonstrates Cherow's superior performance compared to other JavaScript parsers, including Babylon, across several large JavaScript source files."
+    }
+}

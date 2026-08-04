@@ -1,0 +1,25 @@
+diff --git a/src/ol/renderer/canvas/VectorTileLayer.js b/src/ol/renderer/canvas/VectorTileLayer.js
+index 5661c321e2..0efae056f4 100644
+--- a/src/ol/renderer/canvas/VectorTileLayer.js
++++ b/src/ol/renderer/canvas/VectorTileLayer.js
+@@ -795,14 +795,18 @@ class CanvasVectorTileLayerRenderer extends CanvasTileLayerRenderer {
+ 
+     // Increase tile size when overzooming for low pixel ratio, to avoid blurry tiles
+     pixelRatio = Math.max(pixelRatio, renderPixelRatio / pixelRatio);
++    // Use Math.ceil to avoid sub-pixel gaps between tiles when browser is zoomed
+     const size = source.getTilePixelSize(z, pixelRatio, projection);
+-    context.canvas.width = size[0];
+-    context.canvas.height = size[1];
++    context.canvas.width = Math.ceil(size[0]);
++    context.canvas.height = Math.ceil(size[1]);
+     const renderScale = pixelRatio / renderPixelRatio;
+     if (renderScale !== 1) {
+       const canvasTransform = resetTransform(this.tmpTransform_);
+       scaleTransform(canvasTransform, renderScale, renderScale);
+       context.setTransform.apply(context, canvasTransform);
++    } else {
++      // Always reset transform to avoid inheriting previous transforms
++      context.setTransform(1, 0, 0, 1, 0, 0);
+     }
+     const tileExtent = tileGrid.getTileCoordExtent(tileCoord, this.tmpExtent);
+     const pixelScale = renderPixelRatio / resolution;

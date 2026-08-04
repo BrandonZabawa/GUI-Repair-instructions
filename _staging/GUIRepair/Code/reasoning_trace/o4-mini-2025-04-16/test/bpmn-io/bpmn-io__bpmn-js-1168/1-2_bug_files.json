@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/label-editing/LabelEditingProvider.js"
+        ],
+        "explanation": "\u2022 BpmnCopyPaste.js handles the paste operation by replaying create commands for each element. It thus emits the same create events as a manual element creation.  \n\u2022 LabelEditingProvider.js listens for element creation events (create.start / create.end) and unconditionally activates direct editing for tasks and other flow nodes.  \nBecause paste produces normal create events, the first pasted task gets picked up by LabelEditingProvider and opens its label editor immediately. To fix this, one must adjust either the paste handler (BpmnCopyPaste.js) to flag pasted elements or suppress direct editing in LabelEditingProvider when the source of the create event is a paste.",
+        "bug_scenario": "When you copy and paste a group of elements whose first item is a task, the pasted task immediately opens its name\u2010editing UI (\u201cdirect editing\u201d) even though pasting should not trigger any edit mode. This only happens if the very first pasted element is a task; otherwise no direct editing shows up."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/modeling/behavior/CreateBehavior.js",
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/LabelEditingPreview.js"
+        ],
+        "explanation": "\u2022 BpmnCopyPaste.js \u2013 This is where pasted elements are instantiated and (re-)selected. Any workaround to suppress direct editing on paste or to post-process the selection would need to go here.  \n\u2022 CreateBehavior.js \u2013 The generic create behaviour for BPMN shapes triggers direct editing after a shape is created; paste operations internally create shapes and thus fall under this logic. We need to detect \u2018paste context\u2019 here and skip the direct editing step.  \n\u2022 LabelEditingProvider.js \u2013 Sets up the direct editing feature and listens for the right events. Changes here can ensure that paste events do not fire into the direct editing lifecycle.  \n\u2022 LabelEditingPreview.js \u2013 Hooks into selection and label clicks to actually open the inline editor. Since BpmnCopyPaste re-selects the first task on paste, this preview provider picks up that single-selection and launches direct editing. Any paste flag logic could prevent this activation.",
+        "bug_scenario": "When copying and pasting a set of BPMN elements where the first element in the clipboard is a Task, that first pasted Task immediately enters \u201cdirect editing\u201d mode (i.e. its label text field is focused and ready to edit). In the reproduced GIF the user selects three tasks, copies them, pastes them onto the canvas, and sees that the first of those three Tasks goes directly into inline label\u2013edit mode. This should not happen on paste \u2013 direct editing should only be triggered for new shapes on manual creation, not on paste."
+    }
+}

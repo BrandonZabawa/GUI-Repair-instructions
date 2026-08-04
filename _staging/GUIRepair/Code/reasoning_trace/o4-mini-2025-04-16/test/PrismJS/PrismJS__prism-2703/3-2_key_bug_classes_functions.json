@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-fsharp.js//Prism.languages.extend",
+            "components/prism-fsharp.js//Prism.languages.insertBefore"
+        ],
+        "explanation": "The root of the incorrect highlighting lives in the call to Prism.languages.extend('clike', { comment: [\u2026] }). The regular expression /(\\(\\*[\\s\\S]*?\\*\\))/ used there treats any `(* ... *)` sequence\u2014 including the zero-length case `(*)`\u2014 as a comment. To fix the bug, that comment pattern must be tightened (for example, requiring at least one non-whitespace character inside the delimiters) so that standalone uses of the `(*)` operator are no longer recognized as comment delimiters. The adjacent calls to Prism.languages.insertBefore merely layer additional token types onto the same grammar, so the primary change will occur in the initial extend invocation and its comment regex.",
+        "bug_scenario": "When using the F# idiom of converting the multiplication operator (*) into a function (e.g. List.length |> (*) (int cat)), Prism\u2019s F# highlighter mistakes the `(*)` token for the start of a multi-line comment (`(* ... *)`). In the provided screenshot, the pipeline expression `|> (*) (int cat)` is tinted as a comment, breaking correct syntax highlighting."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-fsharp.js//Prism.languages.fsharp"
+        ],
+        "bug_functions": [
+            "components/prism-fsharp.js//Prism.languages.fsharp.comment[0].pattern"
+        ],
+        "explanation": "The F# grammar in components/prism-fsharp.js extends the C-style comment regex /(^|[^\\\\])\\(\\*[\\s\\S]*?\\*\\)/ to detect comments. However, in F#, '(*)' is a valid operator-to-function conversion, not a comment. The first comment pattern (i.e. comment[0].pattern) thus wrongly matches '(*' when used as the multiplier function, causing the rest of the code to be treated as a comment. Fixing this regex (for example by requiring more than zero characters between the delimiters) will prevent legitimate '(*)' function syntax from being misclassified as comments.",
+        "bug_scenario": "When using the F# multiplier operator as a function \u2014 e.g. writing ( * ) \u2014 Prism\u2019s F# highlighter mistakes the sequence '(* ... *)' for a multi-line comment. In the screenshot, code like '|> (*) (int cat)' is highlighted as if the \u2018(*)\u2019 begins a comment, causing the rest of the line to be dimmed."
+    }
+}

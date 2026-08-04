@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "core/audits/dobetterweb/dom-size.js",
+            "core/lib/i18n/i18n.js"
+        ],
+        "explanation": "\u2022 core/audits/dobetterweb/dom-size.js: This is the audit implementation that gathers the raw integer counts (total elements, max depth, max children) and calls into the i18n formatting layer to produce both the audit\u2019s displayValue and each details table item\u2019s value. Because it doesn\u2019t override the default fraction behavior, integer metrics end up rendered with one decimal place.\n\u2022 core/lib/i18n/i18n.js: This module sets up the default Intl.NumberFormat options (including a minimumFractionDigits or maximumFractionDigits of 1), which is why integers get a \u201c.0\u201d. Adjusting the default or allowing dom-size.js to pass a {maximumFractionDigits: 0, minimumFractionDigits: 0} override will remove the unwanted \u201c.0\u201d suffix.",
+        "bug_scenario": "In the Lighthouse DOM Size audit (audit id \u201cdom-size\u201d), all of the integer metrics (Total DOM Elements, Maximum DOM Depth, Maximum Child Elements) are being formatted with a \u201c.0\u201d fractional part (e.g. \u201c2,008.0\u201d, \u201c23.0\u201d, \u201c81.0\u201d) in the report\u2019s details table, even though they will always be whole numbers."
+    },
+    "2": {
+        "bug_files": [
+            "core/gather/gatherers/dobetterweb/domstats.js",
+            "core/audits/dobetterweb/dom-size.js"
+        ],
+        "explanation": "1. core/gather/gatherers/dobetterweb/domstats.js is the gatherer that inspects the page\u2019s DOM and returns the raw numeric counts (numNodes, maxDepth, maxChildElements) under numericValue. Although it only returns integers, downstream formatting in the audit doesn\u2019t suppress the decimal portion. 2. core/audits/dobetterweb/dom-size.js pulls in the domstats gatherer output, builds the audit\u2019s displayValue and details table, and calls the localization number\u2010formatter (i18n.formatNumber) on each statistic. This is where the default formatter emits one decimal digit, producing the unwanted \u201c.0\u201d. Adjustments here can force zero fractional digits for this audit\u2019s integer metrics.",
+        "bug_scenario": "In the \u201cAvoid an excessive DOM size\u201d (dom-size) audit, values that are always integers (Total DOM Elements, Maximum DOM Depth, Maximum Child Elements) are rendered and displayed with a \u201c.0\u201d decimal (e.g. \u201c2,008.0\u201d instead of \u201c2,008\u201d). The bug reproduces when running Lighthouse\u2019s dom-size audit programmatically on a nested DOM, yielding unwanted \u201c.0\u201d fractions even though all of these counts are whole numbers."
+    }
+}

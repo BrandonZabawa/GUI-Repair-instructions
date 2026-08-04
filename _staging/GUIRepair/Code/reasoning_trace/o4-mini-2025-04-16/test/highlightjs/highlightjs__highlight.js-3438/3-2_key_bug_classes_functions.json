@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/cpp.js"
+        ],
+        "bug_functions": [
+            "src/languages/cpp.js//export default function(hljs)"
+        ],
+        "explanation": "All of the C++ syntax rules live in the default export function of cpp.js: this function defines how templates, operators, expression contexts and declarations are tokenized. Because the grammar in cpp.js does not properly recognize \u201c<<\u201d in this context (nor does it correctly parse the template argument list \u201c<<1,2,3,4,5;\u201d), the highlighter falls back to plain text. Fixing the bug requires updating cpp.js\u2019s language modes (inside the default export) to include operator<< as a valid stream-insertion operator and to correctly handle nested angle-bracket templates in expressions.",
+        "bug_scenario": "When running hljs.highlight on C++ code that uses Eigen\u2019s template types and the stream\u2010insertion operator \u201c<<\u201d (e.g. vector<<1,2,3,4,5; and printing with std::cout << C), the highlighter fails to parse and style those lines correctly. In the screenshots you can see that the \u201c<<\u201d operator and the template argument lists are left un-highlighted or break the surrounding syntax."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/cpp.js//export default function(hljs)"
+        ],
+        "explanation": "All of the C++ highlighting rules are defined inside the anonymous default export in cpp.js.  That function builds the grammar for comments, numbers, strings, preprocessor directives, expression contexts and template-angle parsing.  The failure to handle back-to-back \u201c< <\u201d (as in vector<<\u2026) and re-enter an expression-or-initializer context lives in that exported function\u2019s rule definitions (template-argument regex, expression context variants, and operator handling).  Editing the grammar inside export default function(hljs) is therefore where the fix must be made.",
+        "bug_scenario": "When rendering C++ source with Highlight.js (using highlight rather than highlightAuto), lines like:\n\n    Eigen::VectorXd vector(5);\n    vector<<1,2,3,4,5;\n\nare mis-highlighted (or not highlighted at all) beyond the \u201c<<\u201d operator.  The highlighter\u2019s C++ grammar treats the \u201c<<\u201d as a left-shift operator (or as an opening angle bracket for templates) but then fails to re-enter an expression context that would consume the initializer list.  As a result, everything after that point is rendered as plain text instead of C++ code."
+    }
+}

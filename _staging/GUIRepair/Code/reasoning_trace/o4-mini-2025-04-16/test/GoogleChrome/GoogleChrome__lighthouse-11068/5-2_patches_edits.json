@@ -1,0 +1,76 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "this.on('Target.attachedToTarget', event => {",
+                    "this._handleTargetAttached(event).catch(this._handleEventError);",
+                    "});",
+                    "\u2026",
+                    "async _handleTargetAttached(event) {",
+                    "// We're only interested in network requests from iframes for now as those are \"part of the page\".",
+                    "// If it's not an iframe, just resume it and move on.",
+                    "if (event.targetInfo.type !== 'iframe') {",
+                    "// We suspended the target when we auto-attached, so make sure it goes back to being normal.",
+                    "await this.sendCommandToSession('Runtime.runIfWaitingForDebugger', event.sessionId);",
+                    "return;",
+                    "}",
+                    "",
+                    "// Events from subtargets will be stringified and sent back on `Target.receivedMessageFromTarget`.",
+                    "// We want to receive information about network requests from iframes, so enable the Network domain.",
+                    "await this.sendCommandToSession('Network.enable', event.sessionId);"
+                ],
+                "REPLACE": [
+                    "    this.on('Target.attachedToTarget', event => {",
+                    "      this._handleTargetAttached(event).catch(this._handleEventError);",
+                    "    });",
+                    "\u2026",
+                    "  async _handleTargetAttached(event) {",
+                    "    // We're only interested in network requests from iframes for now as those are \"part of the page\".",
+                    "    // If it's not an iframe, just resume it and move on.",
+                    "    if (event.targetInfo.type !== 'iframe') {",
+                    "      // We suspended the target when we auto-attached, so make sure it goes back to being normal.",
+                    "      await this.sendCommandToSession('Runtime.runIfWaitingForDebugger', event.sessionId);",
+                    "      return;",
+                    "    }",
+                    "",
+                    "    // Events from subtargets will be stringified and sent back on `Target.receivedMessageFromTarget`.",
+                    "    // We want to receive information about network requests from iframes, so enable the Network and CSS domains.",
+                    "    await this.sendCommandToSession('Network.enable', event.sessionId);",
+                    "    await this.sendCommandToSession('CSS.enable', event.sessionId);"
+                ]
+            }
+        ],
+        "lighthouse-core/gather/gatherers/css-usage.js": [
+            {
+                "SEARCH": [
+                    "driver.on('CSS.styleSheetAdded', onStylesheetAdded);",
+                    "",
+                    "await driver.sendCommand('DOM.enable');",
+                    "await driver.sendCommand('CSS.enable');",
+                    "await driver.sendCommand('CSS.startRuleUsageTracking');",
+                    "await driver.evaluateAsync('getComputedStyle(document.body)');",
+                    "driver.off('CSS.styleSheetAdded', onStylesheetAdded);"
+                ],
+                "REPLACE": [
+                    "    // Listen for stylesheet additions in both the main document and any OOPIFs.",
+                    "    driver.on('CSS.styleSheetAdded', onStylesheetAdded);",
+                    "    driver.on('Target.receivedMessageFromTarget', ({message}) => {",
+                    "      if (message.method === 'CSS.styleSheetAdded') {",
+                    "        onStylesheetAdded(message.params);",
+                    "      }",
+                    "    });",
+                    "",
+                    "    await driver.sendCommand('DOM.enable');",
+                    "    await driver.sendCommand('CSS.enable');",
+                    "    await driver.sendCommand('CSS.startRuleUsageTracking');",
+                    "    await driver.evaluateAsync('getComputedStyle(document.body)');",
+                    "",
+                    "    // Clean up the main listener (we leave the forwarded\u2010message listener in place",
+                    "    // until the end of pass; it won\u2019t fire after CSS.disable).",
+                    "    driver.off('CSS.styleSheetAdded', onStylesheetAdded);"
+                ]
+            }
+        ]
+    }
+}

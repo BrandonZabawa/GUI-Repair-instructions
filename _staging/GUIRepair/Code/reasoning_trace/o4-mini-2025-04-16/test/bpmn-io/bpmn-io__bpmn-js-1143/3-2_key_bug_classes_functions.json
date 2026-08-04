@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/auto-place/AutoPlaceUtil.js"
+        ],
+        "bug_functions": [
+            "lib/features/auto-place/AutoPlaceUtil.js//getNewShapePosition",
+            "lib/features/auto-place/AutoPlaceUtil.js//deconflictPosition"
+        ],
+        "explanation": "The crash originates in the automatic placement logic (AutoPlaceUtil). When you add a Group into an otherwise empty diagram, underlying layout utilities compute a new insertion point for subsequent shapes. In that path: 1) getNewShapePosition dispatches into deconflictPosition, 2) deconflictPosition tries to avoid overlaps by computing escape offsets in nextPosition. However, due to a variable mismatch (using existingTarget instead of the passed existingElement, or operating on an empty \u2018closure\u2019 when a Group has no incoming/outgoing and no host), the computed x/y becomes NaN. When Create/Dragging tries to apply this NaN translate via SvgTransformUtil.setTranslate, the browser throws the non-finite error and the editor halts. Adjusting deconflictPosition (and/or its callers) to guard against empty inputs and to correctly reference the candidate element for repositioning will prevent the invalid coordinate from ever reaching setTranslate.",
+        "bug_scenario": "After deleting the default start event from the empty diagram the user adds a Group and then immediately tries to drop another element (for example a Pool). At that point the editor crashes with repeated \u201cTypeError: Failed to execute 'setTranslate' on 'SVGTransform': The provided float value is non-finite\u201d errors in the console. In the GIF you can see the group being dropped, and then as soon as you pick the next shape the error floods the console and the diagram locks up."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/auto-place/AutoPlaceUtil.js"
+        ],
+        "bug_functions": [
+            "lib/features/auto-place/AutoPlaceUtil.js//getNewShapePosition",
+            "lib/features/auto-place/AutoPlaceUtil.js//getDefaultPosition",
+            "lib/features/auto-place/AutoPlaceUtil.js//getFlowNodePosition",
+            "lib/features/auto-place/AutoPlaceUtil.js//getConnectedAtPosition",
+            "lib/features/auto-place/AutoPlaceUtil.js//deconflictPosition"
+        ],
+        "explanation": "All of the flagged functions live in AutoPlaceUtil.js and participate in computing the drop coordinates for a new element when auto-placing relative to a source. When the source is a freshly created Group in an otherwise empty diagram, its bounding box (TRBL) and connected elements list are missing or zero-length. As a result getNewShapePosition (and its delegates: getDefaultPosition or getFlowNodePosition) derive non-finite x/y values, and deconflictPosition/getConnectedAtPosition then propagate those NaN/Infinity coordinates into the SVG transform. Fixing this requires adding guard logic or defaults for Group shapes in these functions to ensure finite coordinate outputs.",
+        "bug_scenario": "After deleting the only start event in a fresh BPMN diagram, the user adds a Group shape and then clicks the Group\u2019s floating \u201c+\u201d auto-place handle to add another element (for example a Pool/Participant). The editor tries to position the new element relative to the empty Group but computes x/y coordinates that are NaN or Infinity, causing repeated \u201cprovided float value is non-finite\u201d errors in SvgTransformUtil and ultimately freezing the editor."
+    }
+}

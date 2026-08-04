@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/field/index.js",
+            "es/field/index.js",
+            "lib/field/index.js"
+        ],
+        "explanation": "All three files define the Field class entry point and contain the line `this.values = options.values || {}` (shown in the screenshot at line 35). By assigning the passed-in object directly, Field methods like `init` and `setValue` mutate the user\u2019s original data. To fix the bug, these files must be updated to clone `options.values` (e.g. via shallow copy) instead of storing it by reference, so that Field\u2019s internal state can change without altering the external object.",
+        "bug_scenario": "When you pass your own data object into the Field constructor via the `values` option, Field stores it by reference (`this.values = options.values || {}`) and then proceeds to mutate it when you call methods like `init` or `setValue`. That means any writes you make to the form data inside Field also alter your external object, which violates the principle that the passed-in data should remain untouched."
+    },
+    "2": {
+        "bug_files": [
+            "src/field/index.js",
+            "es/field/index.js",
+            "lib/field/index.js"
+        ],
+        "explanation": "These three files contain the Field constructor that sets this.values directly to the passed options.values object. By using a shared reference, any write to this.values (via init or setValue) mutates the caller\u2019s object. To fix the bug, values need to be cloned (e.g. shallow clone) instead of referencing the original. Changes in these files will propagate through the build (es/ \u2192 lib/) and correct the mutation issue.",
+        "bug_scenario": "In the provided demo, a user passes an external object (externalValues) into new Field(this, { values: externalValues }), expecting Field to treat it as read-only input. Instead, when calling this.field.init('name', { initValue: 'first' }) or this.field.setValue('name', 'second'), the Field implementation writes directly into this.values, which was set by reference to options.values. Because this.values and externalValues point to the same object, those calls mutate the original external object. The bug scenario image highlights that in field/index.js the code uses \u201cthis.values = options.values || {}\u201d on line 35, causing the shared reference."
+    }
+}

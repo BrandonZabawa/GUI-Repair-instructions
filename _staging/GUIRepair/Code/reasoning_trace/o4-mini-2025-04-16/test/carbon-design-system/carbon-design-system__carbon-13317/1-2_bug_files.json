@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup-test.js",
+            "packages/carbon-components-react/scss/components/radio-button/_radio-button.scss"
+        ],
+        "explanation": "\u2022 RadioButtonGroup.js: This file defines the group wrapper and currently only renders legendText, name, valueSelected and onChange. It needs to be extended to accept new props (e.g. invalid, warn, helperText), apply the appropriate CSS class names (e.g. bx--form-item--invalid, bx--form-item--warning), render the SVG icons for error/warning states, and output the validation message below the fieldset as shown in the spec.\n\n\u2022 RadioButtonGroup-test.js: The existing test suite only covers basic rendering, defaultSelected/valueSelected and onChange. We must add new tests for the invalid and warn props as well as helperText, verifying that the correct markup, class names and message text appear in the DOM.\n\n\u2022 _radio-button.scss: This SCSS file contains the styles for both standalone radio buttons and grouped variants. It needs to be updated with the styles and tokens for the invalid (error) border and icon, warning border and icon, and helper text typography and spacing, matching the specs (colors, stroke widths, icon sizes, margins under the controls).",
+        "bug_scenario": "The RadioButtonGroup component does not yet support the three validation states defined in the spec (invalid/error, warning, and helper text). In the reproduction code, users are forced to hack in a generic <div className=\u201cbx--form-requirement\u201d> outside the group, but the group itself never applies the correct classes, markup, icons or spacing under the legend and form controls. As a result, error and warning messages don\u2019t render in the right place or style, and helper text is unavailable."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js",
+            "packages/react/src/components/RadioButtonGroup/index.js",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup-test.js",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.stories.js",
+            "packages/react/src/components/RadioButton/RadioButton.js",
+            "packages/react/src/components/RadioButton/index.js",
+            "packages/react/src/components/RadioButton/RadioButton-test.js",
+            "packages/react/src/components/RadioButton/RadioButton.stories.js",
+            "packages/react/scss/components/radio-button/_radio-button.scss",
+            "packages/carbon-components/scss/components/radio-button/_radio-button.scss"
+        ],
+        "explanation": "\n- RadioButtonGroup.js & index.js: This is where the group-level props (invalid, warn, helperText) must be declared and rendered. It currently only handles legendText, disabled/readOnly, and selection props.\n- RadioButtonGroup-test.js & .stories.js: The unit tests and Storybook examples need to assert and demonstrate the new states, and currently none of the invalid/warning/helper behaviors are covered.\n- RadioButton.js & index.js: To style individual radio circles with red or yellow outlines when the group is in an invalid or warn state, the RadioButton component must accept and apply those props (or receive them via context from the group).\n- RadioButton-test.js & .stories.js: The RadioButton component\u2019s tests and stories need new cases for invalid and warning states so that the child buttons render correctly.\n- _radio-button.scss in both react and carbon-components: The SCSS must include the actual CSS rules for the .bx--radio-button__control--invalid, .bx--radio-button__control--warning, and helper-text icons and text styles as shown in the spec. Without these rules, adding the props will have no visual effect.",
+        "bug_scenario": "The RadioButtonGroup component currently only handles selection and simple onChange output \u2013 it does not render or style any of the three validation states (invalid/error, warn/warning, and helper text) on the fieldset or its child radios. The reproduction code simply appends a plain <div className=\"bx--form-requirement\"> under the group for errors, but: 1) the radio circles themselves never pick up the red or yellow outline, 2) the fieldset legend never adopts the error or warning styles, and 3) the helper text state (information icon + neutral styling) is not supported at all. The spec image shows that when the group is invalid or warned, each radio circle should have a colored stroke, the legend text should remain neutral, and the group should display an icon + message in the correct color. When helper text is provided, the group should show the information icon + secondary text. Those design states aren\u2019t implemented in any of the RadioButtonGroup or RadioButton components or in the styling."
+    }
+}

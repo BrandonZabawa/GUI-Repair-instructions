@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/render/webgl/MixedGeometryBatch.js",
+            "src/ol/render/webgl/VectorStyleRenderer.js",
+            "src/ol/render/webgl/utils.js"
+        ],
+        "explanation": "All three files participate in how WebGL fills and clips polygon rings:  \n1. MixedGeometryBatch.js  \n   \u2022 Flattens and batches polygon rings and invokes the ring-orientation test to distinguish outer vs. hole rings before triangulating or stencil-masking.  \n2. VectorStyleRenderer.js  \n   \u2022 Drives the WebGL draw call for polygon fills using stencil operations. If outer and hole rings are mis-identified (clockwise logic inverted), holes won\u2019t mask out properly.  \n3. utils.js  \n   \u2022 Contains helper routines (e.g. winding or orientation checks) used by the batcher and style renderer.  \nTogether these control how polygon rings are interpreted, triangulated, and composited in WebGL; an inversion or misuse of the clockwise test here leads directly to overlapping fills instead of punched-out holes.",
+        "bug_scenario": "When rendering a GeoJSON polygon with holes in a WebGL vector layer, the fill-color is drawn multiple times (rings overlap) instead of creating a true cut-out for the hole. In the screenshots you can see a darkened solid fill where a \u2018reversed zone\u2019 (everything but the hole) should be transparent. The issue only appears under the WebGL renderer when the GeoJSON rings have the correct clockwise orientation; if the rings are (invalidly) reversed, the hole is drawn correctly. The old Canvas/VectorLayer implementation never had this problem."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/geom/flat/orient.js",
+            "src/ol/geom/flat/flip.js",
+            "src/ol/geom/Polygon.js",
+            "src/ol/render/webgl/utils.js",
+            "src/ol/render/webgl/MixedGeometryBatch.js",
+            "src/ol/render/webgl/VectorStyleRenderer.js"
+        ],
+        "explanation": "\u2022 src/ol/geom/flat/orient.js  \u2013 defines the winding\u2010order tests (signed area) used throughout the library. If its orientation convention doesn\u2019t match the WebGL pipeline, holes and exteriors get misclassified.  \n\u2022 src/ol/geom/flat/flip.js    \u2013 contains logic to reverse ring winding. It\u2019s invoked (directly or indirectly) when enforcing a default orientation, but the default expected by WebGL is currently inverted relative to GeoJSON.  \n\u2022 src/ol/geom/Polygon.js      \u2013 the geometry class that flattens and may reorient exterior and interior rings on construction. Incorrect defaults here propagate bad ring orders to the renderer.  \n\u2022 src/ol/render/webgl/utils.js \u2013 helper routines for converting flat coords into WebGL buffers. It doesn\u2019t apply even\u2010odd fill or hole subtraction, so it relies entirely on correct winding to cull inner rings.  \n\u2022 src/ol/render/webgl/MixedGeometryBatch.js \u2013 batches and triangulates rings for WebGL. It treats every ring as a full polygon if the winding test misclassifies a hole, leading to filled inner rings.  \n\u2022 src/ol/render/webgl/VectorStyleRenderer.js \u2013 orchestrates geometry instructions for WebGL fill. It assumes holes have the opposite winding to exteriors; with the spec\u2010correct GeoJSON winding the assumption is flipped and holes are rendered as solid fills.",
+        "bug_scenario": "When rendering GeoJSON polygons with holes (an outer ring and one or more interior rings) using the WebGL vector layer, the fill\u2010color is applied not only to the outer ring but also to the interior rings. Valid GeoJSON (which uses CCW for the exterior and CW for holes) results in overlapping fill on the inner rings; if you deliberately reverse the ring winding (making the GeoJSON invalid), the issue disappears. This points to a misinterpretation of ring orientation and hole subtraction in the WebGL renderer."
+    }
+}

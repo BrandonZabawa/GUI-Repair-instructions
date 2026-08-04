@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/full-page-screenshot.js",
+            "lighthouse-core/audits/unsized-images.js",
+            "lighthouse-core/audits/screenshot-thumbnails.js",
+            "report/renderer/element-screenshot-renderer.js",
+            "report/generator/report-assets.js",
+            "clients/devtools-report-assets.js"
+        ],
+        "explanation": "\u2022 full-page-screenshot.js: this gatherer produces the full-page screenshot artifact (fpss) that we need as the single source image to crop our thumbnails from instead of hot-linking.\n\u2022 unsized-images.js: this is the audit that flags <img> tags missing width/height and currently hands off the raw URLs to the thumbnails renderer.\n\u2022 screenshot-thumbnails.js: this audit builds the thumbnail entries today \u2013 it\u2019s where we must swap out the remote URLs and inject our base64-cropped images from the fpss artifact.\n\u2022 element-screenshot-renderer.js: the report\u2019s HTML/JS template that takes each thumbnail URL and emits the <img> tag \u2013 by pairing it with the new data URIs we ensure the report embeds the images locally.\n\u2022 report-assets.js: when building the standalone HTML report we bundle or inline assets; this file must be aware of the new embedded thumbnails so that it doesn\u2019t try to copy external images.\n\u2022 devtools-report-assets.js: similar to report-assets.js, but for the Chrome DevTools Panel \u2013 it gathers and bundles report assets; it needs to pick up the new base64 thumbnails rather than slicing in external references.",
+        "bug_scenario": "When the \u201cImage elements do not have explicit width and height\u201d audit (unsized-images) runs, Lighthouse currently generates a series of small <img> tags in the report that hot-link back to the remote site for each thumbnail. This not only leaks external requests (breaking CSP/mixed-content on HTTPS), but also forces the report viewer to pull in external assets. The goal is to switch from hot-linking each image URL to embedding locally-generated, data-URI thumbnails cropped out of the single full-page screenshot (fpss) that Lighthouse already captures. That way no remote requests are made and the report is self-contained."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/image-elements.js",
+            "lighthouse-core/gather/gatherers/full-page-screenshot.js",
+            "lighthouse-core/computed/image-records.js",
+            "lighthouse-core/audits/screenshot-thumbnails.js",
+            "lighthouse-core/audits/image-size-responsive.js",
+            "report/renderer/details-renderer.js",
+            "report/renderer/element-screenshot-renderer.js",
+            "clients/extension/devtools-entry.js",
+            "clients/extension/devtools-report-assets.js",
+            "report/generator/report-assets.js"
+        ],
+        "explanation": "\n\u2022 gather/gatherers/image-elements.js and gather/gatherers/full-page-screenshot.js collect the raw `<img>` bounding boxes and the full-page screenshot artifact.  \n\u2022 computed/image-records.js turns those DOM captures into a uniform record list.  \n\u2022 audits/screenshot-thumbnails.js uses the records and fpss to build thumbnail data (currently it hot-links to record.src for some detail types).  \n\u2022 audits/image-size-responsive.js (the audit that flags missing width/height) assembles the detail items and plugs in the snippet/src that ends up hot-linking.  \n\u2022 report/renderer/details-renderer.js reads any column of type=thumbnail and invokes the thumbnail logic to emit an `<img>` tag.  \n\u2022 report/renderer/element-screenshot-renderer.js formats the screenshot-derived image for a data URI.  \n\u2022 clients/extension/devtools-entry.js and devtools-report-assets.js bundle and register the report-renderer in the DevTools panel, so changes in rendering flow through to the UI.  \n\u2022 report/generator/report-assets.js in the HTML-report generator is responsible for inlining or copying assets; it too must be updated to allow embedding the new data-URI thumbnails in standalone reports.  \nAll these files form the pipeline that currently ends up hot-linking the remote `src` and must be updated to crop from the fpss, convert to base64, and embed locally instead.",
+        "bug_scenario": "When running the Lighthouse audit \u201cImage elements do not have explicit width and height\u201d in DevTools, the report currently displays a tiny `<img>` thumbnail for each offending `<img>` that simply hot-links back to the site\u2019s original `src`. On an HTTPS report this breaks CSP/mixed-content rules and leaks remote requests. The goal is to extract each failing image\u2019s bounding box from the full-page screenshot (fpss), resize it to a thumbnail, and embed it as a `data:image/...` URI so no external requests are made."
+    }
+}

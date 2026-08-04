@@ -1,0 +1,37 @@
+diff --git a/src/resources/filters/common/url.lua b/src/resources/filters/common/url.lua
+index 3e3a08852..4343170ae 100644
+--- a/src/resources/filters/common/url.lua
++++ b/src/resources/filters/common/url.lua
+@@ -12,4 +12,10 @@ function urldecode(url)
+   return url
+ end
+ 
++-- Sanitize a URL for use as a filename
++function url_to_filename(url)
++  -- Replace unsafe characters with underscores
++  return url:gsub("[/:%%?&=#+]", "_")
++end
++
+ 
+diff --git a/src/resources/filters/quarto-finalize/mediabag.lua b/src/resources/filters/quarto-finalize/mediabag.lua
+index cd7c42c09..71910b955 100644
+--- a/src/resources/filters/quarto-finalize/mediabag.lua
++++ b/src/resources/filters/quarto-finalize/mediabag.lua
+@@ -13,7 +13,9 @@ function mediabag()
+         if contents ~= nil then
+           
+           local mediabagDir = param("mediabag-dir", nil)
+-          local mediaFile = pandoc.path.join{mediabagDir, el.src}
++          -- sanitize the URL for use as a filename
++          local safeFilename = url_to_filename(el.src)
++          local mediaFile = pandoc.path.join{mediabagDir, safeFilename}
+ 
+           local file = _quarto.file.write(mediaFile, contents)
+           if not file then
+@@ -25,4 +27,4 @@ function mediabag()
+       end
+     end
+   }
+-end
+\ No newline at end of file
++end

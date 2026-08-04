@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/html/renderer/performance-category-renderer.js",
+            "lighthouse-core/report/html/renderer/category-renderer.js",
+            "lighthouse-core/report/html/html-report-assets.js"
+        ],
+        "explanation": "All of the rendering and styling for the opportunities table lives in the HTML report code: \n\n\u2022 performance-category-renderer.js constructs the Opportunity rows (including placing the sparkline, savings text, and labels). Any mis-placement or missing sparkline logic for the redirects audit would originate here.  \n\n\u2022 category-renderer.js defines the overall table structure and header cells (column widths, class names like .lh-opportunity-list/ .lh-opportunity), so a regression in how the last row\u2019s cells get sized or styled would also need to be addressed here.  \n\n\u2022 html-report-assets.js inlines the CSS rules for all .lh-opportunity elements, sparklines, and cell layouts. If the savings text wraps or the row collapses because of a missing or incorrect CSS rule, the fix likely requires adjusting these styles.\n\nTogether these files control how the \u201cAvoid multiple page redirects\u201d opportunity is laid out and styled in the final HTML report, so they are the primary candidates for investigation and patching.",
+        "bug_scenario": "When you generate a Lighthouse performance report for a page that has multiple sequential redirects, the \u201cAvoid multiple page redirects\u201d row in the \u201cOpportunities\u201d section is rendered in a compressed layout. The sparkline bar is missing, the savings text (\u201cPotential savings\u201d / \u201c1,550 ms\u201d) wraps onto two lines, and the row height shrinks, making it look squeezed compared to the other opportunity rows."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/report/html/html-report-assets.js",
+            "lighthouse-core/report/html/renderer/details-renderer.js",
+            "lighthouse-core/report/html/renderer/performance-category-renderer.js"
+        ],
+        "explanation": "All of the logic and styling for the \u2018Opportunities\u2019 table in the HTML report lives under lighthouse-core/report/html.  \n\n\u2022 html-report-assets.js contains the CSS that sets up the table layout, row heights, and sparkline container styles (e.g. the .lh-sparkline cell\u2019s display, padding, and overflow rules).  A mis-tweak here can collapse the bar and wrap its label.  \n\n\u2022 details-renderer.js provides the template for each opportunity row, injecting the sparkline <div> and savings text. If the cell markup or class names are off, the CSS won\u2019t apply uniformly.  \n\n\u2022 performance-category-renderer.js orchestrates which audits appear in the Opportunities section (including the redirects audit) and applies classes that drive the row\u2019s styling. A mistake in how the redirects audit is classified or rendered here can lead to a row that lacks the correct CSS hooks, causing the visual squish.",
+        "bug_scenario": "When you generate a Lighthouse performance report against a URL that issues multiple redirects, the last opportunity row (\u201cAvoid multiple page redirects\u201d) is rendered in a compressed, two-line layout instead of matching the other rows. Its sparkline bar area collapses, the \u201cPotential savings\u201d text wraps onto two lines, and the row height shrinks, making it look squished compared to the other opportunity rows."
+    }
+}

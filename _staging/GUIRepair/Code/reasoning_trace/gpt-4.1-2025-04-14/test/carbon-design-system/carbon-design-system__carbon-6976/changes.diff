@@ -1,0 +1,43 @@
+diff --git a/packages/react/src/components/OverflowMenu/OverflowMenu.js b/packages/react/src/components/OverflowMenu/OverflowMenu.js
+index 1e807fe5..445f5288 100644
+--- a/packages/react/src/components/OverflowMenu/OverflowMenu.js
++++ b/packages/react/src/components/OverflowMenu/OverflowMenu.js
+@@ -227,7 +227,7 @@ class OverflowMenu extends Component {
+     onKeyDown: () => {},
+     onClose: () => {},
+     onOpen: () => {},
+-    tabIndex: 0,
++    // Remove default tabIndex, so it's only set if explicitly provided
+     menuOffset: getMenuOffset,
+     menuOffsetFlip: getMenuOffset,
+     light: false,
+@@ -533,9 +533,18 @@ class OverflowMenu extends Component {
+       onKeyDown: this.handleKeyDown,
+       className: overflowMenuIconClasses,
+       'aria-label': iconDescription,
+-      focusable: 'false', // Prevent `<svg>` in trigger icon from getting focus for IE11
+     };
+ 
++    // Only add focusable="false" if IconElement is an SVG or a function that returns SVG
++    const isSVGElement =
++      IconElement && (
++        (typeof IconElement === 'string' && IconElement === 'svg') ||
++        (IconElement.type && IconElement.type === 'svg')
++      );
++    if (isSVGElement) {
++      iconProps.focusable = 'false'; // Prevent `<svg>` in trigger icon from getting focus for IE11
++    }
++
+     return (
+       <ClickListener onClickOutside={this.handleClickOutside}>
+         <button
+@@ -548,7 +557,8 @@ class OverflowMenu extends Component {
+           onClick={this.handleClick}
+           aria-label={ariaLabel}
+           id={id}
+-          tabIndex={tabIndex}
++          // Only add tabIndex if explicitly provided
++          {...(typeof tabIndex !== 'undefined' ? { tabIndex } : {})}
+           ref={mergeRefs(this._triggerRef, ref)}>
+           <IconElement {...iconProps}>
+             {iconDescription && <title>{iconDescription}</title>}

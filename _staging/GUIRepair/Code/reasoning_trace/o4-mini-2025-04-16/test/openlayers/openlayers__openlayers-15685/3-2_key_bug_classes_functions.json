@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer",
+            "src/ol/style/Style.js//Style"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.renderTileImage_",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.postRender",
+            "src/ol/style/Style.js//Style.setFill"
+        ],
+        "explanation": "1. CanvasVectorTileLayerRenderer.renderTileImage_ and postRender are responsible for drawing each vector\u2010tile onto the canvas. They build and cache instruction lists (including fill and stroke) from the layer\u2019s Style, then paint them. When setFill() is called on a Style, the new fill instructions get appended to the existing canvas without clearing the old instructions, so every change draws an additional translucent overlay instead of replacing the prior one. 2. Style.setFill updates the Style\u2019s fill property and fires a change event, but CanvasVectorTileLayerRenderer only listens for image\u2010style changes (handleStyleImageChange_) and font changes\u2014not fill or stroke changes\u2014so it never fully invalidates the tile\u2010image cache before re-rendering. 3. The fix must clear or rebuild the executorGroup (the instruction cache) when fill or stroke changes occur (add a listener for 'change:fill' and 'change:stroke') and ensure renderTileImage_ wipes the old canvas before drawing the new fill layer.",
+        "bug_scenario": "When a semi-transparent Fill is added to an ol.layer.VectorTile by calling setFill(), the canvas renderer draws an extra translucent \u201cghost\u201d layer over each tile on top of everything else (you see a faint white overlay on the map tiles). Removing the Fill stops the ghost layer, but you need the Fill for styling. On hover/setFill calls the map even flickers, because the fill gets redrawn on top of an existing one instead of replacing it."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer",
+            "src/ol/style/Style.js//Style"
+        ],
+        "bug_functions": [
+            "src/ol/style/Style.js//Style.setFill",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.getTileImage",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.tileImageNeedsRender_",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.renderTileImage_"
+        ],
+        "explanation": "1. Style.setFill (in src/ol/style/Style.js) is what the user calls to add or change the layer\u2019s fill.  That method fires a style change event which the vector-tile renderer listens for. 2. CanvasVectorTileLayerRenderer.getTileImage and tileImageNeedsRender_ (in src/ol/renderer/canvas/VectorTileLayer.js) determine when a tile\u2019s image cache needs updating \u2014 adding any fill style triggers those to re-render every tile. 3. CanvasVectorTileLayerRenderer.renderTileImage_ then draws the tile image by iterating features; in hybrid mode it draws all polygon/line features into a separate offscreen canvas.  Because setFill only adds a fill style, the renderer builds an image containing just the semi-transparent fills and draws it on top of the existing tile.  This creates the unwanted \u201cghost\u201d overlay and flicker on hover when tiles are marked dirty and re-rendered repeatedly.",
+        "bug_scenario": "When applying a semi-transparent Fill style to a VectorTile layer (either by passing fill in the style constructor or by calling setFill() later), an extra \u201cghost\u201d layer of the same tiles is painted on top of the map.  In hybrid render mode the tile polygons and lines are drawn as images; adding a fill style causes the renderer to generate a separate image canvas with only the fills, which is then composited above the base tiles.  The result is a faint overlay covering the entire vector tile layer, and on hover/interaction the tiles continuously re-render (flicker)."
+    }
+}

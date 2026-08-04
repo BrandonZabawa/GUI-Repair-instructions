@@ -1,0 +1,54 @@
+diff --git a/src/ol/webgl/TileTexture.js b/src/ol/webgl/TileTexture.js
+index 6dea0f11db..90f8a52adb 100644
+--- a/src/ol/webgl/TileTexture.js
++++ b/src/ol/webgl/TileTexture.js
+@@ -188,18 +188,28 @@ class TileTexture extends EventTarget {
+       const texture = gl.createTexture();
+       this.textures.push(texture);
+ 
+-      const bandCount =
+-        textureIndex < textureCount - 1 ? 4 : this.bandCount % 4;
++      // For the last texture, if bandCount % 4 === 0, we still want 4 bands, not 0
++      let bandCount;
++      if (textureIndex < textureCount - 1) {
++        bandCount = 4;
++      } else {
++        bandCount = this.bandCount % 4 === 0 ? 4 : this.bandCount % 4;
++      }
+       textureDataArrays[textureIndex] = new DataType(pixelCount * bandCount);
+     }
+ 
+     const valueCount = pixelCount * this.bandCount;
+     for (let dataIndex = 0; dataIndex < valueCount; ++dataIndex) {
+       const bandIndex = dataIndex % this.bandCount;
+-      const textureBandIndex = bandIndex % 4;
+       const textureIndex = Math.floor(bandIndex / 4);
+-      const bandCount =
+-        textureIndex < textureCount - 1 ? 4 : this.bandCount % 4;
++      // For the last texture, if bandCount % 4 === 0, we still want 4 bands, not 0
++      let bandCount;
++      if (textureIndex < textureCount - 1) {
++        bandCount = 4;
++      } else {
++        bandCount = this.bandCount % 4 === 0 ? 4 : this.bandCount % 4;
++      }
++      const textureBandIndex = bandIndex % 4;
+       const pixelIndex = Math.floor(dataIndex / this.bandCount);
+       textureDataArrays[textureIndex][
+         pixelIndex * bandCount + textureBandIndex
+@@ -207,8 +217,13 @@ class TileTexture extends EventTarget {
+     }
+ 
+     for (let textureIndex = 0; textureIndex < textureCount; ++textureIndex) {
+-      const bandCount =
+-        textureIndex < textureCount - 1 ? 4 : this.bandCount % 4;
++      // For the last texture, if bandCount % 4 === 0, we still want 4 bands, not 0
++      let bandCount;
++      if (textureIndex < textureCount - 1) {
++        bandCount = 4;
++      } else {
++        bandCount = this.bandCount % 4 === 0 ? 4 : this.bandCount % 4;
++      }
+       const texture = this.textures[textureIndex];
+       const data = textureDataArrays[textureIndex];
+       uploadDataTexture(helper, texture, data, this.size, bandCount);

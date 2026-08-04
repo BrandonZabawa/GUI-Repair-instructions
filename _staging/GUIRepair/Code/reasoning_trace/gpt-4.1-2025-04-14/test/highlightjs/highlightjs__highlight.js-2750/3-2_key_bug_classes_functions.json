@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/javascript.js",
+            "src/languages/typescript.js"
+        ],
+        "bug_functions": [
+            "src/languages/javascript.js//SUBST",
+            "src/languages/javascript.js//TEMPLATE_STRING",
+            "src/languages/javascript.js//HTML_TEMPLATE",
+            "src/languages/javascript.js//CSS_TEMPLATE"
+        ],
+        "explanation": "The core of the bug is in how template literal substitutions (${ ... }) are parsed in the language definition for JavaScript (and TypeScript, which inherits from JavaScript). The relevant mode is the 'SUBST' object in 'src/languages/javascript.js', which defines how to match and parse code inside ${ ... }. If this mode does not correctly handle nested braces or complex expressions, highlighting will break as described. 'TEMPLATE_STRING', 'HTML_TEMPLATE', and 'CSS_TEMPLATE' are the modes responsible for parsing template literals and embedding the 'SUBST' mode, so any fixes to brace matching or nesting logic would need to be made here as well. The TypeScript definition extends and reuses the JavaScript logic, so both files are relevant. The bug is not in the ECMAScript keywords/types definitions, but in the template literal and substitution parsing modes.",
+        "bug_scenario": "The bug scenario is that the syntax highlighter incorrectly parses right curly braces ('}') inside JavaScript/TypeScript template literal expressions (i.e., code inside ${ ... }). When an expression contains a right curly brace, especially with nested ternaries or objects, the highlighter prematurely ends the highlighting of the expression, resulting in incorrect coloring for the rest of the code. This is visible in the first image, where the highlighting breaks after the object literal, and the rest is incorrectly highlighted as a string. In contrast, the second image (from VS Code) shows the correct behavior, with proper highlighting inside and after the template literal expressions, even with nested braces."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/javascript.js//SUBST",
+            "src/languages/javascript.js//TEMPLATE_STRING"
+        ],
+        "bug_functions": [
+            "src/languages/javascript.js//export default function"
+        ],
+        "explanation": "The core of the bug lies in how template literal expressions are parsed and highlighted. In 'src/languages/javascript.js', the 'SUBST' mode (object) defines how substitution/interpolation blocks (${ ... }) inside template strings are parsed\u2014its 'begin' and 'end' patterns and 'contains' field are crucial. The 'TEMPLATE_STRING' mode defines the overall handling of backtick-quoted strings (template literals) and includes 'SUBST' as a child. Incorrect handling of nested or inner curly braces within the 'SUBST' pattern leads to the observed bug. The main export function (export default function) sets up the language definition and is responsible for assembling and returning these modes; changes here may also be required to correctly nest and balance curly braces inside expressions. The TypeScript file is a thin wrapper that imports and extends the JS language definition, so the fix should be made in the JavaScript language definition.",
+        "bug_scenario": "The bug scenario is that when using template literals with embedded expressions in JavaScript/TypeScript, the syntax highlighter incorrectly treats a right curly brace `}` inside the expression as the end of the interpolation, causing the rest of the expression to be highlighted as a string. This is especially problematic when the embedded expression is a more complex JavaScript expression such as an object, function, or when nested template literals are used. In the bug images, the incorrect highlighting is visible: the highlighter stops considering `${ ... }` as an expression after the first `}`, even if more content belonging to the expression follows. The correct behavior (as shown in the VS Code screenshot) is to keep parsing until the actual end of the template literal expression."
+    }
+}

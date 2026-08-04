@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js",
+            "lib/features/modeling/behavior/AttachEventBehavior.js",
+            "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js"
+        ],
+        "explanation": "The root of the problem is in the copy/paste implementation. BpmnCopyPaste.js orchestrates how elements are cloned and re-created on the canvas, but doesn\u2019t propagate the attachedToRef relationship when pasting. ModdleCopy.js is responsible for deep-cloning the BPMN model objects, yet the paste step in BpmnCopyPaste never picks up the cloned attachedToRef property and so creates an unbound event. During normal drag-create of a boundary event, AttachEventBehavior.js and CreateBoundaryEventBehavior.js listen for boundary event placement and perform the actual re-attachment to a target flow node. However, those behaviors aren\u2019t invoked during paste. To fix the bug one needs to adjust BpmnCopyPaste.js (and possibly ModdleCopy.js) to preserve and reapply attachedToRef on paste, or explicitly invoke the attach routines (from AttachEventBehavior) when re-creating a boundary event.",
+        "bug_scenario": "When a Boundary Event that is attached to a Task is copied (together with that Task) via the copy-paste feature, the pasted Boundary Event is not re-attached to the pasted Task. Instead it ends up floating next to it. The expected behavior is that the pasted Boundary Event would automatically attach to the new Task copy."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js",
+            "lib/features/modeling/behavior/ImportDockingFix.js",
+            "lib/features/modeling/cmd/UpdateFlowNodeRefsHandler.js"
+        ],
+        "explanation": "\u2022 BpmnCopyPaste.js: orchestrates BPMN-specific copy/paste. It collects and re-creates shapes and business objects, but doesn\u2019t update the boundaryEvent\u2019s attachedToRef to the newly pasted task.\n\u2022 ModdleCopy.js: clones the underlying BPMN moddle elements (including attachedToRef). It currently preserves the old reference, so the pasted boundary event continues pointing at the original task.\n\u2022 ImportDockingFix.js: applied on import/paste to correct DI docking of attached shapes. It fixes graphical docking for imports, but isn\u2019t invoked (or insufficient) on paste for boundary events.\n\u2022 UpdateFlowNodeRefsHandler.js: responsible for updating semantic references (flow node refs, attachments) when elements are moved or reparented. Copy/paste should trigger similar logic to update attachedToRef but currently does not. These files need adjustment so that on paste the boundary event\u2019s semantic attachedToRef is re-targeted at the new task and its DI docking is corrected.",
+        "bug_scenario": "When you select a task and its attached boundary event, copy and then paste them, the new boundary event appears but remains floating \u2013 it is not re-attached to the pasted task. Semantically its attachedToRef still points at the original task, and the DI docking isn\u2019t corrected."
+    }
+}

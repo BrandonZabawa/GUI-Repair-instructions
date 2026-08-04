@@ -1,0 +1,53 @@
+{
+    "1/1": {
+        "lib/features/modeling/Modeling.js": [
+            {
+                "SEARCH": [
+                    "Modeling.prototype.connect = function(source, target, attrs, hints) {",
+                    "",
+                    "var bpmnRules = this._bpmnRules;",
+                    "",
+                    "if (!attrs) {",
+                    "attrs = bpmnRules.canConnect(source, target);",
+                    "}",
+                    "",
+                    "if (!attrs) {",
+                    "return;",
+                    "}",
+                    "",
+                    "return this.createConnection(source, target, attrs, source.parent, hints);",
+                    "};"
+                ],
+                "REPLACE": [
+                    "Modeling.prototype.connect = function(source, target, attrs, hints) {",
+                    "",
+                    "  var bpmnRules = this._bpmnRules;",
+                    "",
+                    "  if (!attrs) {",
+                    "    attrs = bpmnRules.canConnect(source, target);",
+                    "  }",
+                    "",
+                    "  if (!attrs) {",
+                    "    return;",
+                    "  }",
+                    "",
+                    "  // Determine correct parent for the connection",
+                    "  var parent = source.parent;",
+                    "",
+                    "  // If creating a SequenceFlow or MessageFlow, ensure parent is a process, not a participant",
+                    "  if (attrs && attrs.type === 'bpmn:SequenceFlow') {",
+                    "    // If source.parent is a Participant, use its processRef as parent",
+                    "    if (source.parent && source.parent.type === 'bpmn:Participant' && source.parent.businessObject.processRef) {",
+                    "      parent = source.parent.businessObject.processRef.di && source.parent.businessObject.processRef.di.$parent",
+                    "        ? source.parent.businessObject.processRef.di.$parent",
+                    "        : source.parent.businessObject.processRef;",
+                    "    }",
+                    "  }",
+                    "",
+                    "  return this.createConnection(source, target, attrs, parent, hints);",
+                    "};"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-css.js//Prism.languages.css.url",
+            "components/prism-css.min.js//url"
+        ],
+        "explanation": "The bug originates in the CSS grammar definition (components/prism-css.js). The token named \u201curl\u201d is responsible for matching url(\u2026) functions and then classifying their contents either as a quoted string (using the variable `string`) or as an unquoted URL. Because of how its RegExp is constructed (the order of alternatives, lack of proper anchoring, or greedy behavior), Prism fails to recognize the entire quoted URL with percent-encoded characters as one string. Fixing this requires editing the \u201curl\u201d token\u2019s pattern (and its `inside.string` subpattern) so that any quoted URL inside url(\u2026) is always captured in full rather than split on punctuation or other sequences. The same change must also be reflected in the minified file (components/prism-css.min.js).",
+        "bug_scenario": "When highlighting CSS containing an @import url(\u2026) rule with a quoted URL that includes percent-encoded characters and semicolons (for example, Google Fonts URLs), Prism\u2019s CSS grammar breaks the URL up into multiple tokens instead of treating the entire quoted string as one URL token. In the expected screenshot the whole URL (including the quotes and all encoded sequences) is highlighted as a single string inside the url(\u2026) function. In the actual screenshot, only the \u201chttps\u201d prefix is recognized as a string and the rest of the URL is split into separate tokens (properties, punctuation, etc.), breaking the visual consistency."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-css.js//Prism.languages.css"
+        ],
+        "bug_functions": [
+            "components/prism-css.js//string (the quoted\u2010string regex)",
+            "components/prism-css.js//Prism.languages.css.url (the URL token definition)"
+        ],
+        "explanation": "The root of the problem lies in the CSS grammar defined in components/prism-css.js. The variable `string` holds the regex for matching quoted strings, and the `Prism.languages.css.url` token is built using that `string.source` combined with another pattern. Because of the way the `inside` definitions and regex alternatives are ordered, parts of the quoted URL (like \u2018:\u2019, \u2018;\u2019, and encoded characters) end up matching the generic punctuation or function patterns instead of the string subpattern. To fix the highlighting, one must adjust the `string` regex or the `url` token\u2019s pattern/inside ordering so that the entire quoted URL content is always consumed by the string subpattern (alias \u2018url\u2019) before any other subpattern can match inside the parentheses.",
+        "bug_scenario": "In a CSS code block containing an @import with url('...'), the entire URL (including colons, semicolons and query parameters) should be tokenized as a single string alias \u201curl\u201d. In the expected screenshot, the entire quoted URL is highlighted uniformly. In the actual screenshot, the quoted URL is broken into multiple tokens\u2014colons, semicolons and parts of the path are treated as punctuation or identifiers rather than part of the string. This indicates that the CSS grammar\u2019s url\u2010matching rule is failing to keep the inner URL content together as one string."
+    }
+}

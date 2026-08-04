@@ -1,0 +1,103 @@
+diff --git a/lib/features/copy-paste/BpmnCopyPaste.js b/lib/features/copy-paste/BpmnCopyPaste.js
+index f2c358ab..2788acaa 100644
+--- a/lib/features/copy-paste/BpmnCopyPaste.js
++++ b/lib/features/copy-paste/BpmnCopyPaste.js
+@@ -131,36 +131,39 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+     references = {};
+   });
+ 
+-  eventBus.on('copyPaste.pasteElement', function(context) {
+-    var cache = context.cache,
+-        descriptor = context.descriptor,
+-        oldBusinessObject = descriptor.oldBusinessObject,
+-        newBusinessObject;
++eventBus.on('copyPaste.pasteElement', function(context) {
++var cache = context.cache,
++descriptor = context.descriptor,
++oldBusinessObject = descriptor.oldBusinessObject,
++newBusinessObject;
+ 
+-    // do NOT copy business object if external label
+-    if (isLabel(descriptor)) {
+-      descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);
++// do NOT copy business object if external label
++if (isLabel(descriptor)) {
++descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);
+ 
+-      return;
+-    }
++return;
++}
+ 
+-    newBusinessObject = bpmnFactory.create(oldBusinessObject.$type);
++newBusinessObject = bpmnFactory.create(oldBusinessObject.$type);
+ 
+-    descriptor.businessObject = moddleCopy.copyElement(
+-      oldBusinessObject,
+-      newBusinessObject
+-    );
++// Ensure unique ID
++newBusinessObject.id = bpmnFactory.nextId(oldBusinessObject.$type);
+ 
+-    // resolve references e.g. default sequence flow
+-    resolveReferences(descriptor, cache);
++descriptor.businessObject = moddleCopy.copyElement(
++oldBusinessObject,
++newBusinessObject
++);
+ 
+-    copyProperties(descriptor, newBusinessObject, [
+-      'isExpanded',
+-      'name'
+-    ]);
++// resolve references e.g. default sequence flow
++resolveReferences(descriptor, cache);
+ 
+-    removeProperties(descriptor, 'oldBusinessObject');
+-  });
++copyProperties(descriptor, newBusinessObject, [
++'isExpanded',
++'name'
++]);
++
++removeProperties(descriptor, 'oldBusinessObject');
++});
+ 
+ }
+ 
+@@ -175,4 +178,4 @@ BpmnCopyPaste.$inject = [
+ 
+ function isLabel(element) {
+   return !!element.labelTarget;
+-}
++}
+\ No newline at end of file
+diff --git a/lib/features/modeling/Modeling.js b/lib/features/modeling/Modeling.js
+index 0c7619e6..f7e3a62c 100644
+--- a/lib/features/modeling/Modeling.js
++++ b/lib/features/modeling/Modeling.js
+@@ -95,10 +95,13 @@ Modeling.prototype.updateModdleProperties = function(element, moddleElement, pro
+ };
+ 
+ Modeling.prototype.updateProperties = function(element, properties) {
+-  this._commandStack.execute('element.updateProperties', {
+-    element: element,
+-    properties: properties
+-  });
++if (properties.id) {
++properties.id = element.businessObject.id; // Preserve original ID
++}
++this._commandStack.execute('element.updateProperties', {
++element: element,
++properties: properties
++});
+ };
+ 
+ Modeling.prototype.resizeLane = function(laneShape, newBounds, balanced) {
+@@ -199,4 +202,4 @@ Modeling.prototype.setColor = function(elements, colors) {
+     elements: elements,
+     colors: colors
+   });
+-};
++};
+\ No newline at end of file

@@ -1,0 +1,150 @@
+diff --git a/packages/components/src/components/code-snippet/code-snippet.js b/packages/components/src/components/code-snippet/code-snippet.js
+index ec420821..9038a569 100644
+--- a/packages/components/src/components/code-snippet/code-snippet.js
++++ b/packages/components/src/components/code-snippet/code-snippet.js
+@@ -28,6 +28,21 @@ class CodeSnippet extends mixin(
+     super(element, options);
+ 
+     this._initCodeSnippet();
++
++    // If disabled, add disabled class and do not attach event listeners
++    if (this.element.hasAttribute('disabled') || this.element.classList.contains(`${settings.prefix}--snippet--disabled`)) {
++      this.element.classList.add(`${settings.prefix}--snippet--disabled`);
++      this.element.setAttribute('aria-disabled', 'true');
++      // Optionally, disable all buttons inside
++      const btns = this.element.querySelectorAll('button, [tabindex]');
++      btns.forEach(btn => {
++        btn.setAttribute('disabled', 'true');
++        btn.setAttribute('tabindex', '-1');
++        btn.setAttribute('aria-disabled', 'true');
++      });
++      return;
++    }
++
+     this.element
+       .querySelector(this.options.classExpandBtn)
+       .addEventListener('click', (evt) => this._handleClick(evt));
+@@ -90,6 +105,7 @@ class CodeSnippet extends mixin(
+       classExpandBtn: `.${prefix}--snippet-btn--expand`,
+       classExpandText: `.${prefix}--snippet-btn--text`,
+       classHideExpand: `${prefix}--snippet-btn--expand--hide`,
++      classDisabled: `${prefix}--snippet--disabled`,
+     };
+   }
+ }
+diff --git a/packages/react/src/components/CodeSnippet/CodeSnippet.js b/packages/react/src/components/CodeSnippet/CodeSnippet.js
+index 38452e82..fea70f4f 100644
+--- a/packages/react/src/components/CodeSnippet/CodeSnippet.js
++++ b/packages/react/src/components/CodeSnippet/CodeSnippet.js
+@@ -33,6 +33,7 @@ function CodeSnippet({
+   showLessText,
+   hideCopyButton,
+   wrapText,
++  disabled = false,
+   ...rest
+ }) {
+   const [expandedCode, setExpandedCode] = useState(false);
+@@ -114,14 +115,18 @@ function CodeSnippet({
+     [`${prefix}--snippet--light`]: light,
+     [`${prefix}--snippet--no-copy`]: hideCopyButton,
+     [`${prefix}--snippet--wraptext`]: wrapText,
++    [`${prefix}--snippet--disabled`]: disabled,
+   });
+ 
+   const expandCodeBtnText = expandedCode ? showLessText : showMoreText;
+ 
+   if (type === 'inline') {
+-    if (hideCopyButton) {
++    if (hideCopyButton || disabled) {
+       return (
+-        <span className={codeSnippetClasses}>
++        <span
++          className={codeSnippetClasses}
++          aria-disabled={disabled ? 'true' : undefined}
++        >
+           <code id={uid}>{children}</code>
+         </span>
+       );
+@@ -134,25 +139,35 @@ function CodeSnippet({
+         aria-label={copyLabel || ariaLabel}
+         aria-describedby={uid}
+         className={codeSnippetClasses}
+-        feedback={feedback}>
++        feedback={feedback}
++        disabled={disabled}
++        tabIndex={disabled ? -1 : undefined}
++        aria-disabled={disabled ? 'true' : undefined}
++      >
+         <code id={uid}>{children}</code>
+       </Copy>
+     );
+   }
+ 
+   return (
+-    <div {...rest} className={codeSnippetClasses}>
++    <div
++      {...rest}
++      className={codeSnippetClasses}
++      aria-disabled={disabled ? 'true' : undefined}
++    >
+       <div
+         ref={codeContainerRef}
+         role={type === 'single' ? 'textbox' : null}
+-        tabIndex={type === 'single' ? 0 : null}
++        tabIndex={type === 'single' && !disabled ? 0 : null}
+         className={`${prefix}--snippet-container`}
+         aria-label={ariaLabel || copyLabel || 'code-snippet'}
+-        onScroll={(type === 'single' && handleScroll) || null}>
++        onScroll={(type === 'single' && handleScroll) || null}
++      >
+         <code>
+           <pre
+             ref={codeContentRef}
+-            onScroll={(type === 'multi' && handleScroll) || null}>
++            onScroll={(type === 'multi' && handleScroll) || null}
++          >
+             {children}
+           </pre>
+         </code>
+@@ -167,7 +182,7 @@ function CodeSnippet({
+       {hasRightOverflow && (
+         <div className={`${prefix}--snippet__overflow-indicator--right`} />
+       )}
+-      {!hideCopyButton && (
++      {!hideCopyButton && !disabled && (
+         <CopyButton
+           onClick={onClick}
+           feedback={feedback}
+@@ -179,7 +194,11 @@ function CodeSnippet({
+           kind="ghost"
+           size="field"
+           className={`${prefix}--snippet-btn--expand`}
+-          onClick={() => setExpandedCode(!expandedCode)}>
++          onClick={() => setExpandedCode(!expandedCode)}
++          disabled={disabled}
++          tabIndex={disabled ? -1 : undefined}
++          aria-disabled={disabled ? 'true' : undefined}
++        >
+           <span className={`${prefix}--snippet-btn--text`}>
+             {expandCodeBtnText}
+           </span>
+@@ -266,6 +285,11 @@ CodeSnippet.propTypes = {
+    * Specify whether or not to wrap the text.
+    */
+   wrapText: PropTypes.bool,
++
++  /**
++   * Specify whether the CodeSnippet should be disabled.
++   */
++  disabled: PropTypes.bool,
+ };
+ 
+ CodeSnippet.defaultProps = {
+@@ -273,6 +297,7 @@ CodeSnippet.defaultProps = {
+   showMoreText: 'Show more',
+   showLessText: 'Show less',
+   wrapText: false,
++  disabled: false,
+ };
+ 
+ export default CodeSnippet;

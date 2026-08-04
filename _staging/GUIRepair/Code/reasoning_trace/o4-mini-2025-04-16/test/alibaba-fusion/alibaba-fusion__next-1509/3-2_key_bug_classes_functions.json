@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/dialog/dialog.jsx//Dialog"
+        ],
+        "bug_functions": [
+            "src/dialog/dialog.jsx//render"
+        ],
+        "explanation": "The Dialog component never reads or applies the popupContainer setting from ConfigProvider. In src/dialog/dialog.jsx, the Dialog class\u2019s render method builds newOverlayProps for the underlying Overlay, but it does not include a container or popupContainer prop. As a result, Overlay defaults to rendering at the document body rather than the user-specified container. To fix this, Dialog.render must accept and forward popupContainer (or container) from context or props into newOverlayProps so that Overlay will mount inside the correct DOM node.",
+        "bug_scenario": "In the provided CodePen example, wrapping the Dialog inside a ConfigProvider with a custom popupContainer (an overflowing div with id \"test\") does not relocate the Dialog\u2019s overlay into that container. Instead, the Dialog still renders its Overlay at the page root, causing it to appear outside the scrollable region and misaligned with the intended container."
+    },
+    "2": {
+        "bug_classes": [
+            "src/dialog/dialog.jsx//Dialog"
+        ],
+        "bug_functions": [
+            "src/dialog/dialog.jsx//Dialog.render"
+        ],
+        "explanation": "The Dialog class never declares or reads a popupContainer prop\u2014even though ConfigProvider.config will inject that prop into all wrapped components\u2014so its render() method builds newOverlayProps without forwarding popupContainer (or getContainer) to the underlying Overlay. As a result, the Overlay always attaches to the default container (usually <body>) instead of the one configured by ConfigProvider. To fix this, Dialog.propTypes and defaultProps should include popupContainer, and its render() should extract popupContainer from this.props and pass it into newOverlayProps (e.g. as Overlay's getContainer or popupContainer prop).",
+        "bug_scenario": "In the reproduction, wrapping the Dialog component in a ConfigProvider with popupContainer=\"test\" and rendering inside a scrollable <div id=\"test\"> works correctly for DatePicker (its dropdown is mounted in #test), but the Dialog itself ignores the popupContainer setting. The dialog overlay, mask and content still mount to the default <body> container, so it doesn\u2019t appear inside the intended scrollable area and can\u2019t be clipped or scrolled as expected."
+    }
+}

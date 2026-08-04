@@ -1,0 +1,39 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/print/jsx.js",
+            "src/language-js/print/array.js",
+            "src/language-js/print/block.js",
+            "src/language-js/print/function.js",
+            "src/language-js/print/misc.js",
+            "src/language-js/print/object.js",
+            "src/language-js/print/template-literal.js",
+            "src/language-js/print/call-arguments.js",
+            "src/language-js/print/class.js",
+            "src/language-js/print/comment.js",
+            "src/language-js/print/member.js",
+            "src/language-js/print/module.js",
+            "src/language-js/print/property.js",
+            "src/language-js/print/statement.js",
+            "src/language-js/print/ternary.js",
+            "src/language-js/print/type-annotation.js",
+            "src/language-js/print/type-parameters.js",
+            "src/language-js/print/typescript.js",
+            "src/language-js/print/html-binding.js",
+            "src/language-js/index.js",
+            "src/language-js/printer-estree.js"
+        ],
+        "explanation": "The instability is specific to how JSX (JavaScript XML) formatting is being printed, especially regarding whitespace handling around special Unicode characters like the ideographic space (\\u3000). The JSX print logic is most likely implemented in 'src/language-js/print/jsx.js'. However, the JSX printer may delegate or share string-building/utilities with other files in the 'print/' directory and the main JS printer implementation. Furthermore, the main printer logic in 'src/language-js/printer-estree.js' and module-root 'src/language-js/index.js' are responsible for JS/JSX formatting orchestration. They may affect how whitespace or special characters are handled, and could cause or propagate instability with respect to formatting output, especially if line breaking, concatenation, or whitespace normalization is involved. Investigating and adjusting these files is necessary to fix the unstable formatting behavior for JSX with \\u3000.",
+        "bug_scenario": "The bug scenario involves unstable formatting of JSX code that contains the ideographic space character (\\u3000). When running Prettier on a file with such code, the output alternates between two different formats for the same line each time it is formatted. The attached image demonstrates this instability: the JSX containing an ideographic space toggles the whitespace alignment after running the formatter. Expected behavior is stable, repeatable output each time the code is formatted by Prettier."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/print/jsx.js",
+            "src/language-js/printer-estree.js",
+            "src/language-js/options.js",
+            "src/main/ast-to-doc.js"
+        ],
+        "explanation": "The bug is about unstable formatting that results from handling whitespace in JSX, especially involving Unicode spaces. The printing and whitespace handling for JSX are usually managed in the JSX printer: (1) `src/language-js/print/jsx.js`\u2014this file specifically deals with pretty-printing for JSX trees, responsible for spacing and line breaking; (2) `src/language-js/printer-estree.js`\u2014this is the core printer for JavaScript (and JSX) and controls how the AST is rendered, including recursion into JSX nodes; (3) `src/language-js/options.js`\u2014this may affect how whitespace or formatting in JSX is controlled or configured; (4) `src/main/ast-to-doc.js`\u2014this is the general conversion layer that determines how the AST is translated into Prettier's document model, which directly affects line breaks and whitespace rendering. The bug is tied to how these files process whitespace and JSX children containing non-breaking Unicode spaces. Fixing this instability would almost certainly involve changes to at least the JSX printer and possibly the printer-estree or AST-to-Doc logic.",
+        "bug_scenario": "The bug scenario involves unstable formatting in Prettier's output when there is a Unicode ideographic space (\\u3000) in JSX between two JSX elements and an expression. Specifically, when formatting a JSX element like `<span />\u3000{this.props.data.title}\u3000<span />`, Prettier (v1.19.1, using the babel parser) alternates its output between two states each time it formats: adding a newline before the ideographic space, then reverting, creating instability. This is visible in the animation, where repeated formatting toggles the space/newline location."
+    }
+}

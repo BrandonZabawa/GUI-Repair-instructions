@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/rules/no-unused-vars.js"
+        ],
+        "bug_functions": [
+            "lib/rules/no-unused-vars.js//variableHasRestProperty",
+            "lib/rules/no-unused-vars.js//getVariablesWithoutReadReferences",
+            "lib/rules/no-unused-vars.js//create"
+        ],
+        "explanation": "The `ignoreRestSiblings` option is supposed to suppress unused-variable warnings for any identifier that has a sibling RestElement in the same object pattern. Internally, the rule implements that by\n 1) using a helper (here named `variableHasRestProperty`) to detect if a given variable declaration came from an object pattern with a `...rest` sibling, and\n 2) filtering those variables out in `getVariablesWithoutReadReferences` when `ignoreRestSiblings` is true. However, the existing `variableHasRestProperty` logic only looks at object patterns in `VariableDeclaration` nodes\u2014it never recognizes the very similar `ObjectPattern` that appears in a function\u2019s parameter list. As a result, `ignoreRestSiblings` never applies when you destructure in a function signature. To fix this, `variableHasRestProperty` (and the overall visitor created in `create`) must be extended to detect RestElement siblings in `FunctionDeclaration`/`ArrowFunctionExpression` parameters as well as in variable declarations.",
+        "bug_scenario": "When you write a stateless React component that destructures its props in the function signature (e.g. `({ children, ...props })`), ESLint still warns that \u201cchildren is defined but never used\u201d even though you have `"
+    },
+    "2": {
+        "bug_classes": [
+            "lib/rules/no-unused-vars.js"
+        ],
+        "bug_functions": [
+            "lib/rules/no-unused-vars.js//getVariablesWithoutReadReferences",
+            "lib/rules/no-unused-vars.js//hasSiblingRestProperty",
+            "lib/rules/no-unused-vars.js//isLastParameter"
+        ],
+        "explanation": "The core of the rule lives in `getVariablesWithoutReadReferences`, which gathers all declared variables and then applies skip logic based on the rule options (`vars`, `args`, and `ignoreRestSiblings`). Inside that helper it calls a function (here called `hasSiblingRestProperty`) to detect when an object pattern contains a RestElement and to skip marking the sibling identifiers as unused. There is separate logic (`isLastParameter`) that handles the `args: 'after-used'` option for function parameters. Because the rest-sibling skip path is only wired up in the variable\u2010declarator visitor, object patterns in function arguments don\u2019t go through the `hasSiblingRestProperty` check. As a result, `children` in the function signature never gets skipped by the `ignoreRestSiblings` flag. To fix the bug, the rest\u2010sibling detection needs to be invoked in the function\u2010parameter path (e.g. extend the parameter visitor or integrate the same skip logic into `getVariablesWithoutReadReferences` for parameters).",
+        "bug_scenario": "In a React\u2010style function argument destructuring (e.g. `({ children, ...props }) => { \u2026 }`), the `ignoreRestSiblings` option of ESLint\u2019s `no-unused-vars` rule fails to suppress warnings on the \u201csibling\u201d identifier (`children`). In contrast, the same option correctly ignores siblings in a normal variable declaration (`const { x, ...rest } = someObj;`). The rule\u2019s logic that detects a RestElement and skips its sibling properties is only applied when walking `VariableDeclarator` nodes, not when walking function\u2010parameter patterns, so `children` is still flagged as unused."
+    }
+}

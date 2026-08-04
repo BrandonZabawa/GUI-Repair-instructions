@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/code-annotation.lua//codeMeta",
+            "src/resources/filters/quarto-pre/code-annotation.lua//code"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/code-annotation.lua//codeMeta",
+            "src/resources/filters/quarto-pre/code-annotation.lua//code"
+        ],
+        "explanation": "In code-annotation.lua there are two key Lua functions: codeMeta (which is supposed to add \\usepackage{tikz} and define \\circled when annotations exist) and code (which registers a Blocks walker that actually finds and strips annotations). However, the filter only returns the code() handler, so the Meta filter defined in codeMeta() is never registered or run. As a result, hasAnnotations may be true but TikZ is never included, and \\circled is never defined. To fix the bug you need to export both filters (Meta and Blocks) by returning { codeMeta(), code() } so that the LaTeX package and macro get injected.",
+        "bug_scenario": "The user is writing PDF output with code\u2010block annotations (the little circled numbers in the code and a matching definition list below). After upgrading to Quarto v1.3.336 the LaTeX pre-filter that should inject \\usepackage{tikz} and define the \\circled macro no longer runs. The PDF still compiles, but the circles and the stylized list items never appear (and the TikZ package is not loaded)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/code-annotation.lua",
+            "src/format/pdf/format-pdf.ts"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/code-annotation.lua//codeMeta",
+            "src/resources/filters/quarto-pre/code-annotation.lua//processLaTeXAnnotation",
+            "src/resources/filters/quarto-pre/code-annotation.lua//code",
+            "src/format/pdf/format-pdf.ts//codeAnnotationPostProcessor",
+            "src/format/pdf/format-pdf.ts//codeListAnnotationPostProcessor"
+        ],
+        "explanation": "The Lua pre-filter (code-annotation.lua) defines a codeMeta function that should inject \\usepackage{tikz} and a \\newcommand*\\circled macro when annotations are present, but codeMeta is never invoked or registered, so TikZ and the circled command never make it into the LaTeX header. The processLaTeXAnnotation function formats annotation comments for LaTeX but depends on the missing \\circled macro. The code() function orchestrates annotation detection but doesn\u2019t wire up codeMeta. In format-pdf.ts, the stubs codeAnnotationPostProcessor and codeListAnnotationPostProcessor are empty, so post-processing of inline code annotations and list annotations in PDF output isn\u2019t implemented. Together these functions are responsible for detecting annotations, injecting TikZ support, and rewriting annotated code/list output, so they must be updated or properly registered to fix the missing callouts in PDF.",
+        "bug_scenario": "In PDF output (Quarto v1.3.336), code annotations that should appear as circled numbers using TikZ are not rendered. The example code block shows inline callouts \u201c\u2460 \u2461 \u2462\u201d and a stylized list of annotation explanations below, but in the generated PDF the TikZ package isn\u2019t loaded, the \\circled command isn\u2019t defined, and the callouts/list styling fall back to plain text."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/VectorTile.js",
+            "src/ol/layer/VectorTileRenderType.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/source/VectorTile.js"
+        ],
+        "explanation": "The bug involves rendering artifacts (clipping between vector tiles) that only occur under certain conditions (renderMode: 'image' and browser zoom applied). The most relevant files are:\n\n- src/ol/layer/VectorTile.js: This is the main class defining the VectorTile layer, including renderMode handling\u2014it's likely relevant for managing tile rendering strategies.\n- src/ol/layer/VectorTileRenderType.js: This file likely enumerates or handles the different render modes (e.g., 'image', 'hybrid', 'vector'), making it critical when this specific renderMode is problematic.\n- src/ol/renderer/canvas/VectorTileLayer.js: Canvas rendering logic for VectorTile layers happens here. Any pixel alignment, scaling, or clipping issues likely originate or need to be addressed here.\n- src/ol/render/canvas/ImageBuilder.js: Since renderMode: 'image' creates an offscreen image for the vector tile, this builder likely sets up and draws the image, and may mishandle pixel boundaries or transforms during device pixel ratio changes.\n- src/ol/source/VectorTile.js: Defines how vector tiles are fetched and assembled, and may play a role in their bounding box alignment or handling under high-DPI/zoom transformations.\n\nThese files together control how vector tiles are split, rendered, and composited. Browser zoom affecting image mode strongly suggests the offscreen-to-canvas pipeline (ImageBuilder, VectorTileLayer) fails to account for browser scaling. Other files are unlikely to relate directly unless they delegate core tile rendering logic.",
+        "bug_scenario": "The animation (provided image) shows an issue where map vector tiles appear 'clipped' or misaligned at their edges, producing visible seams when the browser zoom is set above 100% and the renderMode is 'image' for VectorTile layers. The problem does not occur with renderMode 'hybrid' or at default browser zoom, suggesting the bug is in the tile rendering pipeline when adapting to browser DPI/scaling."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/VectorTile.js",
+            "src/ol/layer/VectorTileRenderType.js",
+            "src/ol/source/VectorTile.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "These files are related to the rendering pipeline for vector tiles in 'image' renderMode: 1) 'src/ol/layer/VectorTile.js' and 'src/ol/layer/VectorTileRenderType.js' define and handle the logic for vector tile layers and the modes (vector, image, hybrid), including the relevant option; 2) 'src/ol/source/VectorTile.js' is responsible for how vector tile data is fetched and managed, impacting how rendering can be clipped or composited; 3) 'src/ol/renderer/canvas/VectorTileLayer.js' is the primary file for canvas-based tile drawing logic, including rendering and tile stitching, where handling for device pixel ratio and browser zoom should occur; 4) 'src/ol/renderer/Layer.js' may be involved in transforming or compositing layers, influencing the handling of clip boundaries; 5) 'src/ol/render/canvas/ImageBuilder.js' helps with composing images for use as tiles, where the dimensions and scaling may be miscalculated if devicePixelRatio (influenced by browser zoom) isn't handled, potentially leading to the visual clipping seen in the bug. Other deeper files may be indirectly related but these are most likely directly relevant for code fixes.",
+        "bug_scenario": "The bug scenario involves rendering clipped (incorrectly displayed) VectorTile tiles when using renderMode: 'image' in OpenLayers, specifically when the browser is zoomed in (above 100%, such as 150%). The animation in the provided image shows obvious seams or clipping artifacts between rendered vector tiles, which should instead appear seamless and continuous. This does not happen at 100% zoom, nor with renderMode: 'hybrid'. This suggests the tile rendering or composition logic is not correctly accounting for CSS or device pixel ratio scaling introduced by browser zoom."
+    }
+}

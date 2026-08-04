@@ -1,0 +1,29 @@
+diff --git a/src/ol/source/GeoTIFF.js b/src/ol/source/GeoTIFF.js
+index caae328076..3988275458 100644
+--- a/src/ol/source/GeoTIFF.js
++++ b/src/ol/source/GeoTIFF.js
+@@ -333,6 +333,24 @@ class GeoTIFFSource extends DataTile {
+    * @param {Options} options Data tile options.
+    */
+   constructor(options) {
++    // ---- NEW: pyramid via urlTemplate + tileGrid ----
++    if (options.urlTemplate !== undefined && options.tileGrid !== undefined) {
++      super({
++        state: State.READY,
++        tileGrid: options.tileGrid,
++        projection: options.projection || null,
++        opaque: options.opaque,
++        transition: options.transition,
++        interpolate: options.interpolate !== false,
++        wrapX: options.wrapX,
++      });
++      /** @private @type {string} */
++      this.urlTemplate_ = options.urlTemplate;
++      // reuse the existing loader signature
++      this.setLoader(this.loadTileTemplate_.bind(this));
++      return;
++    }
++    // ---- end new pyramid branch, fall through to original ----
+     super({
+       state: State.LOADING,
+       tileGrid: null,

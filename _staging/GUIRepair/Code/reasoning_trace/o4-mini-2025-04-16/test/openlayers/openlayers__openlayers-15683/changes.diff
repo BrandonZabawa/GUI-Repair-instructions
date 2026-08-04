@@ -1,0 +1,80 @@
+diff --git a/src/ol/renderer/canvas/VectorLayer.js b/src/ol/renderer/canvas/VectorLayer.js
+index 4a86f6b48b..9d3a1fbd7a 100644
+--- a/src/ol/renderer/canvas/VectorLayer.js
++++ b/src/ol/renderer/canvas/VectorLayer.js
+@@ -185,8 +185,18 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+       viewHints[ViewHint.ANIMATING] || viewHints[ViewHint.INTERACTING]
+     );
+     const context = this.context;
+-    const width = Math.round((getWidth(extent) / resolution) * pixelRatio);
+-    const height = Math.round((getHeight(extent) / resolution) * pixelRatio);
++        const width = Math.round((getWidth(extent) / resolution) * pixelRatio);
++        const height = Math.round((getHeight(extent) / resolution) * pixelRatio);
++        // if the view is rotated, grow the canvas to the rotated bounding box
++        const rotation = frameState.viewState.rotation;
++        let renderWidth = width;
++        let renderHeight = height;
++        if (rotation !== 0) {
++          const absCos = Math.abs(Math.cos(rotation));
++          const absSin = Math.abs(Math.sin(rotation));
++          renderWidth = Math.round(width  * absCos + height * absSin);
++          renderHeight = Math.round(width * absSin + height * absCos);
++        }
+ 
+     const multiWorld = vectorSource.getWrapX() && projection.canWrapX();
+     const worldWidth = multiWorld ? getWidth(projectionExtent) : null;
+@@ -293,16 +303,17 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+     const height = Math.round((getHeight(extent) / resolution) * pixelRatio);
+ 
+     // set forward and inverse pixel transforms
+-    composeTransform(
+-      this.pixelTransform,
+-      frameState.size[0] / 2,
+-      frameState.size[1] / 2,
+-      1 / pixelRatio,
+-      1 / pixelRatio,
+-      0,
+-      -width / 2,
+-      -height / 2,
+-    );
++        composeTransform(
++          this.pixelTransform,
++          frameState.size[0] / 2,
++          frameState.size[1] / 2,
++          1 / pixelRatio,
++          1 / pixelRatio,
++          0,
++          // center the (possibly enlarged) canvas
++          -renderWidth  / 2,
++          -renderHeight / 2,
++        );
+     makeInverse(this.inversePixelTransform, this.pixelTransform);
+ 
+     const canvasTransform = transformToString(this.pixelTransform);
+@@ -323,16 +334,16 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+       }
+     }
+ 
+-    // resize and clear
+-    if (canvas.width != width || canvas.height != height) {
+-      canvas.width = width;
+-      canvas.height = height;
+-      if (canvas.style.transform !== canvasTransform) {
+-        canvas.style.transform = canvasTransform;
+-      }
+-    } else if (!this.containerReused) {
+-      context.clearRect(0, 0, width, height);
+-    }
++        // resize and clear (use the rotated dimensions!)
++        if (canvas.width != renderWidth || canvas.height != renderHeight) {
++          canvas.width  = renderWidth;
++          canvas.height = renderHeight;
++          if (canvas.style.transform !== canvasTransform) {
++            canvas.style.transform = canvasTransform;
++          }
++        } else if (!this.containerReused) {
++          context.clearRect(0, 0, renderWidth, renderHeight);
++        }
+ 
+     this.setDrawContext_();
+ 

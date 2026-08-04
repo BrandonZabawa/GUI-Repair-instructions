@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/dialog/inner.jsx//Inner",
+            "src/dialog/main.scss"
+        ],
+        "bug_functions": [
+            "src/dialog/inner.jsx//renderHeader",
+            "src/dialog/inner.jsx//renderCloseLink"
+        ],
+        "explanation": "核心问题出在 Inner 组件的 renderHeader 和 renderCloseLink 方法，以及对应的 CSS 样式：\n\n• renderHeader: 当 title 为空时，返回 null，不会渲染 dialog-header，导致上方空间被跳过。  \n• renderCloseLink: 无条件渲染关闭按钮，并且关闭按钮的定位由 main.scss 中的 .next-dialog-close 固定 top/right 值控制，未考虑无 header 的场景；  \n• main.scss (&-close): 使用了 position:absolute 和固定的 top:$dialog-close-top，使关闭按钮永远贴在容器顶部，与 header 的高度无关。\n\n因此需要在 renderCloseLink 或 CSS 中增加判断：当 title 不存在时，应调整关闭按钮的 top 值（比如下移至 body 上方或与 body padding 对齐），或者改为相对于 header 节点定位。",
+        "bug_scenario": "在 Dialog 不传 title 或传 title={null} 时，没有渲染 header，但关闭按钮依然使用了绝对定位的 top/right 值，导致关闭图标（X）遮住了第一行内容，如图红框所示。"
+    },
+    "2": {
+        "bug_classes": [
+            "src/dialog/inner.jsx//Inner",
+            "src/dialog/main.scss"
+        ],
+        "bug_functions": [
+            "src/dialog/inner.jsx//renderCloseLink",
+            "src/dialog/inner.jsx//renderHeader"
+        ],
+        "explanation": "In src/dialog/inner.jsx, Inner.renderHeader() returns null when title is falsy, so no header DOM node exists to push the body content down. Meanwhile Inner.renderCloseLink() always renders an absolutely positioned close button at a fixed top (controlled by CSS in main.scss). The SCSS rule for .next-dialog-close uses a constant $dialog-close-top, which does not change when there is no header. Together, these cause the close icon to sit directly over the body instead of above it. Fixing this requires updating renderCloseLink or CSS in main.scss to detect when there is no title and increase the top offset (or add conditional padding) so the close button does not overlap the body content.",
+        "bug_scenario": "When a <Dialog> is rendered with title={null} (no title), the header section is omitted but the close (“×”) button remains absolutely positioned at a fixed top offset. As a result, the close icon overlaps and obscures the first line of body text, as shown in the screenshot."
+    }
+}

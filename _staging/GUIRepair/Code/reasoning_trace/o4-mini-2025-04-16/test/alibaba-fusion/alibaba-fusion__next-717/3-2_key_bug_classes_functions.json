@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/select/select.jsx//Select"
+        ],
+        "bug_functions": [
+            "src/select/select.jsx//componentWillMount",
+            "src/select/select.jsx//componentWillReceiveProps",
+            "src/select/select.jsx//renderValues",
+            "src/select/util.js//getValueDataSource"
+        ],
+        "explanation": "\u2022 Select.componentWillMount & componentWillReceiveProps: these lifecycle hooks initialize and update the internal valueDataSource based on props.defaultValue or nextProps.defaultValue. Because fillProps is provided, they attempt to treat the defaultValue as an object with the given key and overwrite the item.label, resulting in undefined when the dataSource is empty and defaultValue is a primitive.  \n\n\u2022 Select.renderValues: this method renders the final display node for the selected value. The current implementation gives priority to this.props.fillProps and pulls value[fillProps] without falling back to the label field from getValueDataSource, causing a blank display.  \n\n\u2022 getValueDataSource: this utility produces an item.label for primitives when no dataSource exists, but its output is never used if renderValues is aggressively applying fillProps. A coordinated fix in renderValues (and the lifecycle methods that seed its state) should use the label from getValueDataSource when the defaultValue is not an object or when dataSource is empty, and only apply fillProps when the underlying value is an object containing that key.",
+        "bug_scenario": "The user mounted a Select component with an empty dataSource but passed both defaultValue and fillProps:  \n\n  ReactDOM.render(<Select fillProps=\"name\" defaultValue=\"jack\" ></Select>, mountNode);\n\nThey expected the input to display \u201cjack\u201d (as shown in the reference image), but nothing is rendered.  The presence of fillProps triggers code paths that override the normal label logic and don\u2019t fall back to the raw defaultValue when the dataSource is empty."
+    },
+    "2": {
+        "bug_classes": [
+            "src/select/data-store.js//DataStore",
+            "src/select/select.jsx//Select"
+        ],
+        "bug_functions": [
+            "src/select/base.jsx//setDataSource",
+            "src/select/data-store.js//updateByKey",
+            "src/select/util.js//getValueDataSource",
+            "src/select/select.jsx//renderValues"
+        ],
+        "explanation": "These functions form the core path for pulling in data, mapping a default or controlled value to displayable text, and then finally rendering it inside the Select UI:\n\n\u2022 Base.setDataSource (in base.jsx) is responsible for initializing and caching the dataSource and for triggering updates when props change. When no dataSource is passed, it still needs to account for a defaultValue fillProps scenario.\n\n\u2022 DataStore.updateByKey (in data-store.js) stores the current key (the Select\u2019s value) and then calls updateAll(), which filters an empty dataSource and returns an empty menu. Because no addonKey is used here, the mapping for the defaultValue never ends up in mapDataSource.\n\n\u2022 getValueDataSource (in util.js) takes the raw defaultValue (\"jack\") and the empty mapMenuDS/mapValueDS and creates a fallback item {value:\"jack\", label:\"jack\"}. However, this result is not propagated back into the DataStore or into the Select state when fillProps is in play.\n\n\u2022 Select.renderValues (in select.jsx) finally tries to render the label for the current value by looking up the detailed data from the DataStore and/or valueDataSource mappings. Since the DataStore never stored the fallback item and renderValues doesn\u2019t fall back to the util\u2019s mapping when fillProps is used, nothing is rendered.\n\nIn sum, the pipeline that should allow a defaultValue to surface as a standalone label with empty dataSource (especially under a custom fillProps key) is broken at the data-store updateByKey stage and in the renderValues implementation of Select.",
+        "bug_scenario": "The user is rendering a Select component with a custom fillProps key (\"name\") and a defaultValue of \"jack\", but without providing any dataSource or children. In this scenario the input should display the defaultValue \"jack\" (as shown in the mocked screenshot), yet the Select renders empty\u2014you see an empty box with the dropdown arrow but no label text."
+    }
+}

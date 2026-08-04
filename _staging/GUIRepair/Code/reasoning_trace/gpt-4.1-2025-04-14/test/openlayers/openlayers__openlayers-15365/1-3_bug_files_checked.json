@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/layer/VectorTile.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/renderer/webgl/VectorTileLayer.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/style.js",
+            "src/ol/layer/Base.js"
+        ],
+        "explanation": "These files are related to the bug for the following reasons: 1) src/ol/layer/Group.js manages group layers and their opacity. If the group opacity is not being propagated, logic here (or lack thereof) may be responsible. 2) src/ol/layer/VectorTile.js defines the vector tile layer, including how it receives or ignores group-level opacity changes. 3) src/ol/renderer/canvas/VectorTileLayer.js and 4) src/ol/renderer/webgl/VectorTileLayer.js contain the rendering logic for vector tile layers which would need to apply combined opacity (group * layer). 5) src/ol/render/canvas/TextBuilder.js is responsible for rendering text labels, where the opacity applied to text might not consider the group setting. 6) src/ol/render/canvas/style.js contains rendering style functions, possibly where fill-color and opacity are dealt with. 7) src/ol/layer/Base.js is the superclass for all layers and often contains the propagation logic for properties like opacity from parent groups to children. By reviewing these files, a developer can trace whether label opacity is being correctly calculated as group * layer * style opacity, and locate where the propagation is broken for vector tile label rendering.",
+        "bug_scenario": "The bug is that when a layer group's opacity is changed via setOpacity(), it does not affect the labels (i.e., text rendering) of vector tile layers that are children of that group. However, adjusting opacity at the layer level works as expected, and the group opacity change does affect vector layers, just not vector tile labels. This implies that vector tile layer label rendering code does not honor or inherit the group opacity setting, while other layer types do. The issue is specific to how the label (Text) rendering logic in vector tile layers interacts with group opacity control."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/layer/VectorTile.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/render/canvas/TextBuilder.js"
+        ],
+        "explanation": "The likely root of the issue is that group opacity is not properly propagated to label rendering for vector tile layers. 'src/ol/layer/Group.js' manages group opacities, and changes in it must reach child layers. 'src/ol/layer/VectorTile.js' is the relevant layer type affected, so its opacity or inheritance logic could be at fault. 'src/ol/renderer/canvas/VectorTileLayer.js' handles the rendering for vector tile layers, which includes labels, and may omit factoring in the parent group\u2019s opacity. 'src/ol/renderer/canvas/Layer.js' is the base layer rendering logic and could manage shared properties like cumulative opacity. Finally, 'src/ol/render/canvas/TextBuilder.js' is where vector tile label rendering is executed, and it might not currently take the full opacity chain into account. These files together comprise the pipeline where opacity management or propagation could be broken or missing for vector tile layer labels.",
+        "bug_scenario": "When changing the opacity of a layer group using setOpacity(), the opacity is not correctly applied to labels rendered for vector tile layers within that group. Other styling elements like fill-color are properly affected, but not labels. Changing opacity at the individual layer level works as intended, but not from the group control. The expectation is that group opacity should be inherited by all child layers, including vector tile layer labels."
+    }
+}

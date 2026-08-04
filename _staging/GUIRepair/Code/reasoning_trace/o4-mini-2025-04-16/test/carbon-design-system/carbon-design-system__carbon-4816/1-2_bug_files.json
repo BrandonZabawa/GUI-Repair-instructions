@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/NumberInput/NumberInput.js",
+            "packages/react/src/components/NumberInput/NumberInput-story.js",
+            "packages/react/src/components/NumberInput/NumberInput-test.js"
+        ],
+        "explanation": "1) NumberInput.js is where the <CaretUpGlyph> and <CaretDownGlyph> are rendered without any aria-hidden or role=\"presentation\", so DAP flags the unlabeled SVGs.  You need to add aria-hidden=\"true\" (or role=\"presentation\") to each glyph.  2) The same file also spreads a user-supplied aria-label onto the native <input> even when a visible <label> is present, causing a mismatch between the accessible name and the visible label.  You need to suppress or remove the input\u2019s aria-label when hideLabel is false.  3) The story (NumberInput-story.js) shows exactly how the knobs drive these two states, so it must be updated to either hide the default label when demonstrating a custom aria-label or remove the custom aria-label example.  4) NumberInput-test.js must be updated so that any new aria-hidden or role changes on the glyphs (and the removal of the aria-label on the <input> in the non-hidden-label case) are reflected in the automated snapshots and unit tests.",
+        "bug_scenario": "When you turn on the \u201cDisabled\u201d knob in the NumberInput story the two arrow glyphs still render as SVGs with role=\"img\" and no alternate text or aria-hidden attribute, causing a DAP rule violation \u201cWAI-ARIA widget with IMG role must have a non-empty alternate text or a label.\u201d  When you turn on the \u201cForm validation\u201d knob the input ends up with an aria-label that doesn\u2019t include the visible \u201cNumber Input label,\u201d so DAP complains \u201cAccessible name must match or contain the visible label text.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/NumberInput/NumberInput.js"
+        ],
+        "explanation": "All of the offending markup lives in NumberInput.js:\n\n\u2022 The invalid-state icon (WarningFilled16) is being rendered without any aria-label or aria-hidden override, so the default SVG comes out with role=\"img\" and no meaningful alt text.  \n\u2022 The input\u2019s accessible name logic lives here; it always spreads any user-supplied aria-label (which may not match the visible <label>) into the DOM whenever hideLabel is false, overriding the programmatic <label htmlFor> linkage and causing the accessible name/label mismatch.  \n\nFixing those two issues (giving the warning icon a role=\"presentation\" or proper aria-label and preventing stray aria-label props when the visible label is present) all happens in this single component file.",
+        "bug_scenario": "When you render a controlled NumberInput with both \u201cdisabled\u201d and \u201cform validation\u201d enabled in the Carbon React storybook you get two new DAP/IBM Accessibility violations:\n\n1. The red error icon (WarningFilled16) in the invalid state is rendered as an SVG with role=\"img\" but has no non-empty alternate text or aria-label to convey its meaning.\n2. The <input> element itself has an aria-label (\"Numeric input field with increment and decrement buttons\") that does not match or contain the visible label text (\"Number Input label\"), causing the accessible name to fail the \u201cmust match or contain visible label\u201d rule.\n\nThese violations show up when you flip the \u201cdisabled\u201d knob (nothing changes visually but DAP picks up the missing labels on the increment/decrement buttons & icon) and when you flip the \u201cvalidation\u201d knob (the invalid icon appears with no alt text)."
+    }
+}

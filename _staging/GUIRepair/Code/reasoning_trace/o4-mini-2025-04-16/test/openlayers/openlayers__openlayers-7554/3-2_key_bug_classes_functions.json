@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/interaction/draw.js//ol.interaction.Draw",
+            "src/ol/layer/vector.js//ol.layer.Vector",
+            "src/ol/renderer/canvas/intermediatecanvas.js//ol.renderer.canvas.IntermediateCanvas",
+            "src/ol/renderer/canvas/vectorlayer.js//ol.renderer.canvas.VectorLayer"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/draw.js//handlePointerMove_",
+            "src/ol/interaction/draw.js//updateSketchFeatures_",
+            "src/ol/layer/vector.js//(constructor) \u2013 setting this.renderMode_",
+            "src/ol/renderer/canvas/intermediatecanvas.js//composeFrame",
+            "src/ol/renderer/canvas/vectorlayer.js//prepareFrame"
+        ],
+        "explanation": "These classes and methods form the hot path for drawing and rendering when renderMode:'image' is enabled. ol.interaction.Draw.handlePointerMove_ and updateSketchFeatures_ fire on every pointer move to recompute the sketch geometry and push it into the overlay. The overlay is a Vector layer with renderMode:'image' (set in the ol.layer.Vector constructor), which chooses IntermediateCanvas as its renderer. IntermediateCanvas.composeFrame then re-rasterizes the entire vector overlay to an offscreen canvas on each frame, and VectorLayer.prepareFrame drives that rasterization by walking through all features and styles again. The combination of frequent Draw event handling plus a full intermediate canvas replay per frame leads to the observed performance regression. These are exactly the points in the pipeline that would need optimizing (for example by caching the sketch image, reducing per-move redraw scope, or bypassing the full intermediate raster step).",
+        "bug_scenario": "When using the OL4 Draw interaction in renderMode: 'image' (the new ImageVector path) the act of dragging out a simple triangle sketch on the world map becomes extremely sluggish. In the screenshot the user is dragging out three points for a triangle in the South Pacific, and you can see the red world-wide point layer being updated as well. Compared to the old 4.4.2 \"vector\" draw mode, 4.6.2 with renderMode:'image' redraws too much work on every pointer move, causing very low interaction performance."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/interaction/draw.js//ol.interaction.Draw",
+            "src/ol/layer/vector.js//ol.layer.Vector",
+            "src/ol/renderer/canvas/intermediatecanvas.js//ol.renderer.canvas.IntermediateCanvas"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/draw.js//ol.interaction.Draw.prototype.handlePointerMove_",
+            "src/ol/interaction/draw.js//ol.interaction.Draw.prototype.updateSketchFeatures_",
+            "src/ol/layer/vector.js//ol.layer.Vector.prototype.getRenderMode",
+            "src/ol/renderer/canvas/intermediatecanvas.js//ol.renderer.canvas.IntermediateCanvas.prototype.composeFrame"
+        ],
+        "explanation": "\u2022 ol.interaction.Draw.handlePointerMove_ and updateSketchFeatures_ are the draw-interaction entry points that run on every pointer move, triggering a re-render of the sketch overlay.  \n\u2022 ol.layer.Vector.getRenderMode (and the Vector constructor setting renderMode_) determine that the layer is rendered as a single image, so all vector features (including the sketch) are drawn via an offscreen canvas.  \n\u2022 ol.renderer.canvas.IntermediateCanvas.composeFrame is the hot path that, in \u2018image\u2019 mode, rebuilds and draws the entire layer image (drawImage of a full buffer) on every frame.  \nTogether these pieces cause the full map image to be repainted on each pointer event; optimizing or short-circuiting composeFrame (or skipping full image render during sketching) will be required to restore interactive performance.",
+        "bug_scenario": "When drawing a simple triangle on a Vector layer in OpenLayers 4.6.2 with renderMode: 'image', the pointer\u2010move is very laggy and you see a full re-render of the map image on every mouse move. In 4.4.2 (using the old ol.source.ImageVector) the same triangle draws smoothly. The screenshot shows a semi-transparent triangle sketch being updated over a world map covered densely in red points; each move causes a heavy composeFrame and drawImage call."
+    }
+}

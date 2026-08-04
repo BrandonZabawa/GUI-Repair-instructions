@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/ruby.js//STRING"
+        ],
+        "bug_functions": [
+            "src/languages/ruby.js//export default function(hljs)"
+        ],
+        "explanation": "In the Ruby grammar file the only pattern that attempts to recognize the `?X` character-literal forms lives inside the STRING constant\u2019s variants array.  It uses a single regular expression begin:/\\B\\?(\\\\\\d{1,3}|\\\\x[0-9A-Fa-f]{1,2}|\\\\u[0-9A-Fa-f]{4}|\\\\?\\S)\\b/ which covers octal, \\xHH, \\uHHHH and a catch-all \\?\\S branch, but misses unescaped slash (`?/`), escaped backslash (`?\\\\`), Unicode curly/braced notation (`?\\u{...}`), non-ASCII characters (`?\u3042`), and control/meta sequences (`?\\C-`, `?\\M-`).  To fix the bug you must extend or replace that regex (inside STRING) in the exported function so it also handles these missing cases.",
+        "bug_scenario": "The screenshots show Highlight.js mis-classifying Ruby\u2019s single-character literal notation (the `?x` syntax) in several cases.  For example `?/` is picked up as the start of a regular expression, `?\\\\` isn\u2019t recognized as a string at all, non-ASCII (`?\u3042`) and Unicode curly-brace forms (`?\\u{41}`) aren\u2019t highlighted, and control/meta sequences like `?\\C-a` or `?\\M-a` are not matched.  The expected behavior is that all of these \u201c?X\u201d forms should be lexed as single-character string literals, not regexes or errors."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/ruby.js//STRING"
+        ],
+        "bug_functions": [],
+        "explanation": "All character literals in the Ruby grammar are handled inside the STRING definition in ruby.js. One of its variants uses a single regex (\u201c\\\\B\\\\?(\\\\\\\\\\\\d{1,3}|\\\\\\\\x[\u2026]|\\\\\\\\u[\u2026]{4}|\\\\?\\\\S)\\\\b\u201d) to match escaped and simple ?-sequences, but omits raw slash (\"?/\"), escaped backslash (\"?\\\\\"), Unicode curly-brace syntax (\"?\\\\u{\u2026}\"), non-ASCII characters (\"?\u3042\"), and control/meta forms (e.g. \"?\\C-a\"). To support the missing cases, that variant\u2019s regex (or its surrounding variants) must be expanded to recognize these additional literal forms.",
+        "bug_scenario": "When highlighting Ruby code with highlight.js, certain character\u2010literal notations (e.g. ?/, ?\\\\, ?\\u{1AF9}, ?\u3042, ?\\C-a, etc.) aren\u2019t recognized correctly. The existing grammar treats some of these as the start of regexes or other tokens, leading to broken highlighting or SyntaxError misclassification."
+    }
+}

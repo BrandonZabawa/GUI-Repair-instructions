@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/proj/projections.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "explanation": "The bug involves using a GeoTIFF source in a non-map projection with a WebGLTile layer. The related files are: (1) src/ol/layer/WebGLTile.js: Implements the WebGLTile layer, whose tile rendering may not support reprojection; (2) src/ol/renderer/webgl/TileLayer.js: Handles the WebGL rendering pipeline for tile layers, where reprojection support must be implemented; (3) src/ol/source/GeoTIFF.js: The code managing GeoTIFF raster sources, including reading projection info; (4-6) src/ol/proj/proj4.js, src/ol/proj/Projection.js, src/ol/proj/projections.js: These projection utilities are necessary for registering/custom projections and for transforming coordinates and raster data; (7) src/ol/reproj/Tile.js: Handles reprojection of tile sources (may implement or miss implementing the reprojection logic for WebGLTile layers); (8) src/ol/tilegrid/TileGrid.js: Manages tile grid information, which is essential in aligning and transforming raster tiles between projections. Fixes will likely have to ensure that reprojection is supported and correctly wired in between GeoTIFF source, the tile rendering pipeline, and the WebGLTile layer.",
+        "bug_scenario": "User attempts to add a GeoTIFF (COG) source in a UTM projection (EPSG:32636) to an OpenLayers map with EPSG:4326 or EPSG:3857 projection, using a WebGLTile layer. The COG is not displayed (nothing shows up), whereas source extent/fitting and OSM work fine, suggesting that automatic reprojection of raster data is not happening for WebGLTile layers (though it is supported in other contexts). The issue manifests when tile data and map view use different projections, and the system fails to reproject the raster tiles from the COG."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/proj/proj4.js",
+            "src/ol/source/Tile.js"
+        ],
+        "explanation": "The core of the bug is that the WebGLTile layer does not render (reproject) tile data when the source (COG in UTM) uses a different projection than the map view (EPSG:4326 or 3857). 1) src/ol/layer/WebGLTile.js defines the WebGLTile layer and would require logic for handling sources in different projections; 2) src/ol/renderer/webgl/TileLayer.js handles rendering for WebGL tile layers and may miss invoking reprojection; 3) src/ol/source/GeoTIFF.js is the source type used for COGs and must cooperate with reprojection mechanisms; 4) src/ol/reproj/Tile.js contains logic for tile reprojection in OpenLayers\u2014likely not integrated with WebGLTile layers; 5) src/ol/proj/proj4.js handles CRS registration (important for supporting custom projections in sources); 6) src/ol/source/Tile.js is the abstract tile source class, which may participate in reprojection support across tile sources, and integration points/custom behaviors for reprojection would matter here. All these files are directly relevant to the root cause and potential fix for missing reprojection for COG/WebGLTile scenarios.",
+        "bug_scenario": "A user attempts to display a Cloud Optimized GeoTIFF (COG) in UTM projection (EPSG:32636) as a layer on a map with a different projection (EPSG:4326 or EPSG:3857), using the WebGLTile layer in OpenLayers. The COG does not render/reproject automatically, even though the map and view can fit to the layer's extent and display OSM tiles properly. The expectation is automatic reprojection of tile data in the WebGLTile layer, similar to other tile/image sources, but nothing displays for the COG, likely due to missing reprojection handling for WebGLTile sources."
+    }
+}

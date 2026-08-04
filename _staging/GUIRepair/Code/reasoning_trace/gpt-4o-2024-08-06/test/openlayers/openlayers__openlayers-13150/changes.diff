@@ -1,0 +1,70 @@
+diff --git a/src/ol/layer/Heatmap.js b/src/ol/layer/Heatmap.js
+index 2b41e56d37..ab6a6bd049 100644
+--- a/src/ol/layer/Heatmap.js
++++ b/src/ol/layer/Heatmap.js
+@@ -209,20 +209,21 @@ class Heatmap extends BaseVector {
+           v_texCoord = vec2(u, v);
+           v_weight = a_weight;
+         }`,
+-      fragmentShader: `
+-        precision mediump float;
+-        uniform float u_blurSlope;
+-
+-        varying vec2 v_texCoord;
+-        varying float v_weight;
+-
+-        void main(void) {
+-          vec2 texCoord = v_texCoord * 2.0 - vec2(1.0, 1.0);
+-          float sqRadius = texCoord.x * texCoord.x + texCoord.y * texCoord.y;
+-          float value = (1.0 - sqrt(sqRadius)) * u_blurSlope;
+-          float alpha = smoothstep(0.0, 1.0, value) * v_weight;
+-          gl_FragColor = vec4(alpha, alpha, alpha, alpha);
+-        }`,
++fragmentShader: `
++precision mediump float;
++uniform float u_blurSlope;
++uniform float u_opacity;
++
++varying vec2 v_texCoord;
++varying float v_weight;
++
++void main(void) {
++vec2 texCoord = v_texCoord * 2.0 - vec2(1.0, 1.0);
++float sqRadius = texCoord.x * texCoord.x + texCoord.y * texCoord.y;
++float value = (1.0 - sqrt(sqRadius)) * u_blurSlope;
++float alpha = smoothstep(0.0, 1.0, value) * v_weight * u_opacity;
++gl_FragColor = vec4(alpha, alpha, alpha, alpha);
++}`,
+       hitVertexShader: `
+         precision mediump float;
+         uniform mat4 u_projectionMatrix;
+@@ -267,16 +268,19 @@ class Heatmap extends BaseVector {
+           }
+ 
+           gl_FragColor = v_hitColor;
+-        }`,
+-      uniforms: {
+-        u_size: function () {
+-          return (this.get(Property.RADIUS) + this.get(Property.BLUR)) * 2;
+-        }.bind(this),
+-        u_blurSlope: function () {
+-          return (
+-            this.get(Property.RADIUS) / Math.max(1, this.get(Property.BLUR))
+-          );
+-        }.bind(this),
++uniforms: {
++u_size: function () {
++return (this.get(Property.RADIUS) + this.get(Property.BLUR)) * 2;
++}.bind(this),
++u_blurSlope: function () {
++return (
++this.get(Property.RADIUS) / Math.max(1, this.get(Property.BLUR))
++);
++}.bind(this),
++u_opacity: function () {
++return this.get('opacity') !== undefined ? this.get('opacity') : 1.0;
++}.bind(this),
++},
+       },
+       postProcesses: [
+         {

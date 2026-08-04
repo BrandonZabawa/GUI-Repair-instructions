@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/user-timings.js",
+            "lighthouse-core/formatters/partials/user-timings.js"
+        ],
+        "explanation": "Both files handle how User Timing entries get collected and shown in the final report. \n\n\u2022 lighthouse-core/audits/user-timings.js is responsible for reading the raw User Timing entries from the artifact and turning them into the audit\u2019s result object. It currently passes through the entry.startTime values unfiltered, so any negative times arrive here and end up in the audit\u2019s output. \n\n\u2022 lighthouse-core/formatters/partials/user-timings.js is responsible for rendering those entries in the HTML/JSON report. Since it simply iterates over the audit.result.details.items and prints startTime.toFixed(2), negative numbers remain visible to users. \n\nFixing this bug will involve either filtering out or clamping negative startTime values in the audit code (user-timings.js) or adjusting the formatter (user-timings.js partial) to skip or normalize negative times before display.",
+        "bug_scenario": "When running Lighthouse (either via the CLI or the Chrome extension) on a page that injects User Timing marks before the NavigationStart (for example, by using Puppeteer\u2019s page.evaluateOnNewDocument to call performance.mark()), the audit output (\u201cPerformance \u2192 User Timing marks and measures\u201d) shows negative startTime values for those early marks (e.g. \u201cMark: -184.69ms \u2013 mark_features_unveil_start\u201d). These negative offsets occur because the marks are recorded before the trace\u2019s zero-point (NavigationStart), and neither the audit logic nor the formatting logic filters them out or normalizes them to zero."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/user-timings.js",
+            "lighthouse-core/formatters/user-timings.js"
+        ],
+        "explanation": "Both of these files are responsible for collecting and rendering the User Timing entries in Lighthouse. The audit implementation (lighthouse-core/audits/user-timings.js) pulls raw PerformanceEntry objects (including startTime) directly from the driver artifact without clamping negative times. The formatter (lighthouse-core/formatters/user-timings.js) then displays those startTime values verbatim in the report UI. Together they expose the negative offsets instead of normalizing them to zero or otherwise handling pre-navigation marks.",
+        "bug_scenario": "When running Lighthouse (or the DevTools \u201cUser Timings\u201d extension) on a page where scripts insert performance.marks before the browser\u2019s NavigationStart event (for example via Puppeteer\u2019s evaluateOnNewDocument), those early marks appear with negative startTime values relative to zero. Lighthouse currently surfaces and formats these negative offsets in the User Timings audit, leading to entries like \u201c-184.69ms \u2013 mark_features_unveil_start.\u201d"
+    }
+}

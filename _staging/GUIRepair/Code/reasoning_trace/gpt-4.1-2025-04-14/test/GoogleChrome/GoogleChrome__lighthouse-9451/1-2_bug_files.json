@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/offline.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/audits/offline-start-url.js",
+            "lighthouse-core/audits/works-offline.js",
+            "lighthouse-core/gather/driver.js"
+        ],
+        "explanation": "These files are directly related to the handling and audit of offline behavior in Lighthouse. 'lighthouse-core/gather/gatherers/offline.js' is responsible for simulating or gathering offline conditions; 'gather-runner.js' orchestrates gatherers and sets up pass conditions (including offline passes); 'offline-start-url.js' and 'works-offline.js' are audits that check offline readiness and whether the app works offline; 'driver.js' controls browser state and might be involved in toggling the offline mode. Problems in these files could prevent the emulator from correctly simulating offline mode or detecting the fallback offline page, leading to the bug described.",
+        "bug_scenario": "The bug scenario involves Lighthouse incorrectly handling offline mode during user testing: when a user audits a page for offline support, the expected behavior is to see an offline fallback (such as a simple 'You are offline' message), but instead the full online desktop page loads even though network requests are not coming from ServiceWorker or disk cache, and the system is meant to be offline. The provided screenshot shows the expected offline fallback page, which isn't being displayed by Lighthouse during its offline pass."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/offline-start-url.js",
+            "lighthouse-core/audits/works-offline.js",
+            "lighthouse-core/gather/gatherers/offline.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/driver.js"
+        ],
+        "explanation": "These files are related to the bug because: 1) 'lighthouse-core/audits/offline-start-url.js' and 'lighthouse-core/audits/works-offline.js' contain the audits that test offline capabilities and would need to correctly determine if the start URL loads offline and if the Service Worker serves responses when expected. 2) 'lighthouse-core/gather/gatherers/offline.js' is responsible for gathering information about offline state; if the network is not properly simulated as offline, bugs here could cause incorrect audit results. 3) 'lighthouse-core/gather/gather-runner.js' orchestrates the gather phase, including simulating offline/online network conditions. 4) 'lighthouse-core/gather/driver.js' acts as the interface to the browser, implementing network condition changes; if this file doesn't enforce offline mode reliably, the audits will be misled. Together, these are the locations most likely to be responsible for, or need changes to resolve, the bug where Lighthouse does not correctly simulate or detect offline resource serving.",
+        "bug_scenario": "The bug scenario is that when running Lighthouse on certain websites, the 'offline pass'\u2014which should simulate network disconnection and verify offline behavior\u2014does not correctly load resources as if offline. Instead, it loads the desktop version of the page from the network rather than displaying an appropriate offline error or cached page. This is observable because all network requests report both 'fromServiceWorker' and 'fromDiskCache' as false, which should be impossible when offline. The expected behavior (as shown in the image) is that a clear offline error page ('You are offline', etc.) should be shown during the offline pass, but this is not happening consistently. This issue is closely tied to how Lighthouse sets up the offline scenario and evaluates network responses during audits such as 'offline-start-url', 'service-worker', and 'works-offline'."
+    }
+}

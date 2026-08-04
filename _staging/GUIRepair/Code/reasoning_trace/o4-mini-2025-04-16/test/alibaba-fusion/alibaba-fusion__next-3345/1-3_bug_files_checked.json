@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/dialog/inner.jsx",
+            "src/dialog/main.scss"
+        ],
+        "explanation": "src/dialog/inner.jsx：负责渲染对话框的 header（包含 title 和 close 按钮）。当 title 为 null 时，当前逻辑跳过了 header 容器的输出，却仍渲染了 close 按钮，导致没有预留 header 的高度和 padding。  \nsrc/dialog/main.scss：定义了 .next-dialog-header（header 容器），.next-dialog-close（关闭按钮绝对定位）和 .next-dialog-body（内容区 padding）。在缺少 header 的情况下，内容区的上边距与关闭按钮的 top 值一致，因而产生文字被按钮遮挡的问题。需要在这两处文件中一起修改：要么在 inner.jsx 中无论 title 是否存在都渲染一个高度固定的 header 容器，要么在没有 title 的情况下给内容区增加足够的上边距以避让关闭按钮。",
+        "bug_scenario": "当 Dialog 不传 title 或 title={null} 时，弹窗的 header 区域被省略，但关闭按钮（X）仍按绝对定位（top/right）渲染到弹窗容器中，导致与对话框内容区域重叠，遮住了文字。"
+    },
+    "2": {
+        "bug_files": [
+            "src/dialog/inner.jsx",
+            "src/dialog/main.scss"
+        ],
+        "explanation": "1. src/dialog/inner.jsx：Dialog 内部渲染逻辑会在没有 title 的情况下仍然按有标题的思路渲染关闭按钮，并且没有对无标题场景做额外布局处理。\n2. src/dialog/main.scss：对 header 和 close 按钮的样式定位（如 .next-dialog-header、.next-dialog-close 的 top/right）全局写死，未考虑 title 为空时 header 高度为 0 或消失的情况，导致 Close 按钮跑到内容区重叠。\n\n要修复此问题，需要在 inner.jsx 中判断无 title 时调整渲染位置，或者在 main.scss 中为无标题场景单独设置 Close 按钮的 top/padding，以保证它始终处于内容上方且不遮挡正文。",
+        "bug_scenario": "当 Dialog 不传 title 或 title={null} 时，弹窗顶部不会渲染标题文本，但默认会渲染关闭按钮。由于 header 区域没有正常撑开高度，Close 按钮依旧按 header 样式定位，导致它悬浮在内容区域之上，遮住了正文文字（如截图红框所示）。"
+    }
+}

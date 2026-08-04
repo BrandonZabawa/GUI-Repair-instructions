@@ -1,0 +1,36 @@
+diff --git a/src/core/url.ts b/src/core/url.ts
+index a07ac222f..6d03f2a47 100644
+--- a/src/core/url.ts
++++ b/src/core/url.ts
+@@ -14,16 +14,27 @@ export function isHttpUrl(url: string) {
+ export function joinUrl(baseUrl: string, path: string) {
+   const baseHasSlash = baseUrl.endsWith("/");
+ 
++  // normalize to forward-slashes
+   path = pathWithForwardSlashes(path);
+-  const pathHasSlash = path.startsWith("/");
+ 
++  // percent-encode each segment so commas, colons, etc. become safe
++  const encodedPath = path
++    .split("/")
++    .map(segment => encodeURIComponent(segment))
++    .join("/");
++
++  const pathHasSlash = encodedPath.startsWith("/");
++
++  let url: string;
+   if (baseHasSlash && pathHasSlash) {
+-    return `${baseUrl}${path.slice(1)}`;
++    url = `${baseUrl}${encodedPath.slice(1)}`;
+   } else if (!baseHasSlash && !pathHasSlash) {
+-    return `${baseUrl}/${path}`;
++    url = `${baseUrl}/${encodedPath}`;
+   } else {
+-    return `${baseUrl}${path}`;
++    url = `${baseUrl}${encodedPath}`;
+   }
++
++  return url;
+ }
+ 
+ export function ensureProtocolAndTrailingSlash(url: string) {

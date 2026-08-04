@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLPoints.js",
+            "src/ol/render/webgl/VectorStyleRenderer.js",
+            "src/ol/renderer/webgl/PointsLayer.js",
+            "src/ol/webgl/styleparser.js",
+            "src/ol/webgl/Helper.js"
+        ],
+        "explanation": "The distortion occurs in the WebGLPoints rendering pipeline when icons are rotated with the view and the viewport is not square. \u2022 WebGLPoints.js defines the layer and accepts the icon-rotate-with-view flag. \u2022 VectorStyleRenderer.js reads style properties (including rotation) and emits draw instructions for icon quads. \u2022 PointsLayer.js sets up the projection, resolution uniforms (width/height) and invokes the shader program to position and rotate each quad. \u2022 styleparser.js generates the GLSL code that applies icon rotation (with or without view) and maps pixel sizes into clip space. \u2022 Helper.js supplies the uniform data (resolution, viewRotation, rotateWithView) used by the shader. Together these files control how icon quads are transformed; the current code applies rotation before compensating for aspect ratio, leading to non-uniform scale. Adjusting the order of scale/rotate in styleparser or PointsLayer (and ensuring Helper writes correct uniform aspect factors) is required to fix the distortion.",
+        "bug_scenario": "When using a WebGLPoints layer with \u201cicon-rotate-with-view: true\u201d on a non-square viewport, the icon quads are stretched or squashed instead of remaining square. In the reproducer the map container has unequal width/height and view.rotation = \u03c0/2, causing each icon to distort into a diamond-shape rather than a proper square. The distortion only appears when the viewport aspect ratio \u2260 1."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLPoints.js",
+            "src/ol/renderer/webgl/PointsLayer.js",
+            "src/ol/render/webgl/renderinstructions.js",
+            "src/ol/webgl/styleparser.js"
+        ],
+        "explanation": "All four files participate in handling and drawing rotated icons in the WebGLPoints layer.  \n\u2022 WebGLPoints.js defines the layer, reads the \u201cicon-rotate-with-view\u201d style property, and chooses the PointsLayer renderer. It wires the high-level style option into the renderer.  \n\u2022 PointsLayer.js (under renderer/webgl) initializes the WebGL program for points, passes the canvas resolution, rotation flags, and size uniforms to the shader. The distortion appears because the code here never compensates for non-square resolution when computing rotated offsets.  \n\u2022 renderinstructions.js contains the GLSL snippet templates for POINTS\u2014this is where the vertex positions for the icon quad are computed (rotation, offset, scale). The rotation math in the snippet assumes a square viewport and ignores the aspect ratio.  \n\u2022 styleparser.js builds the style attributes and injects them into the shader over the buffers. It merges the rotate-with-view boolean into the generated program, but the transform it selects still doesn\u2019t normalize by both width and height, so the icon\u2019s x/y scaling is wrong when the viewport isn\u2019t square.  \nTogether, these files control how rotated icons are passed to WebGL and rendered; fixing the distortion requires updating the rotation/offset logic and uniform handling in PointsLayer.js and renderinstructions.js (and possibly adjusting styleparser\u2019s injected code) to use separate x/y resolution values when converting pixel offsets to clip space.",
+        "bug_scenario": "When using a WebGLPoints layer with \u201cicon-rotate-with-view: true\u201d on a non-square viewport, the point icons are drawn squeezed or stretched rather than maintaining their correct aspect ratio. Rotating the map view still applies a rotation to the icon quad, but the rotation math and pixel->clip-space conversion don\u2019t account for differing canvas width/height, so the icon gets distorted."
+    }
+}

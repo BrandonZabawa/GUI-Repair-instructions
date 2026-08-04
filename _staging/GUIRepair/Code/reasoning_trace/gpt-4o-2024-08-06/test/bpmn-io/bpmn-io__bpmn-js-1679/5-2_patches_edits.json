@@ -1,0 +1,137 @@
+{
+    "1/5": {
+        "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js": [
+            {
+                "SEARCH": [
+                    "function setModdleProperties(moddleElement, properties) {",
+                    "forEach(properties, function(value, key) {",
+                    "moddleElement.set(key, value);",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function setModdleProperties(moddleElement, properties) {",
+                    "forEach(properties, function(value, key) {",
+                    "if (key === 'loopCharacteristics') {",
+                    "moddleElement.loopCharacteristics.isSequential = value.isSequential;",
+                    "} else {",
+                    "moddleElement.set(key, value);",
+                    "}",
+                    "});",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js": [
+            {
+                "SEARCH": [
+                    "moddleElement.set(key, value);",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (key === 'loopCharacteristics' && value.isSequential !== undefined) {",
+                    "moddleElement.set('isSequential', value.isSequential);",
+                    "} else {",
+                    "moddleElement.set(key, value);",
+                    "}",
+                    "});",
+                    "}"
+                ]
+            }
+        ],
+        "lib/features/modeling/cmd/UpdatePropertiesHandler.js": [
+            {
+                "SEARCH": [
+                    "forEach(properties, function(value, key) {",
+                    "",
+                    "if (key !== DI) {"
+                ],
+                "REPLACE": [
+                    "forEach(properties, function(value, key) {",
+                    "",
+                    "if (key === 'loopCharacteristics' && value.isSequential !== undefined) {",
+                    "businessObject.set('isSequential', value.isSequential);",
+                    "} else if (key !== DI) {"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "lib/features/modeling/cmd/UpdatePropertiesHandler.js": [
+            {
+                "SEARCH": [
+                    "UpdatePropertiesHandler.prototype.execute = function(context) {",
+                    "",
+                    "var element = context.element,",
+                    "changed = [ element ],",
+                    "translate = this._translate;"
+                ],
+                "REPLACE": [
+                    "UpdatePropertiesHandler.prototype.execute = function(context) {",
+                    "",
+                    "var element = context.element,",
+                    "changed = [ element ],",
+                    "translate = this._translate,",
+                    "elementRegistry = this._elementRegistry,",
+                    "moddleElement = element.businessObject.loopCharacteristics; // Get the current loopCharacteristics element",
+                    "",
+                    "if (context.properties.isSequential !== undefined && moddleElement) {",
+                    "// Update the isSequential property based on the context",
+                    "moddleElement.set('isSequential', context.properties.isSequential);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js": [
+            {
+                "SEARCH": [
+                    "setModdleProperties(moddleElement, properties);",
+                    "",
+                    "context.oldProperties = oldProperties;",
+                    "context.changed = changed;"
+                ],
+                "REPLACE": [
+                    "if (properties.hasOwnProperty('loopCharacteristics')) {",
+                    "setModdleProperties(moddleElement, {",
+                    "isSequential: properties.loopCharacteristics === 'Sequential'",
+                    "});",
+                    "} else {",
+                    "setModdleProperties(moddleElement, properties);",
+                    "}",
+                    "",
+                    "context.oldProperties = oldProperties;",
+                    "context.changed = changed;"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js": [
+            {
+                "SEARCH": [
+                    "setModdleProperties(moddleElement, properties);",
+                    "",
+                    "context.oldProperties = oldProperties;",
+                    "context.changed = changed;"
+                ],
+                "REPLACE": [
+                    "if (is(moddleElement, 'bpmn:MultiInstanceLoopCharacteristics')) {",
+                    "if ('isSequential' in properties) {",
+                    "moddleElement.set('isSequential', properties.isSequential);",
+                    "}",
+                    "}",
+                    "",
+                    "setModdleProperties(moddleElement, properties);",
+                    "",
+                    "context.oldProperties = oldProperties;",
+                    "context.changed = changed;"
+                ]
+            }
+        ]
+    }
+}

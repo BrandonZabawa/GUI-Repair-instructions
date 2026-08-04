@@ -1,0 +1,42 @@
+diff --git a/lib/draw/BpmnRenderer.js b/lib/draw/BpmnRenderer.js
+index e97bfc39..6ca54f23 100644
+--- a/lib/draw/BpmnRenderer.js
++++ b/lib/draw/BpmnRenderer.js
+@@ -1879,11 +1879,26 @@ BpmnRenderer.prototype.drawShape = function(parentGfx, element) {
+ };
+ 
+ BpmnRenderer.prototype.drawConnection = function(parentGfx, element) {
+-  var type = element.type;
+-  var h = this.handlers[type];
++var type = element.type;
++var h = this.handlers[type];
++
++/* jshint -W040 */
++var connection = h(parentGfx, element);
++
++// Render message name if available
++if (type === 'bpmn:MessageFlow' && element.businessObject.name) {
++var label = this.textRenderer.createText(element.businessObject.name, {
++box: { width: 100, height: 30 },
++align: 'center-middle'
++});
++
++svgAppend(parentGfx, label);
++svgAttr(label, {
++transform: 'translate(' + (element.waypoints[0].x + element.waypoints[1].x) / 2 + ',' + (element.waypoints[0].y + element.waypoints[1].y) / 2 + ')'
++});
++}
+ 
+-  /* jshint -W040 */
+-  return h(parentGfx, element);
++return connection;
+ };
+ 
+ BpmnRenderer.prototype.getShapePath = function(element) {
+@@ -1901,4 +1916,4 @@ BpmnRenderer.prototype.getShapePath = function(element) {
+   }
+ 
+   return getRectPath(element);
+-};
++};
+\ No newline at end of file

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/carbon-components-react/src/components/DataTable/DataTable.js",
+            "packages/carbon-components-react/src/components/DataTable/TableContainer.js"
+        ],
+        "explanation": "1. DataTable.js: this file defines the render prop API and the prop getters (getTableContainerProps and getTableProps). Currently getTableContainerProps does not generate or return any IDs for the title/description nodes, and getTableProps does not inject aria-labelledby/aria-describedby into the <Table>.\n\n2. TableContainer.js: this file renders the <h4> (title) and <p> (description) but does not accept or generate IDs on those elements, so there\u2019s no way to reference them externally. It needs to be updated to accept a base id (from getTableContainerProps) and assign derived IDs to the title and description, e.g. \u201c${baseId}__title\u201d and \u201c${baseId}__description\u201d.\n\nBy updating these two files, the DataTable component can automatically wire up the correct ARIA references for consumers, and screen readers will announce the table\u2019s visible title/description instead of the cell contents.",
+        "bug_scenario": "The DataTable\u2019s TableContainer renders a visible title and description but does not assign any IDs to those elements. As a result, consumers cannot hook up aria-labelledby or aria-describedby on the <Table> to point at the title/description nodes. Without proper IDs exposed, screen readers like JAWS fall back to reading the table\u2019s cell contents as the label (concatenating the first few cells).\n\nThe screenshots show a user giving TableContainer an arbitrary id (\"table_container\") and manually adding aria-labelledby=\"table_container\" to the <Table>, but since TableContainer doesn\u2019t render an element with that id, the browser ignores the reference. Likewise there\u2019s no id on the description, so aria-describedby cannot be applied to the Table.\n\nTo fix this, TableContainer must generate unique IDs for its title and description elements (e.g. \"xx__title\" and \"xx__description\"), and DataTable\u2019s getTableProps must include both aria-labelledby and aria-describedby pointing to those IDs so authors don\u2019t have to wire it up themselves."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableContainer.js",
+            "packages/react/src/components/DataTable/__tests__/TableContainer-test.js",
+            "packages/react/src/components/DataTable/__tests__/__snapshots__/TableContainer-test.js.snap"
+        ],
+        "explanation": "TableContainer.js is responsible for rendering the container wrapper, the title (<h4>) and the description (<p>) nodes.  Currently it only applies the id prop to the wrapper <div>, so there are no IDs on the actual title/description elements for aria attributes to reference.  We need to generate separate IDs (e.g. `${id}__title` and `${id}__description`) on the heading and paragraph, and expose them so that consumers can wire up aria-labelledby/aria-describedby correctly.  The corresponding test and snapshot must be updated to reflect the new IDs on those nodes.",
+        "bug_scenario": "When using DataTable/TableContainer with visible title and description, there are no IDs on the <h4> title and <p> description elements.  If you set an id on <TableContainer> and then point <Table aria-labelledby> to that id, JAWS will still fall back to reading the first row rather than your title/description because the id lives on a generic <div>, not on the semantic heading/paragraph nodes.  Without individual IDs on the title/description tags, aria-labelledby and aria-describedby cannot pick up the visible text, making the table inaccessible."
+    }
+}

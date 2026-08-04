@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/computed/trace-of-tab.js",
+            "lighthouse-core/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/runner.js",
+            "devtools-entry.js",
+            "clients/extension"
+        ],
+        "explanation": "\u2022 lighthouse-core/computed/trace-of-tab.js is where we look through the raw traceEvents for the firstContentfulPaint record and explicitly throw the NO_FCP error if none is found. This is the origin of the failure.  \n\n\u2022 lighthouse-core/computed/metrics/first-contentful-paint.js depends on TraceOfTab to supply FCP timing, so it never even runs its metric logic when trace-of-tab rejects with NO_FCP. Fixing only in trace-of-tab cascades to every FCP-derived audit.  \n\n\u2022 lighthouse-core/runner.js is the piece that orchestrates gathering and computed artifacts, catches those rejections and turns them into the red \u201cError!\u201d status cards. Any change to swallow or handle NO_FCP (for example by providing a fallback) must be wired in here.  \n\n\u2022 devtools-entry.js is the entry point for Lighthouse when run inside Chrome (DevTools and the extension both use it). It\u2019s where we kick off the runner in an extension context, and may need to opt into a different trace category set or handle NO_FCP gracefully for background tabs.  \n\n\u2022 clients/extension contains the extension\u2019s front-end assets (styles, HTML, messaging) and currently has no special handling for NO_FCP in a background tab. We\u2019ll need UI or messaging changes here to prompt the user to bring the tab to the foreground (or mock an FCP) rather than simply showing a hard NO_FCP error.",
+        "bug_scenario": "When Lighthouse is run as a Chrome extension against a page that\u2019s not in the foreground (i.e. the tab is hidden or backgrounded), the DevTools protocol never emits a \u201cfirstContentfulPaint\u201d event. The core computed artifact in trace-of-tab.js therefore finds no FCP marker, throws the NO_FCP error, and bubbles that failure through every performance metric, resulting in every audit showing \u201cError! (NO_FCP)\u201d."
+    },
+    "2": {
+        "bug_files": [
+            "devtools-entry.js",
+            "devtools-report-assets.js",
+            "lighthouse-core/computed/trace-of-tab.js",
+            "lighthouse-core/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/config/perf-config.js",
+            "lighthouse-core/gather/gatherers/trace-elements.js"
+        ],
+        "explanation": "\n\u2022 devtools-entry.js & devtools-report-assets.js\n  These two files bootstrap Lighthouse inside Chrome DevTools (and the extension). They configure and launch the protocol session, start/stop tracing, and pass the raw trace into the core runner. Any issue with the trace categories, or the timing of start/stop when the tab is backgrounded, stems from how these modules orchestrate DevTools tracing.\n\n\u2022 lighthouse-core/computed/trace-of-tab.js\n  This is the computed artifact that inspects the raw trace for paint events. If it can\u2019t find a firstContentfulPaint event, it rejects with the NO_FCP code \u2014 exactly what the extension UI surfaces as the red \u201cError!\u201d.\n\n\u2022 lighthouse-core/computed/metrics/first-contentful-paint.js\n  This metric module depends on TraceOfTab to locate and return the FCP timestamp. Because TraceOfTab is failing, this metrics file (and all the metrics built on it) never resolve successfully.\n\n\u2022 lighthouse-core/config/perf-config.js\n  The performance config defines which trace categories to record (e.g. blink.feature_usage, disabled-by-default-blink.feature_usage, etc.). If the extension\u2019s DevTools tracing isn\u2019t including the right categories when a tab is inactive, no paint events are emitted.\n\n\u2022 lighthouse-core/gather/gatherers/trace-elements.js\n  Although this gatherer only pulls out individual paint events for the report UI, it also relies on the same underlying trace session. It helps shape which events from the trace are retained vs. filtered, so any changes to accommodate backgrounded tabs may need to touch this module as well.",
+        "bug_scenario": "When running Lighthouse as the Chrome extension on a tab that is not in the foreground (i.e. a hidden or backgrounded tab), the DevTools trace never fires a \u201cfirstContentfulPaint\u201d event. As a result the core computed artifact TraceOfTab throws the NO_FCP error, and every performance metric (First Contentful Paint, Speed Index, Time To Interactive, etc.) fails with the red \u201cError!\u201d status in the extension UI. The same URL and trace collection succeed without issue in the CLI."
+    }
+}

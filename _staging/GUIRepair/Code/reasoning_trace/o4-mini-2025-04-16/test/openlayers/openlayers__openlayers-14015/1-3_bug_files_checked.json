@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/layer/WebGLTile.js"
+        ],
+        "explanation": "All of the incorrect tiles are coming from the WebGL renderer\u2019s own texture cache. In TileLayer.js the per\u2010layer texture cache is never cleared when the layer source is replaced or when the projection changes. TileTexture.js is the class that wraps and uploads those cached textures, and WebGLTile.js is the layer class whose setSource() call ultimately should trigger texture\u2010cache invalidation. To fix the bug you must clear or dispose of the textures in TileTexture (via its delete calls) and clear the textureCache_ in TileLayer.js when WebGLTile.setSource() or a view\u2010projection change occurs.",
+        "bug_scenario": "When you replace a WebGL tile layer\u2019s source via setSource() or change the map view projection, the WebGL renderer still keeps the old tile textures in its own cache. As you pan or zoom back out, the map will show stale tiles from the previous source or projection instead of discarding them and fetching new textures."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/Layer.js",
+            "src/ol/webgl/Helper.js",
+            "src/ol/webgl/TileTexture.js"
+        ],
+        "explanation": "All of these files participate in creating, caching and rendering WebGL tile textures:\n\n\u2022 src/ol/layer/WebGLTile.js defines the WebGL tile layer class. Its setSource() method fires the layer change but never triggers a purge of existing GPU textures.\n\n\u2022 src/ol/renderer/webgl/TileLayer.js is the WebGL renderer for tile layers; it uses the WebGL helper to get or create tile textures but has no logic to clear the cache when the source or projection changes.\n\n\u2022 src/ol/renderer/webgl/Layer.js is the base for all WebGL layer renderers and manages the helper instance; it likewise lacks a hook to invalidate textures on layer source change or projection change.\n\n\u2022 src/ol/webgl/Helper.js holds per-context LRU caches of all geometry buffers and tile textures. It provides no public API to clear or reset the tile texture cache for a particular layer or source.\n\n\u2022 src/ol/webgl/TileTexture.js implements the actual tile texture cache entries (wrapping GL textures) and never listens for source or projection changes. Consequently stale textures remain in memory and get re\u2010bound.\n\nTo fix the bug one must add hooks in the layer and/or renderer to call a new clearTileTextures() (or equivalent) method on the WebGL helper when setSource() is called or when the view projection changes, and implement that method in Helper.js to evict and delete all cached textures in TileTexture.js.",
+        "bug_scenario": "When using a WebGL tile layer, if you swap out its source via setSource() or you change the view projection, the layer still holds and re-uses old GPU tile textures\u2014even though those textures no longer match the current source or projection. In practice you pan or zoom in, see tiles from the new source (or projection), then pan or zoom back and the layer pulls stale textures from the previous source (or projection). The root cause is that the WebGL tile renderer\u2019s texture cache is never cleared on a source swap or projection change."
+    }
+}

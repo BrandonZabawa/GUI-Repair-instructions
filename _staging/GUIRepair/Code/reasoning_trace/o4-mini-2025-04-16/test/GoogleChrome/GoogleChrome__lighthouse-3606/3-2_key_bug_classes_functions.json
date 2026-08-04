@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//ResponseCompression",
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js//ResponsesAreCompressed"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//ResponseCompression.filterUnoptimizedResponses",
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js//ResponsesAreCompressed.audit_"
+        ],
+        "explanation": "The root detection of whether a response is already compressed lives in ResponseCompression.filterUnoptimizedResponses. It looks for a response header whose name is exactly 'content-encoding' and whose value exactly matches one of ['gzip','br','deflate']. In practice, real servers will sometimes send variants (e.g. 'gzip; charset=UTF-8', multiple algorithms in one header, or case differences) that this strict check misses, so gzipped responses slip through as \u201cunoptimized.\u201d\n\nOnce filterUnoptimizedResponses mislabels a compressed response, ResponsesAreCompressed.audit_ picks it up, computes wasted bytes, and reports it. To fix the bug, filterUnoptimizedResponses must be relaxed to parse content-encoding headers (e.g. split on commas/semicolons, case-insensitive matching, handling multiple values) so that true gzip\u2019d assets are filtered out and do not appear in the final audit.",
+        "bug_scenario": "When running Lighthouse\u2019s \u201cEnable text compression\u201d audit against an Express endpoint that serves a large JSON payload with gzip (Content-Encoding: gzip), the audit erroneously lists that resource as uncompressed. In the screenshot you see multiple rows of \"/api/blob\" (~30 KB original with ~23 KB savings) even though Chrome\u2019s Network panel and curl both show the response is indeed gzipped."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//ResponseCompression",
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js//ResponsesAreCompressed"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//filterUnoptimizedResponses",
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js//afterPass",
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js//audit_"
+        ],
+        "explanation": "The core of the bug lives in the ResponseCompression gatherer and the subsequent audit. ResponseCompression.filterUnoptimizedResponses is responsible for filtering out already-compressed responses based on the Content-Encoding header, but in this scenario it never detects the gzip header and so treats the endpoint as uncompressed. Worse, ResponseCompression.afterPass then calls driver.getRequestContent to re-compress the body; since getRequestContent returns null for this XHR response, gzipSize is set to 0, making the audit think the full resource is uncompressed. Finally, the ResponsesAreCompressed.audit_ function takes those bogus records and reports them as wasted bytes. Fixing filterUnoptimizedResponses (to correctly detect the gzip header on this kind of response) or changing afterPass to trust the Content-Encoding header (rather than re-compressing) will resolve the false positives.",
+        "bug_scenario": "The Lighthouse \u201cEnable text compression\u201d audit is incorrectly listing a large JSON endpoint (/api/blob) as uncompressed. In the screenshot you can see multiple rows of \u201c/api/blob\u201d each ~29\u201330 KB original size with ~23 KB GZIP savings even though curl and Chrome DevTools both confirm that the response has a valid \u201cContent-Encoding: gzip\u201d header and is being transmitted compressed."
+    }
+}

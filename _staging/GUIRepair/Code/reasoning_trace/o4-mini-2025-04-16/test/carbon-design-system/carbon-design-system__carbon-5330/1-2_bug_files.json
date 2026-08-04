@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableToolbarSearch.js",
+            "packages/react/src/components/DataTable/__tests__/TableToolbarSearch-test.js",
+            "packages/react/src/components/DataTable/__tests__/__snapshots__/TableToolbarSearch-test.js.snap"
+        ],
+        "explanation": "The core of the issue lives in TableToolbarSearch.js: it isn\u2019t picking up an aria-label prop off of its props and applying it to the <div role=\"search\"/> container. We need to destructure ['aria-label'] from rest and render it on the container. Because we\u2019re modifying the rendered output, the existing Jest snapshot for TableToolbarSearch also has to be updated, and its test file needs to assert the new attribute. Those are the three files that must be changed to fix this bug.",
+        "bug_scenario": "When you render a <TableToolbarSearch> inside a DataTable toolbar and try to pass an aria-label prop, the search container div (role=\"search\") never gets that attribute. In the DOM you still see <div role=\"search\"> with no aria-label, so there\u2019s no accessible name for the search region and it cannot be overridden by the user."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableToolbarSearch.js",
+            "packages/react/src/components/DataTable/__tests__/TableToolbarSearch-test.js",
+            "packages/react/src/components/DataTable/__tests__/__snapshots__/TableToolbarSearch-test.js.snap"
+        ],
+        "explanation": "1) TableToolbarSearch.js: this is the component that destructures out ['aria-label'] but doesn\u2019t handle the camelCase prop name, so the wrapper <div role=\"search\"> never actually gets the aria-label attribute. 2) TableToolbarSearch-test.js & its snapshot: the existing tests and snapshot don\u2019t cover a case where ariaLabel or aria-label is passed and would need to be updated once the destructuring is corrected so that they assert the container receives the proper aria-label attribute.",
+        "bug_scenario": "When you render a DataTable with a <TableToolbarSearch aria\u2010label=\"\u2026\" />, the generated <div role=\"search\"> wrapper never receives the aria-label you passed. In the code, the component pulls out the string literal key ['aria-label'] from the rest props, but React normalizes your prop to camelCase (ariaLabel), so ariaLabel is never found and the container never gets the label. As a result the search region remains unlabeled to assistive technology."
+    }
+}

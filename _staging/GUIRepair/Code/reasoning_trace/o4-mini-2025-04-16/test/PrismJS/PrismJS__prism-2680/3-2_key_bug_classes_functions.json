@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-javascript.js"
+        ],
+        "explanation": "The JavaScript grammar is defined in components/prism-javascript.js, specifically the `template-string` token inserted before the `string` token. Its regex is intended to match backticked template literals (including nested `${\u2026}` interpolations) but is currently too simplistic or not fully greedy, so when a backtick appears in displayed examples the engine fails to close the token properly. Fixing or replacing that `template-string` pattern in components/prism-javascript.js will restore correct highlighting past backticks.",
+        "bug_scenario": "On the Prism.js homepage example section, code highlighting of JavaScript snippets breaks once the browser encounters a template-literal backtick. After scrolling down far enough, a backtick in the displayed sample causes the rest of the code block to lose its syntax highlighting."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-javascript.js//<no classes; this file is a module that augments Prism.languages>",
+            "prism.js//<no classes; this is the core namespace module>"
+        ],
+        "bug_functions": [
+            "components/prism-javascript.js//Prism.languages.insertBefore('javascript','string', { 'template-string': \u2026 })",
+            "prism.js//insertBefore",
+            "prism.js//matchGrammar"
+        ],
+        "explanation": "The heart of the problem lives in the JavaScript grammar extension in components/prism-javascript.js, where a single greedy regex is used to match template literals (`template-string`). Because it isn\u2019t correctly bounded, it will overrun when it sees an unmatched back-tick, swallowing all of the following code until (and including) the next back-tick. Fixing it therefore requires updating that template-string pattern (the call to Prism.languages.insertBefore) so that it handles unbalanced back-ticks properly (for example by making the regex non-greedy or adding an explicit lookahead). In addition, the core insertBefore method (which injects this pattern into the token stream) and the matchGrammar routine (which executes greedy patterns) in prism.js may need to be tweaked to ensure that greedy tokens do not span multiple, separate code blocks.",
+        "bug_scenario": "On the Prism.js homepage \u201cTry it\u201d demo panel, once you scroll down about 90% the live highlighter breaks whenever it encounters a back-tick in the sample JavaScript. Instead of treating it as the end of a template literal, the highlighter\u2019s greedy regex sweeps up all the following code, corrupts the markup for subsequent examples and effectively \u201cbreaks\u201d the demo."
+    }
+}

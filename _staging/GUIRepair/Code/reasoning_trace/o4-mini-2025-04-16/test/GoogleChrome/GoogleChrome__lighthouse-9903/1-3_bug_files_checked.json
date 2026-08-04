@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/link-elements.js",
+            "lighthouse-core/audits/uses-rel-preconnect.js"
+        ],
+        "explanation": "1. lighthouse-core/gather/gatherers/link-elements.js: This gatherer pulls all <link> elements with rel values of 'preconnect' or 'dns-prefetch'. If its logic doesn\u2019t correctly detect every valid preconnect tag (for instance, missing cases when crossOrigin isn\u2019t set or when the href value varies by protocol or trailing slash), the audit will wrongly conclude that those origins still need preconnecting.\n\n2. lighthouse-core/audits/uses-rel-preconnect.js: This audit inspects networkRecords and the link-elements artifact to decide which origins to suggest. Bugs here\u2014such as an overly strict origin comparison or failure to merge duplicate origins\u2014will cause Lighthouse to suggest origins that you\u2019ve already preconnected, or to go past the intended cap of six suggestions.\n\nUpdating these two files to normalize origin extraction, loosen rel detection, and correctly filter out any origin already covered by <link rel=\"preconnect\"> will stop Lighthouse from repeatedly recommending the same hosts.",
+        "bug_scenario": "When running Lighthouse\u2019s \u201cPreconnect to required origins\u201d audit against a page that already includes <link rel=\"preconnect\"> tags for the originally flagged hosts, the audit still flags additional (and occasionally those same) third-party origins. In other words, even after you\u2019ve wired up preconnect hints for nexus.ensighten.com, www.aexp-static.com, cdaas.americanexpress.com, aug.americanexpress.com and aexp.demdex.net, Lighthouse continues to surface six new origins for preconnect savings\u2014implying it isn\u2019t recognizing or properly filtering out the existing <link rel=\\\"preconnect\\\"> elements on the page."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/uses-rel-preconnect.js",
+            "lighthouse-core/gather/gatherers/link-elements.js"
+        ],
+        "explanation": "The core of this audit lives in uses-rel-preconnect.js: it reads the list of network requests to third-party origins and subtracts any origins that it sees preconnected via <link rel=\u201cpreconnect\u201d>. That logic depends on the LinkElements gatherer (link-elements.js) to return all the <link> tags on the page and normalize their hrefs. If link-elements.js doesn\u2019t capture or normalize your manually-added tags exactly the way the audit expects (for example differing on trailing slashes, case, subdomain, or missing crossorigin attributes), uses-rel-preconnect.js will never drop that origin from its suggestions. To fix this bug you\u2019ll need to update the gatherer so it correctly canonicalizes every preconnect tag you add, and then adjust uses-rel-preconnect.js so it compares origins against that complete, normalized set of hrefs rather than only origins that actually fired a preconnect request during the page load.",
+        "bug_scenario": "When running the \u201cPreconnect to required origins\u201d audit (uses-rel-preconnect) against an American Express page, Lighthouse continues to flag half-a-dozen additional third-party origins\u2014even after you\u2019ve manually added <link rel=\u201cpreconnect\u201d href=\u201c\u2026\u201c> tags for the originally reported hosts. Those tags aren\u2019t being recognized by the audit, so Lighthouse still suggests preconnecting to the same domains you\u2019ve already covered."
+    }
+}

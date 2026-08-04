@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Image.js//ImageStyle",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/style/Image.js//ImageStyle.setOpacity",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer.handleStyleImageChange_"
+        ],
+        "explanation": "The ImageStyle.setOpacity method simply updates the private opacity_ field but does not emit any change event or otherwise notify the renderer, so the canvas never knows it needs to repaint. In the canvas renderer (CanvasVectorLayerRenderer), the only hook for style changes is handleStyleImageChange_, which is wired up to listen for image-loading events, not for arbitrary property changes like opacity. Because setOpacity never triggers that listener, the layer never re-renders and the opacity change is never applied on screen.",
+        "bug_scenario": "In version 6.1.1 when you call setOpacity on an ol/style/Icon (or any ImageStyle) the feature redraws with the new opacity (you can see the symbol \u201cblink\u201d as its alpha changes). After upgrading to 6.2.0, calling setOpacity on an ImageStyle has no visible effect \u2014 the feature remains fully opaque and you get no re-render."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Image.js//ImageStyle",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/style/Image.js//setOpacity",
+            "src/ol/renderer/canvas/VectorLayer.js//handleStyleImageChange_"
+        ],
+        "explanation": "1. ImageStyle (in src/ol/style/Image.js) is the base class for icon and circle styles. Its setOpacity(opacity) method simply mutates the private opacity_ field without firing any change event. That means the renderer is never notified that the style has been updated, so nothing is redrawn.\n2. CanvasVectorLayerRenderer.handleStyleImageChange_ (in src/ol/renderer/canvas/VectorLayer.js) is the callback that gets invoked when an image-style change event occurs, triggering a re-render of the layer. Because setOpacity does not dispatch an image-change event, this handler never runs and the canvas is never updated.\nTo restore the blinking behavior, setOpacity must be updated to dispatch a change (e.g. call an Observable.changed() or dispatch a custom \"change\" event), and/or CanvasVectorLayerRenderer must listen for style property changes (not just image-load events) so that handleStyleImageChange_ is invoked when opacity changes.",
+        "bug_scenario": "In versions prior to 6.2.0 (for example 6.1.1), repeatedly calling setOpacity on an ImageStyle (for instance in an animation loop) causes the feature\u2019s icon to blink as its opacity changes. After upgrading to 6.2.0 the same calls to imageStyle.setOpacity(...) have no visible effect \u2013 the icon remains at its original opacity and never blinks."
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js"
+        ],
+        "explanation": "All of the logic that renders the menu items and assigns React keys lives in ComboBox.js. In its current form it derives the key from itemToString(item) (i.e. the displayed text), which produces collisions when labels repeat. To resolve the warning, this file must be updated to use the item.id (when it exists) as the key instead of always using the display string.",
+        "bug_scenario": "In the Codesandbox demo you can see two options both labelled \u201cOption\u201d but backed by distinct IDs (\"option-0\" and \"option-1\"). Because ComboBox uses the text returned from your itemToString callback to generate React keys on its <ListBox.MenuItem> children, React is complaining about duplicate keys when two options share the same text. You\u2019d expect the ComboBox implementation to prefer a unique item.id for its key when present, falling back to the displayed string only when no id is available."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js"
+        ],
+        "explanation": "\u2022 ComboBox.js: this file contains the render method that maps items to <ListBox.MenuItem> elements and sets their React key. It currently uses itemToString(item) when id is missing or in certain branches, causing duplicate-key warnings when two items share the same text. We need to update this logic to always use the unique item.id property for the key.\n\u2022 ComboBox.test.js: this test file contains unit and/or snapshot tests for ComboBox. Any change in key logic (or props passed to MenuItem) will need corresponding updates in tests to reflect the new behavior and ensure test coverage remains accurate.",
+        "bug_scenario": "When two items passed into <ComboBox> have the same display text, React logs a \u201cduplicate key\u201d warning because the MenuItem key falls back to the string returned by itemToString (i.e. the item text). Even though each item has its own id, the current implementation of ComboBox uses the display string as the key in some code paths, so duplicate labels lead to non-unique keys. The fix is to ensure we always use the unique item.id for the React key."
+    }
+}

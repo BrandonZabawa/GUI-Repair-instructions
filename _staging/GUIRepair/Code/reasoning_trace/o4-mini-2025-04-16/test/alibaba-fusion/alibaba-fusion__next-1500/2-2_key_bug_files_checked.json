@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/table/base/header.jsx",
+            "src/table/base/filter.jsx",
+            "src/table/fixed/header.jsx",
+            "src/table/fixed/wrapper.jsx"
+        ],
+        "explanation": "1. src/table/base/header.jsx \u2013 This is where we build each <th> (including placing sort, filter and resize icons). When resizable is true it adds the Resize component alongside the Filter component. A mistake in how cells are generated can push the filter dropdown into the header row instead of letting it float above.\n\n2. src/table/base/filter.jsx \u2013 The Filter component wraps its menu in a Dropdown and explicitly uses node.parentNode as the popup container. Combined with a fixed header, that container becomes part of the table\u2019s <thead>, so the popup menu is rendered inline and breaks the table markup immediately after clicking the icon.\n\n3. src/table/fixed/header.jsx \u2013 The FixedHeader variant renders the header into its own table inside a wrapper <div>. Because it doesn\u2019t account for movable overlays, its DOM structure makes the filter\u2019s parentNode trick fail, causing the dropdown to embed inside the header table.\n\n4. src/table/fixed/wrapper.jsx \u2013 The FixedWrapper nests the body and header tables inside a .table-inner wrapper. This wrapper needs to allow floating overlays (like the filter menu) to escape the <thead>, but currently it traps them inside, so the filter menu corrupts the header layout rather than appearing on top.",
+        "bug_scenario": "In the screenshot you can see a fixed\u2010header table with column resizing enabled. As soon as you click the little filter\u2010icon in the first column, the header row collapses and you no longer see your normal titles. Instead the \u201811\u2019 filter label appears right inside the header cell and the rest of the header disappears. The filter menu never pops out \u2014 its content is injected into the table\u2019s <thead> and breaks the layout."
+    }
+}

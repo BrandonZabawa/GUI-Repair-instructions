@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect",
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/MultiSelect/MultiSelect.js//onStateChange",
+            "packages/react/src/components/Dropdown/Dropdown.js//onSelectedItemChange"
+        ],
+        "explanation": "Both the MultiSelect and the Dropdown components are Carbon wrappers around Downshift that manage internal isOpen state but never expose a callback for menu open/close. In MultiSelect, the onStateChange function handles Downshift state changes (ItemClick, ToggleButtonClick, MenuBlur, etc.) and updates isOpen, but it does not notify consumers of menu visibility changes. Likewise, Dropdown\u2019s onSelectedItemChange only fires on item selection, not on menu open/close. To implement the requested onMenuChange event, we need to extend each component\u2019s propTypes/defaultProps to accept onMenuChange and invoke it in their respective state-change handlers (in MultiSelect\u2019s onStateChange and by augmenting Dropdown\u2019s useSelect plumbing) whenever isOpen toggles.",
+        "bug_scenario": "The user wants to know exactly when a Carbon MultiSelect (and Dropdown) menu is opened or closed so they can perform actions once the menu visibility changes. Currently there is only an onChange event for selection changes. There is no built-in onMenuChange (menu open/close) callback, forcing consumers to hack around focus or click events. The animations in the screenshots illustrate that selecting roles immediately disables the row and closes the menu (wrong), whereas the desired behavior is to detect menu close explicitly (correct)."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/MultiSelect/MultiSelect.js//onStateChange"
+        ],
+        "explanation": "The MultiSelect component in MultiSelect.js is responsible for managing its open/closed state via Downshift. In particular, its internal onStateChange function inspects Downshift stateChangeTypes (e.g. ToggleButtonClick, MenuBlur, MenuKeyDownEscape) and calls setIsOpen/setHighlightedIndex. To support a new onMenuChange prop, we must extend the MultiSelect component\u2019s API (add onMenuChange to propTypes and defaultProps) and instrument its onStateChange handler to call onMenuChange({ isOpen, type, changes }) whenever the menu visibility toggles. By modifying only MultiSelect and its onStateChange, we can expose the desired callback without overhauling the entire component or touching unrelated Dropdown code.",
+        "bug_scenario": "The GIF shows that when a user clicks the checkbox to activate the row, the MultiSelect dropdown immediately opens, and as soon as the user clears all selections (for example by clicking the \u201c\u00d7\u201d on a tag), the menu closes prematurely. The desired behavior is to detect when the menu itself opens or closes (onMenuChange) so that consumer code can defer row deactivation until after the user has finished interacting with the dropdown."
+    }
+}

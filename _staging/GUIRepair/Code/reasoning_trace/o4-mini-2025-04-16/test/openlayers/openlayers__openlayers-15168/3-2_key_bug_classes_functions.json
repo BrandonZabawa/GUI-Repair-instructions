@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/reproj.js"
+        ],
+        "bug_functions": [
+            "src/ol/reproj.js//calculateSourceResolution",
+            "src/ol/reproj.js//calculateSourceExtentResolution",
+            "src/ol/reproj.js//render"
+        ],
+        "explanation": "All raster reprojection paths (Image, Tile, DataTile) invoke the core reproj.js routines. The functions calculateSourceResolution and calculateSourceExtentResolution compute a single uniform source resolution under the assumption that target pixels are square, and render() enforces square pixel boundaries via its pixelRound helper (using Math.round(value*pixelRatio)/pixelRatio for both X and Y). This rounding forces identical horizontal and vertical pixel dimensions, leading to column stretching and mis-alignment when the true projected pixel aspect ratio differs. Fixing the bug requires adapting these routines (especially pixelRound or its use in render) to allow non-square target pixels and preserve the exact source pixel count across reprojection.",
+        "bug_scenario": "The reprojection of a small 5\u00d75 PNG assumes square target pixels. In the user\u2019s test, each source pixel is intended to cover 3 km\u00d72 km, so projected pixel widths and heights differ. The screenshot shows correct vertical placement of pixel centers (blue dots), but the horizontal columns are mis-aligned: OpenLayers draws perfect squares, causing the first column to be repeated and the overall projected image to appear 7\u00d75 instead of 5\u00d75."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/reproj.js",
+            "src/ol/reproj/Image.js//ReprojImage",
+            "src/ol/reproj/DataTile.js//ReprojDataTile",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj.js//render",
+            "src/ol/reproj.js//pixelRound (closure)",
+            "src/ol/reproj.js//calculateSourceResolution",
+            "src/ol/reproj.js//calculateSourceExtentResolution",
+            "src/ol/reproj/Image.js//ReprojImage.reproject_",
+            "src/ol/reproj/DataTile.js//ReprojDataTile.reproject_",
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_"
+        ],
+        "explanation": "All of the reprojection classes ultimately call the render function in reproj.js, which lays out triangles of source data into a target canvas. In render(), a single targetResolution value is used for both X and Y axes, and u/v coordinates are snapped to a uniform grid via pixelRound(Math.round(...)). This enforces square pixels in the projected output. The calculateSourceResolution and its extent variant also compute a single scalar resolution, so horizontal and vertical scales get merged. To preserve the exact number of source pixels, the code must allow independent horizontal and vertical pixel resolutions (or different targetResolution for X and Y), and adjust pixelRound accordingly. The ReprojImage, ReprojDataTile, and ReprojTile classes all rely on this shared behavior, so their reproject_ methods inherit the same square\u2010pixel assumption.",
+        "bug_scenario": "When reprojecting a small 5\u00d75 pixel PNG from Lambert Conformal Conic to Web Mercator, the generated canvas shows 7 columns instead of 5: the first column is drawn twice and pixels shift eastward. The blue dots mark the expected pixel centers. Vertically the pixels line up, but horizontally the reprojection code forces uniform square pixels in the destination coordinate space, ignoring that projected source pixels may have different horizontal and vertical scales."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "1. src/ol/layer/Group.js: This file manages group layers, including propagating visibility changes to child layers. The problem likely stems from how visibility changes are handled or communicated from the group to its children, so this logic should be reviewed.\n2. src/ol/layer/WebGLTile.js: This implements the WebGlTile layer, which is the layer type not responding to group visibility changes. Its handling of visibility or rendering might bypass the group setting.\n3. src/ol/renderer/webgl/TileLayer.js: This file likely contains the WebGL-specific rendering logic for tile layers. If it doesn't check group visibility or is missing a propagation of visibility, the tiles would remain rendered even when invisible. This is where the actual drawing could fail to skip tiles based on parent group's visibility.\n\nThese files are central to group-layer behavior, WebGlTile implementation, and WebGL tile rendering, which together cause and eventually will solve the bug.",
+        "bug_scenario": "When a WebGlTile layer is inside a Group layer and the group's visibility is set to false, the WebGlTile layer remains visible, whereas Tile layers correctly hide. The expected behavior is that WebGlTile layers should also respect the group visibility setting and hide when their parent group is not visible. This inconsistency only occurs with WebGlTile layers, not with standard Tile layers."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/layer/Group.js",
+            "src/ol/layer/Layer.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/Layer.js"
+        ],
+        "explanation": "- src/ol/layer/WebGLTile.js: This is the main file that defines the WebGLTile layer, which exhibits the visibility bug when used within groups.\n- src/ol/layer/Group.js: Responsible for group layer behavior and propagation of visibility changes to child layers; essential to check how visibility updates are cascaded.\n- src/ol/layer/Layer.js: The base Layer implementation may contain the property propagation and visibility logic applicable to all layer types.\n- src/ol/renderer/webgl/TileLayer.js: Handles the WebGL rendering of tile layers and might fail to check parent group visibility, causing the described issue.\n- src/ol/renderer/Layer.js: The base renderer must properly respect the visibility status of the entire layer chain (including groups), so omission here can break visibility for descendants like WebGLTile.\n\nThese files are tightly coupled to layer nesting, visibility propagation, and the WebGL tile rendering pipeline\u2014all relevant for addressing why WebGLTile layers do not honor group visibility changes.",
+        "bug_scenario": "A WebGlTile layer inside an ol/layer/Group remains visible after the Group's visibility is set to false, while a standard Tile layer behaves correctly. This suggests the WebGlTile rendering is not respecting or inheriting the Group's visibility flag."
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//Driver.gotoURL",
+            "lighthouse-core/gather/driver.js//Driver._waitForFullyLoaded",
+            "lighthouse-core/gather/driver.js//Driver._waitForNetworkIdle",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage"
+        ],
+        "explanation": "The hang occurs during navigation and load-wait logic. GatherRunner.loadPage invokes Driver.gotoURL, which kicks off several listeners and then calls Driver._waitForFullyLoaded. That method waits concurrently for the load event, network\u2010idle (via _waitForNetworkIdle), and CPU\u2010idle before resolving or timing out. In a PWA scenario with a service worker, the network may never become idle (cached requests replay, open service worker fetch events) or the load event may not fire in the expected way, causing the promise in _waitForFullyLoaded to never settle. To fix the hang, adjust the logic in Driver.gotoURL/_waitForFullyLoaded (and its helper _waitForNetworkIdle) to account for service-worker\u2013driven offline fetches and ensure the load event listener resolves correctly. GatherRunner.loadPage may also need adjustments to pass the correct timing options into gotoURL if certain thresholds are too high or disabled for PWA audits.",
+        "bug_scenario": "The reporter runs a Lighthouse PWA audit (either via DevTools or the extension) against a page with a service worker and offline cache. After selecting only the \u201cProgressive Web App\u201d category, Lighthouse enters the \u201cLoading page & waiting for onload\u201d phase (showing \u201cServiceWorker, Offline, StartUrl\u201d) and then never completes\u2014it spins indefinitely without error."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//Driver.gotoURL",
+            "lighthouse-core/gather/driver.js//Driver._waitForLoadEvent",
+            "lighthouse-core/gather/driver.js//Driver._waitForFullyLoaded",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage"
+        ],
+        "explanation": "The hang occurs in the navigation and load-waiting logic. GatherRunner.loadPage invokes Driver.gotoURL, which under the hood orchestrates Page.navigate and then waits for the load event (via _waitForLoadEvent) plus post-load network/CPU quiet (via _waitForFullyLoaded). If those promises never resolve (for example when a service worker intercepts requests or onload isn\u2019t fired as expected), the audit will never complete. Patching or adding timeouts/fallbacks in Driver.gotoURL or the helper wait methods is where the fix must be applied.",
+        "bug_scenario": "When running Lighthouse (either via Chrome DevTools native audit or the Lighthouse extension) on a site with only the \u201cProgressive Web App\u201d category selected, the audit UI never advances past the \u201cLoading page & waiting for onload\u201d step. The page under test uses a service worker and appears to load normally in the browser, but Lighthouse spins indefinitely on that step without error."
+    }
+}

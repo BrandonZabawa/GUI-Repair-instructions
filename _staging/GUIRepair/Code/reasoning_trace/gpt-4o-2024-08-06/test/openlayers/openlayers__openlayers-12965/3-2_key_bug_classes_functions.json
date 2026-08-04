@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer//constructor",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer//renderFrame",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer//prepareFrameInternal"
+        ],
+        "explanation": "The class `WebGLTileLayerRenderer` in `src/ol/renderer/webgl/TileLayer.js` is directly involved in managing the WebGL context for tile layers. Modifications to allow sharing of a single WebGL context among multiple TileLayers would likely need to happen within this class. The constructor and methods such as `renderFrame` and `prepareFrameInternal` are key methods where WebGL context handling is performed, thus they are central to addressing the bug.\n\nThe `WebGLTileLayer` class in `src/ol/layer/WebGLTile.js` is also relevant as it is responsible for creating the renderer, which is where the context is managed. Changes to allow sharing contexts would need to consider how layers are instantiated and managed, potentially affecting how the renderer is created and used.",
+        "bug_scenario": "The bug scenario involves an application using WebGL TileLayers to render multiple raster images. Each WebGL TileLayer uses a separate WebGL context, and browsers have a hard limit on the number of WebGL contexts they can handle simultaneously (typically 16). This limitation causes the application to break down or misbehave when trying to render more than 16 TileLayers at the same time. The proposal is to allow WebGL TileLayers within a single OpenLayers map to share a single WebGL context to alleviate this limitation."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/webgl/Helper.js//WebGLHelper"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal",
+            "src/ol/webgl/Helper.js//getProgram"
+        ],
+        "explanation": "The classes and functions identified are directly responsible for managing WebGL contexts and rendering operations in the application. The WebGLTileLayerRenderer class in 'TileLayer.js' is responsible for rendering tile layers using WebGL, and its methods like 'renderFrame' and 'prepareFrameInternal' are critical for handling the rendering process which involves WebGL contexts. The WebGLTileLayer class in 'WebGLTile.js' creates instances of these renderers and manages their lifecycle. The WebGLHelper class in 'Helper.js' provides low-level WebGL operations, such as creating shader programs with 'getProgram', which are essential for rendering with shared contexts. Modifying these classes/functions would be necessary to implement context sharing among TileLayers.",
+        "bug_scenario": "The bug relates to the use of WebGL contexts in a mapping application using OpenLayers. Each WebGL TileLayer currently requires a separate WebGL context, leading to a limitation due to browsers typically supporting only 16 contexts simultaneously. This results in application breakdowns or misbehavior when more than 16 TileLayers are used. The proposal is to allow multiple WebGL TileLayers within the same map to share a single WebGL context, reducing the likelihood of hitting the context limit."
+    }
+}

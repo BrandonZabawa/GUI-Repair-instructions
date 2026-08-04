@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/context-pad/ContextPadProvider.js",
+            "lib/features/modeling/BpmnFactory.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js"
+        ],
+        "explanation": "These four modules work together to support the multi-instance toggles:\n\n\u2022 ContextPadProvider.js defines the Parallel/Sequential action and calls modeling.updateProperties on the task\u2019s businessObject.loopCharacteristics.\n\n\u2022 BpmnFactory.js is responsible for creating new MultiInstanceLoopCharacteristics moddle elements (or clearing them) when updateProperties invokes it.\n\n\u2022 UpdateModdlePropertiesHandler.js actually applies the change to the underlying moddle businessObject: setting, merging or removing the isSequential attribute (or the entire loopCharacteristics element).\n\n\u2022 BpmnUpdater.js propagates those semantic changes into the diagram\u2019s BPMN DI (badges, markers) and ultimately backs onto the exported XML. Because the isSequential flag isn\u2019t properly added or removed in UpdateModdlePropertiesHandler (and/or not picked up in BpmnUpdater), the XML writer never emits the correct `isSequential` attribute.",
+        "bug_scenario": "When you add a multi-instance loop to a task and then click the context-pad toggle to switch between Parallel and Sequential, the icon in the diagram updates but the underlying BPMN XML never reflects the change. You still only see `<bpmn:multiInstanceLoopCharacteristics/>` (or nothing at all) instead of getting `<bpmn:multiInstanceLoopCharacteristics isSequential=\"true\"/>` when you choose Sequential, and vice versa."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js"
+        ],
+        "explanation": "The replace feature files (BpmnReplace.js and ReplaceOptions.js) define how multi-instance loop characteristics are switched between parallel and sequential. They generate and dispatch the update command but do not correctly pass or clear the isSequential property. The UpdateModdlePropertiesHandler applies those moddle property changes to the business object; because it doesn\u2019t handle removal or addition of isSequential in this scenario, the XML never updates. To fix the bug, these three files must be updated so that toggling invokes UpdateModdlePropertiesHandler with the correct isSequential flag (true or undefined), leading to the expected change in the serialized XML.",
+        "bug_scenario": "When adding a multi-instance loop to a task and then toggling between parallel and sequential modes, the BPMN XML does not reflect the change: the <bpmn:multiInstanceLoopCharacteristics> element remains unchanged (never gains or loses the isSequential attribute). Although the UI icons toggle, the underlying XML label never updates."
+    }
+}

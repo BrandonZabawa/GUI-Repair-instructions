@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/panel-tabset.lua//render_tabset",
+            "src/resources/filters/quarto-pre/panel-tabset.lua//bootstrapTabs"
+        ],
+        "explanation": "The root of the problem is in panel-tabset.lua: the render_tabset function builds the <ul> for the Bootstrap tabs by calling renderer.ulAttribs, which in the bootstrapTabs() definition hard-codes only 'class=\"nav nav-tabs\" role=\"tablist\"'. Any extra class on the original div (like nav-fill) is never propagated into the generated <ul>. The bootstrapTabs.ulAttribs function therefore needs to be updated to merge or pass through the nav-fill class (and any others) from the div attributes when constructing the nav element.",
+        "bug_scenario": "In Quarto 1.3.x the combination of the panel-tabset and nav-fill CSS classes no longer produces a Bootstrap-styled tab bar that stretches to fill the available width. In the prerelease you see a basic stacked panel output instead of a full-width, evenly-spaced nav tab bar. Reversing the class order (putting .nav-fill on the outer container) works around the issue, indicating that the filter is dropping the nav-fill class when both are on the same div."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/panel-tabset.lua//ast handler for class_name \"panel-tabset\""
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/panel-tabset.lua//render_tabset",
+            "src/resources/filters/quarto-pre/panel-tabset.lua//bootstrapTabs.ulAttribs"
+        ],
+        "explanation": "All of the tab-rendering logic lives in panel-tabset.lua. The AST handler for class_name \"panel-tabset\" invokes render_tabset with the div\u2019s Attr. In render_tabset, the <ul> is hard-coded to use renderer.ulAttribs(tabsetid), and bootstrapTabs.ulAttribs returns only \"class=\\\"nav nav-tabs\\\" role=\\\"tablist\\\"\", ignoring any additional classes (like nav-fill) that were placed on the original div. As a result, nav-fill never gets propagated to the actual <ul> element. To restore the intended behavior, render_tabset (or bootstrapTabs.ulAttribs) must be modified so that it merges any extra classes (including nav-fill) from attr.classes into the <ul> attributes.",
+        "bug_scenario": "The user is combining a panel-tabset with the Bootstrap utility class nav-fill (i.e. using :::{.panel-tabset .nav-fill}). In Quarto 1.2.x the nav-fill class was honored on the generated <ul> so each tab stretched to fill the horizontal space. In 1.3.x the nav-fill class is never applied to the <ul> (only the default nav-tabs classes are used), so the tabs collapse to their content width and do not fill the container. Reversing the class order (nav-fill then panel-tabset) works as a workaround because nav-fill ends up on the outer container, but the intended behavior of applying nav-fill to the tab navigation is broken."
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler",
+            "lib/features/modeling/behavior/LabelBehavior.js//LabelBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//postExecute",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//setText",
+            "lib/features/modeling/behavior/LabelBehavior.js//postExecute"
+        ],
+        "explanation": "The classes and functions identified are directly involved in updating and rendering labels for BPMN elements, specifically events and gateways, which are the focus of the bug. \n\n- UpdateLabelHandler (lib/features/label-editing/cmd/UpdateLabelHandler.js) manages how label changes are applied to elements. Its postExecute function is responsible for adjusting element bounds after label edits. The bug report and images indicate that completing editing with an empty label causes resizing issues, which is handled in postExecute (where the element might be resized incorrectly if the label is empty).\n- setText in UpdateLabelHandler is the method that actually updates the label text and might propagate empty values or cause label targets to be incorrectly resized.\n- LabelBehavior (lib/features/modeling/behavior/LabelBehavior.js) governs how external labels are created, updated, and removed, especially for events and gateways. Its postExecute hooks for various commands (such as shape.create, label.create, shape.delete, and shape.resize) are responsible for synchronizing label appearance and element bounds. Incorrect handling here may cause labels and their targets (events/gateways) to shrink or vanish when edited or selected.\n\nThese classes and functions collectively manage the life cycle of labels and their impact on BPMN shape rendering, and any issue in their logic can lead to the observed bug where shapes become too small, disappear, or are not interactable after label interactions.",
+        "bug_scenario": "The bug scenario is that when a user selects or edits events or gateways in the BPMN editor, the shapes of these elements unexpectedly shrink, disappear, or become unclickable. This occurs especially after completing direct editing with an empty label on elements with external labels. The bug can be reproduced by starting direct editing on an element with an external label and completing it with empty text, or by simply selecting an event or gateway in certain versions of the tool. The provided images illustrate that after clicking or editing, events and gateways either become smaller than expected or vanish from the canvas, leading to a broken diagram editing experience."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler",
+            "lib/features/modeling/behavior/LabelBehavior.js//LabelBehavior",
+            "lib/draw/TextRenderer.js"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//postExecute",
+            "lib/draw/TextRenderer.js//getExternalLabelBounds",
+            "lib/util/LabelUtil.js//isLabelExternal"
+        ],
+        "explanation": "The core of the bug is triggered when label editing results in an empty label for external labels (like events and gateways). Looking at the skeletons: 1) UpdateLabelHandler.js (specifically the postExecute function) is responsible for resizing the label/element after label editing, and when the label is empty, it proceeds to resize the element to minimal or zero bounds, causing it to shrink or disappear. 2) LabelBehavior.js is responsible for label management and creation/removal, and any changes in label state (like deletion or property update) are handled here; errors in label existence or bounds can thus propagate through here. 3) TextRenderer.js provides the calculation for label bounds (getExternalLabelBounds), and if given an empty label, can potentially return very small or zero-size bounds, triggering the shrinking/disappearance. 4) LabelUtil.js's isLabelExternal is key to identifying which elements (such as events/gateways) are subject to this external label logic. All these classes and functions are directly involved in the label editing lifecycle and the calculation of label bounds, which is at the core of this bug.",
+        "bug_scenario": "The bug scenario is that when selecting or editing the label of BPMN elements (specifically events and gateways), if the label is set to empty or direct editing is completed with no text, the shapes of the elements (event or gateway) shrink abnormally or even disappear, making them unclickable. This is clearly visualized in the provided images and GIF, where after label editing, the event/gateway elements become tiny or vanish from the canvas."
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/components/sprite-selector-item/sprite-selector-item.jsx",
+            "src/containers/sprite-selector-item.jsx",
+            "src/lib/drag-recognizer.js"
+        ],
+        "explanation": "\u2022 sprite-selector-item.jsx (component): Passes a `disable={props.preventContextMenu}` prop to the ContextMenuTrigger. If this prop remains true, the custom menu never re-appears and the browser\u2019s native menu shows instead.\n\u2022 sprite-selector-item.jsx (container): Computes `preventContextMenu` from `this.dragRecognizer.gestureInProgress()`. Its `handleDragEnd` resets only the Redux drag state and `noClick` flag but never explicitly resets the recognizer\u2019s internal gesture state at the right time, so `gestureInProgress()` can stay true after dragging.\n\u2022 drag-recognizer.js: Implements `gestureInProgress()` and `reset()`. Because the container relies on `gestureInProgress()` to re-enable context menus, any mismatch between when `reset()` is called here and when the UI stops dragging will leave the context menu disabled. Adjusting where/when `reset()` is invoked (or overriding `preventContextMenu`) in these files will restore the duplicate menu after a drag.",
+        "bug_scenario": "In the first screenshot, the user right-clicks on a sprite in the selector and the Scratch-GUI \u201cduplicate / export / delete\u201d context menu appears as expected. In the second (GIF) sequence, the user drags the same sprite to a new position (i.e. reorders it), then right-clicks again\u2014but instead of the Scratch custom menu, the OS\u2019s native context menu appears. In other words, after finishing a drag operation, the GUI\u2019s context\u2010menu trigger remains \u201cdisabled,\u201d so the native menu takes over."
+    }
+}

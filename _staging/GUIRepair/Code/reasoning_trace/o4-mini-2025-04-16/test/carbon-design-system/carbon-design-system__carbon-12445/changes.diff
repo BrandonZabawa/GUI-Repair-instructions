@@ -1,0 +1,87 @@
+diff --git a/packages/react/src/components/ComboBox/ComboBox-test.js b/packages/react/src/components/ComboBox/ComboBox-test.js
+index fda42001..32e285b1 100644
+--- a/packages/react/src/components/ComboBox/ComboBox-test.js
++++ b/packages/react/src/components/ComboBox/ComboBox-test.js
+@@ -162,14 +162,27 @@ describe('ComboBox', () => {
+       openMenu();
+       expect(findListBoxNode()).not.toHaveClass('cds--list-box--expanded');
+     });
+-  });
+-
+   describe('downshift quirks', () => {
+     it('should set `inputValue` to an empty string if a false-y value is given', () => {
+       render(<ComboBox {...mockProps} />);
+-
+       expect(findInputNode()).toHaveDisplayValue('');
+     });
++  });
++
++  describe('when readOnly', () => {
++    it('should apply readonly attribute to the input node', () => {
++      render(<ComboBox {...mockProps} readOnly={true} />);
++      expect(findInputNode()).toHaveAttribute('readOnly');
++    });
++
++    it('should add the read-only class to the combobox container', () => {
++      render(<ComboBox {...mockProps} readOnly={true} />);
++      const container = findInputNode().closest('div[class*="--combo-box"]');
++      expect(container).toHaveClass(expect.stringContaining('--combo-box--readonly'));
++    });
++  });
++});
++    });
+ 
+     it('should only render one listbox at a time when multiple comboboxes are present', () => {
+       render(
+diff --git a/packages/react/src/components/ComboBox/ComboBox.js b/packages/react/src/components/ComboBox/ComboBox.js
+index 1e9463c2..9c2249f7 100644
+--- a/packages/react/src/components/ComboBox/ComboBox.js
++++ b/packages/react/src/components/ComboBox/ComboBox.js
+@@ -89,6 +89,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+     light,
+     onChange,
+     onInputChange,
++    readOnly,
+     onToggleClick, // eslint-disable-line no-unused-vars
+     placeholder,
+     selectedItem,
+@@ -203,6 +204,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+     {
+       [`${prefix}--list-box--up`]: direction === 'top',
+       [`${prefix}--combo-box--warning`]: showWarning,
++      [`${prefix}--combo-box--readonly`]: readOnly,
+     }
+   );
+   const titleClasses = cx(`${prefix}--label`, {
+@@ -285,6 +287,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+           // Remove excess aria `aria-labelledby`. HTML <label for> provides this aria information.
+           'aria-labelledby': null,
+           disabled,
++          readOnly,
+           placeholder,
+           onClick() {
+             toggleMenu();
+@@ -591,6 +594,7 @@ ComboBox.propTypes = {
+ 
+ ComboBox.defaultProps = {
+   disabled: false,
++  readOnly: false,
+   itemToString: defaultItemToString,
+   itemToElement: null,
+   shouldFilterItem: defaultShouldFilterItem,
+diff --git a/packages/react/src/components/ComboBox/ComboBox.stories.js b/packages/react/src/components/ComboBox/ComboBox.stories.js
+index bbeadcc5..5a36aa22 100644
+--- a/packages/react/src/components/ComboBox/ComboBox.stories.js
++++ b/packages/react/src/components/ComboBox/ComboBox.stories.js
+@@ -134,6 +134,11 @@ export const Playground = (args) => (
+   </div>
+ );
+ 
++export const ReadOnly = Playground.bind({});
++ReadOnly.args = {
++  readOnly: true,
++};
++
+ Playground.argTypes = {
+   ariaLabel: {
+     table: {

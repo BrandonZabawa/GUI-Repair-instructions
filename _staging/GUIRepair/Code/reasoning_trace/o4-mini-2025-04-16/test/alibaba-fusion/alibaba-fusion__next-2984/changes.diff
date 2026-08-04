@@ -1,0 +1,54 @@
+diff --git a/src/cascader-select/cascader-select.jsx b/src/cascader-select/cascader-select.jsx
+index 45fec1c54..5cd9e94d8 100644
+--- a/src/cascader-select/cascader-select.jsx
++++ b/src/cascader-select/cascader-select.jsx
+@@ -26,6 +26,23 @@ const normalizeValue = value => {
+ /**
+  * CascaderSelect
+  */
++/**
++ * We need to deep-clone the incoming dataSource
++ * so that Cascader can freely add its internal props
++ * without touching the user’s frozen objects.
++ */
++function cloneItems(items) {
++    return items.map(item => {
++        // shallow-clone this node
++        const newItem = { ...item };
++        // recursively clone children if they exist
++        if (Array.isArray(item.children)) {
++            newItem.children = cloneItems(item.children);
++        }
++        return newItem;
++    });
++}
++
+ class CascaderSelect extends Component {
+     static propTypes = {
+         prefix: PropTypes.string,
+@@ -325,9 +342,9 @@ class CascaderSelect extends Component {
+         this._p2n = {};
+         const loop = (data, prefix = '0') =>
+             data.forEach((item, index) => {
+-                const { value, children } = item;
+-                const pos = `${prefix}-${index}`;
+-                this._v2n[value] = this._p2n[pos] = { ...item, pos };
++const { value, children } = item;
++const pos = `${prefix}-${index}`;
++this._v2n[value] = this._p2n[pos] = { ...item, pos: pos };
+ 
+                 if (children && children.length) {
+                     loop(children, pos);
+@@ -712,7 +729,11 @@ class CascaderSelect extends Component {
+     }
+ 
+     renderCascader() {
+-        const { dataSource } = this.props;
++        // clone the entire dataSource so Cascader won’t
++        // write on the user’s frozen props
++        const originalDataSource = this.props.dataSource || [];
++        const dataSource = cloneItems(originalDataSource);
++
+         if (dataSource.length === 0) {
+             return this.renderNotFound();
+         }

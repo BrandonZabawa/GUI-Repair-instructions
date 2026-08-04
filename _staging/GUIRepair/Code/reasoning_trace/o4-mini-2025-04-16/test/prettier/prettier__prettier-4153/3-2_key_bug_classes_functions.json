@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-markdown/embed.js//embed",
+            "src/language-markdown/embed.js//getParserName"
+        ],
+        "explanation": "The core of the bug lies in how Prettier\u2019s Markdown printer handles a code node\u2019s \u201clang\u201d property when attributes follow the language tag. In embed.js, the embed() function looks for node.type === \"code\" and then calls getParserName(node.lang). Because node.lang still contains the attribute text (e.g. \"js {cmd=node .line-numbers}\"), getParserName cannot match it to a supported parser and returns null. That causes embed() to bail out and treat the block as plain text. To fix this, embed.js (specifically getParserName or the surrounding logic in embed()) must split or strip the info string so that only the language identifier (\"js\") is passed to support.getSupportInfo. Once node.lang is normalized to just the language before any attributes, getParserName will return the correct parser and the code chunk will be formatted as intended.",
+        "bug_scenario": "In Markdown files with fenced code blocks that include extra attributes (for example, ```js {cmd=node .line-numbers}```), Prettier fails to detect the intended language (\"js\") when formatting. As a result, attributes-on-the-same-line blocks are treated as plain text and do not get parsed or formatted as JavaScript, whereas identical blocks without attributes (```js```) are formatted correctly."
+    },
+    "2": {
+        "bug_classes": [
+            "src/language-markdown/embed.js//embed"
+        ],
+        "bug_functions": [
+            "src/language-markdown/embed.js//getParserName"
+        ],
+        "explanation": "Prettier\u2019s Markdown embedding logic lives in embed.js. The embed() function checks code nodes by calling getParserName(node.lang). node.lang is the entire info string including attributes (e.g. \"js {cmd=node .line-numbers}\"). getParserName currently tries to match node.lang exactly against known language names or extensions, so any trailing arguments prevent a match and cause Prettier to skip formatting. To fix it, getParserName must strip or ignore attributes after the language token (for example, split on whitespace or {. . .} and only use the first segment) before looking up the parser name. Hence, embed() and its helper getParserName are the key locations to update.",
+        "bug_scenario": "When a fenced code block in Markdown has attributes immediately following the language identifier (e.g. ```js {cmd=node .line-numbers}), Prettier fails to detect the language. In the playground and in editor previews, syntax highlighting and formatting are correctly applied to ```````js {\u2026}` blocks, but Prettier falls back to treating the block as plain text. In the provided screenshot, the first ```````js```` block is formatted as JavaScript, but the second ```````js {cmd=node .line-numbers}````` block is not."
+    }
+}

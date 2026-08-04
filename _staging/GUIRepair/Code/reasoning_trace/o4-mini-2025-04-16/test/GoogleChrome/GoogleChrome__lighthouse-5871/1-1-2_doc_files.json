@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "runner-test.js",
+            "config/default-config-test.js",
+            "config/config-test.js",
+            "gather/driver-test.js",
+            "report/report-generator-test.js",
+            "report/html/renderer/util-test.js"
+        ],
+        "explanation": "\u2022 runner-test.js covers how Lighthouse\u2019s runner collects and assigns runtimeSettings (including UA and device) to the LHR.  \n\u2022 config/default-config-test.js and config/config-test.js define default emulation settings (emulatedFormFactor, screenEmulation, and the UA override) and verify config behavior.  \n\u2022 gather/driver-test.js tests the driver\u2019s getUserAgent implementation, which is responsible for retrieving the actual UA Chrome/DevTools uses during the run.  \n\u2022 report/report-generator-test.js ensures those runtimeSettings properties (device, UA, throttling) are correctly injected into the final report object.  \n\u2022 report/html/renderer/util-test.js covers formatting and rendering of runtimeSettings in the HTML report, which is where the mismatched UA string appears in the UI.  \nTogether, these files span the path from collecting the UA to displaying it, and are essential for diagnosing why the displayed UA doesn\u2019t match the network logs.",
+        "bug_scenario": "The issue is that Lighthouse\u2019s \u201cRuntime settings\u201d panel shows a single user-agent string (the emulated CrOS/Chrome UA), but the actual page fetches recorded in the webserver\u2019s access.log use a different UA (the Android/Chrome mobile UA) alongside the emulated one. In the first screenshot (Lighthouse Extension 3.0.2) you see \u201cDevice: Emulated Nexus 5X\u201d and \u201cUser agent: Mozilla/5.0 (X11; CrOS x86_64 10820.0.0) \u2026 Chrome/69.0.3473.0 Safari/537.36\u201d in the report, yet the log below shows two GET /index.html requests, one with a Mobile Safari UA (Chrome/66\u2026) and one with the CrOS UA. In the second screenshot (Chrome DevTools Lighthouse 3.0.0-beta.0) you see the same UA in the UI but only the Android UA in the log, so the UA reported by Lighthouse doesn\u2019t match the one actually used. The feature that gathers, stores, and renders runtime settings (especially the user agent and device emulation) is thus out of sync with the real network\u2010request UA."
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/reproj/Tile.js",
+            "src/ol/TileState.js"
+        ],
+        "explanation": "The reprojection implementation in src/ol/reproj/Tile.js drives both the loading and the canvas-stitching (reproject_) steps. It only listens for LOADED, ERROR, or EMPTY states, and when building the sources array it only includes tiles with state LOADED. Tiles that end up in the ABORT state are never handled \u2013 they get disposed by the base class and then skipped entirely, producing holes. src/ol/TileState.js is where the ABORT state is defined; updating both files (adding ABORT handling in the load/reproject callbacks and including ABORT tiles in the source-collection loop) is necessary to prevent premature disposal and fill the white gaps.",
+        "bug_scenario": "The screenshot shows a reprojected tile layer on a world map with a large white patch \u2014 a missing piece of the projected tiles in the Pacific. As the user zooms and pans, some source tiles end up in the ABORT state and get disposed before the reprojection loop runs, so they never contribute to the canvas stitching. You can see the white gap where the aborted tiles should have been drawn."
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Data/Data.js",
+            "src/js/components/DataFilters/DataFilters.js",
+            "src/js/components/DataSearch/DataSearch.js"
+        ],
+        "explanation": "1. src/js/components/Data/Data.js: This is where the Data component builds its toolbarContent array. Currently it only renders DataSearch, DataView, DataFilters, and DataSummary. It never injects a Clear Filters button at the top level based on DataContext.toolbarKeys or contextValue.clearFilters, so no button appears in the toolbar when the user types into the search input.\n\n2. src/js/components/DataFilters/DataFilters.js: The drop-mode clearControl logic only renders a clear button when you\u2019ve opened the drop and touched a filter field (tracked via a local touched state). It should instead leverage DataContext.addToolbarKey to register a filter action in the toolbarKeys and let the top-level Data component decide when to show the Clear Filters button.\n\n3. src/js/components/DataSearch/DataSearch.js: While this component calls addToolbarKey('_search') on mount to register the search control, there is no mechanism to trigger visibility of a Clear Filters button after typing. Search clear actions reset only the search input and underlying view.search, but don\u2019t communicate to Data/Data.js that a toolbar-level clear is needed. Together with Data/Data.js, this file must participate in the toolbarKeys/clearFilters flow so the top toolbar displays a Clear Filters button after any search or filter use.",
+        "bug_scenario": "Across multiple Data examples (Servers, Hosts, Orders) the top-level Data toolbar displays the Search input and the Filters drop button, but the \u201cClear Filters\u201d button never shows up when the user first interacts with those controls (e.g. entering text in Search or selecting a filter). Only after opening the Filters drop and actually touching a filter field does a Clear button appear next to the filter control. The expected behavior (per the HPE Design System docs) is that a \u201cClear Filters\u201d toolbar button be promoted into the top-level toolbar whenever the user applies any filter or search action, without requiring them to open the drop panel first."
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/webgl/Helper.js//WebGLHelper",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/Helper.js//prepareDraw",
+            "src/ol/webgl/Helper.js//prepareDrawToRenderTarget",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/layer/WebGLTile.js//createRenderer"
+        ],
+        "explanation": "WebGLHelper.prepareDraw and prepareDrawToRenderTarget are responsible for setting up the WebGL draw call, including enabling blending and setting the blend function. To support gl.ONE, gl.ONE blending on a subset of layers, prepareDraw must accept and apply a blend-mode flag. WebGLTileLayerRenderer.renderFrame invokes helper.prepareDraw and drives the per-tile draw loop; it must be updated to pass the new flag from the layer style. Finally, WebGLTileLayer.createRenderer is where user options (vertex/fragment shaders, uniforms, cacheSize) are passed into the renderer. Adding a blendMode flag here and propagating it through WebGLTileLayerRenderer to WebGLHelper is the entry point for exposing per-layer blending controls.",
+        "bug_scenario": "When rendering multiple WebGL tile layers in OpenLayers, we need to use additive blending (gl.blendFunc(gl.ONE, gl.ONE)) on a per-layer basis instead of the default alpha blending. Currently the WebGLTile implementation in OpenLayers does not expose a flag to switch the blend function for individual WebGL tile layers."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/webgl/Helper.js//WebGLHelper",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/Helper.js//prepareDraw",
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/layer/WebGLTile.js//createRenderer"
+        ],
+        "explanation": "The blending state is set inside WebGLHelper.prepareDraw (Helper.js), which currently only supports the default alpha blend. WebGLTileLayerRenderer (TileLayer.js) orchestrates rendering calls to Helper.prepareDraw via prepareFrameInternal and renderFrame, but it does not expose a way to switch to additive blending. Finally, WebGLTileLayer (layer/WebGLTile.js) creates and resets the renderer via createRenderer (and reset) but cannot pass a custom blend-mode flag. To implement gl.ONE additive blending for selected layers, we need to extend: (1) WebGLHelper.prepareDraw to accept and apply a new blendFunc flag, (2) WebGLTileLayerRenderer constructor/prepareFrameInternal/renderFrame to accept and forward that flag to prepareDraw, and (3) WebGLTileLayer.createRenderer (and reset) to expose that flag in the layer API and pass it into the renderer.",
+        "bug_scenario": "In our microscopy viewer we overlay multiple WebGLTile layers (e.g., separate color channels) and want them to additive-blend (using gl.blendFunc(gl.ONE, gl.ONE)) so that colors sum properly. The new OpenLayers WebGLTile implementation always uses standard alpha blending (gl.ONE, gl.ONE_MINUS_SRC_ALPHA) with no way to change it. As a result, overlapping tiles don\u2019t add their intensities, preventing correct multi-channel mixing."
+    }
+}

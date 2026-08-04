@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "report/generator/report-generator.js",
+            "report/renderer/details-renderer.js",
+            "lighthouse-core/audits/screenshot-thumbnails.js",
+            "report/generator/report-assets.js",
+            "report/generator/flow-report-assets.js"
+        ],
+        "explanation": "These files are likely responsible for generating and rendering the report, including how thumbnails are sourced and displayed:\n- report/generator/report-generator.js: Handles logic for report generation and data transformation, possibly affecting what data is passed to the frontend.\n- report/renderer/details-renderer.js: Renders detail views in the report, including images for thumbnails and screenshots\u2014hotlinking logic would reside here.\n- lighthouse-core/audits/screenshot-thumbnails.js: Likely produces the screenshot/thumbnail details or audit results; changes to source an alternative thumbnail may be required here.\n- report/generator/report-assets.js and report/generator/flow-report-assets.js: Manage and embed local assets (such as screenshots) into the report file; these may need adjustments to provide screenshots as thumbnail assets.\nThese files collectively span the pipeline from audit result to report data gathering to rendering the final UI. Changes are needed to replace external image links with local screenshot images instead.",
+        "bug_scenario": "The report currently displays image thumbnails by hotlinking (directly linking to and displaying) remote images for 'type=thumbnail' items, which causes mixed content issues, CSP violations, and reliance on external resources. The request is to remove this behavior by replacing these thumbnails with assets generated from the available full-page screenshot, which would improve security and reliability. The provided image illustrates the current report UI, showing direct <img> tags sourcing from external URLs. The fix involves identifying where thumbnails are rendered in the report and adjusting the code to use the local screenshot asset instead."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/screenshot-thumbnails.js",
+            "report/generator/flow-report-assets.js",
+            "report/generator/report-assets.js",
+            "report/renderer/details-renderer.js",
+            "flow-report/src/summary/summary.tsx"
+        ],
+        "explanation": "1. 'lighthouse-core/audits/screenshot-thumbnails.js': This file is likely responsible for aggregating and exporting the screenshot thumbnail data as audit results. Any change to how thumbnails are collected, or to use a local screenshot asset, would originate or be supported here.\n2. 'report/generator/flow-report-assets.js' & 'report/generator/report-assets.js': These files likely manage the assets (including screenshots) used and embedded in the final report output. Switching from remote hotlinks to local fpss assets would require updates here.\n3. 'report/renderer/details-renderer.js': The renderer is responsible for generating and displaying the HTML for details tables. It likely contains code that constructs <img> tags for the thumbnails, and would need to be changed to use fpss instead of a hotlinked URL.\n4. 'flow-report/src/summary/summary.tsx': If the Flow report shows the thumbnails in its summary, any usage of remote images as thumbs would be coded here and needs redirection to use the full-page screenshot asset instead.\n\nAll these files are directly involved in gathering, passing, and rendering image thumbnail data in Lighthouse reports, and are therefore bug-related.",
+        "bug_scenario": "The bug scenario involves report thumbnails in Lighthouse audit reports hotlinking remote images (type=thumbnail) directly from their URLs rather than using a locally stored \"fullpage screenshot\" asset. This hotlinking causes content security policy (CSP) and mixed-content issues when the report is viewed in secure (HTTPS) contexts. The visual from the audit UI shows image thumbnails being rendered with <img src=...> tags that link to external servers, plus a warning about missing width and height attributes on images."
+    }
+}

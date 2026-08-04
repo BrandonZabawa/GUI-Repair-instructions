@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/lib/dependency-graph/simulator/network-analyzer.js",
+            "lighthouse-core/gather/computed/network-records.js"
+        ],
+        "explanation": "1. lighthouse-core/audits/critical-request-chains.js contains the audit logic that reads the network records, groups requests into chains by priority, and flags them in the Diagnostics panel. It\u2019s here that the preload request gets classified as \u201ccritical.\u201d\n2. lighthouse-core/lib/dependency-graph/simulator/network-analyzer.js is responsible for assigning priorities to requests (marking rel=preload as high priority) and calculating blocking times. Its logic is why the delayed CSS shows up as a multi-second chain.\n3. lighthouse-core/gather/gatherers/network-records.js collects the raw DevTools network events, including preload requests, which feed into the chain analyzer. Any change to ignore or re-classify preload links must happen where those records are gathered or passed along.",
+        "bug_scenario": "When loading a page with a <link rel=\"preload\" as=\"style\" onload=\"this.rel='stylesheet'\"> that points to a CSS resource with a long server delay, Lighthouse still flags that preload request as part of a \u201cCritical Request Chain\u201d and attributes the multi-second blocking time to it. In this test the CSS is empty and does not actually block rendering, but Lighthouse\u2019s chain analysis still treats the preload as a high-priority, blocking request."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/lib/network-recorder.js",
+            "lighthouse-core/gather/computed/page-dependency-graph.js",
+            "lighthouse-core/lib/dependency-graph/node.js",
+            "lighthouse-core/lib/dependency-graph/network-node.js",
+            "lighthouse-core/lib/dependency-graph/simulator/network-analyzer.js",
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js"
+        ],
+        "explanation": "\u2022 audits/critical-request-chains.js: This audit is responsible for reporting the critical chains. It doesn\u2019t currently filter out preload-initiated requests, so it marks the delayed preload CSS as critical.\n\u2022 lib/network-recorder.js: Collects raw DevTools network records (including priority). Preload requests arrive with \u201cHigh\u201d priority here and flow into the dependency graph unfiltered.\n\u2022 lib/dependency-graph/page-dependency-graph.js: Builds the graph of request dependencies. No special logic strips out preload-only resources, so the delayed CSS remains in the chain.\n\u2022 lib/dependency-graph/node.js & network-node.js: Define the graph nodes and their resource types/priorities. They hold the preload stylesheet node as a high-priority CSS node.\n\u2022 lib/dependency-graph/simulator/network-analyzer.js & simulator.js: Simulate resource timing based on priority to compute blocking times. The analyzer treats the preload\u2019s high priority as blocking, inflating the chain\u2019s total blockage time.\n\nTo fix this, the audit (or one of these modules) must detect and exclude rel=preload requests (or reclassify their priority) so that onload-swapped preload stylesheets aren\u2019t counted as render-blocking requests in the critical chain.",
+        "bug_scenario": "A test page uses a <link rel=\"preload\" as=\"style\" onload=\"this.rel='stylesheet'\"> pattern to fetch a stylesheet with a 5 s artificial delay. In Chrome the preload is fetched with \u201cHigh\u201d priority (but does not block rendering); however, Lighthouse\u2019s Performance > Diagnostics > \u201cCritical Request Chains\u201d audit still lists the delayed CSS request as a blocking, high-priority item in the critical chain. This makes it look like the preload is hurting render performance when in fact rel=preload shouldn\u2019t block the initial render."
+    }
+}

@@ -1,0 +1,162 @@
+diff --git a/src/ol/source/GeoTIFF.js b/src/ol/source/GeoTIFF.js
+index caae328076..fd98ff006f 100644
+--- a/src/ol/source/GeoTIFF.js
++++ b/src/ol/source/GeoTIFF.js
+@@ -344,24 +344,34 @@ class GeoTIFFSource extends DataTile {
+     });
+ 
+     /**
+-     * @type {Array<SourceInfo>}
++     * @type {Array<SourceInfo>|null}
+      * @private
+      */
+-    this.sourceInfo_ = options.sources;
++    this.sourceInfo_ = options.sources || null;
+ 
+-    const numSources = this.sourceInfo_.length;
++    /**
++     * @type {string|null}
++     * @private
++     */
++    this.template_ = options.template || null;
++
++    /**
++     * @type {import("../tilegrid/TileGrid.js").default|null}
++     * @private
++     */
++    this.tileGrid_ = options.tileGrid || null;
+ 
+     /**
+      * @type {Array<Array<GeoTIFFImage>>}
+      * @private
+      */
+-    this.sourceImagery_ = new Array(numSources);
++    this.sourceImagery_ = null;
+ 
+     /**
+      * @type {Array<number>}
+      * @private
+      */
+-    this.resolutionFactors_ = new Array(numSources);
++    this.resolutionFactors_ = null;
+ 
+     /**
+      * @type {Array<number>}
+@@ -404,22 +414,31 @@ class GeoTIFFSource extends DataTile {
+      */
+     this.readMethod_ = options.convertToRGB ? 'readRGB' : 'readRasters';
+ 
+-    this.setKey(this.sourceInfo_.map((source) => source.url).join(','));
+-
+-    const self = this;
+-    const requests = new Array(numSources);
+-    for (let i = 0; i < numSources; ++i) {
+-      requests[i] = getImagesForSource(this.sourceInfo_[i]);
++    if (this.sourceInfo_) {
++      this.setKey(this.sourceInfo_.map((source) => source.url).join(','));
++      const numSources = this.sourceInfo_.length;
++      const self = this;
++      const requests = new Array(numSources);
++      for (let i = 0; i < numSources; ++i) {
++        requests[i] = getImagesForSource(this.sourceInfo_[i]);
++      }
++      Promise.all(requests)
++        .then(function (sources) {
++          self.configure_(sources);
++        })
++        .catch(function (error) {
++          console.error(error); // eslint-disable-line no-console
++          self.error_ = error;
++          self.setState(State.ERROR);
++        });
++    } else if (this.template_ && this.tileGrid_) {
++      // Pyramid mode: set up the tile grid and loader, no up-front image loading
++      this.tileGrid = this.tileGrid_;
++      this.setLoader(this.loadTilePyramid_.bind(this));
++      this.setState(State.READY);
++    } else {
++      throw new Error('GeoTIFFSource: Either sources or template/tileGrid must be provided');
+     }
+-    Promise.all(requests)
+-      .then(function (sources) {
+-        self.configure_(sources);
+-      })
+-      .catch(function (error) {
+-        console.error(error); // eslint-disable-line no-console
+-        self.error_ = error;
+-        self.setState(State.ERROR);
+-      });
+   }
+ 
+   /**
+@@ -628,6 +647,7 @@ class GeoTIFFSource extends DataTile {
+   }
+ 
+   loadTile_(z, x, y) {
++    // Standard multi-source mode
+     const size = toSize(this.tileGrid.getTileSize(z));
+ 
+     const sourceCount = this.sourceImagery_.length;
+@@ -771,6 +791,62 @@ class GeoTIFFSource extends DataTile {
+       return data;
+     });
+   }
++
++  /**
++   * Loader for pyramid mode: fetches the GeoTIFF for the tile from the template.
++   * @private
++   */
++  loadTilePyramid_(z, x, y) {
++    const size = toSize(this.tileGrid.getTileSize(z));
++    const url = this.template_
++      .replace('{z}', z)
++      .replace('{x}', x)
++      .replace('{y}', y);
++
++    // Fetch the GeoTIFF for this tile
++    return tiffFromUrl(url)
++      .then(getImagesForTIFF)
++      .then((images) => {
++        // Use the first image (or allow for overviews if needed)
++        const image = images[0];
++        // Optionally, support bands, nodata, etc. from options
++        const samples = undefined; // TODO: support bands if needed
++        const fillValue = undefined; // TODO: support nodata if needed
++
++        return image[this.readMethod_]({
++          window: [0, 0, image.getWidth(), image.getHeight()],
++          width: size[0],
++          height: size[1],
++          samples: samples,
++          fillValue: fillValue,
++          pool: getWorkerPool(),
++          interleave: false,
++        });
++      })
++      .then((sourceSamples) => {
++        // Flatten the result (single band or multi-band)
++        // Assume normalize is true for pyramid mode
++        const pixelCount = size[0] * size[1];
++        const bandCount = Array.isArray(sourceSamples)
++          ? sourceSamples.length
++          : 1;
++        const dataLength = pixelCount * bandCount;
++        let data = new Uint8Array(dataLength);
++        let dataIndex = 0;
++        if (Array.isArray(sourceSamples)) {
++          for (let i = 0; i < pixelCount; ++i) {
++            for (let b = 0; b < bandCount; ++b) {
++              data[dataIndex++] = sourceSamples[b][i];
++            }
++          }
++        } else {
++          for (let i = 0; i < pixelCount; ++i) {
++            data[dataIndex++] = sourceSamples[i];
++          }
++        }
++        return data;
++      });
++  }
+ }
+ 
+ /**

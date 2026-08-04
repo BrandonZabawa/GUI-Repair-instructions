@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/webgl/TileTexture.js//TileTexture",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/TileTexture.js//bindAndConfigure",
+            "src/ol/webgl/TileTexture.js//uploadImageTexture",
+            "src/ol/webgl/TileTexture.js//uploadDataTexture"
+        ],
+        "explanation": "The bug is related to the image smoothing settings not being respected in the WebGLTile renderer, leading to visual artifacts in the rendered images. The `TileTexture` class in `src/ol/webgl/TileTexture.js` is directly involved in the configuration of WebGL textures, where the texture filtering parameters (`gl.TEXTURE_MIN_FILTER` and `gl.TEXTURE_MAG_FILTER`) are set. The `bindAndConfigure` function configures these parameters, currently using `gl.LINEAR`, which causes the smoothing effect. The `uploadImageTexture` and `uploadDataTexture` functions are responsible for uploading textures to the GPU, and they rely on `bindAndConfigure` for initial setup. The `WebGLTileLayer` class in `src/ol/layer/WebGLTile.js` is related as it deals with rendering tiles using WebGL, potentially needing updates to incorporate the `imageSmoothing` setting. Modifying these classes and functions to respect the `imageSmoothing: false` setting by using `gl.NEAREST` for filtering would address the bug, ensuring that pixel values are accurately represented without unwanted smoothing.",
+        "bug_scenario": "The bug pertains to the Sea Level example using the WebGLTile renderer, where zooming in shows a pixelated edge to the sea due to the image smoothing settings not being respected. This results in distorted pixel values and visible thin lines along contours when image smoothing is incorrectly applied. The issue can occur because the renderer does not pass the `imageSmoothing: false` setting to the `TileTexture`, which could use `gl.NEAREST` instead of `gl.LINEAR` for texture filtering to avoid the smoothing effect. The example links indicate scenarios where the problem is noticeable and suggest a potential fix by adjusting the texture filtering settings in the WebGL context."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/webgl/TileTexture.js//TileTexture",
+            "src/ol/source/TileImage.js//TileImage"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/TileTexture.js//bindAndConfigure",
+            "src/ol/webgl/TileTexture.js//uploadImageTexture",
+            "src/ol/webgl/TileTexture.js//uploadDataTexture"
+        ],
+        "explanation": "The bug is related to the image smoothing settings in the WebGLTile renderer. In the file 'src/ol/webgl/TileTexture.js', the 'TileTexture' class is responsible for handling WebGL textures for tiles, which includes configuring texture parameters like 'gl.TEXTURE_MIN_FILTER' and 'gl.TEXTURE_MAG_FILTER'. The functions 'bindAndConfigure', 'uploadImageTexture', and 'uploadDataTexture' are involved in setting these parameters and uploading textures. To fix the bug, these functions need to be modified to respect the 'imageSmoothing' setting by using 'gl.NEAREST' instead of 'gl.LINEAR'. In 'src/ol/source/TileImage.js', the 'TileImage' class contains logic related to image smoothing through the 'contextOptions_' variable. Adjustments here may be necessary to ensure that the 'imageSmoothing' setting is properly applied and passed to the renderer.",
+        "bug_scenario": "The bug is related to the image smoothing setting in the WebGLTile renderer. The sea level example shows a pixelated edge when zoomed in, due to the image smoothing setting not being respected. The issue can cause distortion in pixel values, leading to visible lines along contours, especially at 3107 meters. The bug report suggests that the renderer should pass the 'imageSmoothing: false' setting to the 'TileTexture', allowing the use of 'gl.NEAREST' instead of 'gl.LINEAR' for texture filtering."
+    }
+}

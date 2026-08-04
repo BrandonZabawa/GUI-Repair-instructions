@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/computed/critical-request-chains.js",
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js"
+        ],
+        "explanation": "These three files participate in computing and rendering the size values for critical request chains. \n\n1. gather/computed/critical-request-chains.js: This computed artifact walks the network records and builds each chain, attaching properties (including sizes) to each node. A mistake here can cause every node\u2019s size to be set to the chain total instead of its own transferSize.\n\n2. audits/critical-request-chains.js: The audit file invokes the computed artifact and wraps its output into the report\u2019s details object. If the audit is summing or mis-assigning sizes here, every entry will reflect the wrong value.\n\n3. report/v2/renderer/crc-details-renderer.js: This renderer reads the details from the audit and displays each node\u2019s size. If it pulls the chain\u2019s total size instead of the per-resource size property, the UI will show the same number for every request. \n\nFixing the bug requires correcting the size property assignment in the computed artifact or the audit, and ensuring the renderer pulls the correct field (e.g. node.transferSize) rather than the total chain size.",
+        "bug_scenario": "When you view the \u201cCritical Request Chains\u201d section of a Lighthouse report, every resource in the chain shows the exact same transfer size (38.18 KB in the example) even though the actual file sizes differ. In the screenshot above you can see .css, .js, .woff2, etc. all showing 38.18 KB. That number is actually the total size of the chain, not the individual resource size, so all children are being labeled with the chain total rather than their own transferSize."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/computed/critical-request-chains.js",
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js"
+        ],
+        "explanation": "The computed artifact (gather/computed/critical-request-chains.js) is responsible for pulling the size and timing information out of the network records and packaging it into a chain data structure. The audit (audits/critical-request-chains.js) then passes that data into the report as part of its details object. Finally, the renderer (report/v2/renderer/crc-details-renderer.js) walks the chain tree and prints out a size label next to each node in the UI. Somewhere between the computed artifact and the renderer, the code is populating every node\u2019s size field with the total chain size rather than using each resource\u2019s own transferSize. Fixing the computed-artifact to set the correct per-request size or correcting the renderer to read the individual resource size will resolve the bug.",
+        "bug_scenario": "When you open the Lighthouse \u201cCritical Request Chains\u201d section in Chrome Canary or in the Lighthouse Chrome Extension, each resource in the waterfall is annotated with the same size (38.18 KB in the repro) instead of its actual transfer size. In the screenshot you can see a CSS file, two JavaScript files, several font files, etc., all showing \u201c\u2013 38.18 KB,\u201d which is just the total size of the chain rather than the size of that individual resource."
+    }
+}

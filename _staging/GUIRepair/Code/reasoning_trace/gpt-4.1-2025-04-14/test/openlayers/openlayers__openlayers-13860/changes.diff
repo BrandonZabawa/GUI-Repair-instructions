@@ -1,0 +1,32 @@
+diff --git a/src/ol/geom/MultiPolygon.js b/src/ol/geom/MultiPolygon.js
+index 0bf35c1e3e..c4068ae677 100644
+--- a/src/ol/geom/MultiPolygon.js
++++ b/src/ol/geom/MultiPolygon.js
+@@ -454,14 +454,25 @@ class MultiPolygon extends SimpleGeometry {
+    * @api
+    */
+   setCoordinates(coordinates, opt_layout) {
+-    this.setLayout(opt_layout, coordinates, 3);
++    // Filter out empty polygons or rings to avoid invalid array length errors
++    const filteredCoordinates = coordinates
++      .filter(
++        polygon =>
++          Array.isArray(polygon) &&
++          polygon.length > 0 &&
++          // At least one ring with at least 4 coordinates (valid polygon ring)
++          polygon.some(
++            ring => Array.isArray(ring) && ring.length > 0 && ring[0] && ring.length >= 4
++          )
++      );
++    this.setLayout(opt_layout, filteredCoordinates, 3);
+     if (!this.flatCoordinates) {
+       this.flatCoordinates = [];
+     }
+     const endss = deflateMultiCoordinatesArray(
+       this.flatCoordinates,
+       0,
+-      coordinates,
++      filteredCoordinates,
+       this.stride,
+       this.endss_
+     );

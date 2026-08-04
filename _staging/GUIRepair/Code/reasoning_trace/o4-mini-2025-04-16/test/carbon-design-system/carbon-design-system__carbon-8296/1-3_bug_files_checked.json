@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/UIShell/HeaderContainer.js",
+            "packages/react/src/components/UIShell/SideNav.js",
+            "packages/react/src/components/UIShell/SideNavLink.js"
+        ],
+        "explanation": "\n\u2022 HeaderContainer.js: this file provides the render prop isSideNavExpanded and onClickSideNavExpand toggle handler to the HeaderMenuButton. It needs to pass that onClickSideNavExpand callback further into the SideNav (for overlay clicks) and into SideNavLink (for link clicks).\n\n\u2022 SideNav.js: implements the overlay and the expanded/non-persistent logic, but currently does not attach any click-to-close handler to the backdrop overlay. To close on outside clicks, this component must accept a callback prop (e.g. onOverlayClick) and bind it to the overlay DIV.\n\n\u2022 SideNavLink.js: renders each navigation link but does not invoke the expand/collapse toggle when a link is clicked. It must be augmented to call the passed toggle handler (onClickSideNavExpand) when any link is activated so the SideNav collapses on navigation.\n\nTogether, these three files control how the SideNav is expanded, how link clicks are handled, and how backdrop clicks are handled. Editing them ensures that clicking a SideNavLink or clicking the gray overlay will invoke the same collapse toggle as the HeaderMenuButton.",
+        "bug_scenario": "When using a non\u2010persistent SideNav in the Carbon UI Shell on a small or medium viewport, clicking on a navigation link does not collapse the nav and clicking on the gray overlay (or anywhere outside the menu) does not close it. The expected behaviour is that both a link click and any outside click on the overlay or header area should toggle the SideNav closed."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/UIShell/HeaderContainer.js",
+            "packages/react/src/components/UIShell/SideNav.js",
+            "packages/react/src/components/UIShell/SideNavLink.js",
+            "packages/react/src/internal/useOutsideClick.js"
+        ],
+        "explanation": "\n\u2022 HeaderContainer.js owns the `isSideNavExpanded` state and only toggles it when the HeaderMenuButton is clicked. It does not collapse the SideNav on navigation or outside clicks.\n\u2022 SideNav.js renders the overlay and the SideNav itself but does not subscribe to click-outside events on that overlay to call back and collapse the menu.\n\u2022 SideNavLink.js simply renders a Link component without invoking any collapse callback when a menu item is clicked.\n\u2022 useOutsideClick.js is the utility hook that can detect clicks outside a referenced element. It must be wired up in SideNav.js (or HeaderContainer.js) so that clicking the overlay or anywhere outside the open SideNav invokes the collapse logic.",
+        "bug_scenario": "On small or medium viewports the Carbon UI Shell\u2019s SideNav expands correctly when the hamburger (HeaderMenuButton) is clicked, but it never collapses again.  Specifically:  \n1) Clicking on any SideNavLink (Link 1, Link 2, etc) navigates content but leaves the SideNav open.\n2) Clicking anywhere on the gray page-overlay or in the header area (outside the SideNav) does not close the SideNav as the user would expect.\n\nThe user expects that clicking a link inside the SideNav or clicking outside the SideNav (on the overlay or header) will close the menu by toggling the `expanded` state back to false."
+    }
+}

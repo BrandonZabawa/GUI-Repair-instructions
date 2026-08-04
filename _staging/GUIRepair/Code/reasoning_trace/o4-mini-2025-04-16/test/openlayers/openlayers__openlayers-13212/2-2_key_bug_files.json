@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/WMTS.js",
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "explanation": "1. src/ol/source/GeoTIFF.js: This is the core GeoTIFFSource implementation. It currently assumes a single-image source and builds its own tile grid from TIFF metadata. To support GeoTIFF pyramids via a URL template and an external TileGrid, its constructor, configure_(), and loadTile_() will need to be extended to accept a tileGrid object and a template string, and then composite all overlapping pyramid tiles into each requested tile.  \n2. src/ol/source/WMTS.js: The WMTS source already accepts a preconfigured tileGrid and URL template, generating a tileUrlFunction via createFromWMTSTemplate(). GeoTIFF.js can reuse this pattern for parsing the template and mapping tileCoord\u2192URL, so WMTS.js serves as a blueprint.  \n3. src/ol/tilegrid/TileGrid.js: GeoTIFFSource must rely on TileGrid to compute which TIFF pyramid levels and tileCoords overlap a requested z/x/y. TileGrid\u2019s methods for z\u2192resolution, getTileRangeForExtentAndZ(), and getTileCoordExtent() are essential for iterating the pyramid and need to be invoked (and possibly extended) by the new GeoTIFF pyramid source.",
+        "bug_scenario": "In the example the user creates one GeoTIFF\u2010backed layer per pyramid level. Each layer uses its own WebGLTileLayerRenderer, so as more pyramid levels are added the browser rapidly exhausts available WebGL contexts. The map drops from ~30 FPS to 2\u20135 FPS, then throws \u201cWebGL context lost\u201d errors and no tiles render. The screenshots show a stack of identical raster layers in the layer switcher, poor frame rate, and console errors indicating context loss."
+    }
+}

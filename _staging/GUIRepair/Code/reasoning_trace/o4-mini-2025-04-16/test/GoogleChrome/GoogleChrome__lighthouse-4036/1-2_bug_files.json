@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js",
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js"
+        ],
+        "explanation": "These two files implement the \u2018external\u2010anchors\u2010use\u2010rel\u2010noopener\u2019 audit. The gatherer (anchors-with-no-rel-noopener.js) selects all <a> elements with target=\"_blank\" but no rel=\"noopener\", and the audit (external-anchors-use-rel-noopener.js) reports them. Neither currently filters out mailto: links. To fix, they both need logic to skip URLs whose href starts with \u201cmailto:\u201d, so those links aren\u2019t audited or flagged.",
+        "bug_scenario": "The \u201cexternal-anchors-use-rel-noopener\u201d audit is flagging mailto: links (with target=\"_blank\") as missing rel=\"noopener\". When users follow the audit suggestion and add rel=\"noopener\" to mailto: links, the links break on Chrome for Android and iOS Safari (they no longer open the mail client). The audit should ignore mailto: URLs entirely."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js",
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js"
+        ],
+        "explanation": "The gatherer anchors-with-no-rel-noopener.js collects all <a> elements missing rel=noopener, regardless of protocol. The audit external-anchors-use-rel-noopener.js then flags every non-same-origin link\u2014including mailto:. Because adding rel=noopener breaks mailto: on mobile, both the gatherer (to filter out mailto:) and the audit (to ignore mailto:) must be updated. These two files drive the detection logic and therefore need patching.",
+        "bug_scenario": "The \u201cExternal anchors use rel=noopener\u201d audit is flagging mailto: links (e.g. <a href=\"mailto:support@\u2026\" rel=\"noopener\">) as requiring rel=noopener. When we apply rel=noopener to a mailto: link, Chrome on Android and Safari on iOS fail to open the native mail client. The audit report shows both sales@ and support@ links but only the support@ link had rel=noopener applied\u2014and that one now fails to launch mail. We need to ignore mailto: URIs in this audit."
+    }
+}

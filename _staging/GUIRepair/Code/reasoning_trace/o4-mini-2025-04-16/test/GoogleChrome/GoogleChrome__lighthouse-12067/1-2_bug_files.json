@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/lib/minification-estimator.js"
+        ],
+        "explanation": "The heart of the problem lives in the hasPunctuatorBefore function in minification-estimator.js. Its PUNCTUATOR_REGEX does not include the keyword \u201ccase,\u201d so when looking backward from a slash that follows \u2018case\u2019, the code never sees \u201ccase\u201d as a valid punctuator. Instead, it assumes division and then sees \u2018//\u2019 as the start of a comment, causing the rest of the script to be ignored. Adding \u201ccase\u201d to PUNCTUATOR_REGEX (as shown in the suggested diff) ensures regex literals after `case` are recognized correctly and prevents false unminified warnings.",
+        "bug_scenario": "When Lighthouse\u2019s Minify JavaScript audit runs against code containing a RegExp literal immediately after a \u201ccase\u201d keyword (for example, switch(true){case/^hello!/.test(\"hello!\"): ...}), the minification-estimator incorrectly treats the slash after \u201ccase\u201d as the division operator rather than the start of a regex. It then misparses subsequent // as a comment, skips the rest of the code, and concludes the script is not minified\u2014even though it is."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/lib/minification-estimator.js"
+        ],
+        "explanation": "The only file that implements the logic for detecting whether a JavaScript file is minified is minification-estimator.js. It contains the PUNCTUATOR_REGEX used by hasPunctuatorBefore(), and this regex is missing \u201ccase\u201d as a valid preceder to a RegExp literal. Adding \u201ccase\u201d to that alternation fixes the misclassification. No other files participate in the minification\u2010detection logic, so only this file must be edited.",
+        "bug_scenario": "When running Lighthouse against a script like\n\n  switch(true){case/^hello!/.test(\"hello!\"):document.write(\"///<any content>\");}\n\nLighthouse\u2019s \u201cMinify JavaScript\u201d audit (implemented in minification-estimator.js) flags the file as unminified even though it is minified. The root cause is that hasPunctuatorBefore() doesn\u2019t recognize \u201ccase\u201d as a punctuator before a RegExp literal, so the \u201c/\u201d after \u201ccase\u201d is treated as division, the next \u201c/\u201d is seen as comment start, and everything after is stripped \u2014 leading Lighthouse to think it\u2019s huge whitespace and thus unminified. The screenshot shows Lighthouse reporting 14 KiB potential savings on a truly minified script.js."
+    }
+}

@@ -1,0 +1,487 @@
+{
+    "1/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const target = Math.pow(this.targetSize_ * resolution, 2);",
+                    "/** @type {Array<number>} **/",
+                    "const p1 = [];",
+                    "/** @type {Array<number>} **/",
+                    "const p2 = [];",
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Don't attempt to transform latitudes beyond the poles!",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);",
+                    "if (dist <= target) {",
+                    "break;",
+                    "}",
+                    "interval = this.intervals_[i];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const target = Math.pow(this.targetSize_ * resolution, 2);",
+                    "/** @type {Array<number>} **/",
+                    "const p1 = [];",
+                    "/** @type {Array<number>} **/",
+                    "const p2 = [];",
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = this.intervals_[i] / 2;",
+                    "// Ensure delta is within valid range",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);",
+                    "if (dist <= target) {",
+                    "interval = this.intervals_[i];",
+                    "break;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Don't attempt to transform latitudes beyond the poles!",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);"
+                ],
+                "REPLACE": [
+                    "const delta = clamp(this.intervals_[i], 0, 90);",
+                    "// Avoid rounding the interval mid-way.",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta / 2;",
+                    "p1[1] = clampedLat - delta / 2;",
+                    "p2[0] = centerLon + delta / 2;",
+                    "p2[1] = clampedLat + delta / 2;",
+                    "this.fromLonLatTransform_(p1, p1);"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, index) {",
+                    "const lineString = this.getMeridian_(",
+                    "lon,",
+                    "minLat,",
+                    "maxLat,",
+                    "squaredTolerance,",
+                    "index",
+                    ");",
+                    "if (intersects(lineString.getExtent(), extent)) {",
+                    "if (this.meridiansLabels_) {",
+                    "const text = this.lonLabelFormatter_(lon);",
+                    "if (index in this.meridiansLabels_) {",
+                    "this.meridiansLabels_[index].text = text;",
+                    "} else {",
+                    "this.meridiansLabels_[index] = {",
+                    "geom: new Point([]),",
+                    "text: text,",
+                    "};",
+                    "}",
+                    "}",
+                    "this.meridians_[index++] = lineString;"
+                ],
+                "REPLACE": [
+                    "addMeridian_(lon, minLat, maxLat, squaredTolerance, extent, index) {",
+                    "const lineString = this.getMeridian_(",
+                    "lon,",
+                    "minLat,",
+                    "maxLat,",
+                    "squaredTolerance,",
+                    "index",
+                    ");",
+                    "if (intersects(lineString.getExtent(), extent)) {",
+                    "if (this.meridiansLabels_) {",
+                    "const fixedLon = Math.round(lon * 1000) / 1000; // Fix rounding to three decimal places",
+                    "const text = this.lonLabelFormatter_(fixedLon); // Use fixed longitude for formatting",
+                    "if (index in this.meridiansLabels_) {",
+                    "this.meridiansLabels_[index].text = text;",
+                    "} else {",
+                    "this.meridiansLabels_[index] = {",
+                    "geom: new Point([]),",
+                    "text: text,",
+                    "};",
+                    "}",
+                    "}",
+                    "this.meridians_[index++] = lineString;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "addParallel_(lat, minLon, maxLon, squaredTolerance, extent, index) {",
+                    "const lineString = this.getParallel_(",
+                    "lat,",
+                    "minLon,",
+                    "maxLon,",
+                    "squaredTolerance,",
+                    "index",
+                    ");",
+                    "if (intersects(lineString.getExtent(), extent)) {",
+                    "if (this.parallelsLabels_) {",
+                    "const text = this.latLabelFormatter_(lat);",
+                    "if (index in this.parallelsLabels_) {",
+                    "this.parallelsLabels_[index].text = text;",
+                    "} else {",
+                    "this.parallelsLabels_[index] = {",
+                    "geom: new Point([]),",
+                    "text: text,",
+                    "};",
+                    "}",
+                    "}",
+                    "this.parallels_[index++] = lineString;"
+                ],
+                "REPLACE": [
+                    "addParallel_(lat, minLon, maxLon, squaredTolerance, extent, index) {",
+                    "const lineString = this.getParallel_(",
+                    "lat,",
+                    "minLon,",
+                    "maxLon,",
+                    "squaredTolerance,",
+                    "index",
+                    ");",
+                    "if (intersects(lineString.getExtent(), extent)) {",
+                    "if (this.parallelsLabels_) {",
+                    "const fixedLat = Math.round(lat * 1000) / 1000; // Fix rounding to three decimal places",
+                    "const text = this.latLabelFormatter_(fixedLat); // Use fixed latitude for formatting",
+                    "if (index in this.parallelsLabels_) {",
+                    "this.parallelsLabels_[index].text = text;",
+                    "} else {",
+                    "this.parallelsLabels_[index] = {",
+                    "geom: new Point([]),",
+                    "text: text,",
+                    "};",
+                    "}",
+                    "}",
+                    "this.parallels_[index++] = lineString;"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Don't attempt to transform latitudes beyond the poles!",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);",
+                    "if (dist <= target) {",
+                    "break;",
+                    "}",
+                    "interval = this.intervals_[i];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Don't attempt to transform latitudes beyond the poles!",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);",
+                    "if (dist <= target) {",
+                    "interval = this.intervals_[i];",
+                    "break;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);",
+                    "if (dist <= target) {",
+                    "break;",
+                    "}",
+                    "interval = this.intervals_[i];"
+                ],
+                "REPLACE": [
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.sqrt(Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2));",
+                    "if (Math.abs(dist - target) < 0.001) {",
+                    "break;",
+                    "}",
+                    "interval = this.intervals_[i];"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.lonLabelFormatter_ =",
+                    "options.lonLabelFormatter == undefined",
+                    "? degreesToStringHDMS.bind(this, 'EW')",
+                    ": options.lonLabelFormatter;",
+                    "",
+                    "this.latLabelFormatter_ =",
+                    "options.latLabelFormatter == undefined",
+                    "? degreesToStringHDMS.bind(this, 'NS')",
+                    ": options.latLabelFormatter;"
+                ],
+                "REPLACE": [
+                    "this.lonLabelFormatter_ =",
+                    "options.lonLabelFormatter == undefined",
+                    "? degreesToStringHDMS.bind(this, 'EW')",
+                    ": options.lonLabelFormatter;",
+                    "",
+                    "// Ensure labels are consistently formatted",
+                    "this.latLabelFormatter_ =",
+                    "options.latLabelFormatter == undefined",
+                    "? degreesToStringHDMS.bind(this, 'NS')",
+                    ": options.latLabelFormatter;",
+                    "",
+                    "// Making sure both formatters use similar formatting logic",
+                    "if (!options.lonLabelFormatter || !options.latLabelFormatter) {",
+                    "const defaultFormatter = (angle) => `${Math.round(angle * 100) / 100}\u00b0`;",
+                    "this.lonLabelFormatter_ = options.lonLabelFormatter || defaultFormatter;",
+                    "this.latLabelFormatter_ = options.latLabelFormatter || defaultFormatter;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const target = Math.pow(this.targetSize_ * resolution, 2);",
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Don't attempt to transform latitudes beyond the poles!",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;"
+                ],
+                "REPLACE": [
+                    "const target = Math.ceil(Math.pow(this.targetSize_ * resolution, 2));",
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Precise latitude calculation for transformation",
+                    "const clampedLat = clamp(centerLat, -90 + delta + 1e-10, 90 - delta - 1e-10);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta + 1e-10;"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Don\\'t attempt to transform latitudes beyond the poles!",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);"
+                ],
+                "REPLACE": [
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Clamped latitude should ensure stability across extremes",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.sqrt(Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2));"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const target = Math.pow(this.targetSize_ * resolution, 2);",
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "...",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);",
+                    "if (dist <= target) {",
+                    "break;",
+                    "}",
+                    "interval = this.intervals_[i];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const target = Math.pow(this.targetSize_ * resolution, 2);",
+                    "let prevInterval = 0;",
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);",
+                    "if (dist <= target) {",
+                    "if(target - dist < target - prevInterval) {",
+                    "interval = this.intervals_[i];",
+                    "}",
+                    "break;",
+                    "}",
+                    "prevInterval = this.intervals_[i];",
+                    "}",
+                    "// Ensure the interval is never shorter than desired for clarity in labels",
+                    "if (interval < (this.targetSize_ / resolution)) {",
+                    "interval = this.targetSize_ / resolution;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "getInterval_(resolution) {",
+                    "const centerLon = this.projectionCenterLonLat_[0];",
+                    "const centerLat = this.projectionCenterLonLat_[1];",
+                    "let interval = -1;",
+                    "const target = Math.pow(this.targetSize_ * resolution, 2);",
+                    "/** @type {Array<number>} **/",
+                    "const p1 = [];",
+                    "/** @type {Array<number>} **/",
+                    "const p2 = [];",
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = clamp(this.intervals_[i] / 2, 0, 90);",
+                    "// Don\\'t attempt to transform latitudes beyond the poles!",
+                    "const clampedLat = clamp(centerLat, -90 + delta, 90 - delta);",
+                    "p1[0] = centerLon - delta;",
+                    "p1[1] = clampedLat - delta;",
+                    "p2[0] = centerLon + delta;",
+                    "p2[1] = clampedLat + delta;",
+                    "this.fromLonLatTransform_(p1, p1);",
+                    "this.fromLonLatTransform_(p2, p2);",
+                    "const dist = Math.pow(p2[0] - p1[0], 2) + Math.pow(p2[1] - p1[1], 2);",
+                    "if (dist <= target) {",
+                    "break;",
+                    "}",
+                    "interval = this.intervals_[i];",
+                    "}",
+                    "return interval;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "getInterval_(resolution) {",
+                    "const centerLon = this.projectionCenterLonLat_[0];",
+                    "const centerLat = this.projectionCenterLonLat_[1];",
+                    "let interval = -1;",
+                    "const target = Math.pow(this.targetSize_ * resolution, 2);",
+                    "for (let i = 0, ii = this.intervals_.length; i < ii; ++i) {",
+                    "const delta = this.intervals_[i] / 2;",
+                    "// Ensure latitude transformation is valid for selected latitude range",
+                    "const clampedLat = Math.max(-90, Math.min(90, centerLat));",
+                    "// Calculate coordinates with delta applied",
+                    "const lonLat1 = this.toLonLatTransform_([centerLon - delta, clampedLat]);",
+                    "const lonLat2 = this.toLonLatTransform_([centerLon + delta, clampedLat]);",
+                    "const dist = (lonLat2[0] - lonLat1[0]) ** 2 + (lonLat2[1] - lonLat1[1]) ** 2;",
+                    "",
+                    "if (dist <= target) {",
+                    "interval = this.intervals_[i];",
+                    "break;",
+                    "}",
+                    "}",
+                    "if (interval === -1) {",
+                    "interval = 1; // Default smallest interval for fallback",
+                    "}",
+                    "return interval;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/layer/Graticule.js": [
+            {
+                "SEARCH": [
+                    "const lat = clamp(",
+                    "extent[1] + Math.abs(extent[1] - extent[3]) * this.lonLabelPosition_,",
+                    "clampedBottom,",
+                    "clampedTop",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const lat = Math.round(clamp(",
+                    "extent[1] + Math.abs(extent[1] - extent[3]) * this.lonLabelPosition_,",
+                    "clampedBottom,",
+                    "clampedTop",
+                    ") * 1000) / 1000; // rounds to nearest thousandth of a degree"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const coordinate1 =",
+                    "flatCoordinates[left + 1] +",
+                    "((flatCoordinates[right + 1] - flatCoordinates[left + 1]) *",
+                    "(lon - flatCoordinates[left])) /",
+                    "(flatCoordinates[right] - flatCoordinates[left]);"
+                ],
+                "REPLACE": [
+                    "const coordinate1 = Math.round(",
+                    "flatCoordinates[left + 1] +",
+                    "((flatCoordinates[right + 1] - flatCoordinates[left + 1]) *",
+                    "(lon - flatCoordinates[left])) /",
+                    "(flatCoordinates[right] - flatCoordinates[left])",
+                    "* 1000) / 1000; // rounds to nearest thousandth of a degree"
+                ]
+            }
+        ]
+    }
+}

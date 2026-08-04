@@ -1,0 +1,37 @@
+diff --git a/src/ol/expr/cpu.js b/src/ol/expr/cpu.js
+index 34fdc367fa..92a5d1def3 100644
+--- a/src/ol/expr/cpu.js
++++ b/src/ol/expr/cpu.js
+@@ -200,6 +200,16 @@ function compileAccessorExpression(expression, context) {
+   const name = /** @type {string} */ (nameExpression.value);
+   switch (expression.operator) {
+     case Ops.Get: {
++      if (name === 'id') {
++        // Special‐case the feature id
++        return (context) => {
++          const feature = context.feature;
++          // prefer getId(), but fall back to .id if needed
++          return typeof feature.getId === 'function'
++            ? feature.getId()
++            : feature.id;
++        };
++      }
+       return (context) => context.properties[name];
+     }
+     case Ops.Var: {
+diff --git a/src/ol/expr/expression.js b/src/ol/expr/expression.js
+index 44550b4f03..684c74601b 100644
+--- a/src/ol/expr/expression.js
++++ b/src/ol/expr/expression.js
+@@ -468,7 +468,10 @@ function withGetArgs(encoded, context) {
+   if (typeof arg.value !== 'string') {
+     throw new Error('Expected a string argument for get operation');
+   }
+-  context.properties.add(arg.value);
++  // do not add "id" to the properties list – it is fetched via feature.getId()
++  if (arg.value !== 'id') {
++    context.properties.add(arg.value);
++  }
+   return [arg];
+ }
+ 

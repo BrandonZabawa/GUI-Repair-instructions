@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/Meter/StyledMeter.js//StyledMeter"
+        ],
+        "bug_functions": [],
+        "explanation": "The StyledMeter styled component (StyledMeter.js) includes a global rule: `path { transition: all 0.3s; }`. This applies to every SVG path attribute\u2014most notably the `d` attribute that defines the arc geometry. Chrome animates the shape change, causing the odd visual artifact. To fix, that CSS transition must be removed or restricted to only the intended stroke properties (e.g. `stroke-dashoffset`), so that the arc redraws cleanly without morphing its path data.",
+        "bug_scenario": "When the Meter value changes on a circle\u2010type Meter in Chrome, the SVG path\u2019s \"d\" attribute is being interpolated over a 300ms \"transition: all\" rule. Instead of redrawing the arc instantly or animating only the stroke properties, Chrome smoothly morphs the path geometry, producing a jagged, unintended animation. Firefox and Safari ignore that transition on path data, so they don\u2019t show the issue."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/Meter/StyledMeter.js//StyledMeter"
+        ],
+        "bug_functions": [],
+        "explanation": "StyledMeter is the single styled\u2010component that injects \u201cpath { transition: all 0.3s; }\u201d into every path of the Meter. That CSS rule causes Chrome to interpolate the SVG path\u2019s \u2018d\u2019 attribute on value changes, yielding the unwanted animation. Removing or scoping that transition (e.g. only animating stroke properties) in StyledMeter will prevent the path shape from morphing.",
+        "bug_scenario": "The circle\u2010type Meter component applies a global \u201ctransition: all 0.3s\u201d rule to every <path> in its SVG (via StyledMeter). In Chrome, updating the value re\u2010renders the SVG path\u2019s \u201cd\u201d attribute and Chrome animates the morph between the old and new path outlines, producing a visible \u201cweird\u201d warped animation. Firefox and Safari do not animate \u201cd\u201d changes, so they just snap to the new shape."
+    }
+}

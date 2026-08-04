@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js",
+            "lib/import/BpmnImporter.js"
+        ],
+        "explanation": "\n\u2022 BpmnCopyPaste.js hooks into the diagram\u2010js copy/paste API and orchestrates serializing both BPMN and BPMNDI elements. It currently only grabs shapes and edges but doesn\u2019t pull in nested label DI (BPMNLabel) elements.\n\n\u2022 ModdleCopy.js is responsible for walking the moddle tree and cloning out the sub-trees to copy. Because the copy logic filters out BPMNLabel and their DC bounds, the serialized snippet passed to the importer has no label metadata.\n\n\u2022 BpmnImporter.js rehydrates the copied XML into shapes and DI. With no <bpmndi:BPMNLabel> present in the paste payload, it never creates the label shapes, so even though the semantic name is on the element, there\u2019s no DI to render it.\n\nFixing this requires updating ModdleCopy (and the copy filters in BpmnCopyPaste) to include BPMNLabel DI sub-elements and ensuring the importer sees them on paste so that labels get drawn again.",
+        "bug_scenario": "When copying all the child shapes of a Participant (pool) and then pasting them into the root process, the event and activity labels (e.g. the \u201cA\u201d on the StartEvent and the \u201cB\u201d on the EndEvent) are dropped. You can see in the gif that the circles and rectangle all re-appear after paste, but their name labels are gone. This stems from the custom BPMN copy/paste implementation not including the BPMNLabel DI elements (nor re-attaching them on paste), so when the importer runs there\u2019s no label shape to render."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js",
+            "lib/util/LabelUtil.js"
+        ],
+        "explanation": "Both BpmnCopyPaste.js and ModdleCopy.js drive the BPMN copy/paste operation \u2013 they decide which elements (semantic + DI) to copy and how to re\u2010attach them on paste. Right now they only handle the main shapes and their flows; they don\u2019t pick up or re\u2010wire the attached label shapes. ModdleCopy.js needs to deep copy the <bpmndi:BPMNLabel> DI elements, and BpmnCopyPaste.js must merge them back onto their host during paste. LabelUtil.js contains helper routines for dealing with labels (finding anchors, calculating offsets) and will need to be used to properly hook the copied label DI back to the pasted shape so that the text reappears.",
+        "bug_scenario": "When you copy all of the participant\u2019s child shapes (start\u2010event, task, end\u2010event) out of a pool and then paste them into the process, the graphical shapes show up correctly but their labels (\u201cA\u201d and \u201cB\u201d) are missing \u2013 they never get re\u2010attached during the paste. In the GIF you can see the two circles and the task rectangle paste over, but the text labels underneath them have been dropped."
+    }
+}

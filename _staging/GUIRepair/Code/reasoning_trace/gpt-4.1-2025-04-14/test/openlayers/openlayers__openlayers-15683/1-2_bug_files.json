@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/Map.js"
+        ],
+        "explanation": "1. src/ol/renderer/canvas/VectorLayer.js: This file is the most likely culprit as it manages rendering of vector layers on a canvas. Any bug involving canvas sizing or handling transformations (like rotation) will be implemented or fixed here, especially after a breaking change or refactor.\n2. src/ol/layer/Vector.js: This file defines the vector layer itself. Incorrect interaction between the layer and its renderer can also cause rendering errors during map state changes like rotation.\n3. src/ol/renderer/Layer.js: As a base for layer rendering, any changes to generic rendering logic (like view state handling, bounding box calculations, or transformation application) can impact canvas sizing for all layers.\n4. src/ol/Map.js: The map object manages overall transformations including rotation. If canvas updating or buffer region calculations are wrong when the map rotates, it can manifest as layers being cut off.\n\nAll four files are plausible candidates for being affected or needing changes to address the vector layer canvas sizing bug when the map is rotated.",
+        "bug_scenario": "When rotating the map (using Shift+Alt+Drag), any large vector geometry (like a polygon covering the map width) is visually cropped or cut off. Before rotation, the polygon appears correctly within the map bounds. When rotated, the rendering of the vector layer's canvas does not correctly account for the new bounding box, causing the polygon to be clipped. This regression is suspected to have been introduced by a recent pull request (PR #15652), likely through changes in how the vector layer's rendering context or canvas size is calculated and adjusted for during map rotation."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/Map.js"
+        ],
+        "explanation": "The main bug relates to how the canvas for vector layers adapts its size and rendering region when the map is rotated. The most likely area of impact is 'src/ol/renderer/canvas/VectorLayer.js', which is responsible for drawing vector layers to canvas. Its coordination with 'src/ol/layer/Vector.js' ensures the layer settings and properties are handled correctly. 'src/ol/render/canvas/Immediate.js' can be involved if immediate mode rendering is used for vector geometries. 'src/ol/renderer/Layer.js' and 'src/ol/Map.js' may also play a role as they are central to managing transformations, view state changes (such as rotation), and passing the correct parameters (like extent and rotation angle) to all renderers that draw to the canvas. Any logic affecting calculation of the drawing area when a map is rotated can be found in these files. Collectively, editing these files would encompass a fix for the bug as described.",
+        "bug_scenario": "When a user rotates the map (by using Shift+Alt+Drag), the vector layer's canvas size is calculated or rendered incorrectly, causing the vector polygons to appear cropped at the edges once the map is rotated. This regression started with version 9.1.0 and is likely directly tied to the rendering logic for vector layers, especially after a recent pull request referenced in the bug report."
+    }
+}

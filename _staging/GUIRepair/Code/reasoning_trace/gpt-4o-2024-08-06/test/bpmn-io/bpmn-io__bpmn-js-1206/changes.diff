@@ -1,0 +1,67 @@
+diff --git a/lib/features/modeling/behavior/DetachEventBehavior.js b/lib/features/modeling/behavior/DetachEventBehavior.js
+index e8d359ea..3733d337 100644
+--- a/lib/features/modeling/behavior/DetachEventBehavior.js
++++ b/lib/features/modeling/behavior/DetachEventBehavior.js
+@@ -30,31 +30,32 @@ export default function DetachEventBehavior(eventBus, bpmnReplace) {
+         intermediateEvent,
+         newShape;
+ 
+-    if (shapes.length !== 1) {
+-      return;
+-    }
+-
+-    shape = shapes[0];
+-
+-    if (!isLabel(shape) && !host && is(shape, 'bpmn:BoundaryEvent')) {
+-
+-      eventDefinition = getEventDefinition(shape);
+-
+-      if (eventDefinition) {
+-        intermediateEvent = {
+-          type: 'bpmn:IntermediateCatchEvent',
+-          eventDefinitionType: eventDefinition.$type
+-        };
+-      } else {
+-        intermediateEvent = {
+-          type: 'bpmn:IntermediateThrowEvent'
+-        };
+-      }
++var newShapes = [];
++
++shapes.forEach(function(shape) {
++if (!isLabel(shape) && !host && is(shape, 'bpmn:BoundaryEvent')) {
++
++eventDefinition = getEventDefinition(shape);
++
++if (eventDefinition) {
++intermediateEvent = {
++type: 'bpmn:IntermediateCatchEvent',
++eventDefinitionType: eventDefinition.$type
++};
++} else {
++intermediateEvent = {
++type: 'bpmn:IntermediateThrowEvent'
++};
++}
+ 
+-      newShape = bpmnReplace.replaceElement(shape, intermediateEvent, { layoutConnection: false });
++newShape = bpmnReplace.replaceElement(shape, intermediateEvent, { layoutConnection: false });
++newShapes.push(newShape);
++} else {
++newShapes.push(shape);
++}
++});
+ 
+-      context.shapes = [ newShape ];
+-    }
++context.shapes = newShapes;
+   }, true);
+ }
+ 
+@@ -72,4 +73,4 @@ function getEventDefinition(element) {
+   var bo = getBusinessObject(element);
+ 
+   return bo && bo.eventDefinitions && bo.eventDefinitions[0];
+-}
++}
+\ No newline at end of file

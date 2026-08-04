@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/transfer/view/transfer.jsx//Transfer",
+            "src/transfer/view/transfer-panel.jsx//TransferPanel"
+        ],
+        "bug_functions": [
+            "src/transfer/view/transfer.jsx//renderCenter",
+            "src/transfer/view/transfer.jsx//render",
+            "src/transfer/view/transfer-panel.jsx//renderSearch"
+        ],
+        "explanation": "The Transfer class (in transfer.jsx) is responsible for instantiating two TransferPanel children via its renderCenter and render methods, and it currently forwards the same searchProps prop to both panels unconditionally. To support independent control, renderCenter (and/or render) must be updated to pick searchProps.left for the left panel and searchProps.right for the right panel. The TransferPanel class\u2019s renderSearch method then simply spreads the searchProps it receives, so once Transfer forwards the right subset of props to each side, the individual search boxes will behave independently.",
+        "bug_scenario": "In the customer chat screenshot you can see a two-panel Transfer component where both sides are showing search boxes. The user wants to be able to turn the left search box on or off independently of the right one \u2013 e.g. show only the left search input and hide the right. They tried passing searchProps={{ left: {...}, right: {...} }} but the component\u2019s current implementation just treats searchProps as a single object for both panels, so it always shows (or hides) both search inputs together."
+    },
+    "2": {
+        "bug_classes": [
+            "src/transfer/view/transfer.jsx//Transfer",
+            "src/transfer/view/transfer-panel.jsx//TransferPanel"
+        ],
+        "bug_functions": [
+            "src/transfer/view/transfer.jsx//render",
+            "src/transfer/view/transfer-panel.jsx//renderSearch"
+        ],
+        "explanation": "The Transfer class in transfer.jsx is responsible for taking the top-level searchProps prop and distributing it into each panel, but its render method currently does not distinguish left vs. right configurations. It simply passes the entire searchProps object (with left/right keys) down to each TransferPanel. Within TransferPanel (transfer-panel.jsx), the renderSearch method blindly spreads whatever searchProps it receives onto the Search input, so both panels end up getting the same props object rather than their individual left/right settings. To fix this bug, the Transfer.render method must pick out searchProps.left or searchProps.right before rendering each panel, and TransferPanel.renderSearch will then correctly apply per-panel configurations.",
+        "bug_scenario": "The screenshot shows a dual-panel Transfer component with a search box on both the left and right panels. The user is trying to pass searchProps={{ left:{ hasClear:true }, right:{ hasClear:false } }} so that the left panel\u2019s search has a clear button and the right panel has no search box at all, but the component currently either shows both search boxes with the same props or ignores the left/right split, so the right panel\u2019s search cannot be disabled or customized independently."
+    }
+}

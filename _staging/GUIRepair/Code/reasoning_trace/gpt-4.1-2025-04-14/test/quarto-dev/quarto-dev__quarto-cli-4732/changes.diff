@@ -1,0 +1,42 @@
+diff --git a/src/core/handlers/embed.ts b/src/core/handlers/embed.ts
+index e417d973d..dc499a004 100644
+--- a/src/core/handlers/embed.ts
++++ b/src/core/handlers/embed.ts
+@@ -69,6 +69,37 @@ const kHandlers: EmbedHandler[] = [
+       }
+     },
+   },
++  // Generic file embed handler
++  {
++    name: "Generic File Embed",
++    async handle(
++      filename: string,
++      params: Record<string, unknown>,
++      handlerContext: LanguageCellHandlerContext,
++    ) {
++      // Only handle if not already handled by previous handlers
++      // Read the file content
++      try {
++        // Use the handlerContext to read the file (assuming a readTextFile method exists)
++        const fileContent = await handlerContext.readTextFile(filename);
++        // Determine language from file extension
++        const langMatch = filename.match(/\.([a-zA-Z0-9]+)$/);
++        const lang = langMatch ? langMatch[1] : "";
++        const codeBlock = `\`\`\`${lang}\n${fileContent}\n\`\`\``;
++        return {
++          handled: true,
++          markdownFragments: [codeBlock],
++          resources: [filename],
++        };
++      } catch (e) {
++        // If file can't be read, do not handle
++        return {
++          handled: false,
++          markdownFragments: [],
++        };
++      }
++    },
++  },
+ ];
+ 
+ const embedHandler: LanguageHandler = {

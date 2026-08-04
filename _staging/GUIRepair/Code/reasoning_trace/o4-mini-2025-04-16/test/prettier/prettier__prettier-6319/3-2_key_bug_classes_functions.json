@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-js/parser-babel.js//babelOptions",
+            "src/language-js/parser-babel.js//createParse"
+        ],
+        "explanation": "In parser-babel.js the `babelOptions` function hard-codes the pipelineOperator plugin to `{ proposal: 'minimal' }`, ignoring any user option such as `pipelineProposal: 'smart'` or 'fsharp'. The `createParse` function then always applies these minimal settings when invoking the parser. To fix support for smart and F# proposals, `babelOptions` (and thus `createParse`) must be changed to read the user-supplied pipelineProposal setting (from opts) and pass it into the pipelineOperator plugin configuration instead of always using 'minimal'.",
+        "bug_scenario": "When running Prettier with the smart\u2010pipeline placeholder syntax (e.g. `5 |> # * 2` and pipelineProposal: \"smart\"), the Babel parser plugin still only recognizes the minimal proposal. As a result the `#` placeholder is treated as an unexpected character and a syntax error is thrown, as shown in the Playground screenshot."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-js/parser-babel.js//babelOptions",
+            "src/language-js/parser-babel.js//createParse"
+        ],
+        "explanation": "In parser-babel.js the function babelOptions always installs the pipelineOperator plugin with `{proposal: 'minimal'}`, ignoring any user-supplied pipelineProposal setting. createParse hard-codes those babelOptions sequences and never reads opts.pipelineProposal. To support smart and fsharp pipelines, babelOptions must be updated to read opts.pipelineProposal (falling back to minimal) and pass the correct `{proposal}` value into the pipelineOperator plugin, and createParse should forward the Prettier option through to babelOptions.",
+        "bug_scenario": "When attempting to format a \u201csmart\u201d\u2010style pipeline expression (using the `#` placeholder) \u2013 e.g. \u201c5 |> # * 2\u201d \u2013 Prettier\u2019s Babel\u2010based parser rejects the `#` as an unexpected character. The minimal pipeline proposal works, but the smart (and future F#) proposals are not being passed through to the parser plugin, so the placeholder syntax isn\u2019t recognized."
+    }
+}

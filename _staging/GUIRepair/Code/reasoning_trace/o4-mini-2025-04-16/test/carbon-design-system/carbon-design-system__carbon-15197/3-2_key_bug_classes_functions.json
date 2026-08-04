@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//getItemProps",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "explanation": "The heart of the issue is in the ListBoxMenuItem component: it unconditionally sets tabIndex=\"-1\" on every option container, so none of the items is ever included in the Tab order. Downshift\u2019s getItemProps provides the role=\"option\" (and event handlers) but never overrides tabIndex, so all option elements remain non-focusable. To fix the violation, ListBoxMenuItem (or the Dropdown\u2019s getItemProps call) must implement a roving tabindex pattern\u2014setting tabIndex=\"0\" on the highlighted (or active) option and \"-1\" on the others\u2014so that at least one option is tabbable when the listbox is open.",
+        "bug_scenario": "When the Carbon Dropdown is opened (either in the storybook canvas or on the demo site), the underlying <div role=\"option\"> elements rendered for each menu item are all marked with tabIndex=\"-1\" (via the ListBoxMenuItem component). Because none of the option-role elements is actually focusable by Tab, the IBM Equal Access Checker raises a \u201cNone of the descendant elements with 'option' role is tabbable\u201d violation."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "bug_functions": [],
+        "explanation": "The Dropdown component uses a ListBoxMenuItem for each option. In ListBoxMenuItem.js you can see that every rendered option container has tabIndex=\"-1\" unconditionally. Downshift\u2019s getItemProps injects role=\"option\" but because the element is not in the tab sequence (tabIndex = -1), the accessibility checker flags that no option is tabbable. To fix this, ListBoxMenuItem should set a focusable tabIndex (e.g. 0 when highlighted or active) or honor the tabIndex provided by getItemProps instead of hard-coding \"-1\".",
+        "bug_scenario": "When the user opens a Dropdown and inspects it with the IBM Equal Access Accessibility Checker, the tool reports a critical violation: \u201cNone of the descendent elements with \u2018option\u2019 role is tabbable.\u201d In the DOM snapshot you can see that the open menu is rendered with a parent role=\"listbox\" and each option is rendered as a div with role=\"option\" (via Downshift) but has tabIndex=\"-1\" hard-coded. Because tabIndex is -1, these option elements can\u2019t be reached by keyboard focus, causing the accessibility violation."
+    }
+}

@@ -1,0 +1,38 @@
+diff --git a/src/ol/source/ImageWMS.js b/src/ol/source/ImageWMS.js
+index 4d48448818..f7f9be4426 100644
+--- a/src/ol/source/ImageWMS.js
++++ b/src/ol/source/ImageWMS.js
+@@ -339,13 +339,12 @@ class ImageWMS extends ImageSource {
+     };
+     Object.assign(params, this.params_);
+ 
+-    this.imageSize_[0] = round(
+-      getWidth(requestExtent) / imageResolution,
+-      DECIMALS
++    // Ensure integer request dimensions to avoid sub-pixel scaling (pixel-perfect)
++    this.imageSize_[0] = Math.round(
++      getWidth(requestExtent) / imageResolution
+     );
+-    this.imageSize_[1] = round(
+-      getHeight(requestExtent) / imageResolution,
+-      DECIMALS
++    this.imageSize_[1] = Math.round(
++      getHeight(requestExtent) / imageResolution
+     );
+ 
+     const url = this.getRequestUrl_(
+diff --git a/src/ol/source/TileWMS.js b/src/ol/source/TileWMS.js
+index e342fd89b7..71d6c61b9d 100644
+--- a/src/ol/source/TileWMS.js
++++ b/src/ol/source/TileWMS.js
+@@ -444,7 +444,10 @@ class TileWMS extends TileImage {
+     }
+ 
+     if (pixelRatio != 1) {
++      // Scale the tile and then round to integer dimensions
+       tileSize = scaleSize(tileSize, pixelRatio, this.tmpSize);
++      tileSize[0] = Math.round(tileSize[0]);
++      tileSize[1] = Math.round(tileSize[1]);
+     }
+ 
+     const baseParams = {

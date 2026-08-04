@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-smalltalk.js",
+            "components/prism-smalltalk.min.js"
+        ],
+        "explanation": "Both of these files contain the Smalltalk language definition for Prism, including the regular expression used to match string literals. The current regex does not allow for zero-length content inside single quotes, so ``''`` never closes properly. Updating the pattern in prism-smalltalk.js (and rebuilding the minified version) to explicitly match empty strings will fix the highlighting issue.",
+        "bug_scenario": "In the Smalltalk grammar an empty string literal (two adjacent single quotes ``''``) is not being recognized as a string token. As a result, the first quote is treated as the start of a string but the closing quote is never matched, so the parser spills over into the next identifier and colon. On prismjs.com you can see \u201cshouldNotBeGreenHere\u201d remains uncolored (it\u2019s treated like part of the unterminated string), whereas on rouge.jneen.net the empty string ``''`` is correctly tokenized and the following identifier is highlighted in green."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-smalltalk.js",
+            "components/prism-smalltalk.min.js"
+        ],
+        "explanation": "Both prism-smalltalk.js and its minified counterpart define the Smalltalk language grammar, including the regex for string literals. The current pattern in prism-smalltalk.js does not allow zero-length (empty) strings, so '' is not tokenized as a string. As a result, the parser never returns to the message-name state and the selector after '' remains uncolored. Patching the regex in prism-smalltalk.js to allow empty strings (and then rebuilding prism-smalltalk.min.js) will restore correct highlighting.",
+        "bug_scenario": "In Smalltalk code containing an empty literal (''), Prism\u2019s Smalltalk grammar fails to handle the zero-length string correctly. On the test page you see that the empty string '' is not recognized as a string token and the subsequent message name (shouldNotBeGreenHere:) is not highlighted. Rouge (and Prism\u2019s intended behavior) highlights the empty string in red and then correctly colors the following selector in green."
+    }
+}

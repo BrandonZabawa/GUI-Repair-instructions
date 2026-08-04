@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/driver/wait-for-condition.js",
+            "lighthouse-core/computed/load-simulator.js"
+        ],
+        "explanation": "1. lighthouse-core/gather/gather-runner.js: This file orchestrates the page load and the timing of when metrics are collected. If Lighthouse is not waiting long enough for layout shifts, the logic for when to stop waiting and collect metrics is likely here. It is responsible for running the gatherers and controlling the lifecycle of the page load, including when to consider the page 'fully loaded.'\n\n2. lighthouse-core/gather/driver/wait-for-condition.js: This file contains the logic for waiting for various page load conditions, such as network idle, CPU idle, and specific timeouts. If the wait time is insufficient for simulated throttling, the logic for how long to wait and what conditions to check will be in this file.\n\n3. lighthouse-core/computed/load-simulator.js: This file handles the simulation of network and CPU conditions. If the simulation is not accurately reflecting real-world delays (e.g., not waiting long enough for layout shifts under simulated throttling), the logic here may need to be adjusted to ensure the simulated environment gives enough time for all layout shifts to be detected.\n\nThese files are key because they control the timing and conditions under which Lighthouse decides the page is 'done' and metrics like CLS are finalized. The bug is likely due to insufficient waiting under simulated throttling, so changes to how and when Lighthouse stops waiting are needed.",
+        "bug_scenario": "The bug scenario is that when running Lighthouse with throttlingMethod=simulate, Lighthouse does not wait long enough to detect the Cumulative Layout Shift (CLS) for some pages. As a result, the reported CLS score may be inaccurately low, not reflecting layout shifts that occur later in the page load. The provided image shows a performance report where the Cumulative Layout Shift is reported as 0, which is likely incorrect for the tested page, indicating that Lighthouse finished its analysis before all layout shifts had occurred."
+    }
+}

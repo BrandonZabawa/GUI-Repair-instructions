@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/CreateParticipantBehavior.js",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js",
+            "lib/features/modeling/behavior/UnclaimIdBehavior.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js"
+        ],
+        "explanation": "\u2022 CreateParticipantBehavior.js  \n  \u2013 This behavior intercepts the very first participant creation.  It transforms the root <Process> into a <Collaboration> and re-uses the existing process under the new participant.  This triggers a canvas.updateRoot event.  \n\n\u2022 UpdateCanvasRootHandler.js  \n  \u2013 Implements the \u201ccanvas.updateRoot\u201d command that swaps out the old process root for a new collaboration root (and vice versa on revert).  During this swap, the old process element is removed from the definitions and its di plane is rewired.  \n\n\u2022 UnclaimIdBehavior.js  \n  \u2013 Listens for preExecute('canvas.updateRoot') and unclaims the old process id so it can be reassigned.  Because the id is unclaimed on create and then reclaimed during redo, the modeler ends up generating a fresh id on the redo operation.  \n\n\u2022 BpmnCopyPaste.js  \n  \u2013 Handles copy/paste of BPMN elements, including a special handler for the \u201cprocessRef\u201d property of a <Participant> (pool).  It always reuses the original process id during copy, leading to two <process> elements with the same id on export/re-import.  This is the root cause of the duplicate-id pool bug.",
+        "bug_scenario": "The attached screenshot shows the BPMN.io modeler initialized on an empty diagram (no shapes on the canvas, console open with no errors or warnings).  \n\nIn the first scenario, a fresh model starts with a single <bpmn:Process> element having id \u201cProcess_1\u201d.  When the user adds the very first <bpmn:Participant> (pool), the existing process is reused (still \u201cProcess_1\u201d).  Undo correctly removes the participant and leaves the process id unchanged.  However, a subsequent redo re-adds the participant but inexplicably changes the process id to a new value.  \n\nIn the second scenario, a user creates a pool containing a task, then copies and pastes the pool.  On export and re-import of the resulting BPMN XML, two <bpmn:process> elements end up with the identical id (e.g. \u201cProcess_17iojvx\u201d), leading to invalid, duplicate-id XML."
+    }
+}

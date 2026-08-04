@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/uses-responsive-images.js//UsesResponsiveImages",
+            "lighthouse-core/gather/gatherers/image-elements.js//ImageElements"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/uses-responsive-images.js//UsesResponsiveImages.computeWaste",
+            "lighthouse-core/audits/byte-efficiency/uses-responsive-images.js//UsesResponsiveImages.audit_",
+            "lighthouse-core/gather/gatherers/image-elements.js//collectImageElementInfo"
+        ],
+        "explanation": "The UsesResponsiveImages audit (in uses-responsive-images.js) is computing wasted bytes by comparing the full natural dimensions of the sprite against the small CSS display dimensions, which triggers the oversized-image warning. Its key methods are computeWaste (calculates wastedBytes based on naturalWidth/naturalHeight vs displayedWidth/displayedHeight) and audit_ (filters items by IGNORE_THRESHOLD_IN_BYTES). Meanwhile, the ImageElements gatherer (in image-elements.js) incorrectly treats a spritesheet background as a single image usage, via collectImageElementInfo\u2019s CSS background heuristics, so the audit thinks the sprite is only displayed very small. To fix the false positive, one must adjust either the CSS image collection logic (to recognize multi-icon sprites) or tweak computeWaste/audit_ to ignore or handle CSS sprites differently.",
+        "bug_scenario": "When auditing tisort.ist in Chrome\u2019s Lighthouse \u201cProperly size images\u201d audit, a 54 KB spritesheet (spritesheet2.png) used as a CSS background is flagged as ~53 KB of wasted bytes. The audit\u2019s report screenshot shows the URL \u201c/spritesheet2.png\u201d with Display Size \u226a Natural Size, even though it\u2019s intentionally a sprite and has been minified."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/uses-responsive-images.js//UsesResponsiveImages",
+            "lighthouse-core/gather/gatherers/image-elements.js//ImageElements"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/uses-responsive-images.js//UsesResponsiveImages.computeWaste",
+            "lighthouse-core/audits/byte-efficiency/uses-responsive-images.js//UsesResponsiveImages.audit_",
+            "lighthouse-core/gather/gatherers/image-elements.js//collectImageElementInfo"
+        ],
+        "explanation": "The audit logic in UsesResponsiveImages.computeWaste and audit_ is correctly computing wasted bytes for images whose natural size far exceeds how they\u2019re displayed. However, because the gatherer\u2019s collectImageElementInfo is not fully excluding CSS sprite sheets, it hands the full sprite URL into the responsive-images audit. To fix this, the sprite-sheet filtering heuristic in collectImageElementInfo (in image-elements.js) must be improved so that background-image sprites like spritesheet2.png are omitted (or treated specially), preventing UsesResponsiveImages from marking them as oversized. Additionally, audit_ and computeWaste in uses-responsive-images.js govern the size calculations and thresholds, so any adjustments to ignore CSS sprites also tie back into those functions.",
+        "bug_scenario": "In the Lighthouse performance audit (\"Properly size images\") the site\u2019s CSS sprite sheet (spritesheet2.png) is being flagged as an oversized image. Although the sprite is legitimately larger than its displayed fragment, Lighthouse\u2019s responsive-image audit is treating the entire sheet as an image to be resized, reporting ~53 KB of \u201cwasted\u201d bytes."
+    }
+}

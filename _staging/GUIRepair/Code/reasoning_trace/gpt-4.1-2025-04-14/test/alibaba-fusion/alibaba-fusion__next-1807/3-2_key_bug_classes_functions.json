@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/menu/view/item.jsx//Item",
+            "src/cascader/item.jsx//CascaderMenuItem"
+        ],
+        "bug_functions": [
+            "src/menu/view/item.jsx//getTitle",
+            "src/menu/view/item.jsx//render",
+            "src/cascader/item.jsx//render"
+        ],
+        "explanation": "The primary bug is caused by how the 'title' attribute is set on menu items. In 'src/menu/view/item.jsx', the Item class automatically sets the 'title' attribute to the full text regardless of whether the text is truncated or not. The 'getTitle' method extracts the text, and the 'render' method applies it as 'title'. Similarly, in 'src/cascader/item.jsx', the CascaderMenuItem component passes props to Menu.Item or Menu.CheckboxItem, which may inherit the same 'title' behavior. To fix the bug, logic should be added to set 'title' only when the displayed content is truncated, or to provide a configuration to control when 'title' is set, addressing both accessibility and user experience concerns.",
+        "bug_scenario": "The bug scenario involves the default addition of the HTML 'title' attribute to menu items in dropdowns and select menus. This results in a tooltip showing the full text on hover, even when the visible label is already complete and not truncated. This behavior violates accessibility guidelines (WCAG) by displaying redundant text and impacts user experience, as seen in the screenshots where the tooltip is either redundant or useful only for truncated text."
+    },
+    "2": {
+        "bug_classes": [
+            "src/menu/view/item.jsx//Item",
+            "src/cascader/item.jsx//CascaderMenuItem"
+        ],
+        "bug_functions": [
+            "src/menu/view/item.jsx//Item.getTitle",
+            "src/menu/view/item.jsx//Item.render",
+            "src/cascader/item.jsx//CascaderMenuItem.render"
+        ],
+        "explanation": "The redundant 'title' attribute is set in the render methods of menu and cascader items. In 'src/menu/view/item.jsx', the 'Item' component always sets the 'title' prop to the result of getTitle(children), regardless of whether the text is truncated or not. This is the cause of the duplicate tooltip problem. The 'getTitle' function fetches the plain text from children, and 'render' applies it as the HTML 'title' attribute. Similarly, the 'CascaderMenuItem' in 'src/cascader/item.jsx' renders its underlying component as 'Menu.Item' and may pass on the 'title' prop (directly or through its menu item props). To resolve the bug, logic should be added to only set the 'title' attribute when the text is actually truncated (i.e., visually ellipsed and not fully visible), or (per the proposed solution) only for plain string children and when needed. These classes and functions are the exact code elements responsible for the buggy behavior and where the conditional logic should be updated.",
+        "bug_scenario": "The bug scenario relates to the use of the HTML 'title' attribute on menu/select/cascader items. Currently, the 'title' is always set to the item content, causing duplicate tooltips that violate accessibility guidelines (WCAG) when the text is not truncated/overflowed, and causing unwanted popups for business users. Users want to limit 'title' to only when needed (e.g., when text is actually truncated/overflowed), and avoid duplication when the item text is fully visible. The images show tooltips appearing with the same content as the visible text, which is redundant and undesirable in non-truncated scenarios."
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Tabs/Tabs.js//Tabs"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tabs/Tabs.js//defaultProps",
+            "packages/react/src/components/Tabs/Tabs.js//propTypes (role)",
+            "packages/react/src/components/Tabs/Tabs.js//render",
+            "packages/react/src/components/Tabs/Tabs-story.js//props.tabs"
+        ],
+        "explanation": "All of the above touchpoints either introduce or propagate a navigation landmark in the Tabs component. In Tabs.js, the static defaultProps sets the default role to 'navigation' (defaultProps.role), the propTypes declare that the component accepts a role prop, and the render method spreads that role onto the root element. In the Storybook file (Tabs-story.js), the props.tabs knob even defaults the role to 'navigation'. Together these mean that every Tabs instance will carry a navigation landmark by default, contrary to the intended behavior of leaving landmark roles to page-level design. To fix the bug, the role prop should be removed or defaulted to undefined/none, propTypes for role should be deleted, and the role attribute should not be rendered on the Tabs container. Additionally, the Storybook knobs for role should be removed or changed to no role by default.",
+        "bug_scenario": "When rendering the Tabs component (e.g. in Storybook), the root element of the tabs is rendered with a <nav> or a role=\"navigation\" landmark. In the screenshot you can see the Tabs wrapper (with class bx-tabs) rendered as <div role=\"navigation\"> and the story knobs even default the role to \u201cnavigation\u201d. This injects an unwanted navigation landmark around every Tabs instance, triggering accessibility warnings (\u201cnavigation landmark needs a label\u201d) and forcing authors to work around it with aria-labels rather than simply removing the landmark."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Tabs/Tabs.js//Tabs",
+            "packages/react/src/components/Tabs/Tabs-story.js//(module)"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Tabs/Tabs.js//defaultProps",
+            "packages/react/src/components/Tabs/Tabs.js//render",
+            "packages/react/src/components/Tabs/Tabs-story.js//props.tabs"
+        ],
+        "explanation": "All uses of the navigation role are rooted in the React Tabs component and its Storybook example. In Tabs.js the static defaultProps sets role to \"navigation\", and the render method spreads that role onto the root wrapper div. Removing this defaultProp (and dropping the role from the rendered element) will stop the component from unintentionally creating a navigation landmark. In Tabs-story.js the props.tabs function defines a knob-backed default of role: 'navigation' \u2013 that example code must also be updated (remove the role knob or default) so that the generated markup in Storybook no longer includes a navigation landmark.",
+        "bug_scenario": "When rendering the React Tabs component, the wrapper element is still being given a navigation landmark (either as a `<nav>` tag or via role=\"navigation\"). As a result accessibility tools report an unlabeled navigation landmark and consumers add an aria-label to Tabs (the wrong fix). The correct fix is to remove any `<nav>` and/or role=\"navigation\" from the Tabs component and its examples so that Carbon does not inject landmarks in isolated components."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/Tile.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/webgl/TileTexture.js"
+        ],
+        "explanation": "- src/ol/layer/WebGLTile.js: This is the layer class responsible for managing WebGL-based tile rendering, including reacting to source changes (`setSource()`) and interacting with the renderer and caching textures.\n- src/ol/renderer/webgl/TileLayer.js: This is the WebGL tile layer renderer, which manages tile loading, drawing, and texture caching. Any cache invalidation logic would be here.\n- src/ol/source/Tile.js and src/ol/source/DataTile.js: These classes implement tile sources. When the source is swapped via setSource(), hooks or notifications might be needed so the tile layer and renderer can respond accordingly (to clear textures for old tiles).\n- src/ol/webgl/TileTexture.js: This handles the actual WebGL textures for tiles, thus is relevant for manipulating (invalidating, disposing) textures related to tiles when the cache or source changes.\n\nThese files are all involved in either managing the tile source, handling `setSource` events, or implementing WebGL tile texture caching and rendering logic. To fix the bug, changes are likely required in these files to ensure cached tile textures are cleared/invalidate whenever the source or view projection changes, and that new textures are generated for the updated source/projection.",
+        "bug_scenario": "The bug is related to WebGL tile layers not clearing their cached textures when either the tile source is changed using `setSource()` or the view projection is altered. As a result, when the user pans or zooms after such changes, tiles from the previous (now incorrect) source or projection can reappear, instead of being fully replaced by the new, correct tiles. The cache invalidation is not handled properly, which leads to invalid/redundant WebGL textures persisting across source or projection changes."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This is the layer class that manages the WebGL tile layer logic, including how tile sources are set and reset. Bugs around not clearing caches due to setSource or projection change are likely managed here.\n2. src/ol/renderer/webgl/TileLayer.js: This file handles WebGL-based tile rendering. Invalidating or rebuilding tile caches according to source/projection changes occurs here.\n3. src/ol/webgl/TileTexture.js: This manages individual tile texture objects and likely the cache. Bugs involving stale or incorrectly cached textures relate to handling in this file. \n\nOther files (e.g. src/ol/source/Tile.js, src/ol/TileCache.js) might be indirectly involved, but these three are directly responsible for WebGL tile texture management, source handling, and cache invalidation.",
+        "bug_scenario": "When using WebGL tile layers, if the data source is replaced using setSource(), or if the map's projection is changed, the existing tile textures are cached incorrectly. They do not get invalidated and cleared as expected, so navigating the map may show tiles belonging to earlier sources or projections."
+    }
+}

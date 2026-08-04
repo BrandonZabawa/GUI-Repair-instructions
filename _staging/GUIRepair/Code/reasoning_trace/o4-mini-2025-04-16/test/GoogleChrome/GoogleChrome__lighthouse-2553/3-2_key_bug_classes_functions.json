@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/handlebar-helpers.js//handlebarHelpers",
+            "lighthouse-core/report/v2/renderer/util.js//Util"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/handlebar-helpers.js//formatNumber",
+            "lighthouse-core/report/handlebar-helpers.js//formatTransferSize",
+            "lighthouse-core/report/handlebar-helpers.js//chainDuration",
+            "lighthouse-core/report/v2/renderer/util.js//formatNumber",
+            "lighthouse-core/report/v2/renderer/util.js//formateBytesToKB",
+            "lighthouse-core/report/v2/renderer/util.js//formatMilliseconds",
+            "lighthouse-core/report/v2/renderer/util.js//chainDuration"
+        ],
+        "explanation": "All of these functions centralize number formatting for the report output and currently call toLocaleString with fixed or default fraction settings (e.g. {maximumFractionDigits: 1} or none). To adopt toLocaleString more broadly (with flexible maximumFractionDigits/minimumFractionDigits), these are the key formatting entry points to update so that metric values, transfer sizes, durations, scores, etc., will all utilize the improved number formatting approach.",
+        "bug_scenario": "The screenshot demonstrates how JavaScript\u2019s Number.prototype.toLocaleString behaves when called with only a maximumFractionDigits option (and in one case also a minimumFractionDigits). It shows that large numbers get locale separators (e.g. \u201c2,445\u201d) and fractional parts are correctly rounded or dropped, but if you don\u2019t specify a minimumFractionDigits you can lose trailing zeros or end up with integer output when you expect a fixed decimal place."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/handlebar-helpers.js//(module)",
+            "lighthouse-core/report/v2/renderer/util.js//Util"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/handlebar-helpers.js//formatNumber",
+            "lighthouse-core/report/handlebar-helpers.js//formatTransferSize",
+            "lighthouse-core/report/v2/renderer/util.js//formatNumber",
+            "lighthouse-core/report/v2/renderer/util.js//formateBytesToKB",
+            "lighthouse-core/report/v2/renderer/util.js//formatMilliseconds"
+        ],
+        "explanation": "These functions are responsible for formatting all the numerical outputs in the Lighthouse reports. They currently call toLocaleString (or in the case of formatMilliseconds, a plain toLocaleString with no options) with a hard-coded maximumFractionDigits, which leads to inconsistent behavior (dropping trailing zeros, no thousands separators, etc.). To adopt toLocaleString properly across the board, these are the places that must be updated so that all numbers use locale separators and correct fractional rounding based on both maximumFractionDigits and minimumFractionDigits where needed.",
+        "bug_scenario": "The screenshot shows how JavaScript\u2019s Number.prototype.toLocaleString behaves when only maximumFractionDigits (and in one case also minimumFractionDigits) is specified. Large numbers get the locale\u2019s thousands-separator (e.g. \"2,445\"), and fractional values are rounded to the specified maximum fraction digits. Very small fractional parts (like 0.000001) get rounded down to an integer, unless you also specify a minimum fraction digits, and larger fractions (like 0.006) round up correctly. The goal is to adopt toLocaleString for all number-output in the Lighthouse report (metrics, element counts, diagnostics, KB sizes, etc.) so outputs are consistently localized and correctly rounded."
+    }
+}

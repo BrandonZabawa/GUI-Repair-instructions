@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/TableHeader.js//TableHeader"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/TableHeader.js//TableHeader"
+        ],
+        "explanation": "The TableHeader component is the core of the bug: it destructures ...rest from its props but only spreads them onto the outer <th> when isSortable is false. In the sortable branch, it never spreads ...rest onto the <th>, instead spreading them onto the <button>. Thus user-supplied props (like id) get attached to the button rather than the table header cell. To fix the bug, the ...rest spread needs to be moved from the <button> up to the <th> in the sortable branch (and removed from the button).",
+        "bug_scenario": "The TableHeader component in DataTable is supposed to pass any extra props (via ...rest) through to the <th> element so that attributes like id end up on the table header cell. In the current implementation, unsortable headers spread ...rest correctly onto the <th>, but sortable headers omit this spread on the <th> and instead apply ...rest to the inner <button>. As a result, when you supply an id prop on a sortable header, it lands on the button instead of the th, breaking accessibility requirements (the th has no id to be referenced)."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/TableHeader.js//TableHeader"
+        ],
+        "explanation": "The TableHeader component is responsible for rendering both sortable and non-sortable table header cells. In the non-sortable branch it spreads {...rest} onto the <th>, but in the sortable branch it mistakenly spreads {...rest} onto the <button> instead of the <th>. Because custom props (like id) passed via ...rest never reach the <th> when isSortable=true, this function is the direct source of the bug and needs to be updated to apply {...rest} to the correct element.",
+        "bug_scenario": "When using TableHeader with custom props (e.g. id) on sortable columns, the extra props are being spread onto the inner <button> instead of the outer <th>. As a result, the <th> for sortable headers never receives attributes like id, leading to missing references in accessibility (aria-describedby). Non-sortable headers spread {...rest} on the <th> correctly, but sortable ones only apply {...rest} to the <button>, which appears to be a misplaced typo."
+    }
+}

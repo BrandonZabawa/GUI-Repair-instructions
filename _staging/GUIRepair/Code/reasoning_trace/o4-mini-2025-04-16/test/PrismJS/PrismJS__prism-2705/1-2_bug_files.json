@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-javascript.js",
+            "components/prism-javascript.min.js"
+        ],
+        "explanation": "Both the un-minified and minified JavaScript language definition files carry the logic for recognizing regex literals, comments, and template literals (including their opening and closing backticks). The bug report shows broken template-literal parsing only in JavaScript highlighting, so these are the files that need to be corrected. Adjusting the regex or lookbehind rules in prism-javascript.js (and then rebuilding or re-minifying) will fix the stray open 'template-punctuation' span.",
+        "bug_scenario": "In the user\u2019s screenshot you can see that after parsing a regex literal that contains a single-quote (replace(/'/, `'`)) and then a normal template literal in a comment, the very next vanilla template literal (`const var3 = `break starts here`;`) is not closed properly by the highlighter. Prism opens a <span class=\"token template-punctuation\"> when it sees the backtick, highlights the contents as expected, but never emits the closing `</span>`. As a result the remainder of the file (including var4) is all swallowed into that open span."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-javascript.js",
+            "components/prism-javascript.min.js"
+        ],
+        "explanation": "The JavaScript grammar is defined in prism-javascript.js (and its minified counterpart). That file contains the \u2018template-string\u2019 token and the look-behind logic for interpolation. The bug manifests as an off-by-one in the open/close regex for backtick strings (and interactions with single-quote regexes and comments), so fixing the \u2018template-string\u2019 pattern in prism-javascript.js will resolve the broken highlighting. The minified file must also be regenerated once the fix is applied.",
+        "bug_scenario": "When Prism highlights JavaScript source containing a regex literal with single-quotes inside template literals, followed by a backtick comment, any subsequent ordinary template literals are not closed properly. In the reproducer you see\n\n1. A replace(/'/, `'`) call is highlighted correctly.\n2. A comment containing backticks (// `load bearing comment`) is parsed and highlighted correctly.\n3. But the very next template string (`break starts here`) never closes its <span> and \u201csteals\u201d highlighting until end of file (var3 and var4 remain green/span open)."
+    }
+}

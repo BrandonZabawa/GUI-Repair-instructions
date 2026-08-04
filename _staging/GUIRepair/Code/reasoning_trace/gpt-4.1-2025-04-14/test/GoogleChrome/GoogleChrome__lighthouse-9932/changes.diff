@@ -1,0 +1,19 @@
+diff --git a/lighthouse-core/lib/dependency-graph/simulator/connection-pool.js b/lighthouse-core/lib/dependency-graph/simulator/connection-pool.js
+index bb0841bda..6c5fc5151 100644
+--- a/lighthouse-core/lib/dependency-graph/simulator/connection-pool.js
++++ b/lighthouse-core/lib/dependency-graph/simulator/connection-pool.js
+@@ -52,7 +52,13 @@ module.exports = class ConnectionPool {
+     for (const [origin, records] of recordsByOrigin.entries()) {
+       const connections = [];
+       const additionalRtt = additionalRttByOrigin.get(origin) || 0;
+-      const responseTime = serverResponseTimeByOrigin.get(origin) || DEFAULT_SERVER_RESPONSE_TIME;
++      // If the origin is a data URI or other non-network scheme, set responseTime to 0
++      let responseTime;
++      if (origin && (origin.startsWith('data:') || origin === 'null')) {
++        responseTime = 0;
++      } else {
++        responseTime = serverResponseTimeByOrigin.get(origin) || DEFAULT_SERVER_RESPONSE_TIME;
++      }
+ 
+       for (const record of records) {
+         if (connectionReused.get(record.requestId)) continue;

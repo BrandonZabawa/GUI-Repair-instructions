@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gather-runner.js//loadPage",
+            "lighthouse-core/gather/gather-runner.js//run",
+            "lighthouse-core/gather/driver.js//gotoURL",
+            "lighthouse-core/gather/driver.js//_waitForFullyLoaded",
+            "lighthouse-core/gather/driver.js//_waitForLoadEvent",
+            "lighthouse-core/gather/driver.js//_waitForNetworkIdle"
+        ],
+        "explanation": "The bug is related to the audit hanging while waiting for the page to load and the 'onload' event to fire. The relevant logic for loading pages, waiting for events, and handling navigation is in the 'GatherRunner' and 'Driver' classes. Specifically: \n- 'GatherRunner.loadPage' is responsible for loading the target URL and waiting for it to be fully loaded, which is where the process is hanging.\n- 'GatherRunner.run' orchestrates the audit passes and would be responsible for waiting on page load completion.\n- 'Driver.gotoURL' handles the navigation to the target page and is a likely point for navigation-related timeouts or failures.\n- 'Driver._waitForFullyLoaded', 'Driver._waitForLoadEvent', and 'Driver._waitForNetworkIdle' are all concerned with the logic around waiting for loading, network, and CPU idle conditions, which are critical for determining when Lighthouse can proceed. If these promises never resolve due to an edge case or failure, the audit will hang indefinitely as described in the bug report and seen in the images.",
+        "bug_scenario": "The bug scenario is that when running a Lighthouse audit (either in Chrome DevTools or the Lighthouse extension), the process hangs indefinitely on the 'Loading page & waiting for onload' step, specifically during the Progressive Web App (PWA) category. The UI shows the audit progress dialog stuck at this step and does not proceed, leaving the user unable to complete the audit."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.pass",
+            "lighthouse-core/gather/driver.js//Driver.gotoURL",
+            "lighthouse-core/gather/driver.js//Driver._waitForFullyLoaded"
+        ],
+        "explanation": "The bug is related to the audit process hanging during the page load and 'onload' wait phase. The key classes involved are GatherRunner (which orchestrates the gather process including navigation and loading) and Driver (which interacts with the browser to load the page and monitor events). \n\n- GatherRunner.loadPage: This function is responsible for navigating to the target URL and waiting for the page load event (onload). If this does not resolve, the audit hangs.\n- GatherRunner.pass: This function coordinates the navigation and 'pass' phase of gatherers, which includes waiting for the page to load and network/CPU idle conditions. If any substep hangs (such as waiting for onload), the whole process stalls.\n- Driver.gotoURL: Responsible for the low-level navigation to a URL, handling redirects, and ensuring the proper events are fired. If this does not resolve correctly or does not handle edge cases (like no onload event), it can cause indefinite waiting.\n- Driver._waitForFullyLoaded: This is the function that implements the logic for waiting until the page is fully loaded, including waiting for network and CPU to be idle after onload. If the logic here fails to detect that loading is done (e.g., due to missing events or infinite waits), it will cause the reported symptom.\n\nThese elements are directly responsible for orchestrating page loads and monitoring their completion, so bugs in their implementation (timeouts, event listening, edge case handling) can easily produce the 'hangs on waiting for onload' issue described in the report and shown in the screenshots.",
+        "bug_scenario": "The bug scenario is that when running a Lighthouse audit (specifically for Progressive Web App), the process hangs indefinitely at the 'Loading page & waiting for onload' step. This is visually confirmed in the images, where the progress bar spins endlessly at this step, preventing the audit from ever completing. The issue occurs both in the Chrome extension and native audit tools, as reported for the given page and potentially others as well. The user has ruled out known causes like HSTS, server errors, or missing document requests."
+    }
+}

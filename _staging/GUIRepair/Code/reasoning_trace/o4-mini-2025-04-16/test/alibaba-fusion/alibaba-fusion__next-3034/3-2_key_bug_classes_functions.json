@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/upload/list.jsx//List",
+            "src/upload/card.jsx//Card"
+        ],
+        "bug_functions": [
+            "src/upload/list.jsx//List.getPictureCardList"
+        ],
+        "explanation": "The List component\u2019s getPictureCardList method checks for a user-provided itemRender function and, if present, replaces the entire thumbnail/overlay area with the custom rendering. That branch never injects the default delete (closable) Icon nor wires up handleClose, so the close button is never shown. The Card component simply passes itemRender down to List. To fix it, getPictureCardList must merge the default close icon (and actionRender) into or alongside the custom itemRender output so that handleClose can still be triggered.",
+        "bug_scenario": "In the Upload component when using a custom itemRender (e.g. to overlay a timer on an image), the default delete (close) button is not rendered. As a result, users cannot remove uploaded items via the UI even though onRemove and handleClose are implemented internally."
+    },
+    "2": {
+        "bug_classes": [
+            "src/upload/list.jsx//List",
+            "src/upload/card.jsx//Card"
+        ],
+        "bug_functions": [
+            "src/upload/list.jsx//List.getPictureCardList"
+        ],
+        "explanation": "The heart of the issue is in List.getPictureCardList (defined in src/upload/list.jsx). This method checks for an itemRender prop and, if present, uses the user\u2019s custom render exclusively: \n\n    if (typeof itemRender === 'function') {\n      item = itemRender(file);\n    } else {\n      // default markup including delete icon\n    }\n\nBecause the custom itemRender completely replaces the default markup, the built-in delete icon (the ashbin close control wired to handleClose) never gets rendered. In src/upload/card.jsx the Card component simply passes its itemRender prop down into List, so no further logic intercepts or augments that output. To restore the delete functionality, List.getPictureCardList must merge or append the default close control into the custom render output rather than discarding it entirely.",
+        "bug_scenario": "The report shows that when using the Upload component in \u201ccard\u201d mode together with a custom itemRender, the delete (close/ashbin) icon no longer appears. In the screenshot the last image item has been rendered via the user\u2019s itemRender function (showing an overlay with \u201c06:08\u201d) but the built-in delete control is missing and clicking cannot remove the file."
+    }
+}

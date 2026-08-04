@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/util/ConnectionLayoutUtil.js",
+            "lib/features/modeling/behavior/util/LineAttachmentUtil.js"
+        ],
+        "explanation": "\n1. LayoutConnectionBehavior.js: This is where, on connection.layout or connection.move, the module repositions connected edges (incoming/outgoing) by computing new anchor points. It handles associations between shapes but never adjusts the positioning of label shapes.\n2. LabelLayoutUtil.js: Contains getLabelAdjustment() to compute how a label should shift when its host connection moves, but this util is never invoked anywhere in the behavior code.\n3. ConnectionLayoutUtil.js: Offers getConnectionAdjustment() (used by LayoutConnectionBehavior) to compute new connection anchor points, but no analogous call is made for labels.\n4. LineAttachmentUtil.js: Underpins the attachment logic (bendpoint vs. segment) for both associations and labels, but again its routines are unused when repositioning labels on connection relayout.\n\nFixing the bug requires extending LayoutConnectionBehavior to also discover connection.labels or shapes with labelTarget = connection and to call getLabelAdjustment (from LabelLayoutUtil) so that text annotations and associations stay correctly bound to the line after a resize.",
+        "bug_scenario": "When an expanded subprocess is resized, the BPMN sequence flow that crosses its boundary is automatically re-laid out (its waypoints are recomputed). However, any labels (text annotations) or BPMN associations that are attached to that flow do not move with the line. In the screenshot you can see the \u201cText\u201d annotation and its dashed\u2010line association left behind at their old anchor point, no longer following the resized flow."
+    }
+}

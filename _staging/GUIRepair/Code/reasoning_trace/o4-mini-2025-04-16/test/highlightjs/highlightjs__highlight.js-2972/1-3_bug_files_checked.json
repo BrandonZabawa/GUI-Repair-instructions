@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/python.js",
+            "src/languages/python-repl.js"
+        ],
+        "explanation": "All of the Python highlighting rules live in python.js (and its REPL variant). These files define how function definitions, parameters, comments, and punctuation are tokenized. Since they don\u2019t include patterns for \u201cname: Type\u201d, \u201c-> ReturnType\u201d, square-bracketed generics, or the \u201c# type:\u201d comment syntax, none of that PEP 484 syntax gets recognized. To add full type-hint support, we must extend the grammar in src/languages/python.js (and mirror any changes in python-repl.js) to capture annotation colons, arrows, generics, and comment-based hints as distinct tokens.",
+        "bug_scenario": "In the screenshot we see Python code using PEP 484 type hints \u2014 both inline (parameter annotations `db: aio_db.DatabaseConnection`, return annotations `-> List[str]`) and comment-based hints (`# type: Dict[int, Any]`). highlight.js currently treats these entirely as plain text or generic punctuation/comments, so the brackets, arrows, and typed comments fail to receive distinct scopes. The result is that no special styling is applied to the type names, the `->` arrow, the square-bracketed generics, or the \u201ctype:\u201d comment markers."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/python.js",
+            "src/languages/python-repl.js"
+        ],
+        "explanation": "The core Python grammar lives in src/languages/python.js; it defines how keywords, built-ins, comments and operators (including type comments and annotations) are recognized. To add full support for PEP 484 type hints\u2014function parameter and return annotations, variable annotations, inline \u201c# type:\u201d comments and generics\u2014you must extend or modify the rules in this file. The python-repl.js extension inherits much of that same grammar for REPL sessions, so it must be updated in parallel to keep highlighting consistent in interactive snippets.",
+        "bug_scenario": "When highlighting Python source, highlight.js does not recognize or style PEP 484 type hints (variable annotations, inline \u201c# type:\u201d comments, function return arrows \u201c-> Type\u201d, and generic types in brackets) the way modern highlighters (e.g. Magic Python) do. In the example screenshot we see an async function with a parameter annotation \u201cdb: aio_db.DatabaseConnection\u201d, a return annotation \u201c-> List[str]\u201d, a comment-style type hint \u201c# type: Dict[int, Any]\u201d on a variable assignment, and a lambda that compiles a regex with \u201c# type: ignore\u201d\u2014none of which are styled as types by the current grammar."
+    }
+}

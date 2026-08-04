@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/VectorContext.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/style/Text.js"
+        ],
+        "explanation": "\u2022 src/ol/render/canvas/TextBuilder.js \u2013 constructs text draw instructions for the vector layer path, calculating offsets and rotations in a pipeline that currently applies offset relative to the unrotated geometry anchor.  \n\u2022 src/ol/render/canvas/Executor.js \u2013 replays those instructions when rendering a VectorLayer, performing translate/rotate calls in an order that differs from Immediate, causing the offset to rotate around the feature position.  \n\u2022 src/ol/render/canvas/Immediate.js \u2013 implements the immediate rendering path (used by VectorContext) and applies text offsets after rotation around the text anchor, yielding different positioning.  \n\u2022 src/ol/render/VectorContext.js \u2013 facade for immediate draw calls, forwarding to Immediate; its ordering of translate/rotate relative to offset differs from the vector\u2010layer executor path.  \n\u2022 src/ol/renderer/canvas/VectorLayer.js \u2013 orchestrates building and executing canvas instructions for vector layers. It uses TextBuilder/Executor and thus embeds the inconsistent transform sequence.  \n\u2022 src/ol/style/Text.js \u2013 defines the offsetX/offsetY, textAlign/textBaseline and rotation parameters; inconsistencies in how these style properties are consumed by the two render paths underlie the bug.",
+        "bug_scenario": "When styled text features are both offset (offsetX/offsetY) and rotated (via rotation or map rotation), the CanvasVectorLayer renderer (which uses TextBuilder \u2192 Executor) applies the offset before rotating around the feature\u2019s geometry location, whereas the immediate renderer (VectorContext/Immediate) applies the offset after rotation, anchoring around the offset point (textAlign/textBaseline). This leads to labels appearing in different positions under rotation when drawn via a VectorLayer vs a direct VectorContext."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/render/VectorContext.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "All of these files participate in the calculation or execution of text offset and rotation in the two rendering paths. VectorContext.js and Immediate.js implement the immediate (on\u2010the\u2010fly) text drawing logic, applying rotation around the text anchor. TextBuilder.js assembles drawing instructions (including offset, rotation, displacement) for the canvas executor. Executor.js replays those instructions to the canvas, where the vector\u2010layer path (in renderer/canvas/VectorLayer.js) applies view and feature rotations differently. The inconsistency between how VectorLayer.js rotates the entire context around the feature and how Immediate.js rotates around the text anchor is the root cause of the bug.",
+        "bug_scenario": "When a text label has both an offset (offsetX, offsetY) and a rotation applied, the Canvas-based vector\u2010layer renderer rotates the label around the feature\u2019s original location (i.e.\tit moves on a circular path around the point), whereas the immediate renderer (via VectorContext) rotates the label around its own offset anchor point (as defined by textAlign/textBaseline). This mismatch in rotation anchor leads to inconsistent placement of rotated, offset text between the two rendering paths, which is clearly visible in the example images."
+    }
+}

@@ -1,0 +1,73 @@
+diff --git a/packages/react/src/components/DataTable/Table.js b/packages/react/src/components/DataTable/Table.js
+index 5efe8221..2435c4cf 100644
+--- a/packages/react/src/components/DataTable/Table.js
++++ b/packages/react/src/components/DataTable/Table.js
+@@ -19,6 +19,8 @@ export const Table = ({
+   useStaticWidth,
+   stickyHeader,
+   overflowMenuOnHover,
++  'aria-labelledby': ariaLabelledby,
++  'aria-describedby': ariaDescribedby,
+   ...other
+ }) => {
+   const prefix = usePrefix();
+@@ -32,7 +34,12 @@ export const Table = ({
+   });
+   const table = (
+     <div className={`${prefix}--data-table-content`}>
+-      <table {...other} className={componentClass}>
++      <table
++        {...other}
++        className={componentClass}
++        aria-labelledby={ariaLabelledby}
++        aria-describedby={ariaDescribedby}
++      >
+         {children}
+       </table>
+     </div>
+diff --git a/packages/react/src/components/DataTable/TableContainer.js b/packages/react/src/components/DataTable/TableContainer.js
+index 1a744a84..a2d328ad 100644
+--- a/packages/react/src/components/DataTable/TableContainer.js
++++ b/packages/react/src/components/DataTable/TableContainer.js
+@@ -29,17 +29,38 @@ const TableContainer = ({
+     }
+   );
+ 
++  // Generate unique IDs for title and description if they exist
++  const titleId = title ? `${prefix}--data-table-header__title-${Math.random().toString(36).substr(2, 9)}` : undefined;
++  const descriptionId = description ? `${prefix}--data-table-header__description-${Math.random().toString(36).substr(2, 9)}` : undefined;
++
++  // If children is a valid React element, clone it and pass aria-labelledby/aria-describedby
++  let childrenWithAria = children;
++  if (React.isValidElement(children)) {
++    childrenWithAria = React.cloneElement(children, {
++      'aria-labelledby': titleId,
++      'aria-describedby': descriptionId,
++    });
++  }
++
+   return (
+     <div {...rest} className={tableContainerClasses}>
+       {title && (
+         <div className={`${prefix}--data-table-header`}>
+-          <h4 className={`${prefix}--data-table-header__title`}>{title}</h4>
+-          <p className={`${prefix}--data-table-header__description`}>
++          <h4
++            className={`${prefix}--data-table-header__title`}
++            id={titleId}
++          >
++            {title}
++          </h4>
++          <p
++            className={`${prefix}--data-table-header__description`}
++            id={descriptionId}
++          >
+             {description}
+           </p>
+         </div>
+       )}
+-      {children}
++      {childrenWithAria}
+     </div>
+   );
+ };

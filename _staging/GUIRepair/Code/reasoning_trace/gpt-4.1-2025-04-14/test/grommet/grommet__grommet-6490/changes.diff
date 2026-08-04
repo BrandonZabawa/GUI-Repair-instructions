@@ -1,0 +1,50 @@
+diff --git a/src/js/components/Box/StyledBox.js b/src/js/components/Box/StyledBox.js
+index 4f2bbbd4d..39e566c36 100644
+--- a/src/js/components/Box/StyledBox.js
++++ b/src/js/components/Box/StyledBox.js
+@@ -249,7 +249,10 @@ const StyledBox = styled.div`
+ const gapStyle = (directionProp, gap, responsive, border, theme) => {
+   const metric = theme.global.edgeSize[gap] || gap;
+   const breakpoint = getBreakpointStyle(theme, theme.box.responsiveBreakpoint);
+-  const responsiveMetric = responsive && breakpoint && breakpoint.edgeSize[gap];
++  const responsiveMetric =
++    responsive && breakpoint && breakpoint.edgeSize[gap]
++      ? breakpoint.edgeSize[gap]
++      : undefined;
+ 
+   const styles = [];
+   if (directionProp === 'column' || directionProp === 'column-reverse') {
+@@ -279,19 +282,26 @@ const gapStyle = (directionProp, gap, responsive, border, theme) => {
+   if (border === 'between' || (border && border.side === 'between')) {
+     const borderSize = border.size || 'xsmall';
+     const borderMetric = theme.global.borderSize[borderSize] || borderSize;
+-    const borderOffset = `${
+-      parseMetricToNum(metric) / 2 - parseMetricToNum(borderMetric) / 2
+-    }px`;
++    // Only parse metric if it is defined and can be parsed
++    let borderOffset = '0px';
++    if (metric && borderMetric) {
++      borderOffset = `${
++        parseMetricToNum(metric) / 2 - parseMetricToNum(borderMetric) / 2
++      }px`;
++    }
+     const responsiveBorderMetric =
+       responsive &&
+       breakpoint &&
+-      (breakpoint.borderSize[borderSize] || borderSize);
+-    const responsiveBorderOffset =
+-      responsiveBorderMetric &&
+-      `${
++      (breakpoint.borderSize && breakpoint.borderSize[borderSize]
++        ? breakpoint.borderSize[borderSize]
++        : borderSize);
++    let responsiveBorderOffset;
++    if (responsiveMetric && responsiveBorderMetric) {
++      responsiveBorderOffset = `${
+         parseMetricToNum(responsiveMetric) / 2 -
+         parseMetricToNum(responsiveBorderMetric) / 2
+       }px`;
++    }
+ 
+     if (directionProp === 'column' || directionProp === 'column-reverse') {
+       const adjustedBorder =

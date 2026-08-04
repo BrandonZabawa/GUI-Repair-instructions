@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/rules/key-spacing.js",
+            "lib/rules/key-spacing.js"
+        ],
+        "explanation": "The core of the issue lives in `lib/rules/key-spacing.js` \u2013 that rule implements both spacing and the align-by-value auto-fix behavior. It currently does not distinguish between ordinary object literals in JavaScript code (where alignment may be desired) and object literals embedded in JSX attributes (where it almost never is). The documentation in `docs/rules/key-spacing.md` should also be updated to call out or disable alignment in JSX contexts, and the rule\u2019s test suite (`tests/lib/rules/key-spacing.js`) needs new test cases to cover and prevent regressions for inline JSX objects.",
+        "bug_scenario": "When you run `eslint --fix` on a JSX file containing inline object-literals in attributes (for example, `style={{marginRight: '4px', color: '#0C090A', \u2026}}`) with the `key-spacing` rule set to align by \"value\" in the multiline configuration, ESLint\u2019s auto-fixer will collect every property in the same object across multiple lines and re-align their values to a common column. In JSX this often produces very awkward spacing, breaking the intended visual grouping of style properties and scattering the key\u2013value pairs."
+    },
+    "2": {
+        "bug_files": [
+            "lib/rules/key-spacing.js"
+        ],
+        "explanation": "The core of the problem lives in lib/rules/key-spacing.js\u2014the code that implements the multi-line alignment behavior is agnostic of context and ends up re-aligning style objects used inside JSX. To avoid this ugly output, the rule should detect when an ObjectExpression lives inside a JSXAttribute (or specifically inside a style prop) and skip or alter its alignment logic. The corresponding documentation in docs/rules/key-spacing.md will also need an update to note this exception or configuration override when used in JSX.",
+        "bug_scenario": "When ESLint\u2019s key-spacing rule is configured with multiLine:{align:'value'} and applied to JSX inline style objects (e.g. style={{\u2026}}), running eslint --fix rearranges and splits those object properties in the JSX attribute into new lines in an awkward way. Instead of preserving the single-line object in JSX or only aligning normal JS objects, the fixer forces a group alignment inside the JSXExpressionContainer, producing ugly broken formatting."
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/geom/MultiPolygon.js",
+            "src/ol/format/GeoJSON.js",
+            "src/ol/format/JSONFeature.js",
+            "src/ol/featureloader.js"
+        ],
+        "explanation": "MultiPolygon.js contains the setCoordinates method that allocates and flattens the nested coordinate arrays, and it is where the invalid array length is thrown. GeoJSON.js drives the parsing of the GeoJSON geometry objects and invokes the MultiPolygon constructor. JSONFeature.js glues together GeoJSON reading with feature creation. featureloader.js triggers the whole asynchronous loading and dispatches parsed objects into GeoJSON.parse\u2014so all four are directly implicated by the stack trace and coordinate handling logic and will need adjustment to guard against extremely large or malformed coordinate arrays.",
+        "bug_scenario": "When loading a complex GeoJSON containing large MultiPolygon geometries into an ol.source.Vector (OpenLayers v6.14.1), the parser throws \u201cUncaught RangeError: Invalid array length\u201d in MultiPolygon.setCoordinates. The stack trace shows the error bubbling up from MultiPolygon.js through GeoJSON.js, JSONFeature.js and featureloader.js. The same file renders correctly in QGIS and Leaflet, so the failure points to OL\u2019s GeoJSON parsing and MultiPolygon coordinate flattening logic."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/geom/MultiPolygon.js",
+            "src/ol/format/GeoJSON.js",
+            "src/ol/format/JSONFeature.js"
+        ],
+        "explanation": "\u2022 src/ol/geom/MultiPolygon.js \u2013 This is where the RangeError is thrown (setCoordinates builds the flat coordinate array and validates its length). Any fix to how the nested coordinates are flattened or how array sizes are computed must happen here.\n\u2022 src/ol/format/GeoJSON.js \u2013 The GeoJSON reader calls new MultiPolygon(coordinates) after parsing the raw coordinate arrays. If the reader mis-orders dimensions or feeds an extra nesting level, it would trigger invalid lengths in the geometry constructor.\n\u2022 src/ol/format/JSONFeature.js \u2013 This sits one level up in the feature parsing chain (JSONFeature.readFeatures invokes GeoJSON.readFeatures). Since the error bubbles through here, it may need adjustments to how features are unrolled before handing off to GeoJSON, especially for large MultiPolygon objects.",
+        "bug_scenario": "When loading a large or highly detailed GeoJSON containing MultiPolygon geometries into an ol.source.Vector with ol.format.GeoJSON (OpenLayers v6.14.1), parsing trips a \u201cUncaught RangeError: Invalid array length\u201d in the MultiPolygon constructor. The console stack points at MultiPolygon.js:setCoordinates, propagating back through GeoJSON.js.readFeatureFromObject, JSONFeature.js.readFeatures, and the loader\u2019s onload (featureloader.js). In QGIS or Leaflet the same file renders fine, so the problem lies in how OpenLayers\u2019 GeoJSON parser or the MultiPolygon geometry class handles deeply nested coordinate arrays or very large rings."
+    }
+}

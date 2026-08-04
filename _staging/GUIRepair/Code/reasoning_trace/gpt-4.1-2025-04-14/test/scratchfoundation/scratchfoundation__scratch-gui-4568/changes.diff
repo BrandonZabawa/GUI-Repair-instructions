@@ -1,0 +1,74 @@
+diff --git a/src/components/monitor/monitor.jsx b/src/components/monitor/monitor.jsx
+index 221343275..3cc52dbd2 100644
+--- a/src/components/monitor/monitor.jsx
++++ b/src/components/monitor/monitor.jsx
+@@ -84,6 +84,14 @@ const MonitorComponent = props => (
+                             id="gui.monitor.contextMenu.slider"
+                         />
+                     </MenuItem>}
++                {props.onSetSliderRange &&
++                    <MenuItem onClick={props.onSetSliderRange}>
++                        <FormattedMessage
++                            defaultMessage="set slider range"
++                            description="Menu item to set the slider range"
++                            id="gui.monitor.contextMenu.setSliderRange"
++                        />
++                    </MenuItem>}
+                 {props.onImport &&
+                     <MenuItem onClick={props.onImport}>
+                         <FormattedMessage
+@@ -122,7 +130,8 @@ MonitorComponent.propTypes = {
+     onNextMode: PropTypes.func.isRequired,
+     onSetModeToDefault: PropTypes.func,
+     onSetModeToLarge: PropTypes.func,
+-    onSetModeToSlider: PropTypes.func
++    onSetModeToSlider: PropTypes.func,
++    onSetSliderRange: PropTypes.func
+ };
+ 
+ MonitorComponent.defaultProps = {
+diff --git a/src/containers/monitor.jsx b/src/containers/monitor.jsx
+index dfcdd3aa4..251975d8a 100644
+--- a/src/containers/monitor.jsx
++++ b/src/containers/monitor.jsx
+@@ -42,6 +42,7 @@ class Monitor extends React.Component {
+             'handleSetModeToDefault',
+             'handleSetModeToLarge',
+             'handleSetModeToSlider',
++            'handleSetSliderRange',
+             'handleImport',
+             'handleExport',
+             'setElement'
+@@ -135,6 +136,24 @@ class Monitor extends React.Component {
+             mode: 'slider'
+         }));
+     }
++    handleSetSliderRange () {
++        // Prompt for min and max
++        let min = prompt('Enter slider minimum value:', this.props.min);
++        if (min === null) return;
++        let max = prompt('Enter slider maximum value:', this.props.max);
++        if (max === null) return;
++        min = Number(min);
++        max = Number(max);
++        if (isNaN(min) || isNaN(max) || min >= max) {
++            alert('Invalid range. Min must be less than max and both must be numbers.');
++            return;
++        }
++        this.props.vm.runtime.requestUpdateMonitor(Map({
++            id: this.props.id,
++            min: min,
++            max: max
++        }));
++    }
+     setElement (monitorElt) {
+         this.element = monitorElt;
+     }
+@@ -182,6 +201,7 @@ class Monitor extends React.Component {
+                 onSetModeToDefault={isList ? null : this.handleSetModeToDefault}
+                 onSetModeToLarge={isList ? null : this.handleSetModeToLarge}
+                 onSetModeToSlider={showSliderOption ? this.handleSetModeToSlider : null}
++                onSetSliderRange={this.props.mode === 'slider' ? this.handleSetSliderRange : null}
+             />
+         );
+     }

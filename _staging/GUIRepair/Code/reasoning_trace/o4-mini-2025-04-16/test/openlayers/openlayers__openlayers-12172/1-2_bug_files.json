@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/Image.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "src/ol/style/Icon.js is where the Icon style reads and stores the displacement values but does not expand its internal image extent to account for them. src/ol/style/Image.js (the base class shared by Icon, Circle and RegularShape) computes the image draw offset and extent; its logic must include displacement when setting up hit and render bounds. src/ol/render/canvas/ImageBuilder.js uses the anchor and displacement provided by the style to generate canvas draw instructions but still confines drawing to the original extent, so graphics outside that box are clipped. src/ol/renderer/canvas/VectorLayer.js applies a clipping rectangle around each feature batch (e.g. per tile or layer draw call) based on the data extent; since displacement is not included in that bound, the moved icon is sliced off at the edges.",
+        "bug_scenario": "When an ol/style/Icon is used with a non\u2010zero displacement, the glyph is moved beyond its original anchor/extent but then clipped by the canvas clipping bounds (layer or tile extent). In practice the green cross (icon) is partially cut off when displacement shifts it outside its calculated draw region."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/render/canvas/Builder.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "\u2022 src/ol/style/Icon.js \u2013 stores the displacement on the Icon style but never factors that extra offset into how the underlying image is prepared or sized.  \n\u2022 src/ol/style/IconImage.js \u2013 creates an offscreen canvas only as large as the raw image/sprite region (ignoring displacement), so when that canvas is later drawn with an offset, any pixels that lie outside its bounds get clipped away.  \n\u2022 src/ol/render/canvas/Builder.js \u2013 generates the drawImage instructions for feature icons but assumes the image canvas already accounts for all offsets; it just uses anchor and image size, without padding for displacement.  \n\u2022 src/ol/render/canvas/ImageBuilder.js \u2013 similarly packages images into replay groups based on the raw canvas dimensions, so any later draw offset isn\u2019t made up for by extra transparent pixels.  \n\nTogether these files lead to an offscreen icon image that\u2019s too small when displacement is applied, causing the shifted parts to be permanently cropped.",
+        "bug_scenario": "In vector\u2010style rendering, applying an ol/style/Icon with a nonzero displacement shifts the image on the map, but parts of the icon that move outside the original image bounds are cut off. In the Codesandbox fork of the regular-shape example, the green \u201c+\u201d icon is displaced but its arms are clipped against the offscreen canvas that holds the icon, so you only see the central part."
+    }
+}

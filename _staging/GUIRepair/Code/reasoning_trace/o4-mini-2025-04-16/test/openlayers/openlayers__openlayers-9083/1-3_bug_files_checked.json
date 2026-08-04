@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/Draw.js",
+            "src/ol/interaction/Pointer.js",
+            "src/ol/pointer/PointerEventHandler.js",
+            "src/ol/interaction/DragPan.js",
+            "src/ol/events/condition.js"
+        ],
+        "explanation": "\u2022 Draw.js is the heart of the problem: on drawend it should tear down its pointer listeners and reset its state but in 5.3.0 it still intercepts pointer events.\n\u2022 Pointer.js (the base class for Draw) contains the generic handleEvent logic that controls whether an interaction swallows pointer events; if Draw doesn\u2019t clear its flags here, all subsequent events stay bottled up.\n\u2022 PointerEventHandler.js powers the low-level pointer capture; if Draw leaves a capture open, no other interactions can get pointer events.\n\u2022 DragPan.js implements map dragging. Because Draw never fully releases the pointer chain, DragPan.handleEvent is never called after drawend.\n\u2022 condition.js defines altKeyOnly. The fact that you randomly can pan when Alt is down indicates that your DragPan and Draw conditions are both playing into which interaction sees the event. Together these files need coordinated fixes so that Draw truly goes idle on drawend and DragPan always receives events.",
+        "bug_scenario": "When you draw a polygon with the Draw interaction (using altKeyOnly) and then finish the drawing (drawend), the map will sometimes no longer respond to drag gestures.  In OL\u20095.3.0, after drawend the Draw interaction never fully releases pointer handling, so your DragPan interaction never sees the pointer events and you can\u2019t pan the map (unless you randomly press Alt).  Rolling back to 4.6.5 avoids the problem because Draw properly resets its internal state there."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/interaction/Draw.js",
+            "src/ol/interaction/Pointer.js",
+            "src/ol/MapBrowserEventHandler.js",
+            "src/ol/interaction/DragPan.js"
+        ],
+        "explanation": "All of these files participate in pointer event handling for drawing and panning. Draw.js implements the polygon draw interaction and, on drawend, should clean up the internal pointer state (down/up sequence, event locks). Pointer.js is the base interaction that tracks pointerdown/up and sets flags that other interactions (like DragPan) rely on. MapBrowserEventHandler.js manages the overall pointer event dispatch pipeline and holds state about whether the pointer is down or up. DragPan.js listens for pointer move sequences when no other interaction is capturing the pointer. In 5.3.0, Draw.js\u2019s finishDrawing or event handlers no longer fully reset the pointer flags in Pointer.js (and thus MapBrowserEventHandler), preventing DragPan from ever recognizing fresh drag gestures. Fixing the bug will require changes in Draw.js (and potentially Pointer.js/MapBrowserEventHandler.js) to ensure pointer state is cleared on drawend so that DragPan.js can resume panning normally.",
+        "bug_scenario": "When using the Draw interaction (type: 'Polygon') with the altKeyOnly condition in OpenLayers 5.3.0, once you finish drawing (fire a drawend), the map stops responding to drag\u2010to\u2010pan entirely. It only happens immediately after drawend\u2014and only in 5.3.0 (rolling back to 4.6.5 restores normal pan behavior). The failure appears to be that after drawend, pointer events aren\u2019t fully released or the down/up sequence isn\u2019t reset, so DragPan never sees the map as draggable again."
+    }
+}

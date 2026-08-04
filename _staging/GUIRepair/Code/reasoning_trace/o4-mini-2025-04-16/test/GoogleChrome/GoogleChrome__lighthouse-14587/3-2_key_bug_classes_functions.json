@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "cli/cli-flags.js//getFlags",
+            "core/config/config-helpers.js//resolveSettings",
+            "core/lib/emulation.js//parseUseragentIntoMetadata",
+            "core/lib/emulation.js//emulate"
+        ],
+        "explanation": "\u2022 cli/cli-flags.js//getFlags: This function collects the raw CLI flags (including --no-emulatedUserAgent) and normalizes them onto the flags object. If it does not correctly wire the no-emulatedUserAgent flag through, downstream code will think UA emulation is still enabled.\n\n\u2022 core/config/config-helpers.js//resolveSettings: After flag parsing, resolveSettings builds the final settings object. It provides the default mobile formFactor and default UA unless emulatedUserAgent is explicitly false. A bug here can ignore or overwrite the false setting, leaving the mobile UA metadata enabled.\n\n\u2022 core/lib/emulation.js//parseUseragentIntoMetadata: This helper always produces hard-coded Moto G4 metadata (model, platform, brands) whenever formFactor is 'mobile', regardless of whether UA emulation is truly enabled or the run is on a real device.\n\n\u2022 core/lib/emulation.js//emulate: This function is responsible for sending the UA override and device metrics to the protocol session. It gates the UA override on settings.emulatedUserAgent !== false. If either getFlags or resolveSettings mis-propagate the no-emulatedUserAgent flag, this function still applies the Moto G4 override (and thus later the report footer labels the run \"Emulated Moto G4\").\n\nTogether these functions control whether UA emulation is disabled and what device metadata flows into the report footer. A mismatch or incorrect default in getFlags/resolveSettings means emulate() will still apply the Moto G4 metadata via parseUseragentIntoMetadata, causing the footer to mis-label the run as \"Emulated Moto G4\" even on a physical device.",
+        "bug_scenario": "When running Lighthouse CLI against a physical Android device (Moto Power G) with screen emulation disabled and user-agent spoofing turned off, the generated HTML report footer still displays \u201cEmulated Moto G4 with Lighthouse 9.6.8\u201d and shows the Moto G4 device icon instead of indicating a real device."
+    },
+    "2": {
+        "bug_classes": [
+            "core/lib/emulation.js",
+            "cli/cli-flags.js",
+            "core/config/config-helpers.js"
+        ],
+        "bug_functions": [
+            "core/lib/emulation.js//parseUseragentIntoMetadata",
+            "core/lib/emulation.js//emulate",
+            "cli/cli-flags.js//getFlags",
+            "core/config/config-helpers.js//resolveSettings"
+        ],
+        "explanation": "\u2022 core/lib/emulation.js defines parseUseragentIntoMetadata, which unconditionally reports the device as \u201cMoto G4\u201d whenever formFactor===\"mobile\", and emulate(), which applies an emulated UA unless settings.emulatedUserAgent is exactly false. Even when users disable UA emulation, downstream UI code still falls back to motoG4Details metadata.\\n\u2022 cli/cli-flags.js getFlags is responsible for parsing the `--no-emulatedUserAgent` flag into the internal `settings.emulatedUserAgent` value. If this parsing is incorrect or incomplete, emulation.js may never see the flag.\\n\u2022 core/config/config-helpers.js resolveSettings merges CLI flags into the Lighthouse settings object. It defines the default behavior for emulatedUserAgent and screenEmulation. A bug here can cause disabled UA emulation flags to be ignored or overridden.\\nTogether, these functions control whether Lighthouse believes it\u2019s running against an emulated Moto G4 or a real device, and therefore are the key code paths to adjust so that `--no-emulatedUserAgent` truly prevents both UA override and the \u201cEmulated Moto G4\u201d label in the report footer.",
+        "bug_scenario": "When running Lighthouse CLI against a real Android device (Moto Power G) with screen emulation disabled, UA spoofing disabled, and DevTools-based throttling, the generated HTML report footer still displays \u201cEmulated Moto G4 with Lighthouse 9.6.8\u201d (with the Moto G4 icon), instead of indicating that it was run on a physical device."
+    }
+}

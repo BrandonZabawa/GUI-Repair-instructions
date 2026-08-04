@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/markdown.js//const BOLD",
+            "src/languages/markdown.js//const ITALIC"
+        ],
+        "bug_functions": [],
+        "explanation": "The misrender stems from the way the BOLD and ITALIC rules are defined and hooked together.  Both constants declare variants for matching double-underscore/double-asterisk and single-underscore/single-asterisk markers, then push each other into their .contains arrays (BOLD.contains.push(ITALIC) and ITALIC.contains.push(BOLD)).  Because these grammar rules interlock without proper scoping or look-around checks around the combined three-asterisk case, the engine never finds a clean closing boundary for the nested styling.  Fixing their definitions or containment order is required to correctly terminate bold+italic sequences and prevent the rest of the document from inheriting the style.",
+        "bug_scenario": "When a Markdown snippet uses both bold and italics together (e.g. ***this is both***), the highlighter\u2019s grammar never sees the closing markers properly, so everything afterward continues to be highlighted as bold+italic.  In the \u201cbefore\u201d screenshot you can see that after ***this is both*** the rest of the lines remain styled, while in the \u201cafter\u201d screenshot the styling ends correctly."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/markdown.js//default export function(hljs)",
+            "src/languages/markdown.js//BOLD definition",
+            "src/languages/markdown.js//ITALIC definition"
+        ],
+        "explanation": "The misrendering arises in the Markdown language definition in markdown.js. The anonymous default export function builds the BOLD and ITALIC modes, supplying .variants and cross-nesting via .contains. Because the BOLD and ITALIC modes are defined with simple begin/end regex patterns and then push each other into .contains, the closing boundary of a combined bold+italic sequence (***\u2026***) isn\u2019t correctly recognized. Fixing this requires adjusting the BOLD and ITALIC definitions (their .variants or nesting logic) in the default export function so that a triple-asterisk sequence properly opens and closes a combined emphasis block rather than leaving it open for the rest of the document.",
+        "bug_scenario": "When a segment of text is marked both bold and italic (using three asterisks, e.g. ***text***), the highlighting rules never close the bold/italic region and cause the remainder of the document to render as bold and italic. In the \u201cbefore\u201d image you can see that after the triple-asterisk segment all following lines remain styled, whereas in the \u201cafter\u201d image the emphasis is properly closed."
+    }
+}

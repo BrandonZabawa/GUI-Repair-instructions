@@ -1,0 +1,73 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/gatherers/iframe-elements.js": [
+            {
+                "SEARCH": [
+                    "return iframeElements;"
+                ],
+                "REPLACE": [
+                    "    // Gather iframe performance metrics",
+                    "    const iframeMetrics = await driver.evaluateAsync('window.performance.timing', {useIsolation: true});",
+                    "    ",
+                    "    // Aggregate iframe metrics with parent metrics",
+                    "    iframeElements.forEach(iframe => {",
+                    "      iframe.performanceMetrics = iframeMetrics;",
+                    "    });",
+                    "",
+                    "    return iframeElements;"
+                ]
+            }
+        ],
+        "lighthouse-core/audits/metrics/first-contentful-paint.js": [
+            {
+                "SEARCH": [
+                    "const metricResult = await ComputedFcp.request(metricComputationData, context);"
+                ],
+                "REPLACE": [
+                    "    let metricResult = await ComputedFcp.request(metricComputationData, context);",
+                    "",
+                    "    // Include iframe metrics in the computation",
+                    "    if (artifacts.IFrameElements) {",
+                    "      artifacts.IFrameElements.forEach(iframe => {",
+                    "        metricResult.timing += iframe.performanceMetrics.domContentLoadedEventEnd;",
+                    "      });",
+                    "    }"
+                ]
+            }
+        ],
+        "lighthouse-core/audits/metrics/first-meaningful-paint.js": [
+            {
+                "SEARCH": [
+                    "const metricResult = await ComputedFmp.request(metricComputationData, context);"
+                ],
+                "REPLACE": [
+                    "    let metricResult = await ComputedFmp.request(metricComputationData, context);",
+                    "",
+                    "    // Include iframe metrics in the computation",
+                    "    if (artifacts.IFrameElements) {",
+                    "      artifacts.IFrameElements.forEach(iframe => {",
+                    "        metricResult.timing += iframe.performanceMetrics.domContentLoadedEventEnd;",
+                    "      });",
+                    "    }"
+                ]
+            }
+        ],
+        "lighthouse-core/audits/metrics/speed-index.js": [
+            {
+                "SEARCH": [
+                    "const metricResult = await ComputedSi.request(metricComputationData, context);"
+                ],
+                "REPLACE": [
+                    "    let metricResult = await ComputedSi.request(metricComputationData, context);",
+                    "",
+                    "    // Include iframe metrics in the computation",
+                    "    if (artifacts.IFrameElements) {",
+                    "      artifacts.IFrameElements.forEach(iframe => {",
+                    "        metricResult.timing += iframe.performanceMetrics.domContentLoadedEventEnd;",
+                    "      });",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

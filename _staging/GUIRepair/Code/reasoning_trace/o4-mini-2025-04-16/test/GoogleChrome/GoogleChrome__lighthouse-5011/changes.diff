@@ -1,0 +1,28 @@
+diff --git a/lighthouse-core/lib/dependency-graph/network-node.js b/lighthouse-core/lib/dependency-graph/network-node.js
+index f55e80a59..91b40858a 100644
+--- a/lighthouse-core/lib/dependency-graph/network-node.js
++++ b/lighthouse-core/lib/dependency-graph/network-node.js
+@@ -59,13 +59,16 @@ class NetworkNode extends Node {
+     return this._record._initiator && this._record._initiator.type;
+   }
+ 
+-  /**
+-   * @return {boolean}
+-   */
+-  hasRenderBlockingPriority() {
+-    const priority = this._record.priority();
+-    const isScript = this._record._resourceType === WebInspector.resourceTypes.Script;
+-    return priority === 'VeryHigh' || (priority === 'High' && isScript);
++  /** 
++   * @return {boolean} 
++   */ 
++  hasRenderBlockingPriority() { 
++    const priority = this._record.priority(); 
++    const isScript = this._record._resourceType === WebInspector.resourceTypes.Script; 
++    // If the request was kicked off by a <link rel="preload">, it should not
++    // contribute to the "critical request chain" even though it may load at High priority.
++    const isPreload = this._record._initiator && this._record._initiator.type === 'preload'; 
++    return !isPreload && (priority === 'VeryHigh' || (priority === 'High' && isScript)); 
+   }
+ 
+   /**

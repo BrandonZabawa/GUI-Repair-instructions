@@ -1,0 +1,225 @@
+{
+    "bug_classes": {},
+    "bug_functions": {
+        "1": {
+            "function_name": "copyProperties",
+            "file_path": "lib/features/copy-paste/BpmnCopyPaste.js",
+            "function_details": [
+                {
+                    "name": "copyProperties",
+                    "start_line": 15,
+                    "end_line": 25
+                }
+            ],
+            "function_code": [
+                "function copyProperties(source, target, properties) {",
+                "  if (!isArray(properties)) {",
+                "    properties = [ properties ];",
+                "  }",
+                "",
+                "  forEach(properties, function(property) {",
+                "    if (!isUndefined(source[property])) {",
+                "      target[property] = source[property];",
+                "    }",
+                "  });",
+                "}"
+            ]
+        },
+        "2": {
+            "function_name": "removeProperties",
+            "file_path": "lib/features/copy-paste/BpmnCopyPaste.js",
+            "function_details": [
+                {
+                    "name": "removeProperties",
+                    "start_line": 27,
+                    "end_line": 37
+                }
+            ],
+            "function_code": [
+                "function removeProperties(element, properties) {",
+                "  if (!isArray(properties)) {",
+                "    properties = [ properties ];",
+                "  }",
+                "",
+                "  forEach(properties, function(property) {",
+                "    if (element[property]) {",
+                "      delete element[property];",
+                "    }",
+                "  });",
+                "}"
+            ]
+        },
+        "3": {
+            "function_name": "ModdleCopy.prototype.copyElement",
+            "file_path": "lib/features/copy-paste/ModdleCopy.js",
+            "function_details": [
+                {
+                    "name": "ModdleCopy.prototype.copyElement",
+                    "start_line": 133,
+                    "end_line": 182
+                }
+            ],
+            "function_code": [
+                "ModdleCopy.prototype.copyElement = function(sourceElement, targetElement, propertyNames) {",
+                "  var self = this;",
+                "",
+                "  if (propertyNames && !isArray(propertyNames)) {",
+                "    propertyNames = [ propertyNames ];",
+                "  }",
+                "",
+                "  propertyNames = propertyNames || getPropertyNames(sourceElement.$descriptor);",
+                "",
+                "  var canCopyProperties = this._eventBus.fire('moddleCopy.canCopyProperties', {",
+                "    propertyNames: propertyNames,",
+                "    sourceElement: sourceElement,",
+                "    targetElement: targetElement",
+                "  });",
+                "",
+                "  if (canCopyProperties === false) {",
+                "    return targetElement;",
+                "  }",
+                "",
+                "  if (isArray(canCopyProperties)) {",
+                "    propertyNames = canCopyProperties;",
+                "  }",
+                "",
+                "  // copy properties",
+                "  forEach(propertyNames, function(propertyName) {",
+                "    var sourceProperty;",
+                "",
+                "    if (has(sourceElement, propertyName)) {",
+                "      sourceProperty = sourceElement.get(propertyName);",
+                "    }",
+                "",
+                "    var copiedProperty = self.copyProperty(sourceProperty, targetElement, propertyName);",
+                "",
+                "    var canSetProperty = self._eventBus.fire('moddleCopy.canSetCopiedProperty', {",
+                "      parent: targetElement,",
+                "      property: copiedProperty,",
+                "      propertyName: propertyName",
+                "    });",
+                "",
+                "    if (canSetProperty === false) {",
+                "      return;",
+                "    }",
+                "",
+                "    if (isDefined(copiedProperty)) {",
+                "      targetElement.set(propertyName, copiedProperty);",
+                "    }",
+                "  });",
+                "",
+                "  return targetElement;",
+                "};"
+            ]
+        },
+        "4": {
+            "function_name": "ModdleCopy.prototype.copyProperty",
+            "file_path": "lib/features/copy-paste/ModdleCopy.js",
+            "function_details": [
+                {
+                    "name": "ModdleCopy.prototype.copyProperty",
+                    "start_line": 193,
+                    "end_line": 264
+                }
+            ],
+            "function_code": [
+                "ModdleCopy.prototype.copyProperty = function(property, parent, propertyName) {",
+                "  var self = this;",
+                "",
+                "  // allow others to copy property",
+                "  var copiedProperty = this._eventBus.fire('moddleCopy.canCopyProperty', {",
+                "    parent: parent,",
+                "    property: property,",
+                "    propertyName: propertyName",
+                "  });",
+                "",
+                "  // return if copying is NOT allowed",
+                "  if (copiedProperty === false) {",
+                "    return;",
+                "  }",
+                "",
+                "  if (copiedProperty) {",
+                "    if (isObject(copiedProperty) && copiedProperty.$type && !copiedProperty.$parent) {",
+                "      copiedProperty.$parent = parent;",
+                "    }",
+                "",
+                "    return copiedProperty;",
+                "  }",
+                "",
+                "  var propertyDescriptor = this._moddle.getPropertyDescriptor(parent, propertyName);",
+                "",
+                "  // do NOT copy references",
+                "  if (propertyDescriptor.isReference) {",
+                "    return;",
+                "  }",
+                "",
+                "  // copy id",
+                "  if (propertyDescriptor.isId) {",
+                "    return this._copyId(property, parent);",
+                "  }",
+                "",
+                "  // copy arrays",
+                "  if (isArray(property)) {",
+                "    return reduce(property, function(childProperties, childProperty) {",
+                "",
+                "      // recursion",
+                "      copiedProperty = self.copyProperty(childProperty, parent, propertyName);",
+                "",
+                "      // copying might NOT be allowed",
+                "      if (copiedProperty) {",
+                "        copiedProperty.$parent = parent;",
+                "",
+                "        return childProperties.concat(copiedProperty);",
+                "      }",
+                "",
+                "      return childProperties;",
+                "    }, []);",
+                "  }",
+                "",
+                "  // copy model elements",
+                "  if (isObject(property) && property.$type) {",
+                "    if (this._moddle.getElementDescriptor(property).isGeneric) {",
+                "      return;",
+                "    }",
+                "",
+                "    copiedProperty = self._bpmnFactory.create(property.$type);",
+                "",
+                "    copiedProperty.$parent = parent;",
+                "",
+                "    // recursion",
+                "    copiedProperty = self.copyElement(property, copiedProperty);",
+                "",
+                "    return copiedProperty;",
+                "  }",
+                "",
+                "  // copy primitive properties",
+                "  return property;",
+                "};"
+            ]
+        },
+        "5": {
+            "function_name": "ModdleCopy.prototype._copyId",
+            "file_path": "lib/features/copy-paste/ModdleCopy.js",
+            "function_details": [
+                {
+                    "name": "ModdleCopy.prototype._copyId",
+                    "start_line": 266,
+                    "end_line": 276
+                }
+            ],
+            "function_code": [
+                "ModdleCopy.prototype._copyId = function(id, element) {",
+                "",
+                "  // disallow if already taken",
+                "  if (this._moddle.ids.assigned(id)) {",
+                "    return;",
+                "  } else {",
+                "",
+                "    this._moddle.ids.claim(id, element);",
+                "    return id;",
+                "  }",
+                "};"
+            ]
+        }
+    }
+}

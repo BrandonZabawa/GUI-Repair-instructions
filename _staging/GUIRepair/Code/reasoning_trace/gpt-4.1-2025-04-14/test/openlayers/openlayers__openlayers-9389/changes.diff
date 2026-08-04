@@ -1,0 +1,60 @@
+diff --git a/rendering/test.js b/rendering/test.js
+index 9941a920a9..18c648ffdf 100755
+--- a/rendering/test.js
++++ b/rendering/test.js
+@@ -14,6 +14,9 @@ const log = require('loglevelnext');
+ const globby = require('globby');
+ const serveStatic = require('serve-static');
+ 
++// Determine project root (assume script is in rendering/ or test/rendering/)
++const projectRoot = path.resolve(__dirname, '..');
++
+ const compiler = webpack(Object.assign({mode: 'development'}, config));
+ 
+ function getHref(entry) {
+@@ -24,7 +27,7 @@ const staticHandler = serveStatic(__dirname);
+ 
+ const defaultHandler = serveStatic(path.join(__dirname, 'default'));
+ 
+-const srcHandler = serveStatic(path.join(__dirname, '..', 'src'));
++const srcHandler = serveStatic(path.join(projectRoot, 'src'));
+ 
+ function indexHandler(req, res) {
+   const items = [];
+@@ -90,15 +93,15 @@ function serve(options) {
+ }
+ 
+ function getActualScreenshotPath(entry) {
+-  return path.join(__dirname, path.dirname(entry), 'actual.png');
++  return path.join(projectRoot, path.dirname(entry), 'actual.png');
+ }
+ 
+ function getExpectedScreenshotPath(entry) {
+-  return path.join(__dirname, path.dirname(entry), 'expected.png');
++  return path.join(projectRoot, path.dirname(entry), 'expected.png');
+ }
+ 
+ function getPassFilePath(entry) {
+-  return path.join(__dirname, path.dirname(entry), 'pass');
++  return path.join(projectRoot, path.dirname(entry), 'pass');
+ }
+ 
+ function parsePNG(filepath) {
+@@ -262,7 +265,7 @@ async function getLatest(patterns) {
+ }
+ 
+ async function getOutdated(entries, options) {
+-  const libTime = await getLatest(path.join(__dirname, '..', 'src', 'ol', '**', '*'));
++  const libTime = await getLatest(path.join(projectRoot, 'src', 'ol', '**', '*'));
+   options.log.debug('library time', libTime);
+   const outdated = [];
+   for (const entry of entries) {
+@@ -274,7 +277,7 @@ async function getOutdated(entries, options) {
+       continue;
+     }
+ 
+-    const caseTime = await getLatest(path.join(__dirname, path.dirname(entry), '**', '*'));
++    const caseTime = await getLatest(path.join(projectRoot, path.dirname(entry), '**', '*'));
+     options.log.debug('case time', entry, caseTime);
+     if (passTime < caseTime) {
+       outdated.push(entry);

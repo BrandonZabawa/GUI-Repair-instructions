@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection",
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection",
+            "packages/react/src/components/MultiSelect/MultiSelect.js//render"
+        ],
+        "explanation": "1. ListBoxSelection (in ListBoxSelection.js) renders the clear-selection control: it outputs a <div role=\u201cbutton\u201d> wrapping the Close16 SVG, but the SVG has role=\u201cimg\u201d and no title or aria-label, triggering \u201cIMG role must have a nonempty title\u201d violations. We need to supply a title element inside the SVG or add an aria-label on the SVG itself.\n2. MultiSelect.render (in MultiSelect.js) builds the dropdown toggle buttonProps by doing {\u2026getButtonProps(), 'aria-label': undefined}, which strips the accessible name from the button (Downshift\u2019s default aria-label is removed). This causes \u201cinteractive element must have an accessible name.\u201d Removing that override or supplying a meaningful aria-label will fix this.\n3. MultiSelect (in MultiSelect.js) also renders individual Checkbox components inside a ListBox.Menu but does not wrap them in a grouping element (e.g. fieldset/role=group with aria-labelledby), so each checkbox is reported as ungrouped. Grouping the checkbox list under a semantic container will resolve the grouping-roles violations.",
+        "bug_scenario": "When using the React MultiSelect component with an initial selection, running DAP uncovers several accessibility violations:\n\u2022 The \u201cclear selection\u201d X icon (Close16 SVG) is rendered as an IMG role without a title or alternative text.\n\u2022 The dropdown toggle button has its aria-label removed (set to undefined), so the interactive element has no accessible name.\n\u2022 Each checkbox option is not semantically grouped (DAP reports \u201cCheckbox input and others with the name \u2026 are not grouped together\u201d)."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection",
+            "packages/react/src/components/ListBox/ListBoxMenu.js//ListBoxMenu",
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection (render)",
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect.render"
+        ],
+        "explanation": "1. ListBoxSelection (in ListBoxSelection.js) renders the clear-selection button and imports the Close16 SVG icon. DAP is complaining that the SVG has role=\"img\" but no accessible text. Fixes here could include moving the aria-label/title down onto the SVG or adding a <title> element inside the icon.\n\n2. ListBoxMenu (in ListBoxMenu.js) produces the <div role=\"listbox\"> container for the menu. DAP\u2019s grouping error stems from the fact that the items inside are checkboxes not wrapped in a grouping element (like a fieldset/role=\"group\"). You may need to update this component (or its use in MultiSelect) to add the proper grouping semantics.\n\n3. MultiSelect.render (in MultiSelect.js) is where the MenuIcon, the ListBox menu and each Checkbox MenuItem are composed. This is the spot to wrap the list of Checkbox inputs in a fieldset or role=\"group\" and to pass the clear-selection aria props down to the SVG (or switch to a hidden SVG + labelled button). All of that together will satisfy DAP\u2019s requirements for nonempty alt text and grouping of related form controls.",
+        "bug_scenario": "When you render the Carbon React MultiSelect component with one or more items already selected, the DAP accessibility scanner flags two issues:\n\n1. The \u201cX\u201d clear-selection control that appears inside the list-box field is implemented as a <div role=\"button\"> with a <Close16> SVG icon inside.  Although the wrapper <div> has an aria-label/title, the inner SVG is exposed with role=\"img\" and no nonempty alt or title, so DAP reports \u201cThe WAI-ARIA widget with IMG role must have a nonempty alternate text or a label.\u201d\n\n2. When you expand the menu, each option is rendered as a Checkbox input with identical name/label values but there is no fieldset or grouping role wrapping them, so DAP reports \u201cUse grouping roles or elements to identify related form controls.\u201d"
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer._renderReportHeader",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer._renderReport",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer.renderReport",
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2.generateReportHtml"
+        ],
+        "explanation": "The error message in the console directly implicates the ReportRenderer class, particularly the _renderReportHeader method, which tries to access 'generatedTime' on an undefined report object. This suggests the report object is either not being passed correctly or is malformed. The _renderReport and renderReport methods are also key, as they orchestrate the rendering and data flow into _renderReportHeader. Additionally, the bug may originate earlier in the data pipeline, such as in the generateReportHtml function of ReportGeneratorV2 (lighthouse-core/report/v2/report-generator.js), which serializes and injects the report JSON into the HTML. If this step fails or the JSON is malformed (as suggested by the initial SyntaxError), ReportRenderer would receive undefined or invalid data, resulting in the observed error and blank page.",
+        "bug_scenario": "The bug scenario is that when opening a Lighthouse report in the browser, the results page is blank. The browser console shows a 'SyntaxError: Invalid or unexpected token' and a 'TypeError: Cannot read property 'generatedTime' of undefined.' This indicates that the report renderer is receiving undefined or malformed data, preventing the report from rendering and leaving the page blank."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js//_renderReportHeader",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//_renderReport",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//renderReport",
+            "lighthouse-core/report/v2/report-generator.js//ReportGeneratorV2.generateReportHtml"
+        ],
+        "explanation": "The ReportRenderer class and its methods (_renderReportHeader, _renderReport, renderReport) are directly implicated because the error occurs when attempting to access the 'generatedTime' property of the 'report' object in _renderReportHeader. This suggests 'report' is undefined or not structured as expected, possibly due to a malformed or corrupted JSON being injected as the report. The bug may also originate from the report generation phase, making ReportGeneratorV2.generateReportHtml a key function: if the JSON is invalid (as suggested by the SyntaxError), it would cause parsing to fail, and subsequent rendering to receive invalid input. Fixing the issue will require ensuring valid, well-structured JSON is injected and handling/reporting errors gracefully in the renderer when input is invalid.",
+        "bug_scenario": "The bug scenario is that the Lighthouse report page displays completely blank. The browser console shows two errors: a SyntaxError ('Invalid or unexpected token') and a TypeError ('Cannot read property 'generatedTime' of undefined'). The TypeError originates from the ReportRenderer._renderReportHeader method, suggesting that the 'report' object passed in is undefined or malformed, likely because of a previous error in processing or generating the report data. This causes rendering to fail, resulting in a blank page."
+    }
+}

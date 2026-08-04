@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_files": [
+            "src/main/multiparser.js",
+            "src/languages.js",
+            "src/cli/constant.js",
+            "src/language-js/index.js",
+            "src/language-js/parser-babel.js",
+            "standalone.js",
+            "src/standalone.js",
+            "website/static/worker.js",
+            "tests_config/utils/check-parsers.js",
+            "bin/prettier.js"
+        ],
+        "explanation": "To integrate Cherow, Prettier must: 1) implement a Cherow parser shim (new file parser-cherow.js in language-js, modeled on parser-babel.js); 2) update src/language-js/index.js to recognize the \"cherow\" parser key and call the new implementation; 3) register the new parser in src/main/multiparser.js so the core multiplexer will pick it; 4) add the parser name to src/languages.js and src/cli/constant.js so the CLI and parser inference know about it; 5) include Cherow in the standalone bundles (standalone.js and src/standalone.js) and in the playground worker (website/static/worker.js); 6) update tests_config/utils/check-parsers.js to allow the new parser; and 7) adjust the bin/prettier.js CLI stub to report the new parser option. Without touching all of these, Prettier cannot expose or use Cherow to speed up JS parsing.",
+        "bug_scenario": "Prettier currently uses the Babel (Babylon) parser for JavaScript, which benchmarks show is substantially slower than Cherow. In a format-on-save workflow, parsing time dominates UX. The user\u2019s benchmark in the screenshot confirms Cherow is about 40% faster than Babylon across large JS files. They want Prettier to support a Cherow-based JS parser (with Flow support added later) so that formatting speed improves without changing end-user API."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/parser-babel.js",
+            "src/language-js/options.js",
+            "src/language-js/index.js",
+            "src/main/parser.js",
+            "src/languages.js",
+            "tests_config/utils/check-parsers.js"
+        ],
+        "explanation": "All of these files participate in discovering, registering, and invoking JS parsers in Prettier. \n\n\u2022 src/language-js/parser-babel.js is where Prettier wraps the Babel/Flow parser. To use Cherow instead you either replace or add a new parser file here.  \n\u2022 src/language-js/options.js and src/language-js/index.js define which parser names (e.g. \u201cbabel\u201d, \u201cflow\u201d, \u201ctypescript\u201d) are exposed to the CLI and config \u2014 they must include \u201ccherow\u201d or swap the default.  \n\u2022 src/main/parser.js is the central dispatcher that calls a parser by name \u2014 it needs a new case to invoke Cherow\u2019s parseScript API.  \n\u2022 src/languages.js lists all supported languages and their parser aliases \u2014 it must be updated so that \u201cjavascript\u201d can resolve the \u201ccherow\u201d parser.  \n\u2022 tests_config/utils/check-parsers.js enforces that every declared parser actually exists. Adding \u201ccherow\u201d or swapping out \u201cbabel\u201d requires updating this test utility so CI doesn\u2019t break.",
+        "bug_scenario": "Prettier currently uses Babel (Babylon) as its default JavaScript parser, which is relatively slow. The benchmark screenshot shows that the Cherow parser is about 40% faster than Babylon across several large JS libraries (jquery, angular, react, typescript). The user wants to swap in Cherow (or at least offer it as an option) so that format-on-save in editors becomes noticeably snappier."
+    }
+}

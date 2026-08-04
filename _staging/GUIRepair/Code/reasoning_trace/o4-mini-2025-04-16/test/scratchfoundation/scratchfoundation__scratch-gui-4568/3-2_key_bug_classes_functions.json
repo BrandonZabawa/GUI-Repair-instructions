@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/lib/monitor-adapter.js//monitorAdapter",
+            "src/components/monitor/slider-monitor.jsx//SliderMonitor",
+            "src/containers/slider-monitor.jsx//class SliderMonitor",
+            "src/containers/monitor.jsx//class Monitor"
+        ],
+        "bug_functions": [
+            "src/lib/monitor-adapter.js//monitorAdapter",
+            "src/components/monitor/slider-monitor.jsx//SliderMonitor.defaultProps",
+            "src/components/monitor/slider-monitor.jsx//<input step and min/max props>",
+            "src/containers/monitor.jsx//handleSetModeToSlider"
+        ],
+        "explanation": "\u2022 monitorAdapter (in src/lib/monitor-adapter.js) should be pulling the VM\u2019s slider metadata (min, max, step) off of an imported/created monitor and passing it through into the React props. If it only maps label, value, etc., then any custom range is lost and the defaults (0\u2013100) prevail.  \n\u2022 SliderMonitor (in src/components/monitor/slider-monitor.jsx) currently has hard-coded defaultProps {min: 0, max: 100, isDiscrete: true}, and its <input> always uses those props if none are supplied. To honor custom ranges, the defaults must be removed or overridden by incoming props.  \n\u2022 The SliderMonitor container (src/containers/slider-monitor.jsx) spreads only its own props into the component (mainly value and onSliderUpdate) and doesn\u2019t pump through min, max, or step. It needs to accept and forward custom range props from its parent.  \n\u2022 Monitor.handleSetModeToSlider (in src/containers/monitor.jsx) flips the mode to \u201cslider\u201d when the user clicks that control, but there is no accompanying dialog logic or propagation of range values. That class will need to hook up a right-click (context menu) handler, open a \u201cSlider Range\u201d dialog, write back the new min/max into the VM, and then round-trip those values through monitorAdapter into the slider component.",
+        "bug_scenario": "The user is right-clicking on a slider monitor in Scratch 3.0 expecting to be able to change its min/max range (as they can in Scratch 2.0), but newly created slider monitors in 3.0 always default to 0\u2013100. Even when importing a 2.0 project that had custom slider ranges, those ranges are not being applied in 3.0.\u2014the slider track and dialog always show min 0 and max 100."
+    },
+    "2": {
+        "bug_classes": [
+            "src/lib/monitor-adapter.js",
+            "src/components/monitor/slider-monitor.jsx",
+            "src/containers/slider-monitor.jsx"
+        ],
+        "bug_functions": [
+            "src/lib/monitor-adapter.js//monitorAdapter",
+            "src/components/monitor/slider-monitor.jsx//SliderMonitor (functional component)",
+            "src/components/monitor/slider-monitor.jsx//SliderMonitor.defaultProps",
+            "src/containers/slider-monitor.jsx//handleSliderUpdate"
+        ],
+        "explanation": "1. src/lib/monitor-adapter.js: This adapter is responsible for reading the VM\u2019s monitor metadata and turning it into props (min, max, isDiscrete, etc.) for the React monitor components. It currently doesn\u2019t surface custom min/max values from imported projects.\n\n2. src/components/monitor/slider-monitor.jsx: The SliderMonitor component implements the HTML <input type=\"range\"> and uses defaultProps to force min=0 and max=100 whenever props.min or props.max are missing. Even if the dialog captures new values, they never reach this component without the adapter mapping them.\n\n3. src/containers/slider-monitor.jsx: This container wraps SliderMonitorComponent, wires up value changes (handleSliderUpdate), and spreads incoming props (including min/max) into the presentation component. If monitorAdapter doesn\u2019t supply min/max, the container has nothing to pass through.\n\nFixing the bug requires: 1) extending monitorAdapter to extract and pass any saved/custom slider range from the VM\u2019s monitor object; 2) ensuring that src/containers/slider-monitor.jsx receives and forwards those props; 3) removing or modifying the hardcoded defaultProps in SliderMonitor so that it respects incoming props.min and props.max rather than always falling back to 0\u2013100.",
+        "bug_scenario": "The screenshots show a slider monitor in Scratch 3.0 defaulting to a 0\u2013100 range\u2014even when opening the \u201cSlider Range\u201d dialog (via right-click) on an imported Scratch 2.0 project that had a custom range. The modal correctly presents Min/Max inputs, but the actual slider monitor stays fixed at 0\u2013100."
+    }
+}

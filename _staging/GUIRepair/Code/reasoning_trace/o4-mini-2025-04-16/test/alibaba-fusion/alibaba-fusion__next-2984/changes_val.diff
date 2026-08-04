@@ -1,0 +1,60 @@
+diff --git a/src/cascader/cascader.jsx b/src/cascader/cascader.jsx
+index e7a093798..27a82fb58 100644
+--- a/src/cascader/cascader.jsx
++++ b/src/cascader/cascader.jsx
+@@ -186,22 +186,24 @@ class Cascader extends Component {
+         itemRender: item => item.label,
+     };
+ 
+-    constructor(props, context) {
+-        super(props, context);
+-
+-        const {
+-            defaultValue,
+-            value,
+-            defaultExpandedValue,
+-            expandedValue,
+-            dataSource,
+-            multiple,
+-            checkStrictly,
+-            canOnlyCheckLeaf,
+-            loadData,
+-        } = props;
+-
+-        const { v2n, p2n } = flatDataSource(dataSource);
++constructor(props, context) {
++    super(props, context);
++
++    const {
++        defaultValue,
++        value,
++        defaultExpandedValue,
++        expandedValue,
++        dataSource,
++        multiple,
++        checkStrictly,
++        canOnlyCheckLeaf,
++        loadData,
++    } = props;
++
++    // clone dataSource so downstream flatDataSource/setCache can safely annotate
++    const dataSourceClone = JSON.parse(JSON.stringify(dataSource));
++    const { v2n, p2n } = flatDataSource(dataSourceClone);
+ 
+         let normalizedValue = normalizeValue(typeof value === 'undefined' ? defaultValue : value);
+ 
+@@ -233,9 +235,11 @@ class Cascader extends Component {
+         bindCtx(this, ['handleMouseLeave', 'handleFocus', 'handleFold', 'getCascaderNode', 'onBlur']);
+     }
+ 
+-    static getDerivedStateFromProps(props, state) {
+-        const { v2n, p2n } = flatDataSource(props.dataSource);
+-        const states = {};
++static getDerivedStateFromProps(props, state) {
++    // clone props.dataSource to avoid mutating frozen data coming from immer
++    const dataSourceClone = JSON.parse(JSON.stringify(props.dataSource));
++    const { v2n, p2n } = flatDataSource(dataSourceClone);
++    const states = {};
+ 
+         if ('value' in props) {
+             states.value = normalizeValue(props.value);

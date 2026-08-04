@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-clike.js//Prism.languages.clike (property: number)",
+            "components/prism-javascript.js//Prism.languages.javascript (property: number)"
+        ],
+        "bug_functions": [],
+        "explanation": "Prism\u2019s base C-like language definition (in prism-clike.js) and its JavaScript extension (in prism-javascript.js) both supply a regular expression under the \u201cnumber\u201d key that matches traditional numeric formats (decimal, hex, binary, octal, scientific notation) but does not allow underscores anywhere in the literal. As a result, numeric separators aren\u2019t included in the matched token and break highlighting. To fix the bug, the regexes assigned to Prism.languages.clike.number and Prism.languages.javascript.number must be extended to permit underscores at valid positions in numeric literals, matching the ES2021 numeric separator proposal.",
+        "bug_scenario": "The provided screenshots and code sample show that numeric literals containing underscores (the new ES2021 numeric separators) are not being recognized as a single token by Prism\u2019s JavaScript (and underlying C-like) grammar. Instead, each underscore breaks the number into separate tokens, so 1_000_000_000_000 and 1_019_436_871.42 are incorrectly highlighted as multiple smaller numeric or punctuation tokens rather than one unified number."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-clike.js//Prism.languages.clike",
+            "components/prism-javascript.js//Prism.languages.javascript"
+        ],
+        "bug_functions": [
+            "components/prism-clike.js//number",
+            "components/prism-javascript.js//number"
+        ],
+        "explanation": "The root of the problem is that Prism\u2019s built-in number grammar entries do not include support for underscores inside numeric literals. In components/prism-clike.js, the \u2018number\u2019 pattern only matches standard digits and optional exponential parts. In components/prism-javascript.js, the extended \u2018number\u2019 pattern also lacks allowance for underscores. To support numeric separators, both of these regex patterns must be updated to permit underscores between digits (for example by changing `\\d+` to `(?:\\d|_)+` where appropriate). Once those two patterns are corrected, the minified variants will pick up the change, and numeric separators will be highlighted correctly.",
+        "bug_scenario": "On pages using Prism\u2019s JavaScript highlighter, numeric literals that include underscores (numeric separators) are not being recognized as part of the number token. In the screenshots, numbers like 1_000_000_000_000 and 1_019_436_871.42 display their underscores in the code block but are not highlighted as numbers, breaking the intended syntax highlighting for the new JavaScript numeric-separator feature."
+    }
+}

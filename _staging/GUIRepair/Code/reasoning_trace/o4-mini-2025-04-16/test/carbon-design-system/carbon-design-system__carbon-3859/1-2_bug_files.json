@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/components/src/components/link/link.config.js",
+            "packages/react/src/components/Link/Link.js",
+            "packages/react/src/components/Link/Link-test.js",
+            "packages/react/src/components/Link/Link-story.js"
+        ],
+        "explanation": "\n\u00b7 link.config.js drives the CSS token output for the Link component and needs to be extended to emit the new `--inline` modifier rules (text-decoration: underline, color tokens per state).\n\u00b7 Link.js is the React component that needs to add the `inline` prop to its className logic so that when inline={true} it adds `${prefix}--link--inline`.\n\u00b7 Link-test.js must include unit tests for the inline variant (ensuring the inline CSS class is present and the right style props flow through).\n\u00b7 Link-story.js should demonstrate the new inline link variant in Storybook so designers and devs can review the visual treatment across all states.",
+        "bug_scenario": "The spec artboards show a new \u201cinline link\u201d variant for the Link component that should be underlined by default (with specific type tokens and text\u2010decoration) and then change color/underline per state (hover, active, focus, disabled, visited) across light and dark backgrounds. In our Storybook and in production the <Link inline> prop currently does not produce the underlined style or correct CSS class and states."
+    },
+    "2": {
+        "bug_files": [
+            "packages/components/src/components/link/link.config.js",
+            "packages/components/src/components/link/link.scss",
+            "packages/react/src/components/Link/Link.js",
+            "packages/react/src/components/Link/Link-test.js",
+            "packages/react/src/components/Link/Link-story.js"
+        ],
+        "explanation": "\u2022 link.config.js \u2013 this is where we register the \u2018inline\u2019 modifier and define the class name conventions for our web-component version of Link; if the inline style isn\u2019t wired up correctly here, the SCSS compiler won\u2019t emit the proper CSS rules.\n\n\u2022 link.scss \u2013 this SCSS file must contain the \u201c.bx--link--inline { text-decoration: underline; }\u201d rule plus all of the pseudo-state rules (hover, active, focus, disabled, visited). Those rules are missing or incomplete, so the inline link never gets underlined or changes color as specified.\n\n\u2022 Link.js \u2013 the React wrapper needs to ensure that passing inline={true} adds the inline modifier class by default, and that disabling still preserves the underline (or applies the correct css class). If the component logic drops the underline class or mis-names it, you\u2019ll see no underline at runtime.\n\n\u2022 Link-test.js \u2013 the unit tests currently only check for the presence of the base link class and the inline modifier, but they don\u2019t assert that the CSS classes are applied consistently across states. We\u2019ll need to update or add tests to verify that inline links always carry the underline class and that the disabled/visited/hover modifiers are present.\n\n\u2022 Link-story.js \u2013 the Storybook example for Link should demonstrate the new inline behavior (including underlines in all states). We\u2019ll update the story to show a paragraph of inline text links with underlines so reviewers can visually confirm the change.\n\nBy updating these five files, we will wire up the inline variant in our style registry, author the missing CSS rules, ensure the React API honors the new variant, and add visual tests/examples to lock in the expected behavior.",
+        "bug_scenario": "The spec for \u201cinline\u201d links requires that by default any <Link inline> should render with an underline, and that underline should persist across disabled, hover, active, focus, and visited states\u2014only the color (or outline) should change. In the screenshot you can see the desired behaviors: underlined text in the default state, color blue on hover, darker text when active, a 1px outline on focus, gray text on disabled, and purple on visited. In our repro, however, the inline variant is either rendering without any underline, or the CSS rules for the pseudo-states (hover/active/focus/visited/disabled) are missing or incomplete."
+    }
+}

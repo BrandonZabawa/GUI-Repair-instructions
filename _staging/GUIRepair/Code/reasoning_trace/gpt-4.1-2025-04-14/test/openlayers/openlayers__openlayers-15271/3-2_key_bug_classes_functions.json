@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/expr/cpu.js",
+            "src/ol/expr/expression.js"
+        ],
+        "bug_functions": [
+            "src/ol/expr/cpu.js//compileAccessorExpression",
+            "src/ol/expr/expression.js//parse"
+        ],
+        "explanation": "The missing feature is the ability to access feature IDs in style expressions. The expression parsing and evaluation logic is in the src/ol/expr/expression.js and src/ol/expr/cpu.js files. In src/ol/expr/expression.js, the parse function interprets encoded expressions\u2014including the ['get', ...] operator\u2014so it is responsible for understanding operator syntax and could be extended to handle a new ['id'] or similar operator. In src/ol/expr/cpu.js, the compileAccessorExpression function is responsible for compiling expressions that access properties (e.g., ['get', ...] or others), and would be the place to add logic for handling a new operator to fetch the feature id. These two functions are the key points where the expression system would need to be extended to support fetching the feature id in the same way as feature properties.",
+        "bug_scenario": "The bug scenario is that style expressions in OpenLayers allow access to feature properties using the ['get', 'attributeName'] operator, which is similar to feature.get('attributeName'). However, there is currently no way to access the feature's id (feature.getId()) through style expressions. This is a problem for users working with GeoJSON, where the id exists at the feature root and not in the properties collection, and they want to avoid duplicating the id in both places."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/expr/cpu.js//compileAccessorExpression"
+        ],
+        "bug_functions": [
+            "src/ol/expr/expression.js//parse",
+            "src/ol/expr/expression.js//withGetArgs"
+        ],
+        "explanation": "The core of the bug is that the expression language supports fetching feature properties (with 'get') but not the feature ID. The function compileAccessorExpression in src/ol/expr/cpu.js is likely responsible for evaluating property accessors like ['get', 'attributeName'], and would need to be updated to support an accessor for the feature ID (e.g., ['id']). In src/ol/expr/expression.js, parse is the main function that parses encoded expressions and would need to recognize a new operator or argument for feature ID. The withGetArgs function is used to validate and process arguments to the 'get' operator, and would need to be updated to allow the 'id' or a new 'id' operator. These locations are key for supporting and parsing a new operator or argument for accessing the feature ID in expressions.",
+        "bug_scenario": "The bug scenario is that style expressions in the application allow fetching feature properties with ['get', 'attributeName'], but there is no way to fetch the feature ID (feature.getId()) in a similar expression. This is problematic for GeoJSON data, where the feature ID may be stored only at the root and not duplicated in properties, making it inaccessible via current expression syntax."
+    }
+}

@@ -1,0 +1,42 @@
+diff --git a/lib/rules/no-unused-vars.js b/lib/rules/no-unused-vars.js
+index 5dd632fdb..b6a40952b 100644
+--- a/lib/rules/no-unused-vars.js
++++ b/lib/rules/no-unused-vars.js
+@@ -141,15 +141,28 @@ module.exports = {
+             if (config.ignoreRestSiblings) {
+                 const restProperties = new Set(["ExperimentalRestProperty", "RestProperty"]);
+ 
+-                return variable.defs
+-                    .filter(def => def.name.type === "Identifier")
+-                    .some(def => (
+-                        def.node.id &&
+-                        def.node.id.type === "ObjectPattern" &&
+-                        def.node.id.properties.length &&
+-                        restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type) &&  // last property is a rest property
+-                        !restProperties.has(def.name.parent.type)  // variable is sibling of the rest property
+-                    ));
++                return variable.defs.some(def => {
++                    //
++                    // Determine the ObjectPattern node:
++                    //  - in var-declarations it's def.node.id
++                    //  - in function parameters it may be def.node itself
++                    //
++                    const patternNode = (def.node.id && def.node.id.type === "ObjectPattern")
++                        ? def.node.id
++                        : (def.node.type === "ObjectPattern" ? def.node : null);
++
++                    if (patternNode && patternNode.properties.length) {
++                        const lastProp = patternNode.properties[patternNode.properties.length - 1];
++                        // if the last property is a rest and this variable isn't that rest
++                        if (restProperties.has(lastProp.type) &&
++                            def.name.parent &&
++                            def.name.parent !== lastProp) {
++                            return true;
++                        }
++                    }
++
++                    return false;
++                });
+             }
+ 
+             return false;

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/metadata.ts"
+        ],
+        "explanation": "The core of the issue is in format-reveal.ts, where the code writes out the Reveal.initialize call. It currently interpolates the width and height options directly into the JS object without quoting string values. When width/height contain a '%' sign they must be emitted as quoted strings in JavaScript (e.g. width: \"100%\"), otherwise the script syntax is broken. metadata.ts defines the schema for these options but does not handle string conversion. Both files are implicated: format-reveal.ts must conditionally wrap percent values in quotes, informed by the metadata definitions in metadata.ts.",
+        "bug_scenario": "When a user specifies width and height as percentage values (e.g. \"100%\") in their revealjs format options, the generated HTML\u2019s initialization script emits unquoted values (width: 100%, height: 100%) which is invalid JavaScript (interpreted as modulus) and causes the presentation to fail to load (blank screen). Using numeric pixel values works because they produce valid JS (width: 1600, height: 900)."
+    },
+    "2": {
+        "bug_files": [
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/metadata.ts",
+            "src/format/reveal/schemas.ts"
+        ],
+        "explanation": "\u2022 src/format/reveal/format-reveal.ts is responsible for reading the user\u2019s `width`/`height` options and passing them along as Pandoc `-V` template variables. It currently assumes numeric values and emits them unquoted, so a value like `\"100%\"` gets coerced or dropped and never shows up correctly in the HTML style block.\n\n\u2022 src/format/reveal/metadata.ts defines the TypeScript interface for Reveal.js options (including `width` and `height`) but types them as numbers. As a result string values (with \"%\") aren\u2019t recognized or preserved.\n\n\u2022 src/format/reveal/schemas.ts supplies the JSON schema for those same options, currently declaring `width`/`height` as numeric fields. Percent\u2010based string values are rejected or coerced away here.\n\nTogether these three files mean that any percentage\u2010based dimensions never make it into the final `<div class=\"reveal\" style=\"width:\u2026;height:\u2026\">` tag in the HTML; updating them to accept strings (and to emit quoted values when passing into the template) will restore correct percentage sizing.",
+        "bug_scenario": "When you author a Reveal.js slide deck in Quarto and specify a percentage width/height (for example `width: \"100%\"` and `height: \"100%\"`) the rendered presentation comes up as a blank (black) screen. If you switch to numeric pixel values (for example `width: 1600`, `height: 900`), everything works. The underlying problem is that Quarto\u2019s code that maps your `width`/`height` settings into the Pandoc template treats them as numbers and emits them without the necessary quotes or string\u2010type handling, so any trailing \u201c%\u201d is lost or mis-injected into the template and the Reveal.js container never sizes properly."
+    }
+}

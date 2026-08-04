@@ -1,0 +1,71 @@
+{
+    "1/1": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "for (let pixelIndex = 0; pixelIndex < pixelCount; ++pixelIndex) {",
+                    "let transparent = addAlpha;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const source = sourceInfo[sourceIndex];",
+                    "",
+                    "let min = source.min;",
+                    "let max = source.max;",
+                    "let gain, bias;",
+                    "if (normalize) {",
+                    "if (min === undefined) {",
+                    "min = getMinForDataType(sourceSamples[sourceIndex][0]);",
+                    "}",
+                    "if (max === undefined) {",
+                    "max = getMaxForDataType(sourceSamples[sourceIndex][0]);",
+                    "}",
+                    "",
+                    "gain = 255 / (max - min);",
+                    "bias = -min * gain;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "      for (let pixelIndex = 0; pixelIndex < pixelCount; ++pixelIndex) {",
+                    "        let transparent = addAlpha;",
+                    "        for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "          const source = sourceInfo[sourceIndex];",
+                    "          const image = requests[sourceIndex].image || ( // try to get the image object",
+                    "            (typeof self !== 'undefined' && self.sourceImagery_ && self.sourceImagery_[sourceIndex])",
+                    "              ? self.sourceImagery_[sourceIndex][z]",
+                    "              : undefined",
+                    "          );",
+                    "",
+                    "          let min = source.min;",
+                    "          let max = source.max;",
+                    "          let gain, bias;",
+                    "          if (normalize) {",
+                    "            // Try to get min/max from GDAL metadata if not set in source",
+                    "            if ((min === undefined || max === undefined) && image && typeof image.getGDALMetadata === 'function') {",
+                    "              const gdalMetadata = image.getGDALMetadata(0);",
+                    "              if (min === undefined && gdalMetadata && gdalMetadata.STATISTICS_MINIMUM !== undefined) {",
+                    "                const parsedMin = parseFloat(gdalMetadata.STATISTICS_MINIMUM);",
+                    "                if (!isNaN(parsedMin)) {",
+                    "                  min = parsedMin;",
+                    "                }",
+                    "              }",
+                    "              if (max === undefined && gdalMetadata && gdalMetadata.STATISTICS_MAXIMUM !== undefined) {",
+                    "                const parsedMax = parseFloat(gdalMetadata.STATISTICS_MAXIMUM);",
+                    "                if (!isNaN(parsedMax)) {",
+                    "                  max = parsedMax;",
+                    "                }",
+                    "              }",
+                    "            }",
+                    "            if (min === undefined) {",
+                    "              min = getMinForDataType(sourceSamples[sourceIndex][0]);",
+                    "            }",
+                    "            if (max === undefined) {",
+                    "              max = getMaxForDataType(sourceSamples[sourceIndex][0]);",
+                    "            }",
+                    "",
+                    "            gain = 255 / (max - min);",
+                    "            bias = -min * gain;",
+                    "          }"
+                ]
+            }
+        ]
+    }
+}

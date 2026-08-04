@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js",
+            "lib/features/auto-resize/BpmnAutoResizeProvider.js",
+            "lib/features/replace/BpmnReplace.js"
+        ],
+        "explanation": "1. ToggleElementCollapseBehaviour.js  \n   \u2013 This interceptor handles the collapse/expand command and immediately resizes the shape to either the default collapsed size or to fit its children. When switching to Ad Hoc (which under the hood is just another toggle operation in BpmnReplace), the resize logic here is invoked a second time, re-computing a default size that doesn\u2019t match the already-collapsed dimensions.\n\n2. BpmnAutoResizeProvider.js  \n   \u2013 By default, the \u2018Ad Hoc\u2019 marker is rendered as a child shape, which triggers this auto-resize provider. Because canResize(\u2026) currently returns true for any Sub-Process (collapsed or expanded), the provider will enlarge the collapsed subprocess to accommodate the new child. We should suppress auto-resize for collapsed Sub-Processes.\n\n3. BpmnReplace.js  \n   \u2013 This module implements the transition from a regular Sub-Process to an Ad Hoc Sub-Process. It uses the toggeling(\u2026) helper to decide when to call modeling.toggleCollapse(element), thereby driving the resize behavior defined in ToggleElementCollapseBehaviour. Adjusting or preventing the extra toggle/collapse call here (or marking it so it doesn\u2019t fire a resize) is necessary to stop the dimensions from shifting.",
+        "bug_scenario": "The animation shows a user creating an expanded BPMN Sub-Process containing a single child (a circle), then collapsing the Sub-Process. Next, the user turns it into an Ad Hoc Sub-Process (adding the small circle marker and dashed border), and the collapsed box suddenly shifts and changes size rather than retaining its previous dimensions.\n\nIn other words, toggling \u201cAd Hoc\u201d on a collapsed Sub-Process unexpectedly triggers a resize and re-centering of the element, whereas the dimensions should stay exactly as they were before."
+    }
+}

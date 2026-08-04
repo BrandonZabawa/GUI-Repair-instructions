@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/unsized-images.js",
+            "report/renderer/details-renderer.js",
+            "report/renderer/element-screenshot-renderer.js",
+            "lighthouse-core/gather/gatherers/full-page-screenshot.js"
+        ],
+        "explanation": "\n\u2022 lighthouse-core/audits/unsized-images.js defines the unsized-images audit, builds the details table rows, and currently emits the remote URL into a thumbnail column. We need to add FullPageScreenshot to its requiredArtifacts, change the table item for thumbnails to include the element\u2019s DOM node id, and pass the elementRect along so it can render a local screenshot sub-image instead.\n\n\u2022 report/renderer/details-renderer.js is the code that turns a TableItemValue of itemType 'thumbnail' into an `<img src=value>` element. We must detect fullPageScreenshot is present and override the thumbnail renderer to call ElementScreenshotRenderer.render(...) with the element\u2019s rect, instead of hot-linking the URL.\n\n\u2022 report/renderer/element-screenshot-renderer.js contains the logic to take a fullPageScreenshot artifact and a DOM node\u2019s rect (dataset) to generate a clipped preview. We may need to expose or adjust its public API so details-renderer can use it for the unsized-images table.\n\n\u2022 lighthouse-core/gather/gatherers/full-page-screenshot.js is the gatherer that produces the fpss artifact (data + width + height). It must remain accurate and available as an artifact to the report so that the rendering layer can extract sub-images for thumbnails.",
+        "bug_scenario": "When the \u201cImage elements do not have explicit `width` and `height`\u201d audit runs, the report\u2019s details table shows a thumbnail column that simply hot-links the original image URLs off the remote server. This fails CSP/mixed-content policies and leaks external requests. The goal is to replace those `<img src=\"...\">` hot-links with locally-generated thumbnails cropped from the full-page screenshot (fpss) and embedded as data URIs, avoiding any remote image requests."
+    }
+}

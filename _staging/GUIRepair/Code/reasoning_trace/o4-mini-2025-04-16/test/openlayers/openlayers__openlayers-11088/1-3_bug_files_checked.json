@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/transforms.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/reproj/Triangulation.js"
+        ],
+        "explanation": "These four files form the critical path for any proj4\u2010based reprojection in OpenLayers.  \n1. src/ol/proj/proj4.js is where proj4 definitions get registered and hooked into OL\u2019s getTransform machinery\u2014but it never reads the new axis\u2010order flags from proj4 2.6.1.  \n2. src/ol/proj/transforms.js consumes those registered transforms and hands down raw coordinate conversions, still assuming the old lon/lat order.  \n3. src/ol/reproj/Tile.js uses those transforms to generate corner points for each tile and applies the projective mesh to an Image\u2014if the axes are flipped, the resulting texture is rotated.  \n4. src/ol/reproj/Triangulation.js lays out the grid of triangles based on transformed corner points; swapped axes lead to a rotated triangulation grid and thus a rotated tile.  \nTogether, these pieces need to be updated so that they read proj4\u2019s declared axis order, flip or permute X/Y appropriately, and generate the correct mesh orientation when reprojection is requested.",
+        "bug_scenario": "When using proj4js >= 2.6.1, OpenLayers\u2019 reprojection pipeline ends up swapping X/Y and effectively rotating reprojected tile layers.  In the screenshots above you can see that with proj4js 2.6.1 a WMTS layer in EPSG:2180 viewed in EPSG:3857 is tilted 90\u00b0, and likewise an OSM (EPSG:3857) layer viewed in EPSG:2180 is rotated.  The root cause is that proj4js 2.6.1 changed how it interprets axis order, but OpenLayers\u2019 proj4 integration and its reprojection code do not pick up or honor the new axis\u2010order metadata, so coordinate transforms applied in reproj/Tile and Triangulation end up using the wrong axis ordering and the mesh for the tile is built with X/Y swapped."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/transforms.js",
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/source/WMTS.js",
+            "src/ol/tilegrid/WMTS.js"
+        ],
+        "explanation": "All of these files participate in coordinate conversion, reprojection and tile\u2010grid layout, and they assume a constant X\u2013Y axis order.   \n  \n\u2022 src/ol/proj/proj4.js: integrates proj4 definitions into OL and is where one would force a fixed XY axis order (proj4js v2.6.1 changed its default axis handling).  \n\u2022 src/ol/proj/transforms.js: contains the low\u2010level glue between OL\u2019s Projection objects and proj4 transforms, so swapped axis order here will rotate every reprojection.  \n\u2022 src/ol/reproj/common.js, Image.js, Tile.js: implement the client\u2010side reprojection of tiles and images. They rely on correct X\u2013Y ordering when sampling source pixels into the view projection.  \n\u2022 src/ol/source/WMTS.js & src/ol/tilegrid/WMTS.js: calculate tile origins, resolutions and grid layout for WMTS matrix sets. A reversed axis order for EPSG:2180 will swap origin & resolution directions, producing a rotated layer when rendered.  \n\nFixing the bug requires forcing proj4 to use the traditional X\u2013Y order (for example by passing the `forceXY` flag or setting `axis=\u2019enu\u2019`) in `proj4.js` so that all downstream transformations and tile grids remain unrotated.",
+        "bug_scenario": "After upgrading proj4js from 2.6.0 to 2.6.1, OpenLayers reprojection stops honouring the expected X\u2013Y axis order for custom projections (e.g. EPSG:2180). When the map view is in Web Mercator (EPSG:3857), the WMTS layer in EPSG:2180 appears rotated, and when the view is EPSG:2180, the OSM (3857) background is rotated. The same sandbox works correctly with proj4js 2.6.0 but breaks with 2.6.1 because proj4 2.6.1 changed its default axis\u2010order interpretation. The bug images show perfectly aligned layers in 2.6.0 and misaligned (rotated) layers in 2.6.1."
+    }
+}

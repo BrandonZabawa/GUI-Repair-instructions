@@ -1,0 +1,62 @@
+diff --git a/lighthouse-core/audits/user-timings.js b/lighthouse-core/audits/user-timings.js
+index 574debd8e..13421eba9 100644
+--- a/lighthouse-core/audits/user-timings.js
++++ b/lighthouse-core/audits/user-timings.js
+@@ -72,8 +72,8 @@ function filterTrace(traceData) {
+         navigationStartTime = ut.startTime;
+       }
+ 
+-      // Add user timings event to array
+-      if (ut.name !== 'navigationStart') {
++      // Add user timings event to array, but only if navigationStartTime is set and the event occurs after it
++      if (ut.name !== 'navigationStart' && navigationStartTime !== undefined && ut.startTime >= navigationStartTime) {
+         userTimings.push({
+           name: ut.name,
+           isMark: true,        // defines type of performance metric
+@@ -86,25 +86,30 @@ function filterTrace(traceData) {
+       measuresStartTimes[ut.name] = ut.startTime;
+     } else if (ut.phase.toLowerCase() === 'e') {
+       // End of measure event
+-      // Add to the array of events
+-      userTimings.push({
+-        name: ut.name,
+-        isMark: false,
+-        args: ut.args,
+-        startTime: measuresStartTimes[ut.name],
+-        duration: ut.startTime - measuresStartTimes[ut.name],
+-        endTime: ut.startTime
+-      });
++      // Add to the array of events, but only if navigationStartTime is set and the event occurs after it
++      if (navigationStartTime !== undefined && measuresStartTimes[ut.name] >= navigationStartTime) {
++        userTimings.push({
++          name: ut.name,
++          isMark: false,
++          args: ut.args,
++          startTime: measuresStartTimes[ut.name],
++          duration: ut.startTime - measuresStartTimes[ut.name],
++          endTime: ut.startTime
++        });
++      }
+     }
+   });
+ 
+-  userTimings.forEach(ut => {
+-    ut.startTime -= navigationStartTime;
+-    if (!ut.isMark) {
+-      ut.endTime -= navigationStartTime;
+-      ut.duration = ut.duration;
+-    }
+-  });
++  // Only adjust timings if navigationStartTime is set
++  if (navigationStartTime !== undefined) {
++    userTimings.forEach(ut => {
++      ut.startTime -= navigationStartTime;
++      if (!ut.isMark) {
++        ut.endTime -= navigationStartTime;
++        ut.duration = ut.duration;
++      }
++    });
++  }
+ 
+   return userTimings;
+ }

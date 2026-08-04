@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/html/renderer/category-renderer.js",
+            "lighthouse-core/report/html/html-report-assets.js",
+            "lighthouse-core/report/html/renderer/util.js"
+        ],
+        "explanation": "\u2022 category-renderer.js is the module that renders each category\u2019s clumps (passed/failed). It needs to detect when passed audits carry a `result.warnings` array and inject a new `.lh-warnings` node immediately after the `.lh-clump--passed` list.  \n\u2022 templates.html holds the static markup templates for report sections. A new template snippet for the warnings block must be added so category-renderer can instantiate it.  \n\u2022 html-report-assets.js contains the CSS rules for report elements. We need to define styling for the new `.lh-warnings` selector (orange border, padding, nested lists) to match the design mock.  \n\u2022 util.js may need new helper functions (e.g. to convert a warnings array into a nested `<ul>`) or formatting utilities to render the warning text, so category-renderer\u2019s implementation stays clean and consistent with other list renderers.",
+        "bug_scenario": "In the Lighthouse HTML report, any audit that passes but still emits one or more warning messages is currently swallowed and never displayed in the \u201cPassed audits\u201d section. The expected behaviour is that immediately after the list of passed audits a distinct \u201cWarnings:\u201d block should appear (with class `.lh-warnings`), containing a nested bullet list of each warning from those audits."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/report/html/renderer/category-renderer.js"
+        ],
+        "explanation": "The CategoryRenderer (lighthouse-core/report/html/renderer/category-renderer.js) is responsible for building each category\u2019s DOM, including grouping passed audits. To implement the new warnings block, this file needs logic after rendering the .lh-clump--passed section to collect any ref.result.warnings from passed auditRefs and append a .lh-warnings container with the heading and nested list items. The templates.html file (lighthouse-core/report/html/templates.html) defines the report\u2019s markup and CSS classes, so it must be updated with styling rules (e.g. border, padding, font) for the .lh-warnings element and markup hooks (like the \u201cWarnings:\u201d heading) that CategoryRenderer will instantiate. Together, these two files enable the UI change that surfaces passed\u2010audit warnings as specified by the test and design mockup.",
+        "bug_scenario": "In the Lighthouse HTML report, any warnings emitted by audits that nevertheless passed (score=1) aren\u2019t surfaced in the \u201cPassed audits\u201d section. The expected behavior is that immediately after the expanded \u201cPassed audits\u201d list there is a styled box (with class .lh-warnings) headed \u201cWarnings:\u201d containing a nested bullet list of all warning messages from those passed audits, as shown in the provided screenshot and exercised by the existing Jest test."
+    }
+}

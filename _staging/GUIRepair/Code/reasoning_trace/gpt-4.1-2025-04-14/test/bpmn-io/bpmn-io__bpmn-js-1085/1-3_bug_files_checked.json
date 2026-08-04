@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/CreateBehavior.js",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/cmd/UpdatePropertiesHandler.js",
+            "lib/import/BpmnImporter.js",
+            "lib/import/Util.js"
+        ],
+        "explanation": "These files are likely related to the bug as they handle the creation, manipulation, replacement, and import/export of connection elements (like sequence flows) and their waypoints in the BPMN diagram. \n- 'CreateBehavior.js', 'ReplaceConnectionBehavior.js', and 'DropOnFlowBehavior.js' are involved in creating and updating connections and their graphical information (e.g., waypoints). \n- 'UpdatePropertiesHandler.js' is used to apply changes to element properties, possibly including waypoints. \n- 'BpmnImporter.js' and 'Util.js' in 'import/' handle parsing and serializing BPMN XML, which is directly relevant to how waypoints are written out. The bug is likely due to an issue either storing waypoints as an array of objects in the element's properties or not properly converting them into the correct XML format during export.",
+        "bug_scenario": "The bug occurs when exporting a BPMN diagram after creating a new task and connecting it to an existing task with a 'sequenceFlow' that has a bend (middle segment). Instead of properly serializing the connection, the exported XML contains an illegal 'waypoints' property that looks like '[object Object],[object Object],[object Object],[object Object]', which indicates that the waypoints array of objects is being stringified incorrectly rather than properly transformed into child <di:waypoint> elements as per the BPMN XML specification."
+    },
+    "2": {
+        "bug_files": [
+            "lib/import/BpmnImporter.js",
+            "lib/import/BpmnTreeWalker.js",
+            "lib/import/Util.js",
+            "lib/features/modeling/BpmnFactory.js",
+            "lib/features/modeling/BpmnLayouter.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/ElementFactory.js",
+            "lib/features/modeling/cmd/UpdatePropertiesHandler.js",
+            "lib/util/DiUtil.js",
+            "lib/util/ModelUtil.js"
+        ],
+        "explanation": "The bug is related to how `waypoints` for sequence flows are handled, specifically during the export or serialization to BPMN XML. The following files are likely involved: 1) `lib/import/BpmnImporter.js`, `lib/import/BpmnTreeWalker.js`, and `lib/import/Util.js` are key for managing how objects and their properties (including `waypoints`) are imported and exported. 2) `lib/features/modeling/BpmnFactory.js`, `BpmnLayouter.js`, `BpmnUpdater.js`, and `ElementFactory.js` are responsible for the modeling logic and element creation, which includes setting properties like `waypoints`. 3) `lib/features/modeling/cmd/UpdatePropertiesHandler.js` handles property updates, possibly including incorrect serialization of `waypoints`. 4) `lib/util/DiUtil.js` and `ModelUtil.js` facilitate working with DI (Diagram Interchange) and model manipulation, likely involved in the translation to XML attributes. Fixing the bug requires ensuring that the `waypoints` property is either properly serialized as a list of coordinates or omitted, and that the model/serialization pipeline (import, update, export) treats it correctly.",
+        "bug_scenario": "The bug occurs when exporting a diagram after creating a new task and connecting it to an existing task with a sequence flow that contains a bent connector (middle segment). The resulting BPMN XML includes an illegal `waypoints` attribute on the exported `<sequenceFlow>`, with the value being a stringified representation of JavaScript objects (i.e., '[object Object],[object Object],[object Object],[object Object]'), instead of properly serialized waypoints or no `waypoints` property at all. The screenshot shows a newly created task linked to another, indicating where the sequence flow has a bend, which triggers the buggy serialization."
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/webgl/PointsLayer.js",
+            "src/ol/renderer/webgl/Layer.js"
+        ],
+        "explanation": "Heatmap layers in WebGL mode are rendered by PointsLayer.js, which currently builds its own shaders and uniforms but never declares or uses a u_opacity uniform. As a result the fragment shader always outputs fully opaque colors. The generic WebGL Layer base (Layer.js) is responsible for wiring up standard uniforms (including opacity for other layer types), but PointsLayer bypasses that path. To fix the bug you need to add an opacity uniform (u_opacity) and multiply the shader\u2019s final color by it in PointsLayer.js (and ensure Layer.js will bind the layer.getOpacity() value if it\u2019s not already wired in).",
+        "bug_scenario": "When you create an ol/layer/Heatmap with an opacity less than 1 (e.g. opacity: 0.1), the map still renders the heatmap fully opaque. This worked in 6.9.0 (and Canvas\u2010only rendering correctly uses globalAlpha), but in the modern WebGL pipeline the heatmap is never drawn with the layer\u2019s opacity. The sandbox example shows that WebGLPoints layers do respect opacity, but the Heatmap implementation (which also uses a WebGLPoints renderer under the hood) never picks up or applies the opacity setting."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Heatmap.js",
+            "src/ol/webgl/PostProcessingPass.js"
+        ],
+        "explanation": "\u2022 src/ol/layer/Heatmap.js is the entry point for the Heatmap layer: it accepts the opacity option when you construct the layer, but in its internal draw\u2009\u2013\u2009where it composites the blurred intensity texture onto a canvas and then onto the map\u2009\u2013\u2009it never applies layerState.opacity (e.g. via context.globalAlpha or a WebGL uniform).  \n\u2022 src/ol/webgl/PostProcessingPass.js is part of the WebGL heatmap pass that accumulates and shades intensity into a texture. Although other WebGL layers forward layer.getOpacity() into a u_opacity uniform, the heatmap pass does not, so the texture output is always drawn at full alpha. Both files must be updated to read layerState.opacity (or layer.getOpacity()) and use it when compositing the final heatmap image.",
+        "bug_scenario": "When you create an ol/layer/Heatmap and pass an opacity option (for example opacity: 0.1), the map always draws the heatmap at full opacity. In earlier versions (6.9.0 and below) the layerState.opacity was honored in the final draw, but in the current dev branch the heatmap rendering pipeline never reads or applies that opacity value, so changing it has no visible effect."
+    }
+}

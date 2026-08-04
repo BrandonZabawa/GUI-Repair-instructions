@@ -1,0 +1,39 @@
+diff --git a/lighthouse-core/gather/gatherers/start-url.js b/lighthouse-core/gather/gatherers/start-url.js
+index e19e1effe..9f748dd2c 100644
+--- a/lighthouse-core/gather/gatherers/start-url.js
++++ b/lighthouse-core/gather/gatherers/start-url.js
+@@ -16,15 +16,31 @@ class StartUrl extends Gatherer {
+    * @return {Promise<LH.Artifacts['StartUrl']>}
+    */
+   async afterPass(passContext) {
++    // Force true offline mode around the start_url fetch.
++    await passContext.driver.goOffline();
+     const manifest = passContext.baseArtifacts.WebAppManifest;
+     const startUrlInfo = this._readManifestStartUrl(manifest);
+     if (startUrlInfo.isReadFailure) {
++      // Restore network for the next gatherers before bailing out.
++      await passContext.driver.goOnline(passContext);
+       return {statusCode: -1, explanation: startUrlInfo.reason};
+     }
+ 
+-    return this._attemptStartURLFetch(passContext.driver, startUrlInfo.startUrl).catch(() => {
+-      return {statusCode: -1, explanation: 'Unable to fetch start URL via service worker.'};
+-    });
++    let fetchResult;
++    try {
++      fetchResult = await this._attemptStartURLFetch(
++        passContext.driver,
++        startUrlInfo.startUrl
++      );
++    } catch (_) {
++      fetchResult = {
++        statusCode: -1,
++        explanation: 'Unable to fetch start URL via service worker.',
++      };
++    }
++    // Restore network for any subsequent gathering.
++    await passContext.driver.goOnline(passContext);
++    return fetchResult;
+   }
+ 
+   /**

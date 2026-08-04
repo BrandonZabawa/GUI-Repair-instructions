@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "types/input/index.d.ts//TextAreaProps"
+        ],
+        "bug_functions": [
+            "types/input/index.d.ts//onBlur",
+            "types/input/index.d.ts//onFocus"
+        ],
+        "explanation": "类型声明文件 types/input/index.d.ts 中，TextAreaProps 接口里将 onBlur 和 onFocus 定义为无参回调 (() => void)，但 ReactTextarea 在触发 onBlur/onFocus 时会传入事件对象 (React.FocusEvent<HTMLTextAreaElement>)。TS 校验时发现函数签名不匹配，导致编译错误，需要把 onBlur 和 onFocus 的类型改为接受事件参数的函数签名。",
+        "bug_scenario": "在使用 Input.TextArea 时，为其配置了 onBlur 回调，但在 TS 编译时报错：\n“Type '(event: MouseEvent<Element, MouseEvent>) => void' is not assignable to type '() => void'”。从截图可见，类型定义中 onBlur 和 onFocus 都被声明成了无参数的 () => void，与 React 实际上传入的事件参数不匹配。"
+    },
+    "2": {
+        "bug_classes": [
+            "types/input/index.d.ts//TextAreaProps",
+            "types/input/index.d.ts//InputProps"
+        ],
+        "bug_functions": [
+            "types/input/index.d.ts//TextAreaProps.onBlur",
+            "types/input/index.d.ts//InputProps.onBlur"
+        ],
+        "explanation": "The root of the type error is the incorrect declaration of onBlur in the TypeScript definitions. Both TextAreaProps and InputProps declare onBlur?: () => void, meaning no arguments are expected. However, React will always pass a FocusEvent (or MouseEvent depending on usage) into the handler signature, so the definitions must be updated to onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void (for TextArea) and similarly for InputProps to match the real event signature. Without this change, any handler that expects the event argument cannot be assigned, triggering the TS incompatibility.",
+        "bug_scenario": "In a TypeScript project using the Input.TextArea component, supplying an onBlur handler that expects an event argument (e.g. (e: React.FocusEvent<HTMLTextAreaElement>) => void) causes a type‐incompatibility error. The provided screenshots show that in types/input/index.d.ts, the onBlur property for both TextAreaProps and InputProps is declared as a parameterless function (() => void), while the actual React onBlur event signature always includes an event parameter."
+    }
+}

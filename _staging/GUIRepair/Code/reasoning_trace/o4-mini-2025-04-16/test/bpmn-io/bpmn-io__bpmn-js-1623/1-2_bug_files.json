@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/drilldown/DrilldownOverlayBehavior.js",
+            "lib/features/drilldown/SubprocessCompatibility.js",
+            "lib/features/drilldown/DrilldownCentering.js",
+            "lib/util/DrilldownUtil.js",
+            "lib/draw/PathMap.js"
+        ],
+        "explanation": "All of these modules participate in rendering, wiring up and tracking deep-link overlays for subprocesses:  \n\u2022 DrilldownOverlayBehavior.js is responsible for drawing and updating the overlay icon on subprocess elements; if it doesn\u2019t re-register overlays after loading a new diagram (global subprocess), the icon disappears.  \n\u2022 SubprocessCompatibility.js adapts drilldown behavior to BPMN subprocess shapes \u2014 multi-diagram plugins can change how subprocess IDs or references are tracked, so compatibility code here may not pick up the new deep-link IDs.  \n\u2022 DrilldownCentering.js recenters the viewport when drilling down or back up; if it doesn\u2019t trigger a re-render or overlay update, the overlays aren\u2019t re-attached.  \n\u2022 DrilldownUtil.js contains shared utilities for identifying drilldown candidates and parsing deep-link URLs \u2014 if the URL parser or shape matcher isn\u2019t aware of the global subprocess plugin\u2019s naming conventions, it won\u2019t re-activate overlays on subsequent diagrams.  \n\u2022 PathMap.js builds the internal map between element IDs and their diagram paths (needed for deep linking). Multi-diagram mode extends the export/import of multiple BPMN diagrams, so PathMap must include entries for each global subprocess. If it only knows about the root diagram it cannot resolve the deep-link for nested subprocesses, and the overlay vanishes.",
+        "bug_scenario": "When using the new deep-linking support for subprocesses together with a multi-diagram \u201cglobal subprocess\u201d plugin, the little overlay link icon that appears on the subprocess boundary is shown correctly for the first subprocess, but as soon as you navigate between subprocess diagrams (global subprocesses) the overlay vanishes and you can no longer click your way back. In other words, drill-down deep-links work only once in the root diagram and then stop appearing in nested or subsequent subprocess diagrams."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/drilldown/DrilldownOverlayBehavior.js",
+            "lib/features/drilldown/DrilldownCentering.js",
+            "lib/features/drilldown/DrilldownBreadcrumbs.js",
+            "lib/features/drilldown/SubprocessCompatibility.js",
+            "lib/util/DrilldownUtil.js",
+            "lib/NavigatedViewer.js"
+        ],
+        "explanation": "All of these files implement the drill-down / deep-linking UI behavior and URL synchronization used when entering or leaving a subprocess: \n\n\u2022 DrilldownOverlayBehavior.js: renders and tears down the overlay around the subprocess shape when a deep link is activated or cleared.  \n\u2022 DrilldownCentering.js: recenters the canvas on the target subprocess when navigating via URL.  \n\u2022 DrilldownBreadcrumbs.js: manages the breadcrumb bar that allows the user to navigate back up the subprocess hierarchy.  \n\u2022 SubprocessCompatibility.js: hooks into legacy subprocess semantics, ensuring overlays work on collapsed/folded subprocess shapes.  \n\u2022 DrilldownUtil.js: contains utility functions for computing the drill-down path from the URL and locating the target element in the model.  \n\u2022 NavigatedViewer.js: wires up URL fragment changes to the modeler/viewer instance, orchestrating the above behaviors on popstate/navigation.  \n\nBecause the multi-diagram plugin also drives view changes and overlays, these core drill-down files need to be adapted so that the overlay remains active across multi-diagram transitions and is not unmounted at the end of the animation.",
+        "bug_scenario": "In the provided animation the user has two \u201cglobal subprocess\u201d shapes on the canvas and is using Camunda Modeler 5.0\u2019s new deep\u2010linking support alongside a multi\u2010diagram plugin. When the user clicks the subprocess icon on the first subprocess, the drill\u2010down overlay appears correctly and the URL fragment is updated. However, as soon as they navigate to the second subprocess (or return), the drill\u2010down overlay is removed even though the URL fragment still points to the subprocess shape. In short: deep\u2010linking and the multi\u2010diagram navigation both vie for controlling the drill\u2010down overlay and the overlay is being dropped at the end of the transition."
+    }
+}

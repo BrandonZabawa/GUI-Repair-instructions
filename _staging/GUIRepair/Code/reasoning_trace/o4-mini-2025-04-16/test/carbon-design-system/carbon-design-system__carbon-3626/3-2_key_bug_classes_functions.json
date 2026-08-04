@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/SideNav.js//SideNav",
+            "packages/react/src/components/UIShell/SideNavMenu.js//SideNavMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/SideNav.js//React.cloneElement (passing navRailActive)",
+            "packages/react/src/components/UIShell/SideNavMenu.js//componentDidUpdate"
+        ],
+        "explanation": "SideNav is responsible for passing a navRailActive flag down to its direct children when the rail is closed so that submenus can auto-collapse. However, SideNav only clones its immediate children (e.g. SideNavItems) and never propagates navRailActive to nested SideNavMenu components. As a result, SideNavMenu.componentDidUpdate never sees navRailActive change and does not force the submenu closed. Fixing this requires making SideNav.cloneElement logic recursive or updating SideNavItems to forward navRailActive so that SideNavMenu receives the prop and collapses its state on rail close.",
+        "bug_scenario": "When the UIShell rail is collapsed after a submenu was expanded, the submenu does not collapse. This leaves blank whitespace in the rail where the hidden submenu items should be, and if one of those submenu items is focused or active, its highlight still appears even though the menu is visually collapsed."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/SideNav.js//SideNav",
+            "packages/react/src/components/UIShell/SideNavMenu.js//SideNavMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/SideNav.js//React.cloneElement(children, \u2026 navRailActive)",
+            "packages/react/src/components/UIShell/SideNavMenu.js//componentDidUpdate",
+            "packages/react/src/components/UIShell/SideNavMenu.js//handleToggleExpand"
+        ],
+        "explanation": "\u2022 SideNav (SideNav.js) is responsible for passing a navRailActive flag to each submenu via its React.cloneElement mapping. If navRailActive doesn\u2019t reflect every collapse case, menus remain expanded even when the rail closes.  \n\u2022 SideNavMenu.componentDidUpdate watches navRailActive and forces isExpanded=false when rail closes, but the current comparison only fires on certain prop transitions, so a previously opened submenu might not collapse.  \n\u2022 SideNavMenu.handleToggleExpand toggles submenu expansion on click, but needs to be aware of navRailActive so it cannot re-open or remain open when the rail is collapsed.  \nFixing these spots ensures submenus reliably collapse along with the rail and expand correctly on focus.",
+        "bug_scenario": "When the UI Shell is put into its \u201crail\u201d (collapsed) mode, any sub-menus that were previously opened remain expanded even though the rail itself is closed. This leaves empty vertical whitespace where the submenu items sit, and if one of the hidden submenu items is focused or marked active, its focus/active styles still show off the edge of the rail. Conversely, when a user tabs into a hidden submenu item, the rail should automatically expand\u2014which it does via SideNav\u2019s focus handlers\u2014but the submenu icon state and collapse logic don\u2019t line up correctly."
+    }
+}

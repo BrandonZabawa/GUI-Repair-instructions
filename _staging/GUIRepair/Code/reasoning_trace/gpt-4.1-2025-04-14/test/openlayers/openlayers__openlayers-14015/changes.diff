@@ -1,0 +1,65 @@
+diff --git a/src/ol/layer/WebGLTile.js b/src/ol/layer/WebGLTile.js
+index 5aca739168..d97ca58b3d 100644
+--- a/src/ol/layer/WebGLTile.js
++++ b/src/ol/layer/WebGLTile.js
+@@ -394,6 +394,11 @@ class WebGLTileLayer extends BaseTileLayer {
+   handleSourceUpdate_() {
+     if (this.getSource()) {
+       this.setStyle(this.style_);
++      // Clear the renderer's cache when the source changes
++      const renderer = this.getRenderer && this.getRenderer();
++      if (renderer && typeof renderer.clearTileTextureCache === 'function') {
++        renderer.clearTileTextureCache();
++      }
+     }
+   }
+ 
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index 5de570b2c8..8a11968a40 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -155,6 +155,13 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+       uniforms: options.uniforms,
+     });
+ 
++    /**
++     * The last used projection.
++     * @type {import("../../proj/Projection.js").default|undefined}
++     * @private
++     */
++    this.lastProjection_ = undefined;
++
+     /**
+      * The last call to `renderFrame` was completed with all tiles loaded
+      * @type {boolean}
+@@ -416,6 +423,13 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+    * @return {HTMLElement} The rendered element.
+    */
+   renderFrame(frameState) {
++    // Clear cache if projection has changed
++    const projection = frameState.viewState.projection;
++    if (this.lastProjection_ && this.lastProjection_ !== projection) {
++      this.clearTileTextureCache();
++    }
++    this.lastProjection_ = projection;
++
+     this.frameState_ = frameState;
+     this.renderComplete = true;
+     const gl = this.helper.getGL();
+@@ -827,6 +841,16 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     super.removeHelper();
+   }
+ 
++  /**
++   * Clear the tile texture cache and dispose all textures.
++   */
++  clearTileTextureCache() {
++    if (this.tileTextureCache_) {
++      this.tileTextureCache_.forEach((tileTexture) => tileTexture.dispose());
++      this.tileTextureCache_.clear();
++    }
++  }
++
+   /**
+    * Clean up.
+    */

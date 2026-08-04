@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Layer.js",
+            "src/ol/layer/Base.js",
+            "src/ol/layer/Tile.js",
+            "src/ol/source/TileArcGISRest.js",
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/render/canvas.js"
+        ],
+        "explanation": "The bug is about the stacking and compositing of tiled ArcGIS REST layers and their opacity handling starting with OL version 6.8.1 and above. Relevant files were selected as follows: 1) 'src/ol/layer/Layer.js' and 'src/ol/layer/Base.js' manage layer properties and state, including opacity; 2) 'src/ol/layer/Tile.js' and 'src/ol/source/TileArcGISRest.js' manage tile layers and ArcGIS-specific tile sources, which are the affected types in the report; 3) 'src/ol/renderer/canvas/Layer.js' and 'src/ol/renderer/canvas/TileLayer.js' handle how these layers are rendered and composited on the canvas, which is suspected in the bug report; 4) 'src/ol/render/canvas.js' contains shared lower-level canvas rendering logic that could affect how stacking and opacity are applied across layers. These files collectively govern how tiled layers are drawn and composited, where the regression introduced in version 6.8.1+ would likely reside.",
+        "bug_scenario": "After updating OpenLayers (OL) from version 6.7.0 to 6.9.0, tiled ArcGIS REST layers with the same opacity value incorrectly cause the topmost layer to become opaque (relative to other OL layers), while base maps display correctly. Previously (in 6.7.0), all layers rendered transparent as expected. The problem only occurs when all layers have identical opacity values (e.g., all set to 0.5); if layers have slight variations in opacity (e.g., 0.49, 0.50, 0.51) transparency is handled correctly. The issue likely relates to how layer stacking and opacity are composited in the rendering pipeline."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Layer.js",
+            "src/ol/layer/Base.js",
+            "src/ol/layer/BaseTile.js",
+            "src/ol/layer/Tile.js",
+            "src/ol/source/TileArcGISRest.js",
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/renderer/canvas/TileLayer.js"
+        ],
+        "explanation": "These files are bug-related because the opacity stacking problem affects how individual tile layers are drawn and composited in the rendering pipeline. Specifically: 1) src/ol/layer/Layer.js, src/ol/layer/Base.js, src/ol/layer/BaseTile.js, and src/ol/layer/Tile.js define the core logic and properties (like opacity) for map and tile layers; 2) src/ol/source/TileArcGISRest.js interfaces with ArcGIS tiled REST sources and may be affected by how those layers are rendered and composited; 3) src/ol/renderer/canvas/Layer.js and src/ol/renderer/canvas/TileLayer.js manage the rendering process for canvas-based tile layers, which encompasses how opacity and composition between layers is handled. Since the change was introduced between OL 6.7.0 and 6.8.1 in opacity stacking behavior, the underlying bug is highly likely to reside in these rendering or layer compositing files.",
+        "bug_scenario": "The bug is an issue with how opacity is handled in tiled ArcGIS REST layers and potentially other independent map layers after upgrading to OL (OpenLayers) version 6.8.1 and above. Layers with the same opacity become incorrectly opaque over each other, instead of stacking and allowing proper transparency through to the basemap and/or other layers. This can be visually confirmed in the screenshots: in OL 6.9.0, the top-most layers are more opaque compared to how they appear with OL 6.7.0, where transparency works as expected. The issue likely relates to the rendering process, specifically involving how layer opacity is composited in the rendering pipeline for canvas-based layers."
+    }
+}

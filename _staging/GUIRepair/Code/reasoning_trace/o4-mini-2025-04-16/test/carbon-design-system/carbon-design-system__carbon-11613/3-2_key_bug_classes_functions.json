@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/Notification/next/Notification.stories.js//decorators",
+            "packages/react/src/components/Notification/next/Notification.stories.js//ToastStory",
+            "packages/react/src/components/Notification/next/Notification.stories.js//InlineStory",
+            "packages/react/src/components/Notification/Notification-story.js//notificationProps",
+            "packages/react/src/components/Notification/Notification-story.js//toastNotificationProps",
+            "packages/react/src/components/Notification/Notification-story.js//Toast",
+            "packages/react/src/components/Notification/Notification-story.js//Inline"
+        ],
+        "explanation": "All of these functions define how the Notification stories are rendered and wrapped in the FeatureFlags decorator. The decorator (decorators) injects the flags wrapper around every story, and when the docs addon serializes the story JSX for the \u201cShow code\u201d panel, it captures that wrapper instead of the actual Notification component usage. The story rendering functions (ToastStory, InlineStory, Toast, Inline) and the prop-builder utilities (notificationProps, toastNotificationProps) together produce the story source. To fix the code snippet output, these points of story definition and decoration must be adjusted\u2014either by excluding the FeatureFlags decorator from the serialized source or by restructuring the story functions so that addon-docs picks up only the inner Notification JSX.",
+        "bug_scenario": "In the Storybook \u201cDocs\u201d tab for the Notifications component, clicking the \u201cShow code\u201d button exposes the raw JSX of the story decorator\u2014the <FeatureFlags> wrapper and the placeholder <No Display Name />\u2014rather than the intended Notification component usage. The code block in the docs shows irrelevant FeatureFlags tags instead of the actual Notification example code."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/Notification/next/Notification.stories.js//decorators[0] (the Story \u21d2 <FeatureFlags> wrapper)",
+            "packages/react/src/components/Notification/Notification-story.js//decorators (withKnobs wrapper)"
+        ],
+        "explanation": "Both story files apply decorators that wrap every Notification story in a FeatureFlags component. Storybook\u2019s DocsSource extractor picks up that wrapper and renders it in the \u201cShow code\u201d snippet instead of the child Notification markup. To fix this, the decorators should be excluded from the docs source\u2014either by opting out via `parameters.docs.source.excludeDecorators` or by moving FeatureFlags into the Canvas-only decorators so that the actual Notification JSX is captured in the code block.",
+        "bug_scenario": "In the Docs tab of the Notifications stories, clicking \u201cShow code\u201d surface the FeatureFlags wrapper and a placeholder `<No Display Name />` child rather than the actual Notification component JSX. The screenshot shows that the decorated story (wrapped in a global FeatureFlags decorator) is being serialized into the code snippet instead of the inner Notification markup."
+    }
+}

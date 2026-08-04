@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Image.js",
+            "src/ol/style/Icon.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/Executor.js"
+        ],
+        "explanation": "\u2022 src/ol/style/Image.js defines the base Image style (including getOpacity/setOpacity) but does not include opacity in the default cache-key logic.  \n\u2022 src/ol/style/Icon.js overrides the styleCacheKey (used to memoize drawing instructions) yet omits the opacity value, so changing opacity does not invalidate the cache.  \n\u2022 src/ol/render/canvas/ImageBuilder.js creates draw instructions for images but never emits an instruction to set the canvas globalAlpha to the style\u2019s opacity.  \n\u2022 src/ol/render/canvas/Executor.js executes the image-draw instructions but does not handle any alpha instruction (and always draws with full alpha), so even when new instructions are generated the opacity is never applied.",
+        "bug_scenario": "In OpenLayers 6.2.0 the Icon (and other Image-based) styles no longer respect their opacity property at render time. In 6.1.1, calling style.setOpacity() caused the feature to blink or fade appropriately; in 6.2.0 the map is redrawn but the icon remains at full opacity. Inspecting the canvas render path and the style cache reveals that: (1) the Icon style\u2019s cache key does not change when opacity is updated, so instructions are never rebuilt; and (2) the canvas image builder/executor never inserts or applies a globalAlpha change when drawing images."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Image.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "\u2022 src/ol/style/Image.js defines the base Image style class and its setOpacity()/getOpacity() API \u2013 this is where opacity changes are recorded and a change event should be dispatched.\n\u2022 src/ol/style/IconImage.js implements the concrete image loading and caching, and holds its own opacity state \u2013 the rendered symbol\u2019s globalAlpha is driven from here.\n\u2022 src/ol/render/canvas/ImageBuilder.js draws style images onto the canvas using context.globalAlpha but currently reads the IconImage opacity only at load time, ignoring subsequent style.setOpacity calls.\n\u2022 src/ol/renderer/canvas/VectorLayer.js orchestrates the rendering of feature styles (including image styles) but does not listen for change events on the Image style when its opacity changes, so the canvas never re-draws with the new globalAlpha.\n\nFixing the bug requires ensuring setOpacity on style.Image/IconImage dispatches a change event and that the rendering pipeline (ImageBuilder and VectorLayer) picks up the updated opacity and re-renders the feature.",
+        "bug_scenario": "In OpenLayers 6.2.0 calling styleImage.setOpacity(...) on a feature\u2019s image style has no visual effect. In 6.1.1 flickering or blinking of the feature showed the opacity change on each render, but after upgrading to 6.2.0 the feature remains fully opaque even when setOpacity(0.5) (or other values) is called."
+    }
+}

@@ -1,0 +1,80 @@
+diff --git a/packages/react/src/components/MultiSelect/FilterableMultiSelect.js b/packages/react/src/components/MultiSelect/FilterableMultiSelect.js
+index a8f13511..5c8cb58a 100644
+--- a/packages/react/src/components/MultiSelect/FilterableMultiSelect.js
++++ b/packages/react/src/components/MultiSelect/FilterableMultiSelect.js
+@@ -28,6 +28,11 @@ const getInstanceId = setupGetInstanceId();
+ 
+ export default class FilterableMultiSelect extends React.Component {
+   static propTypes = {
++    /**
++     * Called when the menu open/close state changes.
++     */
++    onMenuChange: PropTypes.func,
++
+     /**
+      * 'aria-label' of the ListBox component.
+      */
+@@ -166,6 +171,7 @@ export default class FilterableMultiSelect extends React.Component {
+     light: false,
+     open: false,
+     selectionFeedback: 'top-after-reopen',
++    onMenuChange: () => {}, // default no-op
+   };
+ 
+   constructor(props) {
+@@ -202,6 +208,15 @@ export default class FilterableMultiSelect extends React.Component {
+       this.setState({ topItems: downshift.selectedItem });
+     }
+ 
++    // Call onMenuChange if isOpen changes
++    if (
++      typeof this.props.onMenuChange === 'function' &&
++      typeof changes.isOpen === 'boolean' &&
++      changes.isOpen !== this.state.isOpen
++    ) {
++      this.props.onMenuChange(changes.isOpen);
++    }
++
+     const { type } = changes;
+     switch (type) {
+       case Downshift.stateChangeTypes.keyDownArrowUp:
+diff --git a/packages/react/src/components/MultiSelect/MultiSelect.js b/packages/react/src/components/MultiSelect/MultiSelect.js
+index ea39860f..f456e614 100644
+--- a/packages/react/src/components/MultiSelect/MultiSelect.js
++++ b/packages/react/src/components/MultiSelect/MultiSelect.js
+@@ -60,6 +60,7 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+     open,
+     selectionFeedback,
+     onChange,
++    onMenuChange, // <-- Add onMenuChange prop
+     direction,
+   },
+   ref
+@@ -156,6 +157,15 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+       setTopItems(controlledSelectedItems);
+     }
+ 
++    // Call onMenuChange if isOpen changes
++    if (
++      typeof onMenuChange === 'function' &&
++      typeof changes.isOpen === 'boolean' &&
++      changes.isOpen !== isOpen
++    ) {
++      onMenuChange(changes.isOpen);
++    }
++
+     const { type } = changes;
+     switch (type) {
+       case ItemClick:
+@@ -270,6 +280,11 @@ MultiSelect.displayName = 'MultiSelect';
+ MultiSelect.propTypes = {
+   ...sortingPropTypes,
+ 
++  /**
++   * Called when the menu open/close state changes.
++   */
++  onMenuChange: PropTypes.func,
++
+   /**
+    * Specify the direction of the multiselect dropdown. Can be either top or bottom.
+    */

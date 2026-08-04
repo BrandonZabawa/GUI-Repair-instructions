@@ -1,0 +1,20 @@
+diff --git a/lighthouse-core/lib/emulation.js b/lighthouse-core/lib/emulation.js
+index b97db14bf..bec53b194 100644
+--- a/lighthouse-core/lib/emulation.js
++++ b/lighthouse-core/lib/emulation.js
+@@ -62,6 +62,15 @@ async function enableNexus5X(driver) {
+     driver.sendCommand('Network.enable'),
+     driver.sendCommand('Network.setUserAgentOverride', NEXUS5X_USERAGENT),
+     driver.sendCommand('Emulation.setTouchEmulationEnabled', {enabled: true}),
++    // Also redefine window.navigator.userAgent so that JS (e.g. runtimeSettings.userAgent)
++    // matches the network UA override
++    driver.evaluateScriptOnNewDocument(
++      `const _lhUA = ${JSON.stringify(NEXUS5X_USERAGENT.userAgent)};
++       Object.defineProperty(navigator, 'userAgent', {
++         get: () => _lhUA,
++         configurable: true,
++       });`
++    ),
+   ]);
+ }
+ 

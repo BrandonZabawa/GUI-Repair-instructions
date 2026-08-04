@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/input/textarea.jsx",
+            "types/input/index.d.ts"
+        ],
+        "explanation": "1. src/input/textarea.jsx is where the TextArea component invokes props.onBlur(event) with the native event object.  \n2. types/input/index.d.ts defines the onBlur signature as a parameterless function, which does not match the actual (event) => void signature.  \nUpdating the type declaration to include the event parameter (for example onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void) resolves the mismatch between implementation and TypeScript definitions.",
+        "bug_scenario": "In TypeScript projects, using the Input.TextArea component and supplying an onBlur handler that expects the native focus\u2010loss event (e.g. onBlur={(e) => {\u2026}}) produces a type error. The component\u2019s TypeScript declaration declares onBlur?: () => void (no arguments), but the implementation actually passes the event object to the handler."
+    },
+    "2": {
+        "bug_files": [
+            "types/input/index.d.ts"
+        ],
+        "explanation": "In types/input/index.d.ts the props for Input (and TextArea) declare onFocus and onBlur as parameterless callbacks. In reality React invokes those handlers with a FocusEvent argument. TypeScript therefore rejects any handler signature that takes an event. Adjusting the .d.ts so onBlur and onFocus accept a React.FocusEvent (e.g. onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void) will resolve the mismatch.",
+        "bug_scenario": "When you use the Input.TextArea component in TypeScript and pass an onBlur (or onFocus) handler that expects an event argument, you get a type\u2010error: the current d.ts defines onBlur?: () => void (and onFocus?: () => void), but React will call your handler with a FocusEvent. That mismatch (\u201cType '(event: MouseEvent<\u2026>) => void' is not assignable to type '() => void'\u201d) is exactly what you see in the screenshots."
+    }
+}

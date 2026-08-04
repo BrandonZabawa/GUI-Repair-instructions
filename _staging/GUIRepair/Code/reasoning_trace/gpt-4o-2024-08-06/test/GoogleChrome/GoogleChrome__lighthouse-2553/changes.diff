@@ -1,0 +1,30 @@
+diff --git a/lighthouse-cli/performance-experiment/report/perf-x-report-generator.js b/lighthouse-cli/performance-experiment/report/perf-x-report-generator.js
+index 217f5e990..9f7b00a36 100644
+--- a/lighthouse-cli/performance-experiment/report/perf-x-report-generator.js
++++ b/lighthouse-cli/performance-experiment/report/perf-x-report-generator.js
+@@ -35,7 +35,9 @@ class PerfXReportGenerator extends ReportGenerator {
+   _registerPartials(audits) {
+     super._registerPartials(audits);
+     const configPanelTemplate = Handlebars.compile(configPanelPartial);
+-    const criticalRequestChains = audits['critical-request-chains'].extendedInfo.value;
++    const criticalRequestChains = JSON.stringify(audits['critical-request-chains'].extendedInfo.value, (_, value) =>
++      typeof value === 'number' ? value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : value
++    );
+     Handlebars.registerPartial('config-panel', configPanelTemplate(criticalRequestChains));
+   }
+ }
+diff --git a/lighthouse-core/report/v2/report-generator.js b/lighthouse-core/report/v2/report-generator.js
+index 4ed8928af..d9cf38915 100644
+--- a/lighthouse-core/report/v2/report-generator.js
++++ b/lighthouse-core/report/v2/report-generator.js
+@@ -95,7 +95,9 @@ class ReportGeneratorV2 {
+    * @return {string}
+    */
+   generateReportHtml(reportAsJson) {
+-    const sanitizedJson = JSON.stringify(reportAsJson).replace(/</g, '\\u003c');
++    const sanitizedJson = JSON.stringify(reportAsJson, (_, value) =>
++      typeof value === 'number' ? value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : value
++    ).replace(/</g, '\\u003c');
+     const sanitizedJavascript = REPORT_JAVASCRIPT.replace(/<\//g, '\\u003c/');
+ 
+     return ReportGeneratorV2.replaceStrings(REPORT_TEMPLATE, [

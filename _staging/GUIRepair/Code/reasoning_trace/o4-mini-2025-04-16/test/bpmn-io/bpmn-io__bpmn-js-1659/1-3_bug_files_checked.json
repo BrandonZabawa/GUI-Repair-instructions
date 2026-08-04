@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ResizeBehavior.js",
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js",
+            "lib/features/modeling/behavior/util/ConnectionLayoutUtil.js",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/util/LineAttachmentUtil.js"
+        ],
+        "explanation": "\u2022 ResizeBehavior.js triggers the resize operation but does not delegate a full update of connected labels/associations.\n\u2022 LayoutConnectionBehavior.js listens for shape changes and re-lays out SequenceFlows, but only recomputes waypoints, not attached labels or association edges.\n\u2022 ConnectionLayoutUtil.js computes new segment geometry for connections but does not reposition attachments.\n\u2022 LabelLayoutUtil.js contains the algorithms for placing text labels on edges; it is never invoked after an automatic layout pass triggered by a shape resize.\n\u2022 LineAttachmentUtil.js manages association arrowheads/text attachments on a connection, but is not called during the flow relayout on resize.\n\nTogether these five files cover the resize hook, the connection re-routing, and the label/association placement logic. Because the relayout step skips label/association routines, the labels and associations end up in the wrong place.",
+        "bug_scenario": "When you resize a BPMN sub-process that has an outgoing SequenceFlow with attached labels (text annotations) or Association edges, the SequenceFlow is re-routed correctly but its labels and associations remain at their old coordinates instead of following the updated edge geometry. In other words, on container resize the connector layout is updated, but neither LabelLayoutUtil nor the line-attachment logic is re-invoked for the label/association, so those remain hanging off in the wrong place."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/auto-resize/BpmnAutoResizeProvider.js",
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js",
+            "lib/features/modeling/behavior/util/ConnectionLayoutUtil.js",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js"
+        ],
+        "explanation": "\u2022 BpmnAutoResizeProvider.js hooks into the resize command and triggers connection re-layout on container size changes, but it only updates the edge waypoints of BPMN flows.\n\u2022 LayoutConnectionBehavior.js listens for layout events and applies new waypoints, yet it does not consider repositioning of attached labels or Associations (text annotation links).\n\u2022 ConnectionLayoutUtil.js computes the new path for the connection segments but only handles the core sequence flow path, not its decorative attachments (labels/annotation associations).\n\u2022 LabelLayoutUtil.js is responsible for computing inline label positions along a connection but isn\u2019t invoked on auto-resize events. As a result, neither edge labels nor Associations (for text annotations) are updated when the underlying flow moves.",
+        "bug_scenario": "After resizing a subprocess (or any container) the attached SequenceFlow is re-laid out (its waypoints recomputed) but any labels (edge labels) and text annotation associations that were attached to that sequence flow are left at their old positions. Essentially, connection geometry updates on container resize, but neither the SequenceFlow\u2019s label nor the Text Annotation\u2019s dotted Association are reconnected/moved with the flow."
+    }
+}

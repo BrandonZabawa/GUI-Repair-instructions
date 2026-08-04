@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/lib/stack-collector.js",
+            "lighthouse-core/lib/stack-packs.js"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/stack-collector.js//detectLibraries",
+            "lighthouse-core/lib/stack-packs.js//getStackPacks"
+        ],
+        "explanation": "The duplication of stack packs is caused by the interaction between library detection (in stack-collector.js) and how stack packs are matched and included (in stack-packs.js). The detectLibraries function in stack-collector.js is responsible for identifying libraries and providing their IDs. If library detection yields multiple entries for React (e.g., due to different detection paths like 'React (Fast Path)'), these get passed downstream. The getStackPacks function in stack-packs.js maps detected stacks to stack packs; if it receives multiple 'react' stacks, it adds the same stack pack multiple times, resulting in duplication. To fix the bug, these functions and their logic need to be reviewed to ensure each stack pack is included only once per type, likely by de-duplicating detected stacks and/or stack packs based on their IDs.",
+        "bug_scenario": "The bug scenario is that when running Lighthouse or PSI on the specified website, the Minify JavaScript audit displays duplicated stack packs for React. This results in the user seeing two identical React recommendations both in the UI and within the stackPacks property in the output JSON. The images confirm this duplication visually: the audit advice is repeated, and the JSON output contains two React stackPacks instead of one."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/lib/stack-collector.js",
+            "lighthouse-core/lib/stack-packs.js"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/stack-collector.js//detectLibraries",
+            "lighthouse-core/lib/stack-collector.js//collectStacks",
+            "lighthouse-core/lib/stack-packs.js//getStackPacks"
+        ],
+        "explanation": "The issue arises because the library detection logic (detectLibraries and collectStacks in stack-collector.js) pulls in detected libraries, but now includes multiple detections for the same library (e.g., React and 'React (Fast Path)'). Since these detections may not have unique IDs or filtering, both get included. The stack-packs.js file's getStackPacks function then maps these directly to stack packs, so duplicates appear in the output and UI. To fix the bug, you would need to ensure that: (1) libraries detected with different names but representing the same underlying library are deduplicated (likely by using a unique 'id' property); and/or (2) filter out experimental or non-user-facing detections before mapping to stack packs. The relevant classes/functions are therefore detectLibraries and collectStacks (which gather and return the libraries), and getStackPacks (which converts these into user-visible stack packs).",
+        "bug_scenario": "The bug scenario is that when running Lighthouse or PSI on a site (e.g., https://abcnews.go.com/), duplicate stack packs are displayed for the same detected JavaScript library (React). This is visible both in the audit UI (two identical React advisories under 'Minify JavaScript') and in the JSON output (stackPacks: Array(2) with two 'react' entries). This is due to recent changes in the JS library detector that introduced 'Fast Path' entries, causing the same library to be detected multiple times and thus duplicated in the stack packs shown to users."
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "resources/filters/common/figures.lua",
+            "resources/filters/quarto-pre/figures.lua",
+            "resources/filters/quarto-post/fig-cleanup.lua",
+            "src/core/handlers/embed.ts"
+        ],
+        "explanation": "\u2022 resources/filters/common/figures.lua contains the core logic that scans consecutive Pandoc blocks and groups them into figure or subfigure nodes. It treats each standalone block with figure attributes as a separate figure, so the <div> and the accompanying <script> end up in distinct subfigures.  \n\u2022 resources/filters/quarto-pre/figures.lua is the pre-processing filter that assigns figure metadata (like captions and numbering) to each block. It sees two blocks and splits the caption across them, resulting in empty placeholders for the second and third subfigures.  \n\u2022 resources/filters/quarto-post/fig-cleanup.lua cleans up figure markup after rendering but does not merge the div/script pairs back into a single figure, so the spurious subfigures remain.  \n\u2022 src/core/handlers/embed.ts is responsible for converting embedded HTML (like Bokeh\u2019s <div>+<script>) into Pandoc blocks. Its current behavior emits the placeholder and script as separate blocks without the figure attributes that would keep them together, triggering the downstream filters to misidentify subfigures.  \n\nAll of these files collaborate in how Quarto detects, groups, and renders figures; a fix must unify the div/script pair into one figure unit (for example by tagging the <script> block as part of the preceding figure or by adjusting the common/figures.lua grouping logic).",
+        "bug_scenario": "When a Bokeh plot is rendered in a Quarto document, the underlying Pandoc filters see two separate blocks (the <div> placeholder and the <script> that populates it) and mistakenly split them into multiple \u201csubfigures.\u201d The first subfigure (a) shows the plot correctly, but (b) and (c) are empty placeholders and the overall caption is lost."
+    },
+    "2": {
+        "bug_files": [
+            "resources/filters/common/figures.lua",
+            "resources/filters/quarto-post/fig-cleanup.lua",
+            "src/core/jupyter/jupyter-filters.ts",
+            "src/command/render/filters.ts"
+        ],
+        "explanation": "\u2022 resources/filters/common/figures.lua  defines the Lua routines that detect and wrap figure blocks and their captions. Because the Bokeh output produces multiple HTML blocks, it mis\u2010identifies them as separate subfigures.\\n\\n\u2022 resources/filters/quarto-post/fig-cleanup.lua  runs after Pandoc to tidy up figure groups, but its logic currently splits the Bokeh widget blocks into three subfigures instead of keeping them as one.\\n\\n\u2022 src/core/jupyter/jupyter-filters.ts  contains the TypeScript filter that collapses adjacent Jupyter HTML blocks into a single block. It isn\u2019t merging the Bokeh <div> plus attendant <script> tags correctly, so Pandoc still sees them as separate figure elements.\\n\\n\u2022 src/command/render/filters.ts  is where the Lua filters (including fig-cleanup) and the Jupyter filters get registered in the rendering pipeline. If the filters run in the wrong order or aren\u2019t applied to HTML notebook output, subfigure detection misfires here as well.\\n\\nFixing the bug will involve updating the block\u2010collapsing logic in jupyter-filters.ts (so that the entire Bokeh widget is treated as one unit) and adjusting the figure\u2010cleanup.lua routines to no longer split multi\u2010element widgets into subfigures.",
+        "bug_scenario": "In the minimal demonstration (.qmd) the single Bokeh bar\u2010chart appears correctly, but Quarto\u2019s post\u2010processing has accidentally chunked it into three \u201csubfigures\u201d (a), (b), and (c). Only (a) shows the chart; (b) and (c) are empty and show \u201c?(caption)\u201d. In other words, the entire bokeh widget (which emits multiple adjacent <div> and <script> blocks) is being mis\u2010recognized as three separate figure elements instead of one."
+    }
+}

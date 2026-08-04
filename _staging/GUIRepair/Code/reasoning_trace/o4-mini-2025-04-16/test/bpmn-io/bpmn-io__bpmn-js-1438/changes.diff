@@ -1,0 +1,37 @@
+diff --git a/lib/import/BpmnImporter.js b/lib/import/BpmnImporter.js
+index 5ef5e26c..6dc00408 100644
+--- a/lib/import/BpmnImporter.js
++++ b/lib/import/BpmnImporter.js
+@@ -188,9 +188,22 @@ BpmnImporter.prototype.add = function(semantic, parentElement) {
+     }));
+   }
+ 
+-  // (optional) LABEL
+-  if (isLabelExternal(semantic) && getLabel(element)) {
+-    this.addLabel(semantic, element);
++  // (optional) external LABEL (including message‐flow → messageRef.name fallback)
++  if ( isLabelExternal(semantic) ) {
++
++    // first try the flow’s own name
++    var labelText = getLabel(element);
++
++    // fallback to the referenced Message’s name for MessageFlows
++    if (!labelText && is(semantic, 'bpmn:MessageFlow') && semantic.messageRef) {
++      labelText = semantic.messageRef.name || '';
++      // temporarily ensure getLabel(element) will pick it up
++      semantic.name = labelText;
++    }
++
++    if (labelText) {
++      this.addLabel(semantic, element);
++    }
+   }
+ 
+ 
+@@ -338,4 +351,4 @@ function isPointInsideBBox(bbox, point) {
+ 
+ function isFrameElement(semantic) {
+   return is(semantic, 'bpmn:Group');
+-}
+\ No newline at end of file
++}

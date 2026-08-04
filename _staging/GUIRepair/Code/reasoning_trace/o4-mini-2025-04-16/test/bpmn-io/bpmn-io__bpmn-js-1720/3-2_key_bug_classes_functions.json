@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js"
+        ],
+        "bug_functions": [
+            "lib/features/replace/BpmnReplace.js//replaceElement",
+            "lib/features/replace/BpmnReplace.js//shouldToggleCollapsed",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//expandedBounds",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//postExecuted"
+        ],
+        "explanation": "\u2022 BpmnReplace.replaceElement and its helper shouldToggleCollapsed: When replacing a Call Activity with a Sub-Process, shouldToggleCollapsed returns true and triggers only a collapse toggle (modeling.toggleCollapse) with an early return. This skips the normal replace path that would copy the old width/height or apply the target\u2019s dimensions, so the shape never resizes.  \n\u2022 ToggleElementCollapseBehaviour.expandedBounds and its postExecuted handler: After the toggleCollapse command, postExecuted always recomputes the expanded bounds based on default sizes and child bounds (which are empty), ignoring the original shape size. As a result, the expanded Sub-Process snaps to a default (small) size rather than growing to the prior dimensions. Together, these code paths cause the Sub-Process to remain at the Call-Activity size and lose the ability to switch back via the menu.",
+        "bug_scenario": "After converting a Call Activity into an expanded Sub-Process via the wrench (replace) menu, the element visually remains at the small Call-Activity size (like a Task) instead of stretching to the Sub-Process default or retaining its prior dimensions. Moreover, the replace menu then only shows \u201cEvent Sub Process,\u201d preventing the user from reverting back to a Call Activity."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/replace/BpmnReplace.js//BpmnReplace",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//ToggleElementCollapseBehaviour",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//ReplaceMenuProvider"
+        ],
+        "bug_functions": [
+            "lib/features/replace/BpmnReplace.js//replaceElement",
+            "lib/features/replace/BpmnReplace.js//shouldToggleCollapsed",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//postExecuted (\u2018shape.toggleCollapse\u2019 handler)",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//getEntries"
+        ],
+        "explanation": "\u2022 BpmnReplace.replaceElement and shouldToggleCollapsed: These functions drive the core replace operation (task\u2192call activity\u2192subprocess). The code that copies or resets width+height on newElement only runs for certain BPMN:Activity replacements and contains a TODO about respecting min/max size. In our scenario (call activity\u2192expanded subprocess), the sizing logic does not trigger, so the shape remains at its old dimensions.\n\u2022 ToggleElementCollapseBehaviour.postExecuted (\u2018shape.toggleCollapse\u2019): This handler recalculates and applies new bounds when collapsing/expanding via modeling.toggleCollapse, but it is never invoked in the replace operation. As a result, replacing directly to an expanded subprocess never goes through the resize logic.\n\u2022 ReplaceMenuProvider.getEntries: This function builds the wrench menu entries. After the replace, it filters out the Call Activity option for a collapsed or expanded subprocess, only leaving Event Sub Process. Thus the user cannot revert back to a call activity once they\u2019ve replaced it, leading to the dead end described in the bug report.",
+        "bug_scenario": "The user starts with a task, turns it into a call activity (wrench\u2192Call Activity), then immediately turns that call activity into an expanded subprocess (wrench\u2192Sub-Process expanded). The resulting element stays at the call-activity size (so it visually looks like a task) instead of resizing to the default expanded-subprocess dimensions. Furthermore, the wrench menu no longer offers \u201cCall Activity\u201d\u2014only \u201cEvent Sub Process\u201d\u2014so the user cannot revert, effectively reaching a dead end."
+    }
+}

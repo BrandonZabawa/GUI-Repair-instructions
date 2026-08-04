@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/renderer/webgl/Layer.js//WebGLLayerRenderer",
+            "src/ol/webgl/Helper.js//WebGLHelper"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.createRenderer",
+            "src/ol/renderer/webgl/Layer.js//WebGLLayerRenderer.constructor",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.constructor"
+        ],
+        "explanation": "The main issue is that each WebGLTileLayer creates its own WebGL context\u2014this is orchestrated in the WebGLTileLayer.createRenderer function, which instantiates a new renderer (WebGLTileLayerRenderer) for each layer. WebGLTileLayerRenderer is a subclass of WebGLLayerRenderer (from src/ol/renderer/webgl/Layer.js), which owns a WebGLHelper instance responsible for managing the actual WebGL context. The constructors of WebGLLayerRenderer and WebGLTileLayerRenderer are thus directly involved in WebGL context creation and management. To fix the bug, these classes and functions would need to be modified to allow sharing a WebGLHelper (and thus a WebGL context) across multiple tile layers within the same map, instead of creating a new one for each layer. Changes would likely involve tracking or passing a shared context/helper at the map or renderer level, and ensuring all WebGLTileLayers on the same map can use it safely. The bug is not in low-level helpers (like most of WebGLHelper), but in the layer/renderer/context creation and lifecycle management.",
+        "bug_scenario": "The bug scenario involves applications hitting browser-imposed limits on the number of available WebGL contexts (typically 16), due to each WebGLTileLayer in OpenLayers creating its own WebGL context. When this limit is reached, the browser will remove old contexts, causing rendering problems or failures in the app, especially for use-cases with many raster layers (e.g., multiple GeoTIFFs covering different extents). The proposal is to allow multiple WebGLTileLayers on a single map to share one WebGL context, reducing resource usage and avoiding the context limit in most practical scenarios."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/renderer/webgl/Layer.js//WebGLLayerRenderer",
+            "src/ol/webgl/Helper.js//WebGLHelper"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.createRenderer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.constructor",
+            "src/ol/renderer/webgl/Layer.js//WebGLLayerRenderer.constructor"
+        ],
+        "explanation": "The bug is rooted in how WebGL contexts are managed and instantiated for layers. The WebGLTileLayer (src/ol/layer/WebGLTile.js) is responsible for creating a renderer for each layer via its createRenderer method. This method instantiates a new WebGLTileLayerRenderer (src/ol/renderer/webgl/TileLayer.js), which in turn inherits from WebGLLayerRenderer (src/ol/renderer/webgl/Layer.js). The WebGLLayerRenderer constructor creates a new WebGLHelper (src/ol/webgl/Helper.js), which actually creates and manages the WebGL context. Thus, each WebGLTileLayer ends up with its own context. To address the bug, the logic in createRenderer and the constructors of the renderer/helper classes must be modified so that multiple tile layers can share the same WebGL context (i.e., a shared WebGLHelper instance) for a given map. These classes and methods are directly responsible for the context allocation and are therefore central to the bug.",
+        "bug_scenario": "The bug scenario involves excessive creation of WebGL contexts in OpenLayers when multiple WebGL TileLayers are used. Each WebGLTileLayer currently creates its own WebGL context (via its renderer/helper), and browsers limit the number of simultaneous WebGL contexts (typically 16). This can cause the application to break or misbehave when the limit is reached. The proposal is to make all WebGL TileLayers on the same map share a single WebGL context, instead of each creating their own."
+    }
+}

@@ -1,0 +1,27 @@
+diff --git a/lib/linter/code-path-analysis/code-path-state.js b/lib/linter/code-path-analysis/code-path-state.js
+index dcd24691a..810e9e8a0 100644
+--- a/lib/linter/code-path-analysis/code-path-state.js
++++ b/lib/linter/code-path-analysis/code-path-state.js
+@@ -1140,6 +1140,22 @@ class CodePathState {
+                     return context;
+                 }
+ 
++                // Special handling for nullish coalescing with logical expressions
++                if (context.kind === "??") {
++                    // If the left side is a logical expression, merge the short-circuit path
++                    // (false for &&, true for ||) into qqForkContext so that
++                    // (a && b) ?? c allows a path from a (false) directly to c.
++                    if (context.upper && (context.upper.kind === "&&" || context.upper.kind === "||")) {
++                        if (context.upper.kind === "&&") {
++                            // Merge false path of && into qqForkContext
++                            context.qqForkContext.addAll(context.upper.falseForkContext);
++                        } else if (context.upper.kind === "||") {
++                            // Merge true path of || into qqForkContext
++                            context.qqForkContext.addAll(context.upper.trueForkContext);
++                        }
++                    }
++                }
++
+                 break;
+ 
+             case "test":

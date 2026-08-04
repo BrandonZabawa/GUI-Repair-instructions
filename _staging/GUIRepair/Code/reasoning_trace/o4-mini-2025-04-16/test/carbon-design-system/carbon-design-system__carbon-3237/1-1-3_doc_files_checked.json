@@ -1,0 +1,13 @@
+{
+    "1": {
+        "documents": [
+            "Modal/index.js",
+            "Modal/Modal.js",
+            "ModalWrapper/index.js",
+            "ModalWrapper/ModalWrapper.js",
+            "ComposedModal/index.js"
+        ],
+        "explanation": "To understand and reproduce this issue you need to trace both the modal\u2019s visual overlay/CSS and its wrapper logic:  \n1. Modal/index.js & Modal/Modal.js define the core modal markup and CSS class names (including any overflow/scroll\u2010blocking styles in _modal.scss).  \n2. Modal/_modal.scss holds the styles that should disable background scrolling (e.g. setting overflow: hidden on <body> or backdrop).  \n3. ModalWrapper/index.js & ModalWrapper/ModalWrapper.js contain the logic that mounts/unmounts the modal in the DOM and should toggle the \u2018modal-open\u2019 class or prevent body scrolling when active.  \n4. ComposedModal/index.js is the React wrapper that composes Modal + ModalWrapper for the React package; it passes props/events down and is how a React consumer opens the modal.  \nExamining these files will show where scroll\u2010locking should occur (but currently does not), helping you modify or patch the implementation to disable background scrolling when the modal is open.",
+        "bug_scenario": "In the provided GIF the user clicks the \u201cShow modal\u201d button to open a Transactional (aka Passive) modal, but once the overlay is visible the page behind it still scrolls. In other words, the backdrop does not prevent body (or parent\u2010element) scrolling when the modal is open\u2014exactly the opposite of the behavior many modal implementations (e.g. Bootstrap) enforce by toggling a \u201cmodal-open\u201d class on the <body>. The bug is that scroll events pass through the Carbon modal overlay, allowing the background content to move while the modal is visible."
+    }
+}

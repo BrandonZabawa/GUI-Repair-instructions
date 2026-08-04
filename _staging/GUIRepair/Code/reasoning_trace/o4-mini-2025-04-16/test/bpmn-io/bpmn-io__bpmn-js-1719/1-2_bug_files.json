@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js",
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js",
+            "lib/features/modeling/behavior/RemoveEmbeddedLabelBoundsBehavior.js",
+            "lib/draw/TextRenderer.js",
+            "lib/draw/BpmnRenderer.js"
+        ],
+        "explanation": "\n\u2022 ToggleElementCollapseBehaviour.js: This is the core handler invoked when a subprocess is collapsed or expanded. It should mark child elements (and their labels) hidden on collapse, but in the current implementation labels are not being flagged for hiding or clipping.\n\n\u2022 SubProcessStartEventBehavior.js: Special logic for start events inside collapsed subprocesses lives here. It positions and might hide the event\u2019s graphics, but the associated label isn\u2019t correctly suppressed.\n\n\u2022 RemoveEmbeddedLabelBoundsBehavior.js: This behavior cleans up label bounds when elements are removed or collapsed. It should ensure embedded labels are removed or clipped on collapse, but currently it leaves them visible.\n\n\u2022 TextRenderer.js: The text renderer draws all labels on the canvas. It needs to skip rendering labels whose parent element is collapsed or hidden, but doesn\u2019t yet perform this check for embedded labels in collapsed subprocesses.\n\n\u2022 BpmnRenderer.js: This centrally orchestrates rendering of BPMN shapes and labels. It should include logic to omit or clip labels for children of collapsed subprocesses but currently always renders them regardless of parent collapse state.",
+        "bug_scenario": "When you collapse a subprocess that contains a start event, a task and an end event \u2014 all of which have visible labels \u2014 the labels inside the subprocess remain visible (and in the case of the start event they even \u201cjump\u201d far outside the collapsed box) instead of being hidden. This only happens when you click through the steps (append elements, convert to subprocess, expand, add child elements and labels, then collapse). Import / export works fine; the renderer simply fails to hide or clip the embedded labels on collapse."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js",
+            "lib/features/modeling/behavior/SubProcessPlaneBehavior.js",
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js",
+            "lib/draw/TextRenderer.js",
+            "lib/draw/BpmnRenderer.js"
+        ],
+        "explanation": "\u2022 ToggleElementCollapseBehaviour.js is responsible for actually collapsing and expanding subprocesses. It must hide or unhide the inner elements (and their labels) when the subprocess is toggled but currently leaves labels visible.\n\u2022 SubProcessPlaneBehavior.js sets up the clipping plane for the contents of an expanded subprocess; on collapse it should disable or remove that plane so that inner shapes (including their labels) are not shown, but it does not affect text.\n\u2022 SubProcessStartEventBehavior.js repositions start events when a subprocess collapses or expands, and its logic currently mis-calculates the label position when the subprocess is collapsed.\n\u2022 TextRenderer.js is responsible for drawing all text labels on the diagram.  It does not currently check whether its labelTarget (the parent shape) is hidden or clipped by a collapsed subprocess; it needs to respect the subprocess\u2019s collapsed state.\n\u2022 BpmnRenderer.js orchestrates how shapes and their labels are drawn.  It currently always renders the label layer for subprocess children even when the subprocess is collapsed; it needs to detect and skip labels of hidden children.",
+        "bug_scenario": "When you create a subprocess, add a start event, a task and an end event inside, give each a label, and then collapse the subprocess by clicking it through the context pad, the labels of the contained elements remain visible (even though the shapes themselves are hidden) and\u2014in the case of the start event\u2014its label is displaced far outside of the collapsed subprocess.  In import/export the diagram is correct, but the live toggle-collapse action fails to hide or clip the embedded labels."
+    }
+}

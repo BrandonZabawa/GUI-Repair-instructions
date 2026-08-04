@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "core/config/constants.js",
+            "lib/emulation.js",
+            "report/generator/report-generator.js",
+            "report/renderer/topbar-features.js",
+            "report/renderer/details-renderer.js"
+        ],
+        "explanation": "The label 'Emulated Moto G4' comes from logic that determines how the device context is described in the report. This logic involves (1) how device settings are interpreted (likely in core/config/constants.js and lib/emulation.js), (2) how the effective device context is stored on the LHR (Lighthouse Result) object and conveyed to the report generator (report/generator/report-generator.js), and (3) where that information is rendered in the report UI (report/renderer/topbar-features.js and possibly report/renderer/details-renderer.js). Fixing this will require correctly distinguishing between emulated and physical device runs (using CLI flags such as --screenEmulation.disabled and --no-emulatedUserAgent), and updating the relevant UI rendering to reflect real device usage if emulation is off.",
+        "bug_scenario": "When running Lighthouse on a physical mobile device (Moto Power G), the generated report incorrectly states 'Emulated Moto G4 with Lighthouse 9.6.8' instead of indicating that the test was run on a real device. The user disabled emulation and user agent overrides, but the summary still labels it as emulated. The screenshot confirms that the report UI displays this misleading information."
+    },
+    "2": {
+        "bug_files": [
+            "core/gather/driver/environment.js",
+            "core/config/constants.js",
+            "report/generator/report-generator.js",
+            "report/renderer/report-renderer.js",
+            "report/renderer/components.js"
+        ],
+        "explanation": "The report incorrectly displays an 'Emulated Moto G4' label in the summary, regardless of whether the audit was run on a real device or with emulation, as evident from the bug report and the UI image. The logic that generates and renders the environment summary for the report draws from metadata about the device and environment, which is computed during the gather and run phases and then used in the report generation and rendering pipeline. \n\n- core/gather/driver/environment.js: This file is likely responsible for collecting metadata on the test environment (which device, emulation settings, etc.). If it does not properly detect 'real device' scenarios, that will propagate to the metadata.\n- core/config/constants.js: Contains the device descriptors (including Moto G4, etc.), and may need to be adjusted to support a 'real device' scenario string or detection.\n- report/generator/report-generator.js: Builds the report context and environment summary that becomes part of the final report data; may need to adjust what is inserted based on options/collected artifacts.\n- report/renderer/report-renderer.js: Uses the metadata and context to render the section visible in the report, and would need to be updated to conditionally display information appropriate for real device runs, not just emulated.\n- report/renderer/components.js: Handles chunks/components of the summary header (like the device line), so will need to support and display the correct label for physical vs emulated devices.\n\nThe bug will involve changes across both the gathering/metadata phase and the rendering/reporting phase to ensure real device runs show the correct descriptive label.",
+        "bug_scenario": "The bug occurs when running Lighthouse with physical device options (like --screenEmulation.disabled and --no-emulatedUserAgent), but the resulting report still displays 'Emulated Moto G4 with Lighthouse 9.6.8' instead of mentioning that it was run on a real/physical device. The report metadata doesn't adapt based on the actual device context, leading to misinformation in the summary header."
+    }
+}

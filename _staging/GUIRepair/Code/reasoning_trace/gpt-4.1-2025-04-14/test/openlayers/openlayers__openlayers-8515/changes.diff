@@ -1,0 +1,54 @@
+diff --git a/src/ol/interaction/Select.js b/src/ol/interaction/Select.js
+index 4c123fa154..460ec24d26 100644
+--- a/src/ol/interaction/Select.js
++++ b/src/ol/interaction/Select.js
+@@ -94,6 +94,7 @@ const SelectEventType = {
+  * @property {number} [hitTolerance=0] Hit-detection tolerance. Pixels inside
+  * the radius around the given position will be checked for features. This only
+  * works for the canvas renderer and not for WebGL.
++ * @property {number} [zIndex] Z-index to set for the select overlay layer. Higher values render above other layers.
+  */
+ 
+ 
+@@ -217,7 +218,8 @@ class Select extends Interaction {
+       style: options.style ? options.style :
+         getDefaultStyleFunction(),
+       updateWhileAnimating: true,
+-      updateWhileInteracting: true
++      updateWhileInteracting: true,
++      zIndex: options.zIndex !== undefined ? options.zIndex : undefined
+     });
+ 
+     /**
+diff --git a/src/ol/layer/Layer.js b/src/ol/layer/Layer.js
+index 9d361818f1..08f4441e99 100644
+--- a/src/ol/layer/Layer.js
++++ b/src/ol/layer/Layer.js
+@@ -188,13 +188,13 @@ class Layer extends BaseLayer {
+       this.mapRenderKey_ = null;
+     }
+     if (map) {
+-      this.mapPrecomposeKey_ = listen(map, RenderEventType.PRECOMPOSE, function(evt) {
+-        const layerState = this.getLayerState();
+-        layerState.managed = false;
+-        layerState.zIndex = Infinity;
+-        evt.frameState.layerStatesArray.push(layerState);
+-        evt.frameState.layerStates[getUid(this)] = layerState;
+-      }, this);
++this.mapPrecomposeKey_ = listen(map, RenderEventType.PRECOMPOSE, function(evt) {
++const layerState = this.getLayerState();
++layerState.managed = false;
++// Use the zIndex from the layer options instead of setting it to Infinity
++evt.frameState.layerStatesArray.push(layerState);
++evt.frameState.layerStates[getUid(this)] = layerState;
++}, this);
+       this.mapRenderKey_ = listen(this, EventType.CHANGE, map.render, map);
+       this.changed();
+     }
+@@ -226,4 +226,4 @@ export function visibleAtResolution(layerState, resolution) {
+ }
+ 
+ 
+-export default Layer;
++export default Layer;
+\ No newline at end of file

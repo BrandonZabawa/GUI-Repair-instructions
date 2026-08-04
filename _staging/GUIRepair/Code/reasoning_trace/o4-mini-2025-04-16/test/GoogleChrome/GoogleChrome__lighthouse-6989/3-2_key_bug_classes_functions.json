@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer.render",
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer.renderClump",
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer.populateAuditValues"
+        ],
+        "explanation": "All of the UI logic for grouping and rendering passed audits lives in CategoryRenderer. \n\n\u2022 CategoryRenderer.render is responsible for creating each top-level clump (failed, manual, passed, notApplicable). It must be augmented so that, immediately after appending the \u201cpassed\u201d clump, it inspects those passed audits for any warnings and injects a new DOM block with class `.lh-warnings` containing the consolidated warning header and items.\n\n\u2022 CategoryRenderer.renderClump builds the actual passed-audits clump. It can detect when clumpId === 'passed' and either append a warnings subsection internally or expose a hook point so that render() can insert the warnings block outside of the clump.\n\n\u2022 CategoryRenderer.populateAuditValues currently renders warnings inline on individual audits. While this method already knows how to build a `.lh-warnings` element under an audit title, it does not yet support gathering warnings across all passed audits into one consolidated block. We need to reuse its logic (or extract a helper) to render the per-audit warning list as one block after the passed list.\n\nBy updating these methods, we ensure that when any passed audit has a non-empty `result.warnings` array, a single \u201cWarnings:\u201d block appears immediately after the passed audits, satisfying the new test in category-renderer-warnings-test.js.",
+        "bug_scenario": "In the Lighthouse HTML report\u2019s \u201cPassed audits\u201d section there is no consolidated \u201cWarnings:\u201d box after the list of passing audits. When passed audits include warnings, we expect a single styled block (with the heading \u201cWarnings:\u201d and a nested bullet list of all warning messages) immediately after the collapsed \u201cPassed audits\u201d clump. The screenshot shows the desired orange\u2010bordered box listing each warning under a common \u201cWarnings:\u201d heading."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer.render",
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer.renderClump",
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer.populateAuditValues"
+        ],
+        "explanation": "All the HTML for grouping and rendering audits lives in CategoryRenderer. populateAuditValues is where individual audit warnings are currently rendered inline, but the requirement is to collect warnings from all passed audits and render them as a consolidated block immediately after the passed-clump. The render method orchestrates clump creation (including passed audits), and renderClump produces each clump\u2019s DOM. To implement the new warnings block, render (and/or renderClump) must be updated to detect any warnings on the passed audits, aggregate them, and append a dedicated .lh-warnings element after the passed-audits clump. populateAuditValues may still be used to extract per-audit warnings, but the new feature lives in render/renderClump.",
+        "bug_scenario": "In the Lighthouse HTML report\u2019s \u201cPassed audits\u201d section, audits that passed but emitted warnings aren\u2019t surfaced at all. The expected behavior (shown in the screenshot) is that immediately after the collapsed \u201cPassed audits\u201d list there\u2019s a styled \u201cWarnings:\u201d box with a nested bullet list of all warning messages from those passed audits."
+    }
+}

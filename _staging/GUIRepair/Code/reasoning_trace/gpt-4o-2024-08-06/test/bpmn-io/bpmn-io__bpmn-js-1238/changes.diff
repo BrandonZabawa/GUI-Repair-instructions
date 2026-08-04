@@ -1,0 +1,106 @@
+diff --git a/lib/features/modeling/BpmnUpdater.js b/lib/features/modeling/BpmnUpdater.js
+index 28d24076..6ff9cddd 100644
+--- a/lib/features/modeling/BpmnUpdater.js
++++ b/lib/features/modeling/BpmnUpdater.js
+@@ -561,9 +561,13 @@ BpmnUpdater.prototype.updateSemanticParent = function(businessObject, newParent,
+     containment = 'dataOutputAssociations';
+   } else
+ 
+-  if (is(businessObject, 'bpmn:DataInputAssociation')) {
+-    containment = 'dataInputAssociations';
+-  }
++if (is(businessObject, 'bpmn:DataInputAssociation')) {
++containment = 'dataInputAssociations';
++} else
++
++if (is(businessObject, 'bpmn:Association')) {
++containment = 'associations';
++}
+ 
+   if (!containment) {
+     throw new Error(translate(
+@@ -708,4 +712,4 @@ function ifBpmn(fn) {
+       fn(event);
+     }
+   };
+-}
++}
+\ No newline at end of file
+diff --git a/lib/features/modeling/cmd/UpdateSemanticParentHandler.js b/lib/features/modeling/cmd/UpdateSemanticParentHandler.js
+index 1c6efc40..7dbccb9c 100644
+--- a/lib/features/modeling/cmd/UpdateSemanticParentHandler.js
++++ b/lib/features/modeling/cmd/UpdateSemanticParentHandler.js
+@@ -1,34 +1,39 @@
+-export default function UpdateSemanticParentHandler(bpmnUpdater) {
+-  this._bpmnUpdater = bpmnUpdater;
+-}
+-
+-UpdateSemanticParentHandler.$inject = [ 'bpmnUpdater' ];
+-
+-
+-UpdateSemanticParentHandler.prototype.execute = function(context) {
+-  var dataStoreBo = context.dataStoreBo,
+-      newSemanticParent = context.newSemanticParent,
+-      newDiParent = context.newDiParent;
+-
+-  context.oldSemanticParent = dataStoreBo.$parent;
+-  context.oldDiParent = dataStoreBo.di.$parent;
+-
+-  // update semantic parent
+-  this._bpmnUpdater.updateSemanticParent(dataStoreBo, newSemanticParent);
+-
+-  // update DI parent
+-  this._bpmnUpdater.updateDiParent(dataStoreBo.di, newDiParent);
+-};
+-
+-UpdateSemanticParentHandler.prototype.revert = function(context) {
+-  var dataStoreBo = context.dataStoreBo,
+-      oldSemanticParent = context.oldSemanticParent,
+-      oldDiParent = context.oldDiParent;
+-
+-  // update semantic parent
+-  this._bpmnUpdater.updateSemanticParent(dataStoreBo, oldSemanticParent);
+-
+-  // update DI parent
+-  this._bpmnUpdater.updateDiParent(dataStoreBo.di, oldDiParent);
+-};
+-
++export default function UpdateSemanticParentHandler(bpmnUpdater) {
++  this._bpmnUpdater = bpmnUpdater;
++}
++
++UpdateSemanticParentHandler.$inject = [ 'bpmnUpdater' ];
++
++
++UpdateSemanticParentHandler.prototype.execute = function(context) {
++  var dataStoreBo = context.dataStoreBo,
++      newSemanticParent = context.newSemanticParent,
++      newDiParent = context.newDiParent;
++
++  context.oldSemanticParent = dataStoreBo.$parent;
++  context.oldDiParent = dataStoreBo.di.$parent;
++
++// update semantic parent
++this._bpmnUpdater.updateSemanticParent(dataStoreBo, newSemanticParent);
++
++// update DI parent
++this._bpmnUpdater.updateDiParent(dataStoreBo.di, newDiParent);
++
++// update association parents if applicable
++if (is(dataStoreBo, 'bpmn:Association')) {
++this._bpmnUpdater.updateSemanticParent(dataStoreBo.sourceRef, newSemanticParent);
++this._bpmnUpdater.updateSemanticParent(dataStoreBo.targetRef, newSemanticParent);
++}
++};
++
++UpdateSemanticParentHandler.prototype.revert = function(context) {
++  var dataStoreBo = context.dataStoreBo,
++      oldSemanticParent = context.oldSemanticParent,
++      oldDiParent = context.oldDiParent;
++
++  // update semantic parent
++  this._bpmnUpdater.updateSemanticParent(dataStoreBo, oldSemanticParent);
++
++  // update DI parent
++  this._bpmnUpdater.updateDiParent(dataStoreBo.di, oldDiParent);
++};

@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-mermaid.js",
+            "components/index.js",
+            "dependencies.js",
+            "plugins/autoloader/prism-autoloader.js",
+            "components.js",
+            "gulpfile/paths.js"
+        ],
+        "explanation": "\u2022 components/prism-mermaid.js \u2013 this is the new file you must create to define the Mermaid grammar (keywords, punctuation, tokens, etc.), following the pattern of every other prism-*.js file in components/.  \n\u2022 components/index.js \u2013 Prism uses this manifest to know which language definitions to load by default; you have to add an import/require for \"./prism-mermaid\" so it becomes part of the build.  \n\u2022 dependencies.js \u2013 lists language dependencies and load order; even if Mermaid has no dependencies you should add an entry like `\"mermaid\": []` so the autoloader and build tools recognize it.  \n\u2022 plugins/autoloader/prism-autoloader.js \u2013 the autoloader maps language names and file names; you need to add a mapping for `\"mermaid\": \"components/prism-mermaid\"` so that when someone writes ```` ```mermaid ```` the plugin will fetch the right script.  \n\u2022 components.js \u2013 this root file collects all language definitions for the site\u2019s language chooser and documentation; you must include \u201cmermaid\u201d in its array so it appears in the UI.  \n\u2022 gulpfile/paths.js \u2013 the build pipeline glob\u2010patterns live here; ensure that prism-mermaid.js (and its .min.js) are picked up, or extend the pattern if necessary so the new files get compiled and minified in the release.",
+        "bug_scenario": "A user has added a Mermaid code block to markdown and expected Prism to recognize \u201cmermaid\u201d as a language and apply syntax highlighting, but nothing happens \u2014 Prism doesn\u2019t ship a prism-mermaid definition. The sample snippet and the rendered diagram image show a valid Mermaid graph, yet the code block remains unhighlighted because Prism has no Mermaid grammar registered."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-mermaid.js",
+            "components.js",
+            "dependencies.js",
+            "gulpfile.js",
+            "gulpfile/paths.js",
+            "gulpfile/docs.js",
+            "prism.js"
+        ],
+        "explanation": "To add Mermaid support you must:  \n1. Provide the language definition in components/prism-mermaid.js so Prism knows how to tokenize mermaid syntax.  \n2. Update components.js (the master list of languages) so the build system includes prism-mermaid.js in the bundle.  \n3. Add an entry for \"mermaid\" in dependencies.js if it relies on other Prism languages (e.g. markup or JavaScript).  \n4. Modify gulpfile.js along with gulpfile/paths.js to pick up the new file in build tasks (concatenation, minification).  \n5. Extend gulpfile/docs.js so that the documentation site will generate a page for the new Mermaid language.  \n6. Finally, update prism.js if you offer a default bundle that explicitly imports each language\u2014so mermaid ends up in the shipped core script.",
+        "bug_scenario": "Users writing Mermaid diagrams in markdown code fences (```mermaid) get no syntax\u2010highlighting and Prism does not recognize \u201cmermaid\u201d as a language. The example flowchart shown in the bug report renders correctly as a diagram, but Prism treats the code block as plain text, because there is no prism-mermaid language definition or build configuration to include it."
+    }
+}

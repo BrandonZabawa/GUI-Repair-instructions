@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/number-picker/number-picker.jsx",
+            "src/number-picker/index.jsx",
+            "src/number-picker/style.js"
+        ],
+        "explanation": "• src/number-picker/number-picker.jsx contains the core logic for parsing, validating and correcting the input value. It handles onChange and onBlur, so it’s where we must intercept over‐max values or fire onChange immediately when users type beyond the maximum.  \n• src/number-picker/index.jsx wires up props such as min, max and step and passes them into number-picker.jsx. If you add or change validation here (e.g. disallow input beyond max), this file must be updated so the behaviour propagates correctly.  \n• src/number-picker/style.js defines the input’s event handlers and styling wrappers. It often contains default property processing for onChange/onBlur; tweaking it may be necessary to hook into the input’s key events to block or normalize over‐max keystrokes.",
+        "bug_scenario": "In the NumberPicker demo, users can type arbitrarily large numbers into the quantity input—even beyond the configured maximum—without any immediate onChange event. Only when the input loses focus (onBlur) does the component “auto‐correct” the value back to the maximum. As a result, users see the input climbing into the millions while the price total remains unchanged, causing confusion. The expected behavior is to prevent typing beyond the max limit (or immediately correct/emit onChange) rather than only onBlur."
+    },
+    "2": {
+        "bug_files": [
+            "src/number-picker/number-picker.jsx",
+            "src/number-picker/index.jsx",
+            "src/number-picker/mobile/index.jsx"
+        ],
+        "explanation": "所有与 NumberPicker 行为 (输入校验、onChange/onBlur、最大最小值处理) 直接相关的逻辑都集中在 src/number-picker/** 目录下：\n\n- number-picker.jsx: 核心的受控输入逻辑，包括对用户输入、增减按钮、min/max 校验、onChange/onBlur 调用时机；这里边只在 onBlur 时做自动订正而非 onInput 阶段即时拦截。\n- index.jsx: 对外暴露组件，处理了默认 Props（step/min/max）的传递，也承载了部分边界判断，若要改为输入时就限制，这里也需配合修改。\n- mobile/index.jsx: 移动端同样复用或改写了桌面端逻辑，需要保证在输入超限时同样即时拦截。\n\n因此，这三处文件是实现 NumberPicker 边界校验和事件触发的核心，需要在这些文件中加入或调整“输入时限值拦截并触发 onChange”逻辑，以解决用户可以输入超过最大值的问题。",
+        "bug_scenario": "在下单弹层中，Quantity 使用 NumberPicker 组件。当用户手动在输入框内输入一个大于组件设定 max 值的数字时（如输入 999999），plus/minus 按钮会被禁用，但输入框依然允许用户输入超出边界的值；组件不会在输入过程中触发 onChange，直到失焦 onBlur 时才会做一次修正（将值自动纠正到 max），导致 UI 上用户看到输入框数字在输到很大时页面没有及时反馈、价格没有变动，最后一瞬间又“跳回”限制值，造成体验不一致的问题。"
+    }
+}

@@ -1,0 +1,149 @@
+diff --git a/src/js/components/DataFilters/DataFilters.js b/src/js/components/DataFilters/DataFilters.js
+index c1fa3bf5f..b2b5d732d 100644
+--- a/src/js/components/DataFilters/DataFilters.js
++++ b/src/js/components/DataFilters/DataFilters.js
+@@ -8,6 +8,7 @@ import { DataSort } from '../DataSort';
+ import { DropButton } from '../DropButton';
+ import { Header } from '../Header';
+ import { Heading } from '../Heading';
++import { Layer } from '../Layer';
+ import { DataContext } from '../../contexts/DataContext';
+ import { MessageContext } from '../../contexts/MessageContext';
+ import { DataFiltersPropTypes } from './propTypes';
+@@ -16,7 +17,7 @@ const dropProps = {
+   align: { top: 'bottom', right: 'right' },
+ };
+ 
+-export const DataFilters = ({ drop, children, heading, ...rest }) => {
++export const DataFilters = ({ drop, layer, children, heading, ...rest }) => {
+   const { clearFilters, data, messages, properties, view } =
+     useContext(DataContext);
+   const { format } = useContext(MessageContext);
+@@ -26,7 +27,7 @@ export const DataFilters = ({ drop, children, heading, ...rest }) => {
+   // on what's inside DataFilters as opposed to trying to track from the view
+   // object.
+   const [touched, setTouched] = useState({});
+-  const controlled = useMemo(() => drop, [drop]);
++  const controlled = useMemo(() => drop || layer, [drop, layer]);
+   // generate the badge value based on touched fields that have a value
+   const badge = useMemo(
+     () =>
+@@ -106,32 +107,62 @@ export const DataFilters = ({ drop, children, heading, ...rest }) => {
+     </DataForm>
+   );
+ 
+-  if (!controlled) return content;
+-
+-  // drop
+-  const control = (
+-    <DropButton
+-      aria-label={format({
+-        id: 'dataFilters.open',
+-        messages: messages?.dataFilters,
+-      })}
+-      kind="toolbar"
+-      icon={<Filter />}
+-      dropProps={dropProps}
+-      dropContent={content}
+-      badge={badge}
+-      open={showContent}
+-      onOpen={() => setShowContent(undefined)}
+-      onClose={() => setShowContent(undefined)}
+-    />
+-  );
++  if (!drop && !layer) return content;
++  
++  // drop case
++  if (drop) {
++    const control = (
++      <DropButton
++        aria-label={format({
++          id: 'dataFilters.open',
++          messages: messages?.dataFilters,
++        })}
++        kind="toolbar"
++        icon={<Filter />}
++        dropProps={dropProps}
++        dropContent={content}
++        badge={badge}
++        open={showContent}
++        onOpen={() => setShowContent(undefined)}
++        onClose={() => setShowContent(undefined)}
++      />
++    );
++    return (
++      <Box flex={false} direction="row" gap="small" {...rest}>
++        {control}
++        {clearControl}
++      </Box>
++    );
++  }
+ 
+-  return (
+-    <Box flex={false} direction="row" gap="small" {...rest}>
+-      {control}
+-      {clearControl}
+-    </Box>
+-  );
++  // layer case
++  if (layer) {
++    const control = (
++      <Button
++        aria-label={format({
++          id: 'dataFilters.open',
++          messages: messages?.dataFilters,
++        })}
++        kind="toolbar"
++        icon={<Filter />}
++        onClick={() => setShowContent(true)}
++      />
++    );
++    return (
++      <Box flex={false} direction="row" gap="small" {...rest}>
++        {control}
++        {clearControl}
++        {showContent && (
++          <Layer
++            onEsc={() => setShowContent(false)}
++            onClickOutside={() => setShowContent(false)}
++          >
++            <Box pad="medium">{content}</Box>
++          </Layer>
++        )}
++      </Box>
++    );
++  }
+ };
+ 
+ DataFilters.propTypes = DataFiltersPropTypes;
+diff --git a/src/js/components/DataFilters/index.d.ts b/src/js/components/DataFilters/index.d.ts
+index 13357dcb6..c5097ff5b 100644
+--- a/src/js/components/DataFilters/index.d.ts
++++ b/src/js/components/DataFilters/index.d.ts
+@@ -3,6 +3,7 @@ import { BoxProps } from '../Box/index';
+ 
+ export interface DataFiltersProps {
+   drop?: boolean;
++  layer?: boolean;
+   heading?: string | React.ReactNode;
+ }
+ 
+diff --git a/src/js/components/DataFilters/propTypes.js b/src/js/components/DataFilters/propTypes.js
+index 22ab3ab64..500fac3ac 100644
+--- a/src/js/components/DataFilters/propTypes.js
++++ b/src/js/components/DataFilters/propTypes.js
+@@ -2,9 +2,10 @@ import PropTypes from 'prop-types';
+ 
+ let PropType = {};
+ if (process.env.NODE_ENV !== 'production') {
+-  PropType = {
+-    drop: PropTypes.bool,
+-    heading: PropTypes.string,
+-  };
++    PropType = {
++      drop: PropTypes.bool,
++      layer: PropTypes.bool,
++      heading: PropTypes.string,
++    };
+ }
+ export const DataFiltersPropTypes = PropType;

@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Vector.js",
+            "src/ol/layer/BaseVector.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/render/canvas/ExecutorGroup.js",
+            "src/ol/render/canvas/BuilderGroup.js",
+            "src/ol/render/canvas/TextBuilder.js"
+        ],
+        "explanation": "These files implement and orchestrate the declutter feature and the drawing of vector layers with custom opacity:  \n1. src/ol/layer/Vector.js and BaseVector.js: read and propagate the declutter and opacity settings from the layer options into the rendering pipeline.  \n2. src/ol/renderer/canvas/VectorLayer.js: handles canvas-based rendering of vector layers and invokes the declutter builders and executors. A bug here can drop the draw calls when opacity changes.  \n3. src/ol/render/canvas/BuilderGroup.js: groups building instructions for geometry and labels, including the off-screen buffers used for decluttering. It currently does not account for changes in layer opacity across renders, leading to stale or suppressed buffers.  \n4. src/ol/render/canvas/TextBuilder.js: generates decluttered text and symbol placement instructions. If the BuilderGroup never re-builds when opacity changes, text never gets drawn at the new alpha.  \n5. src/ol/render/canvas/ExecutorGroup.js: executes the built instructions and composites the off-screen declutter buffer onto the main canvas with a single globalAlpha. The current logic fails to pick up updated opacity when decluttered layers are redrawn, so the compositing step is never applied at the new alpha, effectively hiding the entire layer.",
+        "bug_scenario": "When a VectorLayer is created with declutter:true and then its opacity is changed via setOpacity(), the entire layer vanishes instead of simply updating its transparency. In the vector-labels example, adding declutter:true to the points layer and calling setOpacity(0.5) after a delay causes no symbols or labels to be drawn on the map, even though the layer is still present in the layer stack."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Vector.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/webgl/VectorLayer.js"
+        ],
+        "explanation": "These three files form the core of how a VectorLayer with declutter is instantiated and drawn:\n\n\u2022 src/ol/layer/Vector.js: This is the layer class that accepts and stores the declutter option and propagates it into the renderer state. A change in opacity should mark the layer as changed so that the new opacity and declutter flag are passed through, but the declutter branch appears to be dropped when opacity is updated.\n\n\u2022 src/ol/renderer/canvas/VectorLayer.js: This is the Canvas renderer for vector layers. It has a special code path when declutter=true that collects and draws labels/shields in a second pass. Because opacity changes are applied in the standard draw routine (globalAlpha), the declutter pass is not re-applied at the new alpha, causing it to skip rendering entirely.\n\n\u2022 src/ol/renderer/webgl/VectorLayer.js: The WebGL renderer similarly needs to upload the layer\u2019s opacity uniform and declutter state into its shader pipeline. When setOpacity is called, the uniform update logic is not triggering a re-render of decluttered symbols, so the layer disappears rather than simply becoming translucent.",
+        "bug_scenario": "When a VectorLayer is created with the declutter option enabled (for example, in the vector-labels example) and then its opacity is changed at runtime via setOpacity(), the entire layer vanishes instead of simply rendering at the new opacity. In other words, decluttered vector features render normally at first, but as soon as setOpacity(0.5) (or any value) is called, the decluttering/render path quits drawing the layer."
+    }
+}

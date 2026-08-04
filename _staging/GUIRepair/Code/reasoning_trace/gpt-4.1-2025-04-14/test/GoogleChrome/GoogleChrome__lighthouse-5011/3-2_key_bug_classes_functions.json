@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains",
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains.isCritical",
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains.extractChain"
+        ],
+        "explanation": "The classification of what constitutes a 'critical request' is determined in the class CriticalRequestChains and especially the static method isCritical in lighthouse-core/gather/computed/critical-request-chains.js. This method uses network priorities and resource type to decide if a request is critical. The extractChain function builds the dependency tree of such requests. The audit logic in lighthouse-core/audits/critical-request-chains.js consumes this classification and presents the results. Any bug in misclassifying preload stylesheets as critical would require changes in how isCritical determines criticality (e.g., refining checks for rel=preload or asynchronous loading patterns), and possibly how extractChain assembles these chains. Both classes encapsulate this logic, making them key elements for bug fixing.",
+        "bug_scenario": "The bug scenario is that Lighthouse is flagging a stylesheet loaded with rel=preload and then activated via onload as part of a 'critical request chain.' This is happening even though the stylesheet is loaded asynchronously (not blocking render) and contains no CSS, meaning it should not affect layout or be considered critical. The bug is that Lighthouse may be incorrectly classifying certain preload patterns as critical requests, potentially due to the criteria it uses to determine request 'criticality.'"
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains",
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains.isCritical"
+        ],
+        "explanation": "The key logic that determines whether a resource is considered 'critical' (and thus part of a critical request chain) is in the 'isCritical' static method of the CriticalRequestChains class in 'lighthouse-core/gather/computed/critical-request-chains.js'. This function currently uses network priority as a proxy for criticality and does not special-case rel=preload patterns for stylesheets that are only applied after load. The 'CriticalRequestChains' class in both files coordinates the audit logic and the computation of which requests are critical, so changes to resource classification and the handling of 'rel=preload' would need to be made in these locations. The bug is rooted in not distinguishing between truly render-blocking resources and those that are asynchronously applied, like preloaded stylesheets, leading to false positives in the audit.",
+        "bug_scenario": "The bug scenario involves Lighthouse's audit incorrectly flagging a stylesheet loaded with rel=preload (and later switched to rel=stylesheet) as part of a 'critical request chain'. The user expects this pattern (preloading a stylesheet and applying it after load) to not be considered render-blocking, but Lighthouse still marks it as a high-priority critical request, even when the stylesheet contains no CSS and does not affect rendering. The screenshot shows that Lighthouse reports a critical request chain for the stylesheet, noting its long loading time and size, which is misleading for this use case."
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/modeling/Modeling.js",
+            "lib/features/context-pad/ContextPadProvider.js",
+            "lib/modeling/behavior/RemoveElementBehavior.js"
+        ],
+        "explanation": "- lib/features/label-editing/LabelEditingProvider.js: The stacktrace points to this file (line 411: update), indicating the direct editing feature is centrally involved in the bug. The issue likely stems from an attempt to update a label after its element is removed.\n- lib/features/label-editing/cmd/UpdateLabelHandler.js: Contains the command handler for updating labels; may require adjustments to properly handle or abort updates when the element is concurrently deleted.\n- lib/features/modeling/Modeling.js: The stacktrace links updateLabel logic here (line 64: updateLabel), indicating that the modeling layer's update command is where the error is triggered.\n- lib/features/context-pad/ContextPadProvider.js: This file provides the context pad logic (trash icon interaction seen in the image), which is used for element deletion while also possibly interacting with the label editing state.\n- lib/modeling/behavior/RemoveElementBehavior.js: Responsible for the behavior when an element is removed, relevant because deletion needs to safely coordinate with direct label editing states to prevent such errors. Other supporting behaviors for element removal may also need review.",
+        "bug_scenario": "The bug occurs when an element is deleted from the BPMN diagram while direct editing of its label is active (e.g., by removing an element via the context pad while the label is still being edited). This triggers an 'illegal invocation' error during the command execution or revert phase, specifically related to the element.updateLabel action. The bug is confirmed visually in the attached scenario image, where the user is about to delete a selected element (highlighted in blue) via the context pad trash icon while label editing is likely still active. This causes the diagram editor to crash with an exception traceable to updateLabel logic."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/modeling/Modeling.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/context-pad/ContextPadProvider.js",
+            "lib/features/modeling/behavior/RemoveElementBehavior.js"
+        ],
+        "explanation": "The error trace references action 'element.updateLabel' and the implicated files from the stack are LabelEditingProvider.js (where label editing is triggered and completed), Modeling.js (which provides the updateLabel logic), and UpdateLabelHandler.js (the command for label changes). The context pad (ContextPadProvider.js) is responsible for handling the direct delete action that causes the bug. Additionally, removal of elements and any hooks related to element deletion are likely implemented in RemoveElementBehavior.js, which would be responsible for handling or aborting ongoing interactions like direct editing on element removal. These files are all central to the user's interactions (editing and deleting elements) that collide to produce this bug.",
+        "bug_scenario": "The bug occurs when a user activates direct editing on an element (e.g., starts to edit a label or name) and then deletes that element via the context pad before finishing editing. This triggers an 'illegal invocation' exception: 'Error: illegal invocation in <execute> or <revert> phase (action: element.updateLabel)', likely because the system attempts to update or access a now-removed DOM element or model entity during an ongoing edit session, causing the command stack or direct editing routines to fail."
+    }
+}

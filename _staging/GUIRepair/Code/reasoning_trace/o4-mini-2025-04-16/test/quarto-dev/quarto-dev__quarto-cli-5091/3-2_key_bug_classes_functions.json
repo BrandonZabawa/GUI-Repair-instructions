@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/quarto-finalize/mediabag.lua//mediabag"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-finalize/mediabag.lua//mediabag.Image"
+        ],
+        "explanation": "The root of the failure is in the mediabag.lua filter. The mediabag() constructor defines an Image handler that intercepts every image (el.src), calls pandoc.mediabag.lookup on that URL, and\u2014if it returns contents\u2014writes the file into mediabag-dir using the raw URL as a file path. In this nonstandard-URL case, the URL is percent-encoded and includes \u201chttps://\u201d, so the join and write produce an invalid filename. Pandoc then can\u2019t load the file. Fixing this requires updating mediabag.lua (specifically the mediabag() function and its Image method) to recognize and bypass external or percent-encoded URLs rather than treating them as mediabag entries.",
+        "bug_scenario": "When rendering a Quarto document to PDF, an externally-fetched image URL (with percent-encoding) is being treated as a mediabag entry. The mediabag filter looks up the URL, writes it out under a path containing the literal URL (including \u201chttps://\u2026\u201d), then Pandoc fails to find/load that file, producing \u201cUnable to load picture or PDF file 'badurl_files/mediabag/https://bucket.jpeg'.\u201d"
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/quarto-finalize/mediabag.lua//mediabag",
+            "src/resources/filters/quarto-finalize/mediabag.lua//mediabag.Image"
+        ],
+        "explanation": "The mediabag.lua filter is responsible for intercepting image elements and writing their contents into the mediabag directory for LaTeX to include. In its Image handler it only processes elements that already exist in the pandoc mediabag (i.e. previously bundled media), but it does not handle remote HTTP(S) URLs. As a result, pandoc.mediabag.lookup(el.src) returns nil, so the filter never downloads or writes the file, and el.src remains a URL with illegal characters in a filename. Fixing the bug requires updating this Image function (or the enclosing mediabag function) to detect and fetch remote URLs, write them to disk, and rewrite el.src appropriately.",
+        "bug_scenario": "When rendering a Quarto document to PDF, an image with a non-standard remote URL (a Substack CDN fetch wrapper around an S3 URL) fails to render. The LaTeX engine can't load the image because the Lua filter leaves the src pointing at the literal URL (with \u201chttps://\u201d in the filename) rather than downloading it and writing it to the mediabag directory. You see an error about \u201cUnable to load picture or PDF file 'badurl_files/mediabag/https://bucket.jpeg'.\u201d"
+    }
+}

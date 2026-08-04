@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "1. src/ol/render/canvas/Executor.js: The executor uses context.setTransform to position and rotate labels, which overrides any existing translations applied by the VectorLayerRenderer for the spyglass. Rotated text draws at its own transform origin rather than within the translated clip region.\n2. src/ol/render/canvas/TextBuilder.js: The text builder emits drawing instructions for characters without incorporating the additional translate offset used for clipped/translated rendering, so the rotation path calculations are anchored to the original coordinate system.\n3. src/ol/renderer/canvas/VectorLayer.js: This renderer applies the clip and then translates the canvas for the spyglass. Because Executor.resetTransform wipes out that translation, the rotated text never inherits the spyglass offset. The fix is to preserve or reapply the spyglass translation when drawing rotated text (e.g., by multiplying the existing transform instead of resetting it).",
+        "bug_scenario": "A custom \"spyglass\" view shows hidden vector layers in a blue-outlined area by clipping and translating the canvas above and to the right of the cursor. Unrotated text styles (blue \u201c1\u201d and red \u201c2\u201d in the first two images) respect the clipping and translation and render at the correct spyglass location over Miami. However, when a text style has a nonzero rotation (green \u201c3\u201d in the third image), it ignores the spyglass translation and draws at its original map position outside the red/blue boxes. The rotated text should move with the translated, clipped context just like the unrotated text."
+    }
+}

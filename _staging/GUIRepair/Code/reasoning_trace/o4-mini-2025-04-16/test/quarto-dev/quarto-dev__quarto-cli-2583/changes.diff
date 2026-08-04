@@ -1,0 +1,39 @@
+diff --git a/src/resources/filters/quarto-pre/table-captions.lua b/src/resources/filters/quarto-pre/table-captions.lua
+index 7ee3a3c11..dbb60e59f 100644
+--- a/src/resources/filters/quarto-pre/table-captions.lua
++++ b/src/resources/filters/quarto-pre/table-captions.lua
+@@ -155,7 +155,7 @@ function applyTableCaptions(el, tblCaptions, tblLabels)
+         -- (1) if there is no caption at all then populate it from tblCaptions[idx]
+         -- (assuming there is one, might not be in case of empty subcaps)
+         -- (2) Append the tblLabels[idx] to whatever caption is there
+-        if hasRawHtmlTable(raw) then
++        elseif hasRawHtmlTable(raw) then
+           -- html table patterns
+           local tablePattern = htmlTablePattern()
+           local captionPattern = htmlTableCaptionPattern()
+@@ -164,15 +164,23 @@ function applyTableCaptions(el, tblCaptions, tblLabels)
+           if not beginCaption then
+             raw.text = raw.text:gsub(tablePattern, "%1" .. "<caption></caption>" .. "%2%3", 1)
+           end
+-          -- apply table caption and label
++          -- apply table caption and label, with inline‐Markdown → HTML post‐processing
+           local beginCaption, captionText, endCaption = raw.text:match(captionPattern)
+           if #tblCaptions[idx] > 0 then
++            -- first turn the AST inlines into plain markdown text...
+             captionText = pandoc.utils.stringify(tblCaptions[idx])
++            -- ...then hack out common inline styles:
++            --  ^superscript^ → <sup>superscript</sup>
++            captionText = captionText:gsub("%^(.-)%^", "<sup>%1</sup>")
++            --  _italics_     → <em>italics</em>
++            captionText = captionText:gsub("_(.-)_",   "<em>%1</em>")
+           end
+           if #tblLabels[idx] > 0 then
+             captionText = captionText .. " {#" .. tblLabels[idx] .. "}"
+           end
+-          raw.text = raw.text:gsub(captionPattern, "%1" .. captionText:gsub("%%", "%%%%") .. "%3", 1)
++          raw.text = raw.text:gsub(captionPattern,
++                                   "%1" .. captionText:gsub("%%", "%%%%") .. "%3",
++                                   1)
+         elseif hasRawLatexTable(raw) then
+           for i,pattern in ipairs(_quarto.patterns.latexTablePatterns) do
+             if raw.text:match(pattern) then

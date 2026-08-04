@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/RadioButton/RadioButton.js//RadioButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/RadioButton/RadioButton.js//RadioButton (forwardRef function)",
+            "packages/react/src/components/RadioButton/RadioButton.stories.js//Playground"
+        ],
+        "explanation": "1. RadioButton.js \u2013 the RadioButton component itself must be updated to accept a new readOnly boolean prop in its signature and propTypes, apply a distinct CSS class when readOnly is true (e.g. `${prefix}--radio-button--readonly` on the wrapper or input), and prevent interactions (e.g. treat readOnly similarly to disabled but with separate styling).\n2. RadioButton.stories.js \u2013 the Playground story must expose the readOnly prop in its argTypes so developers can toggle and preview the read-only state in Storybook, and a default story for readOnly should be added for copy-and-paste.\n\nBy focusing on the component and its stories, you satisfy the acceptance criteria: implement the prop, add styling, enable playground control, and prepare for RTL and unit tests. Tests will then be updated in __tests__ and e2e files to check the readOnly class and keyboard/navigation behavior, but the core fix lives in these two files.",
+        "bug_scenario": "The user has added a new \u201creadOnly\u201d prop to the RadioButton component in their app and expects the component to render in a non-interactive, read-only style (per their design mockups). However, the existing RadioButton implementation does not handle a readOnly prop specially\u2014it simply spreads any extra props onto the <input>, and since native radio inputs don\u2019t support a readonly attribute, the button remains fully interactive and unstyled. To satisfy the acceptance criteria (new read-only prop, visual styling, storybook control, tests), several files will need updates."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/RadioButton/RadioButton.js//RadioButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/RadioButton/RadioButton.js//handleOnChange",
+            "packages/react/src/components/RadioButton/RadioButton.js//wrapperClasses",
+            "packages/react/src/components/RadioButton/RadioButton.stories.js//Playground",
+            "packages/react/src/components/RadioButton/__tests__/RadioButton-test.js//(new it test for readOnly)",
+            "e2e/components/RadioButton/RadioButton-test.e2e.js//(new test for read-only @vrt)"
+        ],
+        "explanation": "1. RadioButton component (RadioButton.js) needs to explicitly handle a readOnly prop: we must add it to propTypes, include a CSS class (e.g. `${prefix}--radio-button--readonly`) in wrapperClasses, prevent state changes in handleOnChange when readOnly is true, and forward the attribute to the <input>. 2. wrapperClasses variable is where styling classifications live, so it must include the read-only modifier. 3. The Playground story in RadioButton.stories.js must be updated to expose the readOnly control and include default/read-only examples. 4. The unit test file RadioButton-test.js must gain a new `it('should render as read-only', \u2026)` test to verify the class name, attribute, and blocking of onChange when readOnly is set. 5. The e2e visual regression test (RadioButton-test.e2e.js) needs a new snapshotStory/test block for the read-only story to catch any styling regressions visually.",
+        "bug_scenario": "The images and repro code show that when a consumer passes the readOnly prop into <RadioButton>, nothing changes visually or functionally\u2014instead of rendering a non-interactive, \u201cread-only\u201d appearance (per the design spec\u2019s color, spacing, and structure for a read-only radio), the component still behaves and looks like a normal, editable radio button. The spec images demonstrate the exact disabled\u2010look styling and vertical/horizontal spacing that should apply to read-only variants, but the implementation in RadioButton.js doesn\u2019t handle readOnly, the stories don\u2019t expose the new prop, and neither the unit tests nor the visual regression tests cover it."
+    }
+}

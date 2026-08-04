@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "themes/scss/modules/g90.scss",
+            "themes/scss/modules/g100.scss",
+            "themes/src/g90.js",
+            "themes/src/g100.js"
+        ],
+        "explanation": "All of the shadow and overlay values in Carbon\u2019s components are driven by theme token definitions. In the SCSS themes modules (themes/scss/modules/g90.scss and themes/scss/modules/g100.scss) the variables for \u2018shadow-02\u2019 (used by overflow and popover menus) and \u2018overlay-ui\u2019 (used by modal backdrops) must be updated to the new RGBA values. Likewise the JavaScript theme token files (themes/src/g90.js and themes/src/g100.js) export the same shadow and overlay values for use in React and CSS-in-JS\u2014these also need to be changed so that both the SCSS pipeline and the JS theming layer apply the higher-contrast shadows and the new black 65% modal overlay on G90 and G100.",
+        "bug_scenario": "On dark themes (G90 and G100) the drop-down menus and modal overlays appear too faint. The overflow menu shadow in G90 and G100 is currently the same low-contrast value as on light themes (rgba(0,0,0,0.3)), and the modal backdrop uses #161616 at 70% opacity. The design request is to bump the overflow menu shadow to much higher opacity on dark themes (for example, G90 \u2192 rgba(0,0,0,0.7); G100 \u2192 rgba(0,0,0,0.8)) and to change the modal overlay to pure black at 65% opacity (rgba(0,0,0,0.65))."
+    },
+    "2": {
+        "bug_files": [
+            "/packages/themes/src/g90.js",
+            "/packages/themes/src/g100.js",
+            "/packages/themes/src/next/g90.js",
+            "/packages/themes/src/next/g100.js",
+            "/packages/styles/scss/components/overflow-menu/_overflow-menu.scss",
+            "/packages/styles/scss/components/modal/_modal.scss"
+        ],
+        "explanation": "1. packages/themes/src/g90.js & g100.js (and their next/ counterparts): these files define the design tokens for each dark theme, including the \"shadow-01\" (drop\u2010shadow) and overlay color tokens. Updating the opacity values here will propagate the correct box-shadow and backdrop color into all CSS builds.\n\n2. packages/styles/scss/components/overflow-menu/_overflow-menu.scss: this component\u2010level stylesheet applies the shadow values (box-shadow: var(--cds-shadows-01) or hard-coded rgba) to the OverflowMenu popup. Adjusting the fallback or variable mapping here ensures the actual CSS class uses the new, stronger opacity.\n\n3. packages/styles/scss/components/modal/_modal.scss: this file styles the full-page modal backdrop (the semi-transparent overlay behind dialogs). It currently references the token (or hard-coded) #161616@70%. Changing it to rgba(0,0,0,0.65) here will deliver the pure-black 65% overlay behind Modals in dark themes.",
+        "bug_scenario": "When Carbon\u2019s dark themes (G90 and G100) render the OverflowMenu and Modal overlay they don\u2019t have enough contrast: the OverflowMenu drop\u2010shadow is only rgba(0,0,0,0.3) (30% opacity) on both dark themes (matching light theme strength), and the built\u2010in modal backdrop is #161616 at 70% opacity. On a nearly black page background those values look washed out.\n\nThe desired fixes are:\n- Increase the dark\u2010theme OverflowMenu shadow to either 70% (G90) / 80% (G100) or both at 80% opacity.\n- Change the modal overlay backdrop from #161616 @70% to pure black (#000000) at 65% opacity.\n\nThe attached screenshots show the current vs. proposed values for both OverflowMenu and Modal overlay on G90/G100."
+    }
+}

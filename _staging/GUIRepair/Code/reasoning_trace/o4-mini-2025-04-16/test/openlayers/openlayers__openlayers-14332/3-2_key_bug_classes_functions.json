@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/TileLayer.js//CanvasTileLayerRenderer",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/TileLayer.js//renderFrame",
+            "src/ol/render/canvas/Immediate.js//setTransform",
+            "src/ol/render/canvas/Immediate.js//setContextStrokeState_"
+        ],
+        "explanation": "The bug stems from how CanvasTileLayerRenderer sets up the canvas transform for tile-layer vector rendering and how CanvasImmediateRenderer applies that transform and stroke state.  \n\n1. CanvasTileLayerRenderer.renderFrame: this is where the tile-layer context applies its \u2018forward\u2019 and \u2018inverse\u2019 pixel transforms as well as a scale transform for tile positioning.  At rotations of 90\u00b0/270\u00b0, the code does not correctly swap or normalize the X/Y scale factors, so the immediate renderer gets an incorrect transform matrix.  \n\n2. CanvasImmediateRenderer.setTransform: this function applies the transform matrix and view rotation to the 2D context.  Because the incoming matrix from renderFrame is wrong at right angles, setTransform mismatches the rotation and scale, causing strokes and text to be drawn at an incorrect size and orientation.  \n\n3. CanvasImmediateRenderer.setContextStrokeState_: after the transform is in place, this method sets ctx.lineWidth (and other stroke properties) based on the stored strokeState.  It divides by a pixelRatio derived from the transform, but when the transform\u2019s scale components are swapped or have zero components (at 90\u00b0/270\u00b0), pixelRatio becomes invalid or flipped, causing lineWidth to blow up.  \n\nFixing renderFrame to emit a correct transform at right angles, and ensuring setTransform and setContextStrokeState_ compute and apply the pixelRatio from that transform robustly, will restore consistent stroke widths, text scaling, and geometry precision across all rotation angles.",
+        "bug_scenario": "When rendering vector features into a tile layer\u2019s vector context at rotations near 90\u00b0 or 270\u00b0, stroke widths become excessively thick, text labels appear at the wrong scale, and geometry edges lose precision.  In contrast, rendering the same features via a plain vector layer\u2019s vector context remains correct at these rotations."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/TileLayer.js//CanvasTileLayerRenderer",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "CanvasTileLayerRenderer.renderFrame",
+            "CanvasImmediateRenderer.setTransform",
+            "CanvasImmediateRenderer.drawText_"
+        ],
+        "explanation": "CanvasTileLayerRenderer.renderFrame is responsible for setting the per-tile pixel transform (including rotation and scale) before any vector commands are replayed. If that matrix is computed or applied incorrectly\u2014especially when cos(rotation) == 0 at 90\u00b0/270\u00b0\u2014strokes (which use the X and Y scales) collapse to zero and text scale transforms vanish. The vector context itself is an instance of CanvasImmediateRenderer, whose setTransform method installs the transform on the 2D context, and whose drawText_ (and related drawRings_, moveToLineTo_) routines use that matrix to compute text scale and line widths. Errors in how renderFrame computes or hands over the transform, or how setTransform extracts scale components, lead directly to the broken rendering at right angles.",
+        "bug_scenario": "When using a Tile layer\u2019s vector context to render features at view rotations of about 90\u00b0 or 270\u00b0, strokes collapse (zero width), text disappears or is mis-scaled, and geometry precision degrades. The same code path on a Vector layer\u2019s vector context works correctly, so the problem lies in how the TileLayer renderer sets up and hands off its transform and how the Immediate renderer consumes that transform when drawing strokes, text, and shapes."
+    }
+}

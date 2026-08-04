@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/eslint/eslint.js//ESLint"
+        ],
+        "bug_functions": [
+            "lib/eslint/eslint.js//ESLint.loadFormatter",
+            "lib/cli.js//printResults"
+        ],
+        "explanation": "The key problem is that ESLint currently expects formatters to be synchronous, but shiki (and other advanced syntax highlighters) require asynchronous initialization. The 'ESLint' class in 'lib/eslint/eslint.js' is responsible for loading formatters via its 'loadFormatter' method, which is already an async function. However, the formatter's 'format' method is called synchronously throughout the CLI (e.g., in 'printResults' in 'lib/cli.js'), assuming it returns a string immediately. To support async formatters, both the loading and usage of the formatter must allow for the possibility that the 'format' method returns a Promise. Thus, the 'ESLint' class (for API support), its 'loadFormatter' method (for loading async formatters), and the 'printResults' function (for awaiting the format output) are the critical places to update to allow async formatter support end-to-end. No changes are needed in CLIEngine (deprecated) or in the sync index file.",
+        "bug_scenario": "A user has written a custom ESLint formatter that uses a syntax highlighter (such as shiki) which is asynchronous. ESLint currently only supports synchronous formatter functions, so async formatters cannot be used. This prevents formatters from leveraging async features (such as loading themes or grammars asynchronously), which is necessary for modern highlighting libraries. The feature request is to allow ESLint to support async formatter functions, enabling use cases like async syntax highlighting in custom formatters."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/eslint/eslint.js//ESLint"
+        ],
+        "bug_functions": [
+            "lib/eslint/eslint.js//loadFormatter"
+        ],
+        "explanation": "The key to enabling async formatters is in how formatters are loaded and called within ESLint. The class 'ESLint' in 'lib/eslint/eslint.js' is responsible for the main ESLint API, and it already exposes an async 'loadFormatter' method. However, the expected interface for formatters is currently synchronous, as the formatter's 'format' method is expected to be sync. To support async formatters, the 'loadFormatter' method and the code that calls the formatter (not shown in full in the skeleton, but implied to be in this class and method) would need to allow for the formatter to be an async function and handle its Promise. This would allow users to implement formatters that perform asynchronous operations, such as calling out to async syntax highlighters. The CLI and other usage points would also need to support this, but the core enabler is making 'loadFormatter' and subsequent formatter invocations async-aware.",
+        "bug_scenario": "The bug scenario involves a request to support asynchronous formatters in ESLint. Currently, ESLint only supports synchronous formatter functions, which prevents the use of async code (e.g., async syntax highlighters like shiki) in custom formatters. The provided image shows linting output with code highlights and inline error annotations, which a user wishes to generate using an async formatter. The inability to use async formatters blocks integration with modern async libraries for richer formatting results."
+    }
+}

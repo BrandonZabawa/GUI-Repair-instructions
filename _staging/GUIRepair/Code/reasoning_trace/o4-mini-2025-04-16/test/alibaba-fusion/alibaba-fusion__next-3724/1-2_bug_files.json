@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/transfer/index.jsx",
+            "src/transfer/view/transfer.jsx",
+            "src/transfer/view/transfer-panel.jsx",
+            "types/transfer/index.d.ts"
+        ],
+        "explanation": "\n1. src/transfer/index.jsx – This is the entry point of the Transfer component. It declares and forwards the `showSearch` and `searchProps` API. We need to adjust how it accepts and passes nested left/right props.\n2. src/transfer/view/transfer.jsx – This file composes the two transfer panels. It currently passes the same `searchProps` down to both panels unconditionally. It needs to split the prop into `searchProps.left` and `searchProps.right`, falling back to a single object if nested keys are not provided.\n3. src/transfer/view/transfer-panel.jsx – This file renders an individual panel’s search box when `showSearch` is true. It only consumes a flat `searchProps` prop. We must update it to accept side‐specific props and apply the correct config for left vs. right.\n4. types/transfer/index.d.ts – The TypeScript definitions currently type `searchProps` as a single `Object`. To support the new API, we must update the type to allow either `SearchProps` or an object of shape `{ left?: SearchProps; right?: SearchProps }`.\n\nTogether, these files define the API surface and rendering of the Transfer search boxes. They must be updated so that when users pass `searchProps.left` and `searchProps.right`, each panel independently applies its own configuration.",
+        "bug_scenario": "The user wants to control the search box props independently for the left and right panels of the Transfer component by passing an object like `searchProps={{ left: { hasClear: true }, right: { hasClear: false } }}`. In the current implementation, nested `left`/`right` configurations are not recognized: both panels share the same props (or only the top‐level searchProps is applied), so the right panel still shows the clear button or neither panel obeys the per‐side settings. The screenshot shows the left search box having a clear icon while the right one (incorrectly) still displays a clear icon when it shouldn’t."
+    },
+    "2": {
+        "bug_files": [
+            "src/transfer/index.jsx",
+            "src/transfer/view/transfer.jsx",
+            "src/transfer/view/transfer-panel.jsx",
+            "src/transfer/mobile/index.jsx",
+            "types/transfer/index.d.ts"
+        ],
+        "explanation": "1. src/transfer/index.jsx：组件入口，对外接受的 props（包括 searchProps）在这里被定义和传递，需要支持接收 { left, right } 两种子配置。\n2. src/transfer/view/transfer.jsx：负责渲染左右两个 TransferPanel，需要在这里根据 position('left'|'right') 拆解并将对应的 searchProps 子对象分别传入各自的 panel。\n3. src/transfer/view/transfer-panel.jsx：具体渲染某一面板的搜索框（Search 组件）。当前直接拿到统一的 searchProps，要改为接收并应用上游传给这边的子配置，否则不会对不同面板有差异化控制。\n4. src/transfer/mobile/index.jsx：移动端版本同样会处理 searchProps，若不支持 left/right 区分，移动端也无法分别控制左右搜索框，需要同步修改。\n5. types/transfer/index.d.ts：TypeScript 类型定义里，searchProps 目前可能仅定义为一个通用对象，也需要扩展为 { left?: SearchProps, right?: SearchProps }，并更新文档注释。",
+        "bug_scenario": "在使用 Transfer 组件时，希望通过一次性传入一个形如 { left: {...}, right: {...} } 的 searchProps，来分别控制左右两边的搜索框——比如左边可清除(hasClear: true)，右边不展示搜索框。但目前组件只识别统一的 searchProps，对左右 panel 的细分配置(left/right)直接忽略或合并处理，导致右侧仍然展示搜索框或无法应用左、右各自不同的配置。"
+    }
+}

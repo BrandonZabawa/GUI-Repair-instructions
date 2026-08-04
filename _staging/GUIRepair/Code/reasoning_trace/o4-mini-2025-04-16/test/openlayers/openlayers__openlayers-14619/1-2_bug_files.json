@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/Image.js"
+        ],
+        "explanation": "\u2022 src/ol/style/Icon.js defines the Icon class\u2019s constructor, its setScale/getScale handlers and its clone() implementation. The constructor normalizes a numeric scale into a [width, height] pair and clone() simply calls new Icon(options) using that already\u2010normalized array.  \n\u2022 src/ol/style/Image.js is the base class for all image\u2010based styles (including Icon). It handles reading the scale option from the constructor arguments and manages the internal scale representation. Together these two files are responsible for turning a single numeric scale into an array when an icon is cloned, so they need to be updated to detect and preserve the original numeric type on clone().",
+        "bug_scenario": "When you apply a numeric scale to an ol.style.Icon (e.g. .setScale(2)) and then call .clone() on that icon, the cloned icon ends up with a two\u2010element scale array ([width, height]) rather than preserving the original numeric 2. This happens because Icon#setScale normalizes any scale into width/height internally, and then clone() calls the Icon constructor which reuses that normalized array."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/Image.js"
+        ],
+        "explanation": "src/ol/style/Icon.js defines the clone() method for Icon styles and pulls all of its options (including scale) via getters. Because setScale(number) in src/ol/style/Image.js turns a single numeric scale into a two-element array internally, clone() ends up passing an array into the constructor even when the original scale was set as a number. src/ol/style/Image.js provides setScale and getScale and is responsible for converting between numeric and array scales, so both files must be updated: Icon.js to preserve the original data type when cloning, and Image.js to ensure that numeric scales remain numeric when round-tripped through clone().",
+        "bug_scenario": "When you create an ol/style/Icon, call setScale(2) (a number) on it, and then clone that style, the clone\u2019s scale is no longer the number 2 but instead an array [width, height]. Internally, setScale on the original converts a number to two separate dimensions, and clone() simply re-passes that array into the constructor, so the cloned icon ends up with a different, array-based scale."
+    }
+}

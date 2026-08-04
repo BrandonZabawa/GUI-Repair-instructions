@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLPoints.js//WebGLPointsLayer",
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLPoints.js//createRenderer",
+            "src/ol/renderer/webgl/PointsLayer.js//prepareFrameInternal",
+            "src/ol/renderer/webgl/PointsLayer.js//rebuildBuffers_",
+            "src/ol/renderer/webgl/PointsLayer.js//renderFrame"
+        ],
+        "explanation": "The projection logic for point features lives in WebGLPointsLayerRenderer, which is instantiated in WebGLPointsLayer.createRenderer. The renderer\u2019s prepareFrameInternal and rebuildBuffers_ methods compute and store the world-to-screen transform based on the current frameState projection. When useGeographic() is active, frameState.projection changes to EPSG:4326, but the existing code still applies the EPSG:3857 transform, so the buffers and final renderFrame calls draw features in the wrong coordinate space. Fixing the bug requires updating these methods (and the createRenderer setup) to read and apply frameState.projection properly, respecting the useGeographic mode.",
+        "bug_scenario": "When a map is in geographic mode (useGeographic(), EPSG:4326), points added via WebGLPointsLayer still end up rendered at Web Mercator (EPSG:3857) locations. In the sandbox example, enabling useGeographic() shifts all WebGLPointsLayer features near Africa instead of their intended geographic coordinates."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLPoints.js//WebGLPointsLayer",
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLPoints.js//createRenderer",
+            "src/ol/renderer/webgl/PointsLayer.js//prepareFrameInternal",
+            "src/ol/renderer/webgl/PointsLayer.js//rebuildBuffers_",
+            "src/ol/renderer/webgl/PointsLayer.js//renderFrame",
+            "src/ol/renderer/webgl/PointsLayer.js//renderWorlds",
+            "src/ol/renderer/webgl/worldUtil.js//getWorldParameters"
+        ],
+        "explanation": "All of the projection and buffer\u2010rebuild logic lives in WebGLPointsLayerRenderer (and the helper getWorldParameters). When useGeographic is on, frameState.projection is EPSG:4326, but the renderer\u2019s rebuildBuffers_, prepareFrameInternal, renderFrame, and renderWorlds methods\u2014and the private worldUtil.getWorldParameters they call\u2014still assume a planar WebMercator world. They never reproject feature coordinates into the active view projection nor update their transform matrices accordingly. createRenderer in WebGLPointsLayer wires up the renderer but doesn\u2019t supply any projection information. To fix this bug we must modify rebuildBuffers_ (and by extension prepareFrameInternal and renderWorlds) so that the vertex buffer generation and world loops use the correct frameState.projection (with featureProjection applied), for example by applying the proper coordinateToPixelMatrix or transform returned from the source when useGeographic is enabled.",
+        "bug_scenario": "When the map is switched to geographic mode via useGeographic() (i.e. EPSG:4326), features in a WebGLPointsLayer still end up being rendered as if the view were in Web Mercator (EPSG:3857). In the repro sandbox, enabling useGeographic plots all points off\u2010in Africa instead of at their true longitude/latitude positions. The root cause is that the WebGLPointsLayerRenderer never applies the featureProjection / geographic coordinate transform when it builds its vertex buffers and world transforms."
+    }
+}

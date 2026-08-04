@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//getCacheKey",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/layer/WebGLTile.js//handleSourceUpdate_"
+        ],
+        "explanation": "1) WebGLTileLayerRenderer (in TileLayer.js) maintains an LRUCache of TileTexture instances keyed by getCacheKey(). That key and cache are never invalidated when the layer\u2019s source is replaced or the view projection changes.  \n2) The getCacheKey() function builds a cache key from the source and tile coordinate, but omits any projection identifier or layer\u2010instance change, so tiles from an old source/projection can be looked up and reused incorrectly.  \n3) In renderFrame(), there\u2019s a comment and TODO about expiring the source cache unconditionally, but no actual call to clear or recreate the cache.  \n4) In WebGLTileLayer (in WebGLTile.js), the private handleSourceUpdate_() is intended to respond to change:source events but is empty; it should clear the renderer\u2019s tile texture cache.  \nTogether, these omissions allow stale textures to persist across source or projection changes, causing the wrong tiles to display.",
+        "bug_scenario": "After replacing the tile source via layer.setSource() or switching the map view\u2019s projection, old WebGL tile textures remain in the layer\u2019s texture cache. When you pan or zoom back, the layer continues to display tiles from the previous source or projection instead of loading fresh ones from the new source or projection."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//getCacheKey",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.reset",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.renderFrame",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.handleSourceUpdate_"
+        ],
+        "explanation": "\u2022 WebGLTileLayerRenderer (TileLayer.js) maintains its own LRUCache of TileTexture objects keyed by source and tileCoord (via getCacheKey). When setSource() or projection changes, the existing cache entries become invalid, but getCacheKey doesn\u2019t account for projection changes, so old textures are still matched and reused.\n\u2022 The renderFrame method contains a comment about expiring the source cache but never clears the renderer\u2019s own texture cache. As a result, when a tile is missing in the new source or new projection, renderFrame falls back to stale textures in the LRUCache.\n\u2022 The reset(options) method in WebGLTileLayerRenderer only updates shader uniforms and the WebGLHelper; it does not clear the texture cache, so calling reset (which is invoked when sources change) won\u2019t purge old textures.\n\u2022 In WebGLTileLayer (WebGLTile.js), handleSourceUpdate_ is the hook triggered on setSource(), but it is currently empty. It should notify the renderer to clear its texture cache (e.g., via renderer.reset() or a dedicated clearCache method).\n\nTogether, these areas need to be updated so that on source replacement or projection change the WebGLTileLayerRenderer\u2019s cache is fully cleared (or its cache keys augmented to include projection), preventing reuse of invalid textures.",
+        "bug_scenario": "After replacing the layer\u2019s tile source via setSource() or changing the map\u2019s projection, stale textures from the old source/projection remain in the WebGL texture cache. When you pan or zoom back to tiles that were already loaded, the renderer reuses these invalid textures instead of fetching or generating new ones, leading to display of tiles from the wrong source or wrong projection."
+    }
+}

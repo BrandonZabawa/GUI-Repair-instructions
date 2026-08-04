@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/TextInput/StyledTextInput.js//StyledTextInput",
+            "src/js/components/TextInput/StyledTextInput.js//plainStyle",
+            "src/js/components/Select/SelectContainer.js//render"
+        ],
+        "bug_functions": [
+            "src/js/components/Select/SelectContainer.js//onInput"
+        ],
+        "explanation": "The search input in <SelectContainer> is rendered via <TextInput type='search' />, which ultimately uses the StyledTextInput styled component in StyledTextInput.js. Safari applies a default \u201csearchfield\u201d appearance that ignores padding unless overridden with \u201c-webkit-appearance: textfield\u201d. Currently plainStyle forces \u201c-webkit-appearance: none\u201d only when plain is true, and inputStyle does not handle search inputs specially. Thus the StyledTextInput component (and its plainStyle rule) must be updated to include \u201c-webkit-appearance: textfield\u201d (or remove the none) when type='search' so that Safari will apply padding correctly. The onInput method in SelectContainer triggers this search rendering, so the render path there is also implicated.",
+        "bug_scenario": "In Safari the Select component\u2019s search input collapses to its default search\u2010field appearance, ignoring padding and looking very small. The screenshots show a tiny search box in Safari (no padding) compared to a properly padded input in Chrome."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/TextInput/StyledTextInput.js//StyledTextInput"
+        ],
+        "bug_functions": [],
+        "explanation": "The StyledTextInput definition in StyledTextInput.js is the central styled-component that controls all <input> styling for TextInput, including search inputs. Safari\u2019s default searchfield appearance strips out padding, so without explicitly setting -webkit-appearance: textfield (as was done in v1), the padding rules in inputStyle are ignored. To fix this bug, StyledTextInput must be updated to include a rule for search inputs that overrides the native appearance (e.g. adding \u201c-webkit-appearance: textfield;\u201d when props.type === 'search').",
+        "bug_scenario": "On Safari, the Select\u2019s built-in search input renders with almost no inner padding because Safari applies its native \u201csearchfield\u201d appearance, which ignores the padding rules. In v1 this was worked around by forcing -webkit-appearance: textfield on the <input type=\"search\"/>. In v2 the TextInput/StyledTextInput component doesn\u2019t override the Safari default, so the search box looks very small and cramped on Safari (see first image). In Chrome the padding is applied correctly (second image)."
+    }
+}

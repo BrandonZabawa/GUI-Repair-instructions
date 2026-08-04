@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//fixConnection",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//replaceReconnectedConnection",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateSemanticParent",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateDiParent"
+        ],
+        "explanation": "The replacement logic in ReplaceConnectionBehavior (in both fixConnection and replaceReconnectedConnection) creates a new sequence flow but never updates its semantic or DI parent to the target participant. The BPMN updater\u2019s methods (updateSemanticParent and updateDiParent) are responsible for moving elements between containers in the BPMN XML and DI model. Because these hooks aren\u2019t invoked after replacement, the new flow remains tied to the old parent, leading to incorrect rendering and modeler instability.",
+        "bug_scenario": "When you replace a message flow from Participant A to Participant B with a sequence flow, the newly created sequence flow remains inside the original participant (A) instead of moving into the target participant (B). Visually, after reconnecting the dotted message\u2010flow arrow into a loop, you expect the replacement sequence flow to live (and render) inside Participant B\u2019s swimlane, but it remains in Participant A\u2019s container (red highlight), and in some cases the modeler even crashes."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior.fixConnection",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior.replaceReconnectedConnection",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateParent",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateConnection"
+        ],
+        "bug_functions": [],
+        "explanation": "\u2022 ReplaceConnectionBehavior.fixConnection: this function creates a new connection when swapping MessageFlow <> SequenceFlow but never updates the new sequence flow\u2019s parent to the target Participant\u2019s process.  \n\u2022 ReplaceConnectionBehavior.replaceReconnectedConnection: on reconnection it builds and wires a replacement connection but again omits assigning the proper semantic/DI parent.  \n\u2022 BpmnUpdater.prototype.updateParent: responsible for rehoming BPMN elements (including connections) when their containing process or collaboration changes. Its current stub doesn\u2019t handle connections being moved across Pools/Processes after replacement.  \n\u2022 BpmnUpdater.prototype.updateConnection: meant to update the BPMN XML and DI relationship of a reconnected edge. Without implementing parent reassignment here, a new sequence flow remains in the wrong container.  \n\nTogether these routines are where the missing parent\u2010reassignment logic for newly created sequence flows must be added to ensure the element is owned by the correct Participant\u2019s Process and rendered properly.",
+        "bug_scenario": "When you replace a message flow between two Participants (A \u2192 B) with a sequence flow, the newly created sequence flow is never moved into the target Participant\u2019s Process container. Visually it remains attached to the original pool (or no pool), so it\u2019s not rendered in B\u2019s lane and may crash the modeler."
+    }
+}

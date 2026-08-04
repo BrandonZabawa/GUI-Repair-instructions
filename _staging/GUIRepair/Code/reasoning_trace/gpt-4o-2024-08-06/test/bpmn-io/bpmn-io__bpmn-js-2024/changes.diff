@@ -1,0 +1,50 @@
+diff --git a/lib/draw/BpmnRenderer.js b/lib/draw/BpmnRenderer.js
+index a344b152..0b6578e7 100644
+--- a/lib/draw/BpmnRenderer.js
++++ b/lib/draw/BpmnRenderer.js
+@@ -2247,11 +2247,16 @@ BpmnRenderer.prototype.canRender = function(element) {
+  * @return {SVGElement} mainGfx
+  */
+ BpmnRenderer.prototype.drawShape = function(parentGfx, element, attrs = {}) {
+-  var { type } = element;
++var { type } = element;
++var di = getDi(element);
+ 
+-  var handler = this._renderer(type);
++if (di && di.get('isHorizontal') === false) {
++attrs = { ...attrs, orientation: 'vertical' };
++}
+ 
+-  return handler(parentGfx, element, attrs);
++var handler = this._renderer(type);
++
++return handler(parentGfx, element, attrs);
+ };
+ 
+ /**
+diff --git a/lib/features/modeling/behavior/IsHorizontalFix.js b/lib/features/modeling/behavior/IsHorizontalFix.js
+index 68fb5e6b..1c3bf926 100644
+--- a/lib/features/modeling/behavior/IsHorizontalFix.js
++++ b/lib/features/modeling/behavior/IsHorizontalFix.js
+@@ -35,15 +35,15 @@ export default function IsHorizontalFix(eventBus) {
+         bo = getBusinessObject(shape),
+         di = getDi(shape);
+ 
+-    if (isAny(bo, elementTypesToUpdate) && !di.get('isHorizontal')) {
++if (isAny(bo, elementTypesToUpdate) && di.get('isHorizontal') === undefined) {
+ 
+-      // set attribute directly to avoid modeling#updateProperty side effects
+-      di.set('isHorizontal', true);
+-    }
++// set attribute directly to avoid modeling#updateProperty side effects
++di.set('isHorizontal', true);
++}
+   });
+ 
+ }
+ 
+ IsHorizontalFix.$inject = [ 'eventBus' ];
+ 
+-inherits(IsHorizontalFix, CommandInterceptor);
++inherits(IsHorizontalFix, CommandInterceptor);
+\ No newline at end of file

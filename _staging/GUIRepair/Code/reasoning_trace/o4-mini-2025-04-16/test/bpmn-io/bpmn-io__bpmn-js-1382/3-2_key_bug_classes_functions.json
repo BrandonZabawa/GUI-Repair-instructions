@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/popup-menu/ReplaceMenuProvider.js"
+        ],
+        "bug_functions": [
+            "ReplaceMenuProvider.prototype.getEntries",
+            "ReplaceMenuProvider.prototype._getDataObjectIsCollection",
+            "ReplaceMenuProvider.prototype._createEntries"
+        ],
+        "explanation": "ReplaceOptions.js is where all replace-target definitions live (e.g. the arrays of possible replacement BPMN element types). It needs to include entries for DataObjectReference \u2194 DataStoreReference. ReplaceMenuProvider is responsible for reading those options and building the actual popup-menu UI. Its getEntries and helper methods (_getDataObjectIsCollection and _createEntries) must be adapted to include the missing DataStoreReference option when the current element is a DataObjectReference (and vice-versa). Without changes here, the replace submenu remains empty except for the collection marker.",
+        "bug_scenario": "When right-clicking (or invoking the popup menu on) a DataObjectReference in the diagram, the \u201creplace\u201d submenu only shows the collection marker entry (the three-bar icon) \u2013 it\u2019s otherwise empty. The user cannot switch a DataObjectReference into a DataStoreReference (and vice-versa), so the menu feels empty and out of place."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//ReplaceMenuProvider"
+        ],
+        "bug_functions": [
+            "lib/features/replace/ReplaceOptions.js//DATA_OBJECT_REFERENCE (exported replace options array)",
+            "lib/features/replace/ReplaceOptions.js//DATA_STORE_REFERENCE (exported replace options array)",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//ReplaceMenuProvider.prototype.getEntries",
+            "lib/features/popup-menu/ReplaceMenuProvider.js//ReplaceMenuProvider.prototype._getDataObjectIsCollection"
+        ],
+        "explanation": "The two core places to change are:  \n\n1. lib/features/replace/ReplaceOptions.js  \n   \u2022 This file contains the static replacement\u2010options arrays (e.g. the DATA_OBJECT_REFERENCE array only contains the collection toggle today). We need to augment the DATA_OBJECT_REFERENCE array to include an entry for DataStoreReference, and likewise extend DATA_STORE_REFERENCE to include DataObjectReference.  \n\n2. lib/features/popup-menu/ReplaceMenuProvider.js (class ReplaceMenuProvider)  \n   \u2022 getEntries(...) drives which replacement menus get shown per element type. It currently invokes _getDataObjectIsCollection to only present the collection toggle for DataObjectReference. We must update getEntries (and _getDataObjectIsCollection) so that, when the businessObject is a DataObjectReference, it not only offers the collection option but also the DataStoreReference option, and symmetrically allow DataStoreReference to switch to DataObjectReference.",
+        "bug_scenario": "When right-clicking on a DataObjectReference in the diagram, the replace menu only ever shows the \u201ccollection\u201d toggle (i.e. switch to a DataObjectCollection) and nothing else. The menu feels empty, because there is no option to switch a DataObjectReference into a DataStoreReference. Likewise, if you have a DataStoreReference selected, you cannot switch back to a DataObjectReference. The feature request is to add DataStoreReference to the DataObjectReference replace menu (and vice-versa) so that the replace-menu remains populated and useful."
+    }
+}

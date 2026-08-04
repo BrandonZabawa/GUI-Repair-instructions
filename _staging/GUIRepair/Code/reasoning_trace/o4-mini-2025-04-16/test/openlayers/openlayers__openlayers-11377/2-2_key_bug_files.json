@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/MapBrowserEventHandler.js",
+            "src/ol/PluggableMap.js",
+            "src/ol/interaction/Pointer.js"
+        ],
+        "explanation": "All of the extra work on every single pointermove is introduced in the event\u2010dispatch and interaction layers:\n\n\u2022 MapBrowserEventHandler.js now listens for every raw POINTERMOVE and immediately wraps & dispatches it (relayEvent_) without filtering very small movements. That floods the map with high-frequency move events.\n\n\u2022 In PluggableMap.js handleBrowserEvent(), each dispatched MapBrowserEventType.POINTERMOVE is handed off to every interaction\u2019s handleMoveEvent().\n\n\u2022 In Pointer.js updateTrackedPointers_() (called on every pointermove), the code re-exports the tracked pointers object into a fresh array via getValues(), allocating and iterating on each move. Default DragPan or other pointer-based interactions end up doing this same array build and then changing the cursor style on every move.\n\nTogether these cause far more work per pixel movement in v6.4.0 than in 6.3.1 and are the hot spots you\u2019d need to address to restore pointermove performance.",
+        "bug_scenario": "Both 6.3.1 and 6.4.0 examples render a thousand vector\u2010icon features on the map, but when you move the mouse over them the 6.3.1 build updates the cursor almost instantly, while 6.4.0 is noticeably sluggish. In the GIFs you can see that dragging/moving your pointer across the same feature\u2010dense canvas in 6.4.0 results in a laggy, low\u2010frame\u2010rate cursor change, whereas 6.3.1 tracks the pointer at full speed."
+    }
+}

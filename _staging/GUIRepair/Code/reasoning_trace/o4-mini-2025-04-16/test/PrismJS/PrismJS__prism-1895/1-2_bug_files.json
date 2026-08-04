@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-clike.js",
+            "components/prism-clike.min.js",
+            "components/prism-javascript.js",
+            "components/prism-javascript.min.js",
+            "prism.js"
+        ],
+        "explanation": "Prism\u2019s core JavaScript grammar is built on the \u2018clike\u2019 language definition, which provides the generic number token regex. Both prism-clike.js and prism-javascript.js (plus their built .min.js versions) declare the patterns that recognize numeric literals. Currently these regexes only match digits, optional decimal points, and exponents \u2013 they do not allow underscores. As a result, numeric separators are not consumed as part of the number token. Updating the number patterns in these files (and then rebuilding prism.js) to include underscore support is required to correctly highlight JS numeric separators.",
+        "bug_scenario": "When you write JavaScript numeric literals with underscores as separators (e.g. 1_000_000 and 1_019_436_871.42), Prism\u2019s current number\u2010matching regexes don\u2019t treat the underscores as part of the number. The highlighter breaks the token at each underscore or misclassifies the underscore as punctuation, so the grouped digits are not highlighted together as one numeric literal."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-clike.js",
+            "components/prism-clike.min.js",
+            "components/prism-javascript.js",
+            "components/prism-javascript.min.js"
+        ],
+        "explanation": "Prism\u2019s core C-like grammar (prism-clike.js) defines the generic number token pattern used by languages like JavaScript. The JavaScript grammar (prism-javascript.js) builds on that and may override or extend it. Both files currently lack support for underscores in their number regex. Updating the number pattern in prism-clike.js (and its minified version) to accept optional groups of an underscore followed by digits, and ensuring prism-javascript.js (and its minified version) uses the updated pattern, will fix the incorrect tokenization of numeric separators in JavaScript code.",
+        "bug_scenario": "The Prism highlighter is failing to recognize JavaScript numeric separators (underscores) as part of numeric literals. In the screenshot, numbers like 1_000_000_000_000 and 1_019_436_871.42 are split into multiple tokens rather than being highlighted as a single number token. According to the TC39 proposal, underscores should be valid separators in decimal, binary, octal, hexadecimal, and BigInt literals."
+    }
+}

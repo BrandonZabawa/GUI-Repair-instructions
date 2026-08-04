@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages",
+            "lighthouse-core/gather/gatherers/image-usage.js//ImageUsage"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages.computeWaste",
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages.audit_",
+            "lighthouse-core/gather/gatherers/image-usage.js//collectImageElementInfo"
+        ],
+        "explanation": "The main issue is that SVG files are being flagged for invalid sizing information. The class 'OffscreenImages' in offscreen-images.js is responsible for analyzing image usage and identifying offscreen images. Its 'computeWaste' method tries to calculate visible and wasted pixels, and if sizing information is invalid (e.g., for SVGs), it returns an error, resulting in the debug string in the UI. The 'audit_' function processes images and propagates these errors. In 'image-usage.js', the 'ImageUsage' class (and its collectImageElementInfo function) gathers image sizing info from the DOM, but SVGs may not provide valid sizing the same way raster images do. The bug would likely require updating these areas to detect SVGs and skip or specially handle them, preventing the erroneous error message.",
+        "bug_scenario": "The scenario is that on running an audit for offscreen images using Lighthouse, SVG images (specifically .svg files) are being flagged with a debug string: 'Invalid image sizing information ...img/ring.svg'. This is visible in the UI as an error under the 'Offscreen images' section. The bug report asks whether SVGs should be ignored in this audit, indicating that SVG images might not have standard sizing info like raster images, causing the audit to incorrectly flag them."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages.computeWaste"
+        ],
+        "explanation": "The bug is caused by how the 'OffscreenImages' audit processes images, especially in the computeWaste static method. This method calculates visible and total pixels based on clientWidth and clientHeight, which may not be set for SVGs, leading to invalid calculations and errors. To fix the bug, the OffscreenImages class (specifically computeWaste) should be updated to ignore or handle SVG images appropriately, preventing the invalid sizing error for SVGs.",
+        "bug_scenario": "The bug scenario shows that the Lighthouse 'Offscreen images' audit incorrectly flags SVG images with a debug error message 'Invalid image sizing information ...img/ring.svg'. This happens because SVGs, unlike raster images, do not always have naturalWidth or naturalHeight, and their sizing semantics differ. The audit should likely ignore SVGs or handle them differently."
+    }
+}

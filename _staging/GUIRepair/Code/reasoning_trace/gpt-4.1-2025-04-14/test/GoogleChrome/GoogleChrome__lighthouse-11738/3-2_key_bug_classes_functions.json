@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.run",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.runPass",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.afterPass",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.setupPassNetwork",
+            "lighthouse-core/gather/driver/wait-for-condition.js//waitForFullyLoaded"
+        ],
+        "explanation": "The issue is that Lighthouse does not wait long enough when using simulated throttling, leading to missing or inaccurate Cumulative Layout Shift calculations. The core logic for waiting on page load events, network idle, CPU idle, and the post-load settling window is implemented in the wait-for-condition.js module, specifically in the waitForFullyLoaded function. This function is responsible for orchestrating the waits for all relevant conditions before metrics like CLS are measured. Additionally, the GatherRunner class in gather-runner.js coordinates the running of passes, which involves setting up the driver, loading the page, and running beforePass, pass, and afterPass stages. Particularly, its run, runPass, afterPass, and setupPassNetwork methods are responsible for ensuring that the gathering process waits for the appropriate conditions. If these methods do not provide a long enough wait in simulate mode, CLS may be missed. Therefore, changes will likely be needed in these methods/classes to ensure the waits are sufficiently long when throttlingMethod=simulate.",
+        "bug_scenario": "The bug scenario is that when running Lighthouse with throttlingMethod=simulate, the tool does not wait long enough to detect the Cumulative Layout Shift (CLS) on some pages. The performance report incorrectly shows a perfect (0) CLS score, even though the page visibly loads later and layout shifts may still be occurring. The expected behavior is that Lighthouse should wait long enough, even in 'simulate' mode, to observe and report any layout shifts, thus possibly lowering the CLS score when appropriate."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/computed/load-simulator.js//LoadSimulator"
+        ],
+        "bug_functions": [
+            "lighthouse-core/computed/load-simulator.js//LoadSimulator.compute_"
+        ],
+        "explanation": "The main issue lies in how Lighthouse simulates page load timing and collects layout shift data when throttlingMethod='simulate'. The 'LoadSimulator' class (especially the 'compute_' method) is directly responsible for running the simulated page load and determining when the load is 'done.' If this simulation ends too soon, later layout shifts are ignored, causing under-reporting of CLS. The logic in 'compute_' covers the simulated timing of network, CPU, and layout events, and would be the key place to adjust how long the simulation waits for activity (e.g., to allow late layout shifts to be included). The other files handle real browser waits or generic gathering, but the simulation logic is the root cause when 'simulate' is used.",
+        "bug_scenario": "The bug scenario is that when using Lighthouse with the throttlingMethod set to 'simulate', the tool does not wait long enough to detect all Cumulative Layout Shifts (CLS) on some pages. As a result, the reported CLS metric is sometimes incorrectly low (possibly 0), and the performance score does not fully reflect late layout shifts that occur after the main page load. The provided image shows a performance report where Cumulative Layout Shift is 0, which may be inaccurate due to premature measurement completion."
+    }
+}

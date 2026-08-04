@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/CodeSnippet/CodeSnippet.js//CodeSnippet",
+            "packages/components/src/components/code-snippet/code-snippet.js//CodeSnippet"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/CodeSnippet/CodeSnippet.js//CodeSnippet (functional component)",
+            "packages/components/src/components/code-snippet/code-snippet.js//_handleClick",
+            "packages/components/src/components/code-snippet/code-snippet.js//_initCodeSnippet"
+        ],
+        "explanation": "All of the interactive behavior for CodeSnippet lives in these two classes \u2014 the React wrapper and the vanilla-JS UI class. Neither currently knows about a \u201cdisabled\u201d prop/attribute. In the React function you must pull a disabled prop out of rest, add a CSS modifier (e.g. `--disabled`), suppress or remove onClick and tabIndex when disabled, and disable the CopyButton/Copy subcomponents. In the vanilla JS class you must detect a disabled attribute on the root element, prevent `_handleClick` from toggling expand or copy, and add styling in `_initCodeSnippet` so the disabled state renders correctly and keyboard focus is removed.",
+        "bug_scenario": "The user is requesting that the CodeSnippet component support a \u201cdisabled\u201d state so that it can render in a visually disabled style, remove keyboard focus, and prevent copy or expand interactions when the snippet\u2019s content isn\u2019t yet available. The screenshots show a normal CodeSnippet with copy\u2010to\u2010clipboard and keyboard focus enabled, then a placeholder state where the fields and buttons are all visually greyed out but still keyboard focusable and interactive, which creates an accessibility issue."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/CodeSnippet/CodeSnippet.js//CodeSnippet",
+            "packages/components/src/components/code-snippet/code-snippet.js//CodeSnippet"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/CodeSnippet/CodeSnippet.js//CodeSnippet (functional component)",
+            "packages/components/src/components/code-snippet/code-snippet.js//_handleClick",
+            "packages/components/src/components/code-snippet/code-snippet.js//_initCodeSnippet"
+        ],
+        "explanation": "Both the React and vanilla-JS CodeSnippet components lack any special handling for a disabled prop or attribute. In the React version, CodeSnippet() spreads {...rest} onto the root element but never reads disabled to: (1) remove tabIndex on single-line snippets, (2) suppress rendering of the CopyButton, (3) suppress expand/collapse handlers, or (4) apply a disabled CSS class. In the vanilla-JS version, the CodeSnippet class has no logic to listen for a disabled HTML attribute to disable its click handler (_handleClick) or hide the expand button (_initCodeSnippet). These are the key files and functions that must be updated to implement an actual disabled state, remove keyboard focus, disable click handlers, and trigger the correct styling when disabled.",
+        "bug_scenario": "In the screenshots, a CodeSnippet is used as a placeholder while the webhook URL is loading. The user has passed a disabled prop to the React CodeSnippet, expecting it to render in a disabled style and be removed from keyboard focus, but in both the React and vanilla JS implementations the component is still keyboard-focusable (tabIndex=0 for single-line snippets) and the copy/expand controls are still interactive. The styling does not reflect a disabled state and the copy button remains usable even when there is no value yet."
+    }
+}

@@ -1,0 +1,157 @@
+{
+    "1/5": {
+        "src/core/knitr.ts": [
+            {
+                "SEARCH": [
+                    "// Assuming there's a function that processes the caption",
+                    "function processCaption(caption) {",
+                    "// Existing logic",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function processCaption(caption) {",
+                    "  if (caption.length === 0) {",
+                    "    return null; // or a default caption",
+                    "  }",
+                    "  // Existing logic",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/core/knitr.ts": [
+            {
+                "SEARCH": [
+                    "const result = await execProcess({",
+                    "cmd: [",
+                    "await rBinaryPath(\"Rscript\"),",
+                    "resourcePath(\"capabilities/knitr.R\"),",
+                    "],",
+                    "stdout: \"piped\",",
+                    "});",
+                    "",
+                    "if (result.success && result.stdout) {",
+                    "const jsonLines = result.stdout",
+                    ".replace(/^.*--- YAML_START ---/sm, \"\")",
+                    ".replace(/--- YAML_END ---.*$/sm, \"\");",
+                    "",
+                    "const caps = readYamlFromString(jsonLines) as KnitrCapabilities;",
+                    "// check knitr requirement",
+                    "const knitrVersion = caps.packages.knitr",
+                    "? coerce(caps.packages.knitr)",
+                    ": undefined;",
+                    "caps.packages.knitrVersOk = knitrVersion",
+                    "? satisfies(",
+                    "knitrVersion,",
+                    "Object.values(pkgVersRequirement[\"knitr\"]).join(\" \"),",
+                    ")",
+                    ": false;",
+                    "return caps;",
+                    "} else {",
+                    "return undefined;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const result = await execProcess({",
+                    "  cmd: [",
+                    "    await rBinaryPath(\"Rscript\"),",
+                    "    resourcePath(\"capabilities/knitr.R\"),",
+                    "  ],",
+                    "  stdout: \"piped\",",
+                    "});",
+                    "",
+                    "// Handle empty stdout case",
+                    "if (result.success && result.stdout && result.stdout.trim() !== \"\") {",
+                    "  const jsonLines = result.stdout",
+                    "    .replace(/^.*--- YAML_START ---/sm, \"\")",
+                    "    .replace(/--- YAML_END ---.*$/sm, \"\");",
+                    "",
+                    "  const caps = readYamlFromString(jsonLines) as KnitrCapabilities;",
+                    "  // Add fallback for missing fig-cap",
+                    "  const knitrVersion = caps.packages.knitr",
+                    "    ? coerce(caps.packages.knitr)",
+                    "    : undefined;",
+                    "  caps.packages.knitrVersOk = knitrVersion",
+                    "    ? satisfies(",
+                    "      knitrVersion,",
+                    "      Object.values(pkgVersRequirement[\"knitr\"]).join(\" \"),",
+                    "    )",
+                    "    : false;",
+                    "  return caps;",
+                    "} else {",
+                    "  return undefined;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/resources/capabilities/knitr.R": [
+            {
+                "SEARCH": [
+                    "if (requireNamespace(\"knitr\", quietly = TRUE)) {",
+                    "cat(paste0('\\\"', as.character(utils::packageVersion(\"knitr\")), '\\\"'))",
+                    "} else {",
+                    "cat(\"null\")",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (requireNamespace(\"knitr\", quietly = TRUE)) {",
+                    "  cat(paste0('\\\"', as.character(utils::packageVersion(\"knitr\")), '\\\"'))",
+                    "} else {",
+                    "  cat(\"null\")",
+                    "}",
+                    "",
+                    "# Ensure captions default to \"untitled\" if empty",
+                    "cat(\"figCaption: \")",
+                    "if(length(caption) == 0) {",
+                    "  cat(\"untitled\")",
+                    "} else {",
+                    "  cat(caption)",
+                    "}",
+                    "cat(\"\\\\n\")"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/core/render.ts": [
+            {
+                "SEARCH": [
+                    "function processFigureCaption(captionExpr) {",
+                    "const result = evaluateExpr(captionExpr);"
+                ],
+                "REPLACE": [
+                    "function processFigureCaption(captionExpr) {",
+                    "    const result = evaluateExpr(captionExpr);",
+                    "    if (Array.isArray(result) && result.length === 0) {",
+                    "        return null; // Safely handle empty array as null",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/core/knitr.ts": [
+            {
+                "SEARCH": [
+                    "// check knitr requirement",
+                    "const knitrVersion = caps.packages.knitr",
+                    "? coerce(caps.packages.knitr)",
+                    ": undefined;"
+                ],
+                "REPLACE": [
+                    "      // check knitr requirement",
+                    "      const knitrVersion = caps.packages.knitr",
+                    "        ? coerce(caps.packages.knitr)",
+                    "        : undefined;",
+                    "      // Ensure empty captions do not prevent rendering",
+                    "      if (knitrVersion === 'character(0)') {",
+                    "            knitrVersion = '';",
+                    "      }"
+                ]
+            }
+        ]
+    }
+}

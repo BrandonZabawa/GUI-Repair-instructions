@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/Box/StyledBox.js//StyledBox",
+            "src/js/components/Box/StyledBox.js//StyledBoxGap",
+            "src/js/components/Box/Box.js//Box"
+        ],
+        "bug_functions": [
+            "src/js/components/Box/StyledBox.js//gapStyle",
+            "src/js/utils/border.js//borderStyle",
+            "src/js/utils/border.js//responsiveBorderStyle"
+        ],
+        "explanation": "The core of the failure lives in StyledBox.js\u2019s gapStyle function. It computes a numeric borderOffset by calling parseMetricToNum on both the gap metric and the border size metric. When the gap is passed as a raw pixel string (e.g. \"10px\"), theme.global.edgeSize[gap] is undefined and gapStyle falls back to the literal string. That part works until responsive or breakpoint logic kicks in and one of the intermediate metrics becomes undefined, so parseMetricToNum(undefined) is called and crashes on undefined.match. \n\nAdditionally, borderStyle and responsiveBorderStyle (in utils/border.js) special-case side=\"between\" as a no-op, returning undefined for some style paths. This means gapStyle may receive an undefined borderMetric under certain conditions. Finally, Box.js wires up gap, border, and directionProp into StyledBoxGap without normalizing pixel values to theme metrics. To fix the bug, gapStyle must guard against undefined metrics (and properly parse raw px strings), and borderStyle/responsiveBorderStyle should consistently return a usable size metric even when side is \"between.\"",
+        "bug_scenario": "When a Grommet Box is given both border=\"between\" and a pixel-based gap (for example gap=\"10px\"), the component tries to split its children with StyledBoxGap elements and calculate half the gap around the separator line. In the live example above (direction=\"row\", border=\"between\", gap=\"10px\"), at runtime the console throws:\n\nTypeError: Cannot read properties of undefined (reading 'match')\n\nThis indicates that one of the values passed into parseMetricToNum (which uses String.prototype.match) is undefined. The Box still mounts its children and gap divs, but gapStyle ends up receiving or computing an undefined metric in its calculations, leading to the crash."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/Box/StyledBox.js//StyledBoxGap"
+        ],
+        "bug_functions": [
+            "src/js/components/Box/StyledBox.js//gapStyle"
+        ],
+        "explanation": "The error originates in StyledBox.js in the gapStyle function. gapStyle calculates metric and responsiveMetric from the gap prop. For a pixel string gap (e.g. \"10px\"), responsiveMetric resolves to undefined (since breakpoints only define named sizes). Nevertheless, responsiveBorderOffset is computed whenever responsiveBorderMetric is truthy, without first checking responsiveMetric. That causes parseMetricToNum(responsiveMetric) to be called with undefined, leading to the .match TypeError. StyledBoxGap is the styled component that invokes gapStyle, so both it and the gapStyle function are the key elements to fix by guarding against undefined responsiveMetric before parsing.",
+        "bug_scenario": "When a Box is rendered with border=\"between\" and a pixel-based gap (e.g. gap=\"10px\"), at runtime gapStyle attempts to compute a responsive border offset using parseMetricToNum on an undefined responsiveMetric. This leads to a TypeError (cannot read properties of undefined (reading 'match')). In the storybook screenshot, applying border=\"between\" and gap=\"10px\" blows up rather than drawing the separator line."
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/computed/trace-of-tab.js",
+            "clients/devtools-entry.js"
+        ],
+        "explanation": "1. lighthouse-core/computed/trace-of-tab.js is where Lighthouse inspects the raw DevTools trace and throws LHError.errors.NO_FCP as soon as it sees no firstContentfulPaint event. Since background tabs don\u2019t fire paint events, this code will always reject. \n2. clients/devtools-entry.js is the entry point that builds the extension\u2019s runtime config. It currently doesn\u2019t force real-time DevTools throttling, so background tabs won\u2019t emit FCP. By adding settings.throttlingMethod = 'devtools' (and/or using the perf-config approach) in createConfig, the extension will run against the real timeline in DevTools\u2014allowing FCP to be recorded in hidden tabs and preventing trace-of-tab.js from throwing NO_FCP.",
+        "bug_scenario": "When Lighthouse is run as a Chrome extension against a page that\u2019s loaded in a background tab, the DevTools trace never emits a \u201cfirstContentfulPaint\u201d event. As a result, the computed artifact in trace-of-tab.js throws the NO_FCP error and every performance metric in the extension UI shows \u201cError!\u201d with NO_FCP."
+    }
+}

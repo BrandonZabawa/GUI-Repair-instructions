@@ -1,0 +1,49 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/computed/critical-request-chains.js": [
+            {
+                "SEARCH": [
+                    "// XHRs are fetched at High priority, but we exclude them, as they are unlikely to be critical",
+                    "// Images are also non-critical.",
+                    "// Treat any images missed by category, primarily favicons, as non-critical resources",
+                    "const nonCriticalResourceTypes = [",
+                    "WebInspector.resourceTypes.Image._category,",
+                    "WebInspector.resourceTypes.XHR._category,",
+                    "];",
+                    "if (nonCriticalResourceTypes.includes(resourceTypeCategory) ||",
+                    "isIframe ||",
+                    "request.mimeType && request.mimeType.startsWith('image/')) {",
+                    "return false;",
+                    "}",
+                    "",
+                    "return ['VeryHigh', 'High', 'Medium'].includes(request.priority());"
+                ],
+                "REPLACE": [
+                    "    // XHRs are fetched at High priority, but we exclude them, as they are unlikely to be critical",
+                    "    // Images are also non-critical.",
+                    "    // Treat any images missed by category, primarily favicons, as non-critical resources",
+                    "    const nonCriticalResourceTypes = [",
+                    "      WebInspector.resourceTypes.Image._category,",
+                    "      WebInspector.resourceTypes.XHR._category,",
+                    "    ];",
+                    "    if (nonCriticalResourceTypes.includes(resourceTypeCategory) ||",
+                    "        isIframe ||",
+                    "        request.mimeType && request.mimeType.startsWith('image/')) {",
+                    "      return false;",
+                    "    }",
+                    "",
+                    "    // Exclude stylesheets loaded via rel=preload (initiator type 'preload')",
+                    "    if (",
+                    "      request._resourceType === WebInspector.resourceTypes.Stylesheet &&",
+                    "      request.initiator &&",
+                    "      request.initiator.type === 'preload'",
+                    "    ) {",
+                    "      return false;",
+                    "    }",
+                    "",
+                    "    return ['VeryHigh', 'High', 'Medium'].includes(request.priority());"
+                ]
+            }
+        ]
+    }
+}

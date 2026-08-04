@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/transforms.js",
+            "src/ol/renderer/webgl/worldUtil.js"
+        ],
+        "explanation": "These files are most likely related to the bug because:\n- src/ol/layer/WebGLTile.js: This is the layer class being used (WebGLTileLayer) and likely includes logic for tile management when rendering in WebGL, including handling of tile wrapping and special cases such as the antimeridian.\n- src/ol/renderer/webgl/TileLayer.js: This is the renderer implementation for tile layers using WebGL, responsible for rendering logic, including reprojection, tile gaps, and coordinate handling\u2014especially at the edges (antimeridian).\n- src/ol/source/GeoTIFF.js: This is the source type in question. Any coordinate or extent issues with tile data (especially when reprojected) could stem from here.\n- src/ol/reproj/Tile.js: Handles reprojected tile generation and transforms. Since the bug occurs only when reprojection is involved, this file is crucial for debugging gap issues when projecting across boundaries like the antimeridian.\n- src/ol/proj/proj4.js, src/ol/proj/transforms.js: Responsible for projection registration and projection transforms. Custom projections (such as the one registered in the bug) and correct handling near boundaries are implemented here.\n- src/ol/renderer/webgl/worldUtil.js: Utilities for handling WebGL world coordinates, wrapping, and duplicated worlds (used for seamless display near the antimeridian). Any issues with tile continuity at the antimeridian often relate to code in this file.\n\nTogether, these files form the core of how tiles are loaded, transformed, rendered, and wrapped (especially for WebGL and for non-standard projections), and problems with missing tiles at the antimeridian after reprojection are almost always tracked to these modules.",
+        "bug_scenario": "The bug described in the report involves missing (not rendered) tiles near the antimeridian when displaying a GeoTIFF source using a WebGLTileLayer after projecting the layer into a custom stereographic projection. Black gaps appear where tiles should be, and the extent of these gaps depends on tile size and zoom. The bug scenario image (not visible here, but described) shows these black gaps as missing/WebGL tiles crossing the antimeridian."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/TileLayerBase.js",
+            "src/ol/renderer/webgl/worldUtil.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/tilegrid/TileGrid.js",
+            "src/ol/proj/transforms.js"
+        ],
+        "explanation": "- src/ol/layer/WebGLTile.js: This implements the WebGLTileLayer, which is the core component exhibiting the issue. It orchestrates WebGL tile rendering and is likely involved in passing tile coordinates and reprojected locations.\n- src/ol/source/GeoTIFF.js: The GeoTIFF source loads and manages the raster image tiles, and works with projections and tiling logic. Errors in source tile calculation/requests may lead to missing tiles.\n- src/ol/renderer/webgl/TileLayer.js (and TileLayerBase.js): These renderer files implement the actual rendering logic for tile layers in WebGL, vital for proper drawing of reprojected tiles and handling special cases like the antimeridian.\n- src/ol/renderer/webgl/worldUtil.js: Utility for handling world wrapping, which is typically the main challenge near the antimeridian. Bugs here may cause failures in wrapping tiles appropriately.\n- src/ol/reproj/Tile.js: Handles reprojection of tile images. Since the bug appears during reprojection, this logic may miss some tiles or introduce gaps.\n- src/ol/tilegrid/TileGrid.js: Manages the tile grid; errors here may result in missed tile coverage near global boundaries.\n- src/ol/proj/transforms.js: Coordinates projection transformations, which are central to correct placement of tiles, especially across the antimeridian during reprojection.\n\nAll these files work together in tile calculation, fetching, coordinate transformation, and rendering. The bug may be caused by any combination of faults in their logic, especially edge cases around the antimeridian with reprojection.",
+        "bug_scenario": "The bug involves missing tiles (black gaps) when rendering a GeoTIFF source using WebGLTileLayer after reprojection to a stereographic projection, especially near the antimeridian. The missing tiles' location and extent depend on tile size and zoom. This indicates an error in how tiles are handled/generated, particularly around the world boundary (antimeridian) when transforming coordinates for WebGL rendering and/or tile reprojection."
+    }
+}

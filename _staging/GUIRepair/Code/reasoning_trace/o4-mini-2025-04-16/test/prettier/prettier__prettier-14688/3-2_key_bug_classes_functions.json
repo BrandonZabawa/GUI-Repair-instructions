@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-js/print/type-parameters.js//printTypeParameters"
+        ],
+        "explanation": "The heart of the bug lies in the function `printTypeParameters` in `src/language-js/print/type-parameters.js`. That function decides whether to include a trailing comma when printing instantiations of type parameters. Its logic special-cases TSX files (`isTSXFile(options)`) for one-parameter generics, but it treats `.mts` (and `.cts`) exactly like regular TypeScript and unconditionally omits the comma on the `TSTypeParameterInstantiation` branch. To preserve the required comma in `.mts` files, `printTypeParameters` needs to detect the `.mts`/`.cts` extension (or otherwise know the file is an ECMA module) and include the comma in that scenario just as it does for TSX single-parameter instantiations.",
+        "bug_scenario": "When formatting a `.mts` file that declares a single generic type parameter with a required trailing comma\u2014`export const unsafeCoerce = <T,>(u: unknown): T => u as T`\u2014Prettier\u2019s printer strips out the comma and rewrites it as `<T>`, which makes the TypeScript compiler complain (TS7060) that the comma is required in `.mts`/.cts files."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-js/print/type-parameters.js//printTypeParameters"
+        ],
+        "explanation": "The core of the issue lies in the printTypeParameters function in src/language-js/print/type-parameters.js. That function determines how generic type parameter lists are rendered, and includes logic that unconditionally omits trailing commas for nodes of type TSTypeParameterInstantiation. In .mts/.cts files TypeScript mandates a trailing comma for a single, unconstrained type parameter, but the existing code uses an empty string or an ifBreak clause (which only prints a comma on line breaks), causing the comma to be dropped. To fix this bug, printTypeParameters must be updated to detect .mts/.cts extensions (or otherwise recognize that this is a TS module instantiation) and preserve the comma in that scenario.",
+        "bug_scenario": "When running Prettier on a .mts file containing a single unconstrained generic type parameter with a trailing comma (for example, `export const unsafeCoerce = <T,>(u: unknown): T => u as T`), Prettier strips off the comma and formats it as `<T>`, which then triggers a TypeScript error TS7060 because that comma is required in .mts/.cts modules."
+    }
+}

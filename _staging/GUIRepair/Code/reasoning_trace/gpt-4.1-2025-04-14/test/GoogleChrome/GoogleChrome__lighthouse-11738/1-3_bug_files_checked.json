@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/metrics/cumulative-layout-shift.js",
+            "lighthouse-core/computed/metrics/cumulative-layout-shift.js",
+            "lighthouse-core/computed/metrics/cumulative-layout-shift-all-frames.js",
+            "lighthouse-core/computed/load-simulator.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/audits/metrics.js",
+            "lighthouse-core/runner.js"
+        ],
+        "explanation": "These files are closely tied to the bug scenario: (1) 'lighthouse-core/audits/metrics/cumulative-layout-shift.js' and related files in computed/metrics/ are directly responsible for the CLS metric logic; (2) 'lighthouse-core/computed/load-simulator.js' handles the simulated throttling logic, potentially controlling how long Lighthouse waits for layout shifts; (3) 'lighthouse-core/gather/gather-runner.js' and 'lighthouse-core/audits/metrics/metrics.js' control the orchestration and timing of metric collection in the run; (4) 'lighthouse-core/runner.js' (and potentially the cli entrypoint) oversees the overall run process. These files are bug-related because fixing the issue likely requires ensuring that, during simulated throttling, Lighthouse continues to observe layout shifts for an appropriate duration before finishing the metric collection.",
+        "bug_scenario": "The bug report describes a scenario where Lighthouse, when run with throttlingMethod=simulate, does not wait long enough to accurately detect Cumulative Layout Shift (CLS) on some pages. As a result, the measured CLS value can incorrectly be 0 even if layout shifts still occur after Lighthouse finishes its run, leading to artificially better scores. The attached image shows a real Lighthouse report for a page where CLS is 0, possibly due to this bug, despite having a load time profile that suggests late-loading elements could shift layout if more time was allowed."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/metrics/cumulative-layout-shift.js",
+            "lighthouse-core/computed/metrics/cumulative-layout-shift.js",
+            "lighthouse-core/gather/driver/execution-context.js",
+            "lighthouse-core/gather/driver/wait-for-condition.js",
+            "lighthouse-core/computed/load-simulator.js",
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js",
+            "lighthouse-core/gather/gather-runner.js"
+        ],
+        "explanation": "These files are related to the calculation, simulation, and collection of metrics\u2014especially Cumulative Layout Shift (CLS)\u2014and the way Lighthouse simulates network and CPU throttling (when 'throttlingMethod=simulate' is enabled):\n\n- 'lighthouse-core/audits/metrics/cumulative-layout-shift.js' and 'lighthouse-core/computed/metrics/cumulative-layout-shift.js' handle how CLS is collected, computed, and reported.\n- 'lighthouse-core/computed/load-simulator.js' and 'lighthouse-core/lib/dependency-graph/simulator/simulator.js' are directly responsible for the simulation of performance (including timing and network/CPU slowdown emulation), which would affect how long the tooling 'waits' for layout shifts to occur.\n- 'lighthouse-core/gather/gather-runner.js' manages the 'run' phase and controls when metrics collection starts and stops.\n- 'lighthouse-core/gather/driver/execution-context.js' and 'lighthouse-core/gather/driver/wait-for-condition.js' help determine when scripts are considered done and when to finish trace recording, which directly impacts the window in which CLS (and similar late-occurring events) can be captured. \n\nPatches to fix the bug\u2014ensuring enough time is waited to capture late layout shifts\u2014would likely touch these files to adjust simulation timeouts, event capture, or the end conditions for metric collection.",
+        "bug_scenario": "The bug scenario is that when running Lighthouse with the throttling method set to 'simulate', the tool does not wait long enough to detect the Cumulative Layout Shift (CLS) on certain pages. As a result, the CLS score may be inaccurate (incorrectly showing 0 in the provided image) since late layout shifts are missed, reducing the accuracy of the performance report. The expected behavior would be for Lighthouse to wait long enough for all layout shifts to settle, thereby potentially reporting a lower (i.e., worse) Cumulative Layout Shift score if the page shifts happen late in the loading process."
+    }
+}

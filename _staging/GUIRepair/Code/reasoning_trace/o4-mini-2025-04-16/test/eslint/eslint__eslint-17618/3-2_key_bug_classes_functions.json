@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/linter/code-path-analysis/code-path-analyzer.js//CodePathAnalyzer"
+        ],
+        "bug_functions": [
+            "lib/linter/code-path-analysis/code-path-analyzer.js//isHandledLogicalOperator",
+            "lib/linter/code-path-analysis/code-path-analyzer.js//preprocess",
+            "lib/linter/code-path-analysis/code-path-analyzer.js//processCodePathToEnter",
+            "lib/linter/code-path-analysis/code-path-analyzer.js//processCodePathToExit"
+        ],
+        "explanation": "All of these functions live in the heart of the ESLint code-path analysis engine and control how logical operators and nullish coalescing are turned into forks and merges in the control-flow graph:\n\n\u2022 isHandledLogicalOperator: decides which operators (\"&&\", \"||\", \"??\") get special short-circuit handling. If it\u2019s wrong here, `??` combined with `&&` won\u2019t fork correctly.\n\n\u2022 preprocess: this helper is responsible for creating a new fork when entering the right side of a logical expression. It must recognize that when the left side of `&&` is falsy, control should still move to `c` under `??`.\n\n\u2022 processCodePathToEnter / processCodePathToExit: these methods in CodePathAnalyzer drive the actual creation and closing of code-path segments when nodes are entered or exited. They use the information from isHandledLogicalOperator and preprocess to build the graph. Any mistake here will mis-emit the onCodePathStart/onCodePathSegmentStart events for the missing branch.\n\nFixing and/or augmenting these functions so that `(a && b) ?? c` produces three distinct segments (truthy `a`\u2192`b`, falsy `a`\u2192`c`, and falsy `b`\u2192`c`) will resolve the missing arrow in the graph.",
+        "bug_scenario": "The code-path analyzer is producing an incorrect flow graph for the expression `(a && b) ?? c`. In the provided diagram, only two execution paths are shown: one where both `a` and `b` are truthy and then `c` is evaluated, and another where `a` is falsy and the entire expression exits immediately. What\u2019s missing is the path where `a` is falsy, causing the `&&` short-circuit, and then the `??` operator falls back to evaluating `c`. In practice:\n\n```js\n(null && console.log(\"b\")) ?? console.log(\"c\");\n// should invoke only \"c\"\n```\n\nbut the analyzer doesn\u2019t show the branch from `a` directly to `c`."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/linter/code-path-analysis/code-path-analyzer.js//CodePathAnalyzer"
+        ],
+        "bug_functions": [
+            "lib/linter/code-path-analysis/code-path-analyzer.js//isHandledLogicalOperator",
+            "lib/linter/code-path-analysis/code-path-analyzer.js//isForkingByTrueOrFalse",
+            "lib/linter/code-path-analysis/code-path-analyzer.js//preprocess",
+            "lib/linter/code-path-analysis/code-path-analyzer.js//processCodePathToExit"
+        ],
+        "explanation": "All of the flagged methods live in `code-path-analyzer.js` and contribute to how logical operators (including `??`) are recognized and how the code-path is forked.  \n\n\u2022 isHandledLogicalOperator(operator): Currently treats `??` exactly like `&&`/`||`.  It needs to distinguish nullish coalescing so that only nullish values (not all falsy values) cause evaluation of the right side.  \n\n\u2022 isForkingByTrueOrFalse(node): Decides whether a logical test forks into two separate flow segments.  The predicate here must be updated so that a `??` expression only forks on nullish, not on every false or zero.  \n\n\u2022 preprocess(analyzer, node): Handles the creation of new fork contexts when entering child nodes\u2014specifically it currently forks unconditionally at the \u201cright\u201d of any handled logical operator.  It should only fork for `??` when the left side can be nullish.  \n\n\u2022 processCodePathToExit(analyzer, node): Mirrors the logic of `preprocess` when exiting nodes.  It currently closes the left\u2010false branch for all handled operators, which causes the missing path into `c`.  It must be altered to preserve the branch into the right side of `??` when the left side is non-nullish but falsy.  \n\nBy updating these methods to respect the nullish-only short-circuit semantics of `??`, the analyzer will produce the correct three paths for `(a && b) ?? c`.  \n",
+        "bug_scenario": "The user is calling ESLint\u2019s code-path analysis on the expression `(a && b) ?? c`.  The generated control-flow graph treats the nullish operator `??` the same as `||` or `&&`, so it creates exactly the same two branches it would for `(a || b) ?? c`\u2014either (a\u2192b\u2192\u2026) or (a\u2192exit)\u2014and never presents the third \u201ca false but not null\u201d path into `c`.  In reality, `(a && b) ?? c` should short-circuit into `c` only if `a && b` is nullish (e.g. `null` or `undefined`), but the analyzer treats any falsy `a` (including `false` or `0`) as if it bypasses `c` entirely.  The image shows the DOT graph with only two branches instead of three, so the analyzer is missing the \u201ca false but not null\u201d path that leads into `c`.  \n"
+    }
+}

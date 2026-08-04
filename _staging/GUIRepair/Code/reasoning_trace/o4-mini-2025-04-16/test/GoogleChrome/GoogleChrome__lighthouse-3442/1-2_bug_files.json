@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/v2/report-generator.js",
+            "lighthouse-core/report/v2/renderer/report-renderer.js",
+            "lighthouse-cli/printer.ts"
+        ],
+        "explanation": "1. lighthouse-core/report/v2/report-generator.js: This module is responsible for turning the raw Lighthouse JSON object into a self-contained HTML page. It inlines the JSON, the renderer scripts, and the CSS. A mistake here (for example improper escaping or a bad script tag) can lead to the SyntaxError seen in the console and/or omitted data, hence the missing generatedTime property.\n\n2. lighthouse-core/report/v2/renderer/report-renderer.js: The in-page script that reads the injected JSON and calls ._renderReportHeader. The TypeError about generatedTime comes from here because the data object is undefined or missing that field. Fixes here might include better checks around the injected data or more robust initialization.\n\n3. lighthouse-cli/printer.ts: When Lighthouse is run from the command line, this is the bridge that calls report-generator.js and writes its output to disk. If it\u2019s not passing the JSON payload correctly (or inadvertently trimming or mangling it), the HTML file will lack the expected data section, resulting in the blank page and the trailing errors.",
+        "bug_scenario": "When generating a report (either via CLI or as a browser extension) Lighthouse writes out an HTML file that, when opened (note the file:// URL in the screenshot), shows a completely blank page.  The DevTools console shows a SyntaxError (\"Invalid or unexpected token\") deep in the .report.html file, and immediately afterward a TypeError: \"Cannot read property 'generatedTime' of undefined\" in ReportRenderer._renderReportHeader.  In short, the JSON payload that the report template is supposed to parse either isn\u2019t making it into the page correctly or is malformed, so the in-page renderer never gets a valid data object."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/report/v2/report-generator.js",
+            "lighthouse-core/report/v2/renderer/report-renderer.js"
+        ],
+        "explanation": "\u2022 report-generator.js is responsible for taking the Lighthouse result object, JSON-stringifying it (with proper escaping), and stamping out the full HTML page, including the inline script that sets window.__LIGHTHOUSE_JSON__. A bad escape or bundling step here will inject an unexpected token and prevent any data from landing on window.\n\n\u2022 report-renderer.js is the first bit of code that executes in the HTML page. It looks for window.__LIGHTHOUSE_JSON__ and immediately tries to read .generatedTime. Since the data never made it onto window (due to the earlier syntax error), it is undefined and throws the TypeError, so no report ever renders.\n\nFixing the JSON escaping/bundling in report-generator.js and ensuring report-renderer.js correctly guards against missing data (or matches the variable name inserted) will resolve the blank\u2010page issue.",
+        "bug_scenario": "The user runs Lighthouse from the CLI or extension and gets back an HTML report file, but when opening it in the browser the page is completely blank.  In the DevTools console you see:\n\n\u2022 \u201cUncaught SyntaxError: Invalid or unexpected token\u201d at one of the inline <script> blocks in the .report.html file.\n\u2022 \u201cUncaught TypeError: Cannot read property 'generatedTime' of undefined\u201d in ReportRenderer._renderReportHeader, meaning the embedded report JSON never made it onto window and is undefined.\n\nTogether these indicate that the HTML generator is inserting malformed JavaScript (most likely due to improper JSON/string escaping), so the report data never initializes and the renderer fails to run."
+    }
+}

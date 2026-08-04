@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/core/handlers/embed.ts",
+            "src/format/reveal/format-reveal.ts",
+            "resources/filters/quarto-post/reveal.lua",
+            "resources/capabilities/knitr.R"
+        ],
+        "explanation": "\u2022 src/core/handlers/embed.ts implements the \u2018embed\u2019 block handler in the core pipeline. It\u2019s responsible for reading and inserting file content into the AST, but it never actually populates the wrapper when the output format is revealjs.  \n\u2022 src/format/reveal/format-reveal.ts contains the revealjs\u2010specific logic and Pandoc arguments. Its configuration of section divs or filters may unintentionally suppress the embedded code nodes.  \n\u2022 resources/filters/quarto-post/reveal.lua is the Lua post\u2010filter that applies revealjs\u2010specific transformations. It may drop or reshape the \u2018cell\u2019 divs produced by embed.ts.  \n\u2022 resources/capabilities/knitr.R defines the R\u2010side knitr embed engine; it injects file content for HTML output. That script does not detect or handle revealjs slides correctly, so the code never makes it into the final revealjs HTML.",
+        "bug_scenario": "When rendering a Quarto document to revealjs with the knitr \u201cembed\u201d engine, the external R script never gets injected. The slide HTML shows a <div class=\u201ccell\u201d data-file=\u201ccode.R\u201d> wrapper but it\u2019s empty \u2014 no code appears on the slide. By contrast, rendering the same embed block to plain HTML works correctly (the contents of code.R are inserted into a code block)."
+    },
+    "2": {
+        "bug_files": [
+            "src/core/handlers/embed.ts",
+            "resources/capabilities/knitr.R",
+            "src/format/reveal/format-reveal.ts"
+        ],
+        "explanation": "\u2022 src/core/handlers/embed.ts: This TypeScript handler drives the generic \u2018embed\u2019 shortcode; it filters embed chunks based on output format and currently treats only plain HTML outputs, so it skips for revealjs.  \n\u2022 resources/capabilities/knitr.R: The R capability script installs the knitr hooks for embed; it checks the output format class (HTML) and likewise omits content when the format is revealjs.  \n\u2022 src/format/reveal/format-reveal.ts: The revealjs format registration does not re-enable or pass through the embed handler\u2014no special override or support is wired in, so the generic embed logic never runs under revealjs. Fixing this requires updating the embed handler (and/or the knitr.R hooks) to recognize revealjs as an HTML\u2010like format or adjusting the revealjs formatter to explicitly include the embed filter.",
+        "bug_scenario": "When rendering a Quarto document with format: revealjs and engine: knitr, the `{embed, file=\"code.R\"}` chunk produces an empty <div class=\"cell\" data-file=\"code.R\"> with no code inside. In contrast, exactly the same embed chunk in a plain HTML output correctly inlines the contents of code.R. The bug indicates that the knitr embed engine is not emitting code for the revealjs format."
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/create-append-anything/CreateAppendKeyboardBindings.js",
+            "lib/features/create-append-anything/CreateAppendEditorActions.js"
+        ],
+        "bug_functions": [
+            "CreateAppendKeyboardBindings.prototype.registerBindings (addListener('appendElement', ...))",
+            "CreateAppendEditorActions.prototype.registerActions"
+        ],
+        "explanation": "The keyboard binding in CreateAppendKeyboardBindings only calls editorActions.trigger('appendElement') when a single element is selected, and never falls back to createElement if no append entries are available. Meanwhile CreateAppendEditorActions only registers an 'appendElement' action when a contextPad exists (i.e. when append menu items are present). In the Event Sub-Process case the contextPad has no append entries so no 'appendElement' action is registered, and since the 'a' key listener only triggers appendElement (never createElement), pressing 'a' does nothing. The fix requires changing the keyboard binding to detect when append isn't available (e.g. via the rules or by checking contextPad entries) and trigger createElement as a fallback.",
+        "bug_scenario": "In the screenshot an Event Sub\u2010Process (which in principle can have children but currently has no append handles shown in its context pad) is selected and the user presses 'a'. Nothing happens. According to spec, 'a' should trigger \"append\" if any append target exists, and otherwise fall back to \"create\". Here no append menu entries exist, so pressing 'a' should open the palette to create a new element, but it does not."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/create-append-anything/CreateAppendKeyboardBindings.js//CreateAppendKeyboardBindings",
+            "lib/features/create-append-anything/CreateAppendEditorActions.js//CreateAppendEditorActions",
+            "lib/features/create-append-anything/AppendRules.js//AppendRules"
+        ],
+        "bug_functions": [
+            "CreateAppendKeyboardBindings.prototype.registerBindings",
+            "CreateAppendEditorActions.prototype.registerActions",
+            "AppendRules.prototype.init"
+        ],
+        "explanation": "\n1. CreateAppendKeyboardBindings.prototype.registerBindings: This is where the \u2018a\u2019 key is bound to the 'appendElement' action. It only triggers append when an editorAction 'appendElement' is registered; otherwise it triggers create. In cases where append is registered but yields no context-pad entries, the fallback to create never occurs.\n\n2. CreateAppendEditorActions.prototype.registerActions: This registers the editor actions 'appendElement' (via contextPad.triggerEntry) and 'createElement' (via palette.triggerEntry). If context-pad has no \u2018append\u2019 entries, calling contextPad.triggerEntry does nothing, and no fallback logic to create is implemented here.\n\n3. AppendRules.prototype.init: Defines modeling rules for when append is allowed (shape.append). If a shape has no allowed append targets (rules return false), no append handles are shown. Yet the keyboard handler still believes append is available, preventing the fallback to create. Adjusting these rules or adding a runtime check in the keyboard binding to detect empty append menus would allow correct fallback behavior.",
+        "bug_scenario": "The user selects a BPMN element (e.g., an exclusive gateway) that in principle can have children appended, but its context pad shows no append handles (because no BPMN append options exist for that element). Pressing the \u201ca\u201d key shortcut does nothing. According to the design, \u201ca\u201d should always be active: it should trigger an append when possible, and otherwise fall back to create. In this scenario, neither append nor create is invoked, so nothing happens."
+    }
+}

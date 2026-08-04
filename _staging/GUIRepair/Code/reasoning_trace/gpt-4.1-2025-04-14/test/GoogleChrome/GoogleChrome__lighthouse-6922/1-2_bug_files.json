@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/connections/cri.js",
+            "lighthouse-core/gather/devtools-log.js"
+        ],
+        "explanation": "These files are closely related to Chrome DevTools Protocol integration and how Lighthouse interacts with browser targets for gathering information. In particular:\n- lighthouse-core/gather/driver.js is responsible for interacting with the Chrome DevTools Protocol. Expanding target discovery or enabling support for OOPIFs would need changes here to attach and send commands to discovered subframe targets.\n- lighthouse-core/gather/gather-runner.js orchestrates the gathering process and would need awareness of subframes/OOPIFs to coordinate their data collection.\n- lighthouse-core/gather/connections/cri.js implements the connection details with Chrome's protocol; enhancements for multiple targets/sessions would likely touch this file.\n- lighthouse-core/gather/devtools-log.js handles protocol logs and may need to be updated to support logs from subframe/OOPIF sessions. These files collectively govern how Lighthouse attaches to, enables, and collects data from browsing contexts, and would be central to fixing the OOPIF handling bug.",
+        "bug_scenario": "The bug scenario is that Lighthouse currently doesn't handle OOPIFs (Out-of-Process Iframes). According to the report and the attached image, Chrome DevTools uses Target discovery and attaches to subframes (OOPIFs) by sending commands (such as Network.enable) to each target via Target.sendMessageToTarget, but Lighthouse doesn't appear to perform this type of target discovery in its gather code. As a result, Lighthouse may only analyze network requests from the main frame and miss data from OOPIFs, leading to incomplete audits."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/connections/cri.js",
+            "lighthouse-core/gather/devtools-log.js"
+        ],
+        "explanation": "These files are bug related because they are responsible for how Lighthouse connects to Chrome, discovers targets, gathers network data, and processes events related to page frames:\n- 'lighthouse-core/gather/driver.js': Handles the main communication interface between Lighthouse and Chrome using the DevTools Protocol. It manages frame/navigation events and would need to discover and attach to OOPIF targets.\n- 'lighthouse-core/gather/gather-runner.js': Coordinates the overall gathering process (running gatherers, listening for network/page events). Changes are needed here to ensure OOPIF frames are discovered and properly handled during gathering.\n- 'lighthouse-core/gather/connections/cri.js': Implements the Chrome Remote Interface (CRI) connection. May need updates to support communication with multiple targets (main frame and each OOPIF target) similarly to how DevTools uses 'Target.sendMessageToTarget'.\n- 'lighthouse-core/gather/devtools-log.js': Processes DevTools protocol logs and events. Must be adjusted to appropriately process network/resource events from all frames, including OOPIFs, not just the main one.\nThese files collectively govern target discovery, network events handling, and would all need modifications to address the lack of OOPIF support in Lighthouse gathering.",
+        "bug_scenario": "The bug scenario is that Lighthouse does not handle Out-Of-Process IFrames (OOPIFs). The bug report highlights that while Chrome DevTools can attach to and collect network data from OOPIF targets (as shown in the image via `Target.sendMessageToTarget` sending `Network.enable` to iframe targets), Lighthouse's gatherers do not perform similar target discovery and only analyze the main frame's requests. Thus, requests (including network and page resource events) within OOPIFs are not visible to Lighthouse audits, resulting in incomplete or incorrect audit results for pages containing iframes created in different processes."
+    }
+}

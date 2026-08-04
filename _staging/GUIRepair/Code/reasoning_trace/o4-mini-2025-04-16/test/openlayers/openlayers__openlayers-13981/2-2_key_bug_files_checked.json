@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/TextBuilder.js"
+        ],
+        "explanation": "\u2022 Immediate.js: This is where the CanvasImmediateRenderer applies the style\u2019s offsetX/offsetY and then calls context.rotate. The current order shifts the rotation center by the offset values, causing the text to spin around the wrong point. Fixing this will require changing the translate/rotate sequence so the text rotates about the feature anchor and only then applies the offset.\n\u2022 Executor.js: The vector-layer pipeline\u2019s Executor.calculateImageOrLabelDimensions_ method computes the correct anchorX/anchorY, applies the view rotation first, then applies offset (displacement) last. This reference implementation shows the correct ordering of transforms that Immediate.js needs to mirror.\n\u2022 Text.js: This file defines the style properties offsetX, offsetY, rotation and rotateWithView used by both pipelines. Ensuring that Immediate.js reads and applies these properties using the same sign conventions (particularly offsetY direction) is essential for consistency.\n\u2022 TextBuilder.js: Although it only builds text instructions, it establishes the TEXT_ALIGN and TEXT_BASELINE constants and how text is handled in the vector pipeline. Reviewing its conventions can help align the immediate renderer\u2019s default text alignment and baseline behavior with the builder/executor pipeline.",
+        "bug_scenario": "In the provided examples you can see two identical style settings (offsetX, offsetY, rotation, textAlign and textBaseline) applied to a point feature, once rendered as part of a VectorLayer (using the builder/executor pipeline) and once rendered immediately via the VectorContext (CanvasImmediateRenderer). In the VectorLayer case the offset text is rotated around the feature\u2019s position (the anchor point), whereas in the immediate rendering case the text is rotated around the offset anchor (shifting the rotation center by offsetX/offsetY). This mismatch produces visually inconsistent placement when both pipelines are viewed under the same rotation."
+    }
+}

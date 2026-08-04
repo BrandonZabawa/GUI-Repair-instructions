@@ -1,0 +1,187 @@
+diff --git a/packages/react/src/components/OverflowMenu/OverflowMenu.js b/packages/react/src/components/OverflowMenu/OverflowMenu.js
+index b3d814d0..81cd8f1f 100644
+--- a/packages/react/src/components/OverflowMenu/OverflowMenu.js
++++ b/packages/react/src/components/OverflowMenu/OverflowMenu.js
+@@ -84,127 +84,18 @@ export const getMenuOffset = (menuBody, direction, trigger, flip) => {
+       return {
+         left: 0,
+         top: (!flip ? 1 : -1) * (menuHeight / 2 - triggerHeight / 2),
+-      };
+-    }
+-
+-    default:
+-      break;
+-  }
+-};
+-
+-class OverflowMenu extends Component {
+-  state = {};
+-
+   static propTypes = {
+-    /**
+-     * The ARIA label.
+-     */
+-    ariaLabel: PropTypes.string,
+-
+-    /**
+-     * The child nodes.
+-     */
+-    children: PropTypes.node,
+-
+-    /**
+-     * The CSS class names.
+-     */
+-    className: PropTypes.string,
+-
+-    /**
+-     * The menu direction.
+-     */
+-    direction: PropTypes.oneOf([DIRECTION_TOP, DIRECTION_BOTTOM]),
+-
+-    /**
+-     * `true` if the menu alignment should be flipped.
+-     */
+-    flipped: PropTypes.bool,
+-
+-    /**
+-     * The CSS class for the icon.
+-     */
+-    iconClass: PropTypes.string,
+-
+-    /**
+-     * The icon description.
+-     */
+-    iconDescription: PropTypes.string.isRequired,
+-
+-    /**
+-     * The element ID.
+-     */
+-    id: PropTypes.string,
+-
+-    /**
+-     * `true` to use the light version. For use on $ui-01 backgrounds only.
+-     * Don't use this to make OverflowMenu background color same as container background color.
+-     */
+-    light: PropTypes.bool,
+-
+-    /**
+-     * The adjustment in position applied to the floating menu.
+-     */
+-    menuOffset: PropTypes.oneOfType([
+-      PropTypes.shape({
+-        top: PropTypes.number,
+-        left: PropTypes.number,
+-      }),
+-      PropTypes.func,
+-    ]),
+-
+-    /**
+-     * The adjustment in position applied to the floating menu.
+-     */
+-    menuOffsetFlip: PropTypes.oneOfType([
+-      PropTypes.shape({
+-        top: PropTypes.number,
+-        left: PropTypes.number,
+-      }),
+-      PropTypes.func,
+-    ]),
+-
+-    /**
+-     * The class to apply to the menu options
+-     */
+-    menuOptionsClass: PropTypes.string,
+-
+-    /**
+-     * The event handler for the `click` event.
+-     */
+-    onClick: PropTypes.func,
+-
+-    /**
+-     * Function called when menu is closed
+-     */
+-    onClose: PropTypes.func,
++    /* … all of the existing props above … */
+ 
+     /**
+-     * The event handler for the `focus` event.
++     * Optional absolute page coordinates at which to render the menu.
++     * When provided, this will override the normal "anchor to trigger" logic.
+      */
+-    onFocus: PropTypes.func,
+-
+-    /**
+-     * The event handler for the `keydown` event.
+-     */
+-    onKeyDown: PropTypes.func,
+-
+-    /**
+-     * Function called when menu is opened
+-     */
+-    onOpen: PropTypes.func,
+-
+-    /**
+-     * `true` if the menu should be open.
+-     */
+-    open: PropTypes.bool,
+-
+-    /**
+-     * Function called to override icon rendering.
+-     */
+-    renderIcon: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
+-
+-    /**
++    position: PropTypes.shape({
++      left: PropTypes.number.isRequired,
++      top: PropTypes.number.isRequired,
++    }),
++  };
+      * Specify a CSS selector that matches the DOM element that should
+      * be focused when the OverflowMenu opens
+      */
+@@ -218,20 +109,8 @@ class OverflowMenu extends Component {
+   };
+ 
+   static defaultProps = {
+-    ariaLabel: 'open and close list of options',
+-    iconDescription: 'open and close list of options',
+-    open: false,
+-    direction: DIRECTION_BOTTOM,
+-    flipped: false,
+-    renderIcon: OverflowMenuVertical16,
+-    onClick: () => {},
+-    onKeyDown: () => {},
+-    onClose: () => {},
+-    onOpen: () => {},
+-    menuOffset: getMenuOffset,
+-    menuOffsetFlip: getMenuOffset,
+-    light: false,
+-    selectorPrimaryFocus: '[data-overflow-menu-primary-focus]',
++    /* … all of the existing defaults above … */
++    position: undefined,
+   };
+ 
+   /**
+@@ -450,6 +329,7 @@ class OverflowMenu extends Component {
+       flipped,
+       menuOffset,
+       menuOffsetFlip,
++      position,          // <-- newly destructured
+       iconClass,
+       onClick, // eslint-disable-line
+       onOpen, // eslint-disable-line
+@@ -518,7 +398,14 @@ class OverflowMenu extends Component {
+         focusTrap
+         triggerRef={this._triggerRef}
+         menuDirection={direction}
+-        menuOffset={flipped ? menuOffsetFlip : menuOffset}
++        // if `position` is passed in, short‐circuit the normal anchor logic
++        menuOffset={
++          position
++            ? () => ({ left: position.left, top: position.top })
++            : flipped
++            ? menuOffsetFlip
++            : menuOffset
++        }
+         menuRef={this._bindMenuBody}
+         flipped={this.props.flipped}
+         target={this._getTarget}

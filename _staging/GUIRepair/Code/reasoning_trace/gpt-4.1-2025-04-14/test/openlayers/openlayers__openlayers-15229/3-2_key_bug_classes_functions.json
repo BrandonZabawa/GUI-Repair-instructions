@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/PointsLayer.js//renderFrame",
+            "src/ol/renderer/webgl/PointsLayer.js//rebuildBuffers_"
+        ],
+        "explanation": "The distortion described in the bug report is a rendering issue that depends on how the WebGLPoints layer projects and rotates icons relative to the viewport. The main class responsible for rendering the points is WebGLPointsLayerRenderer in src/ol/renderer/webgl/PointsLayer.js. The renderFrame function is central to drawing the icons each frame, and rebuildBuffers_ is responsible for (re)calculating vertex positions and transforms before rendering. If the aspect ratio is not properly considered in these calculations (especially when 'icon-rotate-with-view' is true), icons can be stretched or squashed, resulting in the reported distortion. Therefore, these class and functions are directly related to the bug and are the most likely locations to apply a fix (such as correcting the projection transform to account for viewport aspect ratio during rotation).",
+        "bug_scenario": "The bug scenario is that when rendering icons using the WebGLPoints layer in OpenLayers, if the map viewport is not square and the style property 'icon-rotate-with-view' is set to true, the icons become distorted. This is particularly visible when the map view is rotated and the aspect ratio of the viewport is not 1:1. The expected behavior is that icons should remain undistorted regardless of the viewport shape or rotation settings."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/PointsLayer.js//renderFrame",
+            "src/ol/renderer/webgl/PointsLayer.js//rebuildBuffers_",
+            "src/ol/renderer/webgl/PointsLayer.js//renderWorlds"
+        ],
+        "explanation": "The class 'WebGLPointsLayerRenderer' in src/ol/renderer/webgl/PointsLayer.js is directly responsible for rendering point features using WebGL, including icons. Since the bug is related to icon rendering distortion, this renderer is central to the issue. The functions 'renderFrame', 'rebuildBuffers_', and 'renderWorlds' are all involved in the core rendering loop or in preparing the data for rendering. 'renderFrame' draws the layer per frame, 'rebuildBuffers_' recalculates the GPU buffers (likely involving positioning and transformation), and 'renderWorlds' is responsible for rendering across world extents. The transformation logic in these methods is likely influenced by viewport aspect ratio, and if not handled properly, can cause the described icon distortion. The style and layer setup (src/ol/layer/WebGLPoints.js) is not responsible for the rendering math but rather the configuration, so the renderer is the focal point for the bug.",
+        "bug_scenario": "The bug occurs when rendering icons on a WebGLPoints layer with the 'icon-rotate-with-view: true' option and a non-square (i.e., rectangular) viewport. The icons become distorted, as evidenced in the provided screenshot, instead of maintaining their aspect ratio and orientation. The issue does not manifest with a square viewport, only with non-square viewports when the map is rotated."
+    }
+}

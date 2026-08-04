@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-clike.js",
+            "components/prism-clike.min.js",
+            "components/prism-cpp.js",
+            "components/prism-cpp.min.js"
+        ],
+        "explanation": "Prism\u2019s C++ language support is built on top of the \u201cclike\u201d grammar defined in prism-clike.js (and its minified version). The C++-specific rules in prism-cpp.js (and its minified version) extend that grammar. The failure to highlight inherited class names (\u2018QMainWindow\u2019) and scoped class members (\u2018MainWindow::\u2026\u2019) stems from how classes and identifiers are tokenized in those two files. To fix the issue, you\u2019ll need to adjust the class-name patterns in prism-clike.js (so base classes after the colon are captured) and/or extend them in prism-cpp.js (so scoped identifiers following `ClassName::` are recognized).",
+        "bug_scenario": "In the provided screenshots and code snippet, PrismJS correctly highlights the first class name \u201cMainWindow\u201d after the \u2018class\u2019 keyword, but it fails to highlight: 1) the base class identifier \u2018QMainWindow\u2019 in the inheritance list, and 2) the class name \u2018MainWindow\u2019 in the member definition after the scope operator (`MainWindow::changeWindowTitle`). Prism\u2019s C++ grammar doesn\u2019t recognize identifiers in those contexts as class names, whereas GitHub\u2019s highlighter does."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-clike.js",
+            "components/prism-clike.min.js",
+            "components/prism-cpp.js",
+            "components/prism-cpp.min.js"
+        ],
+        "explanation": "Prism\u2019s C++ support is built on top of the \u201cclike\u201d language definition (in prism-clike.js). The clike grammar provides general rules for class names and identifiers, but the C++ extension in prism-cpp.js does not add patterns for base\u2010class names in inheritance clauses nor for qualified class names in method definitions. To fix the missing highlights, the class-name pattern in prism-cpp.js needs to be extended (or overridden) to recognize identifiers following a colon in a class declaration and the qualifier before \u201c::\u201d in member definitions. Both the non\u2010minified and minified versions of prism-clike.js and prism-cpp.js must be updated so that C++ class names in these contexts are correctly tokenized and styled.",
+        "bug_scenario": "When highlighting C++ code with PrismJS both the name of a base class in an inheritance clause (for example, \"QMainWindow\" in \"class MainWindow : public QMainWindow\") and a qualified identifier in a method definition (for example, \"MainWindow\" in \"void MainWindow::changeWindowTitle()\") are not being recognized and styled as class names. GitHub\u2019s highlighter correctly highlights those identifiers, but Prism\u2019s existing CPP grammar in prism-cpp.js (which extends the prism-clike grammar) fails to handle these cases."
+    }
+}

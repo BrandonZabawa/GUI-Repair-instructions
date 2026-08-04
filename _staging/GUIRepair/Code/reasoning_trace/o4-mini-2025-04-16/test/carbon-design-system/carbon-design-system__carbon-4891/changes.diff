@@ -1,0 +1,42 @@
+diff --git a/packages/components/src/components/search/search.js b/packages/components/src/components/search/search.js
+index b431f0c2..846ef884 100644
+--- a/packages/components/src/components/search/search.js
++++ b/packages/components/src/components/search/search.js
+@@ -38,6 +38,20 @@ class Search extends mixin(createComponent, initComponentBySearch, handles) {
+    */
+   constructor(element, options) {
+     super(element, options);
++
++    // Inject global CSS to neutralize Chrome autofill background
++    if (!document.querySelector('style[data-cds-search-autofill]')) {
++      const styleEl = document.createElement('style');
++      styleEl.setAttribute('data-cds-search-autofill', 'true');
++      styleEl.textContent = `
++        .${settings.prefix}--search-input:-webkit-autofill {
++          box-shadow: 0 0 0px 1000px #fff inset !important;
++          -webkit-text-fill-color: inherit !important;
++        }
++      `;
++      document.head.appendChild(styleEl);
++    }
++
+     const closeIcon = this.element.querySelector(
+       this.options.selectorClearIcon
+     );
+diff --git a/packages/react/src/components/Search/Search.js b/packages/react/src/components/Search/Search.js
+index 4e8c04d7..868e82eb 100644
+--- a/packages/react/src/components/Search/Search.js
++++ b/packages/react/src/components/Search/Search.js
+@@ -172,6 +172,12 @@ export default class Search extends Component {
+           {...other}
+           type={type}
+           className={`${prefix}--search-input`}
++          /* override Chrome autofill so it doesn’t paint sky-blue behind our clear icon */
++          style={{
++            ...other.style,
++            WebkitBoxShadow: '0 0 0px 1000px #fff inset',
++            WebkitTextFillColor: 'inherit',
++          }}
+           id={id}
+           placeholder={placeHolderText}
+           onChange={this.handleChange}

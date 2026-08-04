@@ -1,0 +1,46 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index 5de570b2c8..9688a87e1f 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -324,10 +324,12 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     const tileGrid = tileSource.getTileGridForProjection(viewState.projection);
+     const gutter = tileSource.getGutterForProjection(viewState.projection);
+ 
+-    const tileSourceKey = getUid(tileSource);
+-    if (!(tileSourceKey in frameState.wantedTiles)) {
+-      frameState.wantedTiles[tileSourceKey] = {};
+-    }
++const tileSourceKey = getUid(tileSource);
++if (!(tileSourceKey in frameState.wantedTiles)) {
++frameState.wantedTiles[tileSourceKey] = {};
++// Clear the tile texture cache when the source or projection changes
++this.tileTextureCache_.clear();
++}
+ 
+     const wantedTiles = frameState.wantedTiles[tileSourceKey];
+ 
+diff --git a/src/ol/source/Tile.js b/src/ol/source/Tile.js
+index 07767842f2..3e204936bf 100644
+--- a/src/ol/source/Tile.js
++++ b/src/ol/source/Tile.js
+@@ -216,12 +216,14 @@ class TileSource extends Source {
+    * @param {string} key The key for tiles.
+    * @protected
+    */
+-  setKey(key) {
+-    if (this.key_ !== key) {
+-      this.key_ = key;
+-      this.changed();
+-    }
+-  }
++setKey(key) {
++if (this.key_ !== key) {
++this.key_ = key;
++this.changed();
++// Clear the tile cache when the source key changes
++this.clear();
++}
++}
+ 
+   /**
+    * @param {import("../proj/Projection.js").default} projection Projection.

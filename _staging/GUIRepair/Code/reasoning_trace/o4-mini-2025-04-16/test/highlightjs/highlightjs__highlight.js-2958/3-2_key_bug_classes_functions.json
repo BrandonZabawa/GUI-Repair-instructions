@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/xml.js//export default function(hljs)",
+            "src/languages/xml.js//TAG_NAME_RE",
+            "src/languages/xml.js//open tag mode (begin: regex.concat(/</, lookahead(TAG_NAME_RE\u2026)))",
+            "src/languages/xml.js//close tag mode (begin: regex.concat(/<\\//, lookahead(TAG_NAME_RE\u2026)))"
+        ],
+        "explanation": "All of the core logic for XML tag name detection lives inside the default export in xml.js. The constant TAG_NAME_RE defines what constitutes a valid tag name (including an optional namespace prefix), and both the open-tag and close-tag rules wrap lookaheads around TAG_NAME_RE to decide whether a '<\u2026>' sequence is a tag. Because the optional namespace sub-pattern is written as /[A-Z0-9_.-]+:/ (one or more characters from A\u2013Z, 0\u20139, underscore, period or hyphen, followed by a colon), it never matches a single alphabetical character plus ':' (e.g. \u201ca:\u201d). As a result, TAG_NAME_RE simply fails to match those tags, and highlight.js does not apply the tag styling. Fixing the issue requires adjusting the TAG_NAME_RE (and thereby the open/close tag modes) to allow single-character prefixes before the colon.",
+        "bug_scenario": "In the provided screenshots you can see that XML tags with multi\u2010character namespace prefixes (e.g. <abc:OK>, <ab:OK>) are correctly syntax-highlighted, but a single-letter prefix (<a:FAIL>) is not highlighted at all. In other words, the TAG_NAME_RE regex in the XML language definition fails to match \u201ca:\u201d as a namespace prefix, so any tag whose prefix is only one character stops being recognized as a tag name and loses its highlighting."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/xml.js//default"
+        ],
+        "explanation": "All of the tag\u2010matching logic for XML lives in the default export in src/languages/xml.js. In particular it defines TAG_NAME_RE and then uses it in the open\u2010 and close\u2010tag grammar entries (begin patterns). Because TAG_NAME_RE is built with regex.optional(/[A-Z0-9_.-]+:/) (one or more characters before the colon), it fails to match a single\u2010character namespace prefix. Thus the default export\u2019s grammar rules do not recognize \u201ca:Tag\u201d as a valid tag name, causing those elements to go unhighlighted.",
+        "bug_scenario": "When highlighting XML with namespace prefixes, tags with multi\u2010character prefixes (e.g. \u201cabc:OK\u201d, \u201cab:OK\u201d) are correctly recognized and colored, but tags whose namespace prefixes are a single letter (e.g. \u201ca:OK\u201d) are not matched by the grammar and therefore not highlighted. The screenshots show that <a:FAIL xmlns:a=\"\u2026\" /> appears in plain text, while other namespace\u2010prefixed tags remain highlighted."
+    }
+}

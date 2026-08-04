@@ -1,0 +1,131 @@
+diff --git a/src/tab/tabs/nav.jsx b/src/tab/tabs/nav.jsx
+index 22a1dd4e4..3efe28bb4 100644
+--- a/src/tab/tabs/nav.jsx
++++ b/src/tab/tabs/nav.jsx
+@@ -47,6 +47,11 @@ class Nav extends React.Component {
+             dropdownTabs: [],
+         };
+         this.offset = 0;
++
++        // For drag/swipe support
++        this.isDragging = false;
++        this.lastClientX = 0;
++        this.lastClientY = 0;
+     }
+ 
+     componentDidMount() {
+@@ -55,6 +60,13 @@ class Nav extends React.Component {
+         }
+ 
+         events.on(window, 'resize', this.onWindowResized);
++
++        // Add mouse/touch/wheel event listeners for drag/scroll
++        if (this.wrapper) {
++            this.wrapper.addEventListener('mousedown', this.onDragStart);
++            this.wrapper.addEventListener('touchstart', this.onDragStart, { passive: false });
++            this.wrapper.addEventListener('wheel', this.onWheel, { passive: false });
++        }
+     }
+ 
+     componentDidUpdate() {
+@@ -72,6 +84,17 @@ class Nav extends React.Component {
+ 
+     componentWillUnmount() {
+         events.off(window, 'resize', this.onWindowResized);
++
++        // Remove event listeners
++        if (this.wrapper) {
++            this.wrapper.removeEventListener('mousedown', this.onDragStart);
++            this.wrapper.removeEventListener('touchstart', this.onDragStart, { passive: false });
++            this.wrapper.removeEventListener('wheel', this.onWheel, { passive: false });
++        }
++        document.removeEventListener('mousemove', this.onDragMove);
++        document.removeEventListener('mouseup', this.onDragEnd);
++        document.removeEventListener('touchmove', this.onDragMove, { passive: false });
++        document.removeEventListener('touchend', this.onDragEnd);
+     }
+ 
+     initialSettings() {
+@@ -485,6 +508,66 @@ class Nav extends React.Component {
+         this.wrapper = ref;
+     };
+ 
++    // Drag/Swipe/Wheel handlers for slide mode
++    onDragStart = (e) => {
++        if (this.props.excessMode !== 'slide') return;
++        this.isDragging = true;
++        if (e.type === 'touchstart') {
++            this.lastClientX = e.touches[0].clientX;
++            this.lastClientY = e.touches[0].clientY;
++            document.addEventListener('touchmove', this.onDragMove, { passive: false });
++            document.addEventListener('touchend', this.onDragEnd);
++        } else {
++            this.lastClientX = e.clientX;
++            this.lastClientY = e.clientY;
++            document.addEventListener('mousemove', this.onDragMove);
++            document.addEventListener('mouseup', this.onDragEnd);
++        }
++    };
++
++    onDragMove = (e) => {
++        if (!this.isDragging) return;
++        let clientX, clientY;
++        if (e.type === 'touchmove') {
++            clientX = e.touches[0].clientX;
++            clientY = e.touches[0].clientY;
++        } else {
++            clientX = e.clientX;
++            clientY = e.clientY;
++        }
++        const deltaX = clientX - this.lastClientX;
++        const deltaY = clientY - this.lastClientY;
++        this.lastClientX = clientX;
++        this.lastClientY = clientY;
++
++        // Only horizontal drag for top/bottom, vertical for left/right
++        if (this.props.tabPosition === 'left' || this.props.tabPosition === 'right') {
++            this.setOffset(this.offset + deltaY, true, false);
++        } else {
++            this.setOffset(this.offset + deltaX, true, false);
++        }
++        if (e.type === 'touchmove') e.preventDefault();
++    };
++
++    onDragEnd = () => {
++        this.isDragging = false;
++        document.removeEventListener('mousemove', this.onDragMove);
++        document.removeEventListener('mouseup', this.onDragEnd);
++        document.removeEventListener('touchmove', this.onDragMove, { passive: false });
++        document.removeEventListener('touchend', this.onDragEnd);
++    };
++
++    onWheel = (e) => {
++        if (this.props.excessMode !== 'slide') return;
++        // Only scroll horizontally for top/bottom, vertically for left/right
++        if (this.props.tabPosition === 'left' || this.props.tabPosition === 'right') {
++            this.setOffset(this.offset - e.deltaY, true, false);
++        } else {
++            this.setOffset(this.offset - e.deltaY, true, false);
++        }
++        e.preventDefault();
++    };
++
+     navbarRefHandler = ref => {
+         this.navbar = ref;
+     };
+@@ -556,7 +639,14 @@ class Nav extends React.Component {
+ 
+         const container = (
+             <div className={containerCls} onKeyDown={onKeyDown} key="nav-container">
+-                <div className={`${prefix}tabs-nav-wrap`} ref={this.wrapperRefHandler}>
++                <div
++                    className={`${prefix}tabs-nav-wrap`}
++                    ref={this.wrapperRefHandler}
++                    // Add touch/mouse/wheel handlers for drag/scroll
++                    onMouseDown={this.onDragStart}
++                    onTouchStart={this.onDragStart}
++                    onWheel={this.onWheel}
++                >
+                     <div className={`${prefix}tabs-nav-scroll`}>
+                         {animation ? (
+                             <Animate

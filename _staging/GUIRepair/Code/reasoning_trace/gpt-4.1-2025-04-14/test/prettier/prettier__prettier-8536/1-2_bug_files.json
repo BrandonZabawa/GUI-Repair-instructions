@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/printer-estree.js",
+            "src/language-js/comments.js",
+            "src/language-js/utils.js",
+            "src/main/ast-to-doc.js",
+            "src/main/core.js"
+        ],
+        "explanation": "The bug relates to how Prettier prints AST nodes (specifically directives and comments) and manages line breaks at the end of files. \n- 'src/language-js/printer-estree.js' is the main printer for JavaScript/JSX ASTs and handles how newlines and comments are inserted in the output (the code snippet linked in the bug report points here).\n- 'src/language-js/comments.js' manages comments' placement, which may affect trailing newlines when comments follow directives.\n- 'src/language-js/utils.js' is sometimes used for helper logic in formatting code and managing lists of printed nodes, potentially influencing newlines.\n- 'src/main/ast-to-doc.js' builds the document structure that eventually generates newlines; logic here affects trailing whitespace.\n- 'src/main/core.js' is responsible for assembling the final output string from the formatted doc structure; it might also trim or add newlines at the very end of the file output, contributing to extra or missing newlines. All these files are bug-related since they are involved in transforming the AST and generating output, directly impacting the bug scenario described.",
+        "bug_scenario": "The bug occurs when formatting a file that only contains a directive (like 'use strict'), followed by a new line and then a comment. Prettier inserts two trailing newlines instead of the expected one, resulting in an extra blank line at the end of the file. This is observable in the screenshot: the formatted output (right panel) gets an extra empty line, compared to the input (left panel). This scenario is triggered using the 'babylon' (now 'babel') parser."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/printer-estree.js",
+            "src/main/ast-to-doc.js"
+        ],
+        "explanation": "The bug is about how newlines are handled in the final output of formatted JavaScript files, specifically after directives and comments. 'src/language-js/printer-estree.js' is the printer for JavaScript (Estree), responsible for rendering the AST into formatted text, and is the most likely file where the logic for printing newlines (including hardlines and trailing lines) occurs. 'src/main/ast-to-doc.js' handles the transformation from an AST to Prettier's internal document format (Doc), which directly affects how newlines and structure are preserved or added. Both files are central to handling document structure and could be responsible for the accidental insertion of a second newline at the file's end. Fixing the bug would likely involve adjusting the logic in these files to correctly handle the desired number of trailing newlines.",
+        "bug_scenario": "The bug is that when formatting a file containing only a directive (like 'use strict;'), followed by a new line and a comment, Prettier adds two newlines at the end of the file rather than just one. This results in an undesired extra blank line after the comment. The reproduction image confirms the output contains an additional blank line on the right side, which should not be present. This only occurs with certain parsers (babylon/babel) and not in older versions or with other language modes."
+    }
+}

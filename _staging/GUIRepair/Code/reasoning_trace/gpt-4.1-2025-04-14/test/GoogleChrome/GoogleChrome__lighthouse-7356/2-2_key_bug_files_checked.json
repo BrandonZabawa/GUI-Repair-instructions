@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/config/constants.js"
+        ],
+        "explanation": "1. 'lighthouse-core/gather/driver.js': This file contains the core logic for waiting for page load events, FCP, network idle, CPU idle, and the overall mechanism for determining when a page is 'fully loaded.' The methods _waitForFCP, _waitForFullyLoaded, and gotoURL are directly responsible for the timeouts and thresholds that control how long Lighthouse waits for a page to load and render. Any changes to how long to wait for FCP or how to handle timeouts would be made here.\n\n2. 'lighthouse-core/gather/gather-runner.js': This file orchestrates the page loading and gatherer lifecycle, including the use of loadPage and the handling of timeouts and errors during the gather phase. It is responsible for calling the relevant driver methods and passing in the timeout values, so any changes to the overall flow or to how timeouts are handled would also need to be made here.\n\n3. 'lighthouse-core/config/constants.js': This file defines the default values for maxWaitForLoad, pauseAfterLoadMs, networkQuietThresholdMs, and cpuQuietThresholdMs. If the thresholds for waiting for FCP or page load need to be adjusted (e.g., lowering the 60s render timeout or 35s maxWaitForLoad), the changes would be made here.\n\nThese three files are key to addressing the bug, as they control the timeouts and logic for waiting for page load and FCP, which are at the root of the increased error rates described in the bug report and visualized in the scenario images.",
+        "bug_scenario": "The bug scenario involves a significant increase in Lighthouse render (LR) error rates, which correlates with a jump in page load latency. The provided images show a clear spike in the 95th percentile and higher of loadPage-defaultPass timings, indicating that more runs are hitting the maximum allowed wait time for page load or render. The bug report suspects that a recent change to wait for First Contentful Paint (FCP) during tracing, combined with a 35s maxWaitForLoad and a 60s render timeout, is causing more sites to hit these timeouts, resulting in increased errors."
+    }
+}

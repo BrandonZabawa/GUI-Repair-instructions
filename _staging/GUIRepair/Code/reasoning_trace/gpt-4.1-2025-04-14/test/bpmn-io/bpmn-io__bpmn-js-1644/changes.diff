@@ -1,0 +1,26 @@
+diff --git a/lib/features/replace/BpmnReplace.js b/lib/features/replace/BpmnReplace.js
+index 612222a6..442289bf 100644
+--- a/lib/features/replace/BpmnReplace.js
++++ b/lib/features/replace/BpmnReplace.js
+@@ -176,6 +176,21 @@ export default function BpmnReplace(
+       properties
+     );
+ 
++    // Preserve loopCharacteristics properties when switching between parallel and sequential multi-instance
++    if (
++      oldBusinessObject.loopCharacteristics &&
++      newBusinessObject.loopCharacteristics &&
++      typeof oldBusinessObject.loopCharacteristics === 'object' &&
++      typeof newBusinessObject.loopCharacteristics === 'object'
++    ) {
++      // Copy all properties except isSequential (which is intentionally changed)
++      Object.keys(oldBusinessObject.loopCharacteristics).forEach(function(key) {
++        if (key !== 'isSequential') {
++          newBusinessObject.loopCharacteristics[key] = oldBusinessObject.loopCharacteristics[key];
++        }
++      });
++    }
++
+     // initialize custom BPMN extensions
+     if (target.eventDefinitionType) {
+ 

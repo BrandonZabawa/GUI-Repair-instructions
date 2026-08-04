@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-bash.js",
+            "components/prism-bash.min.js"
+        ],
+        "explanation": "The syntax definition for Bash lives in prism-bash.js (and its minified counterpart). This is where Prism\u2019s regex patterns for string literals in Bash are defined. Currently it only supports normal single and double-quoted strings and does not include the special $'...'-style ANSI-C quoting. That missing pattern causes \\n (and other escape sequences) in ANSI-C quoted strings to break highlighting. To fix the bug, prism-bash.js must be updated to recognize $'...'-quoted strings (and prism-bash.min.js regenerated).",
+        "bug_scenario": "When Prism highlights a Bash snippet using ANSI-C quoting ($'...'), any escape sequence like \\n is not treated as part of the string. As soon as a backslash-n appears, highlighting ends and the rest of the contents are colored incorrectly. In other words, the Bash grammar in Prism doesn\u2019t recognize $'...'-style strings, so multi-line escapes break the string context."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-bash.js",
+            "components/prism-bash.min.js"
+        ],
+        "explanation": "Both prism-bash.js and its minified counterpart define the Bash grammar used by Prism. The ANSI-C quoting syntax ($'\u2026') isn\u2019t covered by the current string patterns in these files, so escape sequences (e.g. \\n) prematurely terminate the string token. To fix the highlighting, you must extend the string definitions in prism-bash.js (and re-generate the minified prism-bash.min.js) to include a pattern for $'\u2026' strings that properly handles backslash escapes.",
+        "bug_scenario": "The user is writing a Bash command that uses ANSI-C quoting (the $'\u2026' syntax) with embedded escape sequences like \\n. Prism\u2019s Bash highlighter currently does not recognize $'\u2026' as a single string token, so as soon as it sees an escape sequence it breaks out of the string and mis-highlights the rest of the line."
+    }
+}

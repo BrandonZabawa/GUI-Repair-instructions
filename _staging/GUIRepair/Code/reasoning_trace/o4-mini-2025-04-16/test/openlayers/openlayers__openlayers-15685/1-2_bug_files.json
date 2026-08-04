@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Fill.js",
+            "src/ol/style/Style.js",
+            "src/ol/render/canvas/style.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/render/webgl/VectorStyleRenderer.js",
+            "src/ol/layer/VectorTile.js"
+        ],
+        "explanation": "Fill.js implements the fill style (stores the color and opacity). Style.js makes that Fill available on a Style instance. render/canvas/style.js consumes the Fill and issues fill commands for every geometry. The VectorTile layer (layer/VectorTile.js) in renderMode \u201cvector\u201d instantiates the canvas-based VectorTileLayer renderer (renderer/canvas/VectorTileLayer.js), which applies the Style\u2014including the Fill\u2014to all features in each tile, producing the unwanted translucent overlay. The WebGL path (render/webgl/VectorStyleRenderer.js) has equivalent logic for fill styling, and would likewise produce artifacts if used. Adjusting how and where fills are applied (for example scoping them only to intended geometries, or altering the builder logic) is necessary to prevent the ghost layer.",
+        "bug_scenario": "When a fill is applied to a VectorTile layer via its Style (using setFill or passing fill in the Style constructor) in renderMode \u201cvector\u201d, every vector feature in each tile is drawn with that semi-transparent fill. The result is a faint \u201cghost\u201d overlay covering the underlying map, and even flicker on pointer-move when the fill gets reapplied. Removing the fill from the Style eliminates the overlay, which confirms that the unexpected extra layer comes solely from how fill is handled."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/render/canvas/style.js",
+            "src/ol/render/canvas/ExecutorGroup.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/layer/VectorTile.js"
+        ],
+        "explanation": "1. src/ol/render/canvas/style.js defines the canvas instructions for style.fill (polygon fills) and may be enqueueing fill instructions twice (old + new) after a style change.  \n2. src/ol/render/canvas/ExecutorGroup.js caches and replays drawing instructions per tile; it never clears or reinitialises the fill instructions on layer style changes, so stale instructions persist and redraw.  \n3. src/ol/renderer/canvas/VectorTileLayer.js uses ExecutorGroup to draw tiles; it doesn\u2019t purge the executor cache when the layer\u2019s style or fill changes, so old and new fills draw on each render pass.  \n4. src/ol/layer/VectorTile.js fires change:style events but does not trigger a full rebuild of the tile executors; it needs to notify the renderer to clear its per\u2010tile caches.  \nFixing the bug requires resetting or clearing the canvas instruction cache (in ExecutorGroup and/or the VectorTileLayer renderer) when the style\u2019s fill is added or changed so the fill is only drawn once.",
+        "bug_scenario": "When applying a non\u2010transparent Fill to a VectorTile layer in Canvas renderMode, an extra semi\u2010transparent overlay is drawn on top of the existing tiles (a \u201cghost\u201d layer). Removing the Fill eliminates the overlay; dynamically calling selectionStyle.setFill(...) likewise produces duplicate fills. The extra layer is the same fill rendered twice\u2014once from a stale cache of instructions and again from the new style instructions\u2014leading to a flicker on hover."
+    }
+}

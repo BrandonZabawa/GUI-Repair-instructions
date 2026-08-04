@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/cpp.js//export default function(hljs)",
+            "src/languages/arduino.js//export default function(hljs)"
+        ],
+        "explanation": "All of the C++ highlighting rules\u2014including the division between RESERVED_KEYWORDS and RESERVED_TYPES\u2014are defined in the default export function inside cpp.js. That is where primitive types were moved from one list to the other in the 11.0.0 cleanup. Reverting or adjusting those lists in this function will restore the old behavior. The Arduino grammar in arduino.js simply invokes the same C++ logic (via cPlusPlus) and then extends its keyword lists; so its default export is also relevant to ensure Arduino\u2019s primitive types remain highlighted as keywords in the same way.",
+        "bug_scenario": "The screenshots compare how various editors rendered C++ primitive-type declarations before and after the hljs 11.0.0 update. In versions prior to 11.0.0, types such as int, char, long long, etc. were highlighted uniformly as keywords (blue in VSCode, purple in Notepad++). After the cleanup PR, those same primitive types are treated as a separate \u201ctype\u201d category (dark red in the final image), which looks inconsistent and confusing compared to native C++ IDE themes. The user wants primitive types to be folded back into the main keyword color, as they were historically."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/cpp.js//export default function(hljs)",
+            "src/languages/arduino.js//export default function(hljs)"
+        ],
+        "explanation": "The heart of the highlighting logic for C++ lives in src/languages/cpp.js\u2019s default export function, where the lists of RESERVED_KEYWORDS and RESERVED_TYPES are declared and fed into highlight.js. The recent change moved primitive types out of the main keyword bucket and into a separate type category in this very function\u2014so that\u2019s the location to revert or re-merge them into the keyword list. Similarly, src/languages/arduino.js calls cPlusPlus(hljs) to inherit C++\u2019s keywords and then mutates the keywords object (kws.type, kws.literal, etc.). Because Arduino simply extends the C++ rules, it picks up the same split. Fixing the primitive\u2010type grouping in cpp.js will cascade correctly into Arduino, but if you must override there, it\u2019s also in the export default function of arduino.js where kws.type is assembled.",
+        "bug_scenario": "After splitting C++ primitive types out of the main keyword list (in v11.0.0), those built-in types (int, char, unsigned, signed, long, etc.) are no longer highlighted as keywords. The new behavior renders them in plain text, unlike most IDEs and the previous highlight.js versions. The provided screenshots show how \u201cstatic int test;\u201d and similar declarations lose their keyword color in Notepad++, VS Code, CLion, Xcode, etc., whereas highlight.js now leaves them un-styled."
+    }
+}

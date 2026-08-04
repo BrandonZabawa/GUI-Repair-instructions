@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer",
+            "src/ol/render/canvas/ExecutorGroup.js//ExecutorGroup",
+            "src/ol/render/canvas/Executor.js//Executor"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame",
+            "src/ol/render/canvas/ExecutorGroup.js//execute",
+            "src/ol/render/canvas/Executor.js//execute_ (and its public wrapper execute)"
+        ],
+        "explanation": "CanvasVectorLayerRenderer.renderFrame is where the layer\u2019s ExecutorGroup is invoked each frame and where the snapToPixel flag should be controlled during animations. ExecutorGroup.execute receives snapToPixel and then dispatches to each Executor, which in its execute_ methods applies integer rounding to circle coordinates and radii when snapToPixel=true. These three components together implement the pixel\u2010snapping logic that now forces circles onto integer\u2010pixel boundaries during animations, introducing the visible jitter.",
+        "bug_scenario": "When animating a large ol.style.Circle after upgrading from OpenLayers 4 to 6, the circle\u2019s position \u201cjitters\u201d on the canvas. In OL 4 you could opt out of pixel\u2010snapping (snapToPixel: false) so that during animation the circle would move smoothly in subpixel space. In OL 5+ that option was removed and the renderer now forces integer\u2010pixel snapping by default (except when interactive), so during a scripted animation the circle still snaps and jumps in one\u2010pixel increments\u2014visible as end\u2010of\u2010animation jitter."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer",
+            "src/ol/render/canvas/ExecutorGroup.js//ExecutorGroup",
+            "src/ol/render/canvas/Executor.js//Executor"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame",
+            "src/ol/renderer/canvas/VectorLayer.js//prepareFrame",
+            "src/ol/render/canvas/ExecutorGroup.js//execute",
+            "src/ol/render/canvas/Executor.js//execute"
+        ],
+        "explanation": "The jitter originates in the new canvas\u2010based replay architecture. CanvasVectorLayerRenderer (in renderFrame and prepareFrame) is responsible for determining rendering parameters per frame, but no longer exposes a way to disable pixel snapping during animations. Deep in the pipeline ExecutorGroup.execute receives a snapToPixel flag (now always true) and aligns all shapes to integer pixels. That flag is then propagated to Executor.execute, which snaps and draws each primitive. Together these classes/functions implement the pixel snapping behavior that used to be optional, so adjusting them (reintroducing a conditional false during active animations) will remove the jitter.",
+        "bug_scenario": "When animating circle geometries (for example, changing the radius of an ol.style.Circle on a Vector layer) in OpenLayers 6.5, the drawn circles visibly \u201cjitter\u201d or shake from frame to frame. In version 4.6.5 you could set snapToPixel false on ol.style.Circle to disable alignment to integer pixels during animations, but that option was removed and the new rendering pipeline always snaps to the nearest pixel during replay. As the circle grows (especially near the end of the animation), alignment at each step causes small jumps in position/size, resulting in a noticeable jitter."
+    }
+}

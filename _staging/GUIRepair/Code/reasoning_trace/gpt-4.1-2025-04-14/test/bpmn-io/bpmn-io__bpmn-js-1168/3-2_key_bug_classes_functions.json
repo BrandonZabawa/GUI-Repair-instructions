@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider",
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider.prototype.activate"
+        ],
+        "explanation": "The bug is related to the activation of direct editing on a task immediately after pasting. The logic for activating direct editing is managed within the LabelEditingProvider class, particularly in its event handlers set up in the constructor function (listening to various events such as 'create.end', 'autoPlace.end', and possibly events related to pasting). The activate method on the prototype is responsible for actually enabling the direct editing UI for an element. To fix the bug, the logic in LabelEditingProvider (and especially the activate method) needs to be adjusted so that direct editing is not triggered after a paste operation, even when the first pasted element is a Task. The other files (such as BpmnCopyPaste.js) handle the copy-paste mechanics but do not directly control the direct editing activation, which is the root of the reported issue.",
+        "bug_scenario": "The bug scenario involves copying and pasting a set of BPMN elements where the first element is a Task. After pasting, direct editing is automatically activated for the first pasted task (its label becomes immediately editable), which should not happen. The expected behavior is that no direct editing should be activated after pasting. The attached image shows a sequence of three tasks, which matches the reproduction steps described in the report."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider",
+            "lib/features/label-editing/LabelEditingProvider.js//activateDirectEdit"
+        ],
+        "explanation": "The bug is about direct editing being incorrectly activated after pasting. The central logic for activating direct editing is handled in the LabelEditingProvider class (lib/features/label-editing/LabelEditingProvider.js), specifically through the activateDirectEdit function. This function is triggered by event bus hooks for various actions (such as element creation, autoPlace, and double-click), but there is no check to prevent activation after a paste operation. Therefore, the relevant code to fix the bug is in the LabelEditingProvider class and its activateDirectEdit method, where a condition should be added to prevent direct editing activation during or immediately after paste operations. The paste logic itself is handled elsewhere (e.g., lib/features/copy-paste/BpmnCopyPaste.js), but the direct editing activation is not controlled there, making LabelEditingProvider the key bug-related element.",
+        "bug_scenario": "The bug scenario involves copying and pasting a group of BPMN elements (specifically, tasks) where the first element is a task. After pasting, direct editing (in-place label editing) is automatically activated for the first pasted task element, making its label immediately editable. This is unintended behavior: no direct editing should be activated after pasting. The issue does not occur if the first element is not a task. The image demonstrates the UI state right after pasting, where the first task is ready for direct editing (with a blinking cursor in the label area)."
+    }
+}

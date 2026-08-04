@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider"
+        ],
+        "bug_functions": [
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider.prototype.getContextPadEntries",
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider.prototype.getMultiElementContextPadEntries"
+        ],
+        "explanation": "All of the logic for adding and configuring context-pad entries lives in ContextPadProvider. In particular: \n\n\u2022 ContextPadProvider.prototype.getContextPadEntries is responsible for building the list of single-element pad actions (connect, replace, split, delete). This is where an \u201cappend anything\u201d entry needs to be added and wired to popupMenu for showing the full create menu. \n\n\u2022 ContextPadProvider.prototype.getMultiElementContextPadEntries handles the context-pad when multiple elements are selected. If multi-append support is desired, this function also needs to be extended. \n\nBy modifying these two methods in ContextPadProvider, we can inject a new menu entry that opens the append-anything palette, satisfying the bug report\u2019s requirements.",
+        "bug_scenario": "The screenshots show the BPMN modeler\u2019s context-pad opened on an already placed element, with the usual icons for connect, replace, delete and an \u201cappend\u201d (+ ) handle. When that \u201cappend\u201d handle is clicked, the user expects to see a full \u201cCreate element\u201d menu (a palette-style list of all possible BPMN elements) but no such menu is currently provided. The request is to \u201cAdd append to contextPad\u201d so that clicking the + handle pops up a complete append-anything menu."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/context-pad/ContextPadProvider.js//ContextPadProvider",
+            "lib/features/context-pad/index.js"
+        ],
+        "bug_functions": [
+            "lib/features/context-pad/ContextPadProvider.js//getContextPadEntries",
+            "lib/features/context-pad/ContextPadProvider.js//getMultiElementContextPadEntries"
+        ],
+        "explanation": "All context-pad entries are built and returned from ContextPadProvider. In particular, getContextPadEntries() is responsible for adding the \u2018append\u2019 (+) handle and wiring it up to the popupMenu provider. getMultiElementContextPadEntries() likewise controls actions when multiple elements are selected. To implement the new \u201cappend anything\u201d entry and its full element-picker menu, these methods must be extended: \u2022 getContextPadEntries: add a new append action descriptor that invokes popupMenu.open on \u2018bpmn-append\u2019 \u2022 getMultiElementContextPadEntries: ensure the multi-append action is available (if supported) Additionally, index.js bootstraps the ContextPadProvider into the overall diagram-JS module system. When the append-menu entries provider is implemented, index.js will also need to be updated (in __depends__ and __init__) to include and initialize that new provider so that popupMenu can supply the full list of appendable elements.",
+        "bug_scenario": "The user wants to be able to click the \u201c+\u201d (append) handle in the BPMN context-pad and see a searchable \u201cCreate element\u201d menu listing all possible BPMN elements. The provided screenshot shows a BPMN diagram with a context-pad open (on a task) and a popup menu titled \u201cCreate element\u201d with gateways and tasks, but the initial \u201cappend anything\u201d entry (the + icon) is missing from the context-pad toolbar. Without it, users cannot launch the full append menu."
+    }
+}

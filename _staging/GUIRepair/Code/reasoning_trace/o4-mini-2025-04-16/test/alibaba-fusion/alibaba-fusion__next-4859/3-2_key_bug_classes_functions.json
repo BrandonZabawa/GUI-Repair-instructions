@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/cascader-select/cascader-select.tsx//CascaderSelect",
+            "components/cascader/cascader.tsx//Cascader"
+        ],
+        "bug_functions": [
+            "components/cascader-select/cascader-select.tsx//renderPopupContent",
+            "components/cascader/cascader.tsx//renderMenus",
+            "components/cascader/cascader.tsx//renderFilteredList"
+        ],
+        "explanation": "These are the core components and methods responsible for rendering the cascader panels and injecting the virtualized list. CascaderSelect.renderPopupContent constructs the popup and wires up the virtual list via its `listClassName` and `listStyle` props. Inside Cascader, renderMenus (for normal data mode) and renderFilteredList (for search mode) generate the menu item lists. When virtualization is active, these methods hand off rendering to the VirtualList component (styled in components/virtual-list/main.scss), but no alternating\u2010row or hover background classes get applied. Fixing the bug requires updating renderPopupContent to propagate correct row class names (e.g. odd/even) into the VirtualList, and/or enhancing the VirtualList SCSS so that cascader menu items receive the same background\u2010striping styles under virtualization.",
+        "bug_scenario": "When using CascaderSelect with the `useVirtual` prop enabled (virtual scrolling), the cascading menu\u2019s row backgrounds and hover/striping styles become inconsistent and misaligned. In the screenshot, alternating background colors are broken across the multi\u2010column panels and do not align with the intended odd/even row striping seen when virtualization is off."
+    },
+    "2": {
+        "bug_classes": [
+            "components/cascader-select/cascader-select.tsx//CascaderSelect"
+        ],
+        "bug_functions": [
+            "components/cascader-select/cascader-select.tsx//renderPopupContent",
+            "components/cascader-select/cascader-select.tsx//renderCascader"
+        ],
+        "explanation": "The background anomaly only appears when useVirtual is true, so the problem lives in the code paths that build and render the virtualized dropdown.  In CascaderSelect:\n- renderPopupContent is where the VirtualList wrapper is created and where item containers and their backgrounds are managed under virtualization.  Any off-by-one padding or missing background styling here will show up as blank stripes.\n- renderCascader constructs the cascader menus (the three columns) and hands them off to renderPopupContent; incorrect container classes or style propagation here will also mis-style the virtualized panels.\nThese two methods directly control how the virtual scrolling panels are constructed and styled, so they must be adjusted to ensure a consistent background behind every rendered row and in the padding regions of the list.",
+        "bug_scenario": "In the CascaderSelect demo with a large three-level data set and useVirtual enabled, the dropdown panels (menus) render \u201cstriped\u201d background gaps and white bands in between items when scrolling. In the screenshot you can see blank/light-grey bars at the bottom of the leftmost column and inconsistent background panels on the rightmost column\u2014artifacts introduced by the virtual-list rendering."
+    }
+}

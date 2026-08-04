@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/cli-engine/cli-engine.js",
+            "lib/cli-engine/index.js",
+            "lib/eslint/eslint.js",
+            "lib/cli-engine/formatters",
+            "lib/cli.js"
+        ],
+        "explanation": "These files are most relevant to the bug because:\n\n- 'lib/cli-engine/cli-engine.js' and 'lib/cli-engine/index.js': Responsible for running linting and formatting in the programmatic API. They load and invoke formatters and would need to be updated to await an async formatter if it is promised.\n- 'lib/eslint/eslint.js': The primary Node.js API (as per docs). It will need to be changed when loading/using formatters so that if a formatter is async, it is awaited.\n- 'lib/cli-engine/formatters': This directory contains the built-in formatters (like stylish, json, etc). Each formatter would need to be updated (if necessary) to optionally return a Promise or remain sync (for backward compatibility), or to document the pattern.\n- 'lib/cli.js': The CLI entrypoint, which invokes CLIEngine and then runs the formatter to produce the final output. Needs to support async formatters by awaiting results before final output.\n\nIn summary, all components which load or invoke formatters, or are responsible for formatting output (sync or async), are potentially impacted by this change. They require examination and probably modification to properly propagate and support async formatters.",
+        "bug_scenario": "The primary issue is a feature limitation: ESLint currently only supports synchronous custom formatters, but some advanced code-highlighting libraries (like 'shiki') are async and therefore incompatible with the formatter API. The attached image and bug report describe a custom formatter that cannot use async functions. The desire is for formatters to be able to return a Promise (async) instead of only supporting synchronous formatting. This would allow richer output (such as syntax highlighting) using async libraries. The inability to use async formatters blocks integrations with powerful async code processing libraries."
+    },
+    "2": {
+        "bug_files": [
+            "lib/cli-engine/cli-engine.js",
+            "lib/cli-engine/index.js",
+            "lib/cli-engine/formatters/",
+            "lib/eslint/eslint.js",
+            "lib/cli.js"
+        ],
+        "explanation": "The need for async formatter support impacts any place where ESLint loads, calls, and resolves formatter output: (1) 'lib/cli-engine/cli-engine.js' and 'lib/cli-engine/index.js' handle the core linting and formatting logic, including loading and using formatters (likely via require() and assuming a sync return); (2) 'lib/cli-engine/formatters/' contains both built-in formatters (all need to be checked for possible refactor to async/await support) and user formatter loading conventions, potentially needing updates; (3) 'lib/eslint/eslint.js' is the main programmatic API where loadFormatter is exposed and formatters are invoked, which currently assumes sync; (4) 'lib/cli.js' is the CLI entry point that integrates linting with formatters and result output\u2014the code that 'awaits' lint results and outputs the report must be async-aware if a formatter could be async. All these areas must be modified to accept formatters returning a Promise (async) as well as legacy synchronous formatters, and propagate async handling up the call stack.",
+        "bug_scenario": "The bug report and attached image show a request to enable async formatters in ESLint. The author wants to use an async code highlighter ('shiki') inside an ESLint custom formatter, but ESLint currently does not support formatters that return a Promise. The image demonstrates a formatter output that could benefit from an async highlighter, showing lint errors inline with code, colorized, and with rich error annotation\u2014a scenario that would require async highlighter operations. The bug is that ESLint only supports synchronous formatters, which blocks integration with tools/APIs requiring async/await (like shiki)."
+    }
+}

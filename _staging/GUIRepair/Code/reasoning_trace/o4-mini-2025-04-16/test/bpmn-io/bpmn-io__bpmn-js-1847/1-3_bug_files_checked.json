@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/create-append-anything/CreateAppendKeyboardBindings.js",
+            "lib/features/create-append-anything/CreateAppendEditorActions.js",
+            "lib/features/create-append-anything/AppendRules.js",
+            "lib/features/create-append-anything/AppendContextPadProvider.js",
+            "lib/features/create-append-anything/AppendMenuProvider.js"
+        ],
+        "explanation": "All of these files live in the \u201ccreate-append-anything\u201d feature and cooperate to support the \u2018a\u2019 shortcut:\n\n\u2022 CreateAppendKeyboardBindings.js registers the \u2018a\u2019 key and calls the \u201ccreateAppend\u201d editor action. If it never fires off or the context passed in is invalid, nothing will happen on keyboard press.  \n\u2022 CreateAppendEditorActions.js contains the implementation of that \u201ccreateAppend\u201d action: it looks up available append entries (via the context pad or rules) and, in the absence of append, should fall back to opening the create menu. A missing or incorrect fallback here causes the keypress to become a no-op.  \n\u2022 AppendRules.js are used to determine whether appending (and of what shape) is permitted. If these rules aren\u2019t consulted (or return false for those boundary\u2010type elements), the editor action may decide there\u2019s nothing to append and also not trigger the create fallback.  \n\u2022 AppendContextPadProvider.js and AppendMenuProvider.js register the context-pad handles and menu items for append. If the context-pad provider never registers handles for certain elements (or the menu provider fails to register a default item), the editor action logic ends up with an empty list of append options and, if its fallback logic is broken, simply does nothing.  \n\nFixing the bug will require ensuring the editor action always invokes the create menu when AppendRules yield no append entries and/or the ContextPad providers register a generic fallback item for elements that allow appending in principle.",
+        "bug_scenario": "When you select an element (in this case an event sub-process) that in principle supports appending but for which no context-pad append actions are registered (so no little blue handles show up), pressing the \u201ca\u201d shortcut does nothing. According to the design, the \u201ca\u201d key should always fall back to opening the create menu when append isn\u2019t available, but in this situation it simply is ignored."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/create-append-anything/CreateAppendKeyboardBindings.js",
+            "lib/features/create-append-anything/CreateAppendEditorActions.js",
+            "lib/features/create-append-anything/AppendContextPadProvider.js",
+            "lib/features/create-append-anything/AppendMenuProvider.js",
+            "lib/features/create-append-anything/AppendRules.js",
+            "lib/features/create-append-anything/util/OptionsUtil.js",
+            "lib/features/auto-place/BpmnAutoPlace.js",
+            "lib/features/auto-place/BpmnAutoPlaceUtil.js"
+        ],
+        "explanation": "All of these modules collaborate to implement the \u201cappend\u201d shortcut (key \u2018a\u2019) and its fall\u2010back to a create action. \n\n\u2022 CreateAppendKeyboardBindings.js: wires the \u2018a\u2019 key to invoke the append/create command.  \n\u2022 CreateAppendEditorActions.js: defines the underlying editor actions (append vs. createAppend).  \n\u2022 AppendContextPadProvider.js & AppendMenuProvider.js: decide what menu entries show up on the context pad; here they return empty for an Event Sub\u2010Process, so no append action is triggered.  \n\u2022 AppendRules.js: contains rules determining whether append is allowed on a given element at all.  \n\u2022 util/OptionsUtil.js: consolidates default options for append and create flows.  \n\u2022 BpmnAutoPlace.js & BpmnAutoPlaceUtil.js: perform the actual auto\u2010place logic when an append or create action is fired.  \n\nThe missing fallback path lives in the keyboard binding / editor action layer: when no append entries exist, the code never calls the createAppend path. Fixing this requires updating CreateAppendKeyboardBindings.js and its companion action/providers so that on \u201ca\u201d it always falls back to create, regardless of context pad contents.",
+        "bug_scenario": "When working on an Event Sub\u2010Process (or any BPMN element that in principle supports append) the context pad has no concrete append entries (the little \u2018+\u2019 menu is empty). Hitting the \u201ca\u201d keyboard shortcut in that situation\u2014by design it should fall back to opening the create\u2010append menu or auto\u2010place a new shape\u2014does nothing. Instead of defaulting to a create action, the binding only fires when explicit append entries exist."
+    }
+}

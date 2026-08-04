@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/Layer.js",
+            "src/ol/webgl/Helper.js",
+            "src/ol/webgl.js"
+        ],
+        "explanation": "\u2022 TileLayer.js (WebGLTileLayerRenderer) drives each TileLayer to use a WebGL context via its base class.  \n\u2022 Layer.js (WebGLLayerRenderer) instantiates a new WebGLHelper (and thus a new GL context) in prepareFrame for every layer.  \n\u2022 Helper.js (WebGLHelper) wraps context creation but does not reuse or share contexts between instances.  \n\u2022 webgl.js (getContext) always creates a fresh WebGLRenderingContext.  \nTo share a single WebGL context across multiple WebGL TileLayers, these files must be modified to centralize context creation (e.g. a shared WebGLHelper or context pool) rather than instantiating a new context per layer.",
+        "bug_scenario": "An OpenLayers application using multiple WebGL-based TileLayers to render separate raster images is running into browser WebGL context limits (typically 16). Each WebGLTileLayerRenderer creates its own WebGL context via WebGLHelper, so with more than ~16 distinct TileLayers (e.g. separate GeoTIFFSources that cannot be merged) the browser evicts older contexts and layers begin to misrender or fail."
+    }
+}

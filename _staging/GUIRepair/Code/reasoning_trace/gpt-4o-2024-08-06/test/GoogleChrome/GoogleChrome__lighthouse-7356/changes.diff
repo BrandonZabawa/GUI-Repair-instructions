@@ -1,0 +1,28 @@
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index b3e593d29..eda1e2f56 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -570,7 +570,7 @@ class Driver {
+       throw new Error('_waitForFCP.cancel() called before it was defined');
+     };
+ 
+-    const promise = new Promise(resolve => {
++    const promise = new Promise((resolve, reject) => {
+       /** @param {LH.Crdp.Page.LifecycleEventEvent} e */
+       const lifecycleListener = e => {
+         if (e.name === 'firstContentfulPaint') {
+@@ -587,6 +587,14 @@ class Driver {
+         canceled = true;
+         this.off('Page.lifecycleEvent', lifecycleListener);
+       };
++
++      // Add a timeout threshold for FCP
++      const fcpTimeout = setTimeout(() => {
++        cancel();
++        reject(new Error('FCP event timed out'));
++      }, 30000); // 30 seconds threshold
++
++      promise.finally(() => clearTimeout(fcpTimeout));
+     });
+ 
+     return {

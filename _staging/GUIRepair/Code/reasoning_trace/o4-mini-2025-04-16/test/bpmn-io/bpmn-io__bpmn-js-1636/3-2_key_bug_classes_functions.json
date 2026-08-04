@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js//SubProcessStartEventBehavior",
+            "lib/features/replace/BpmnReplace.js//BpmnReplace"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js//SubProcessStartEventBehavior (postExecuted handler)",
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js//getStartEventPosition",
+            "lib/features/replace/BpmnReplace.js//replaceElement"
+        ],
+        "explanation": "\u2022 SubProcessStartEventBehavior: This command interceptor is responsible for listening to shape.replace events and, when a Task is morphed into an expanded SubProcess, creating the default StartEvent at the correct position. The current code gates on oldShape being a Task, so it never runs when oldShape is a CallActivity. To fix the bug you must extend its type check to include CallActivity.  \n\u2022 getStartEventPosition: Computes where the start event should be placed in the new subprocess; you need to reuse this logic when adding the event on call-activity morph.  \n\u2022 BpmnReplace.replaceElement: Drives the actual replacement of any BPMN element (including a CallActivity\u2192SubProcess). It sets up the new subprocess, its expanded/collapsed state, and emits the shape.replace event that SubProcessStartEventBehavior is listening to. Ensuring that expanded subprocess replacements from a CallActivity actually go through the same code path and pass the expanded check may require small adjustments here as well.",
+        "bug_scenario": "When you take a call activity on the diagram and morph it into an expanded subprocess, the code that normally injects a start event into that new subprocess never fires \u2013 because the \u201cSubProcessStartEventBehavior\u201d only looks for old shapes of type Task. As a result you end up with a blank rounded rectangle instead of a proper expanded subprocess with a start event inside."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js//SubProcessStartEventBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js//getStartEventPosition",
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js//postExecuted('shape.replace' handler)"
+        ],
+        "explanation": "The SubProcessStartEventBehavior class hooks into the shape.replace command and, when it sees a Task replaced by an expanded SubProcess, calls modeling.createShape to add a StartEvent at a position computed by getStartEventPosition. Its current handler checks specifically for oldShape of type 'bpmn:Task' and will skip all other activity types, including 'bpmn:CallActivity'. As a result, morphing a CallActivity into a SubProcess never triggers start\u2010event creation. Adjusting the shape.replace handler in SubProcessStartEventBehavior (and its position helper) to include CallActivity in its guard will restore the expected UX.",
+        "bug_scenario": "When you morph a BPMN call activity into an expanded subprocess, the replacement draws only the subprocess\u2019s container \u2014 you end up with a tiny rectangle that looks just like a task and no start\u2010event icon. By contrast, morphing a task into a subprocess correctly adds a start event inside the container."
+    }
+}

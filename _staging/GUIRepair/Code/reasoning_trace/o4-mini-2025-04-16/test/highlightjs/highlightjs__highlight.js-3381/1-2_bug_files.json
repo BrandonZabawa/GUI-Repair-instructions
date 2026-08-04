@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/python.js",
+            "src/lib/compile_keywords.js"
+        ],
+        "explanation": "The root of the problem is in the Python language definition (src/languages/python.js), which declares \u201cdef\u201d as a keyword and relies on a generated regex to detect standalone keywords. That regex is produced by compile_keywords.js (src/lib/compile_keywords.js) using word-boundary markers. In the new version the boundary logic is too permissive, causing \u201cdef\u201d at the end of \u201c_undef\u201d to be recognized as a separate keyword. Fixing or tightening the keyword-matching regex in compile_keywords.js (or overriding it in python.js) will stop \u201cdef\u201d from matching inside longer identifiers.",
+        "bug_scenario": "When highlighting Python code (highlight.js v11.3.1), an identifier that ends in \u201cdef\u201d (for example \u201c_undef\u201d) is split so that the trailing \u201cdef\u201d is colored as if it were the Python \u201cdef\u201d keyword. Everything after that point is parsed as keyword content and the rest of the identifier is not rendered correctly. This does not occur in v10.7.3 and other highlighters do not exhibit it. The attached screenshot shows \u201cfoo = _un<span class=\\\"hljs-keyword\\\">def</span>\u201d instead of treating \u201c_undef\u201d as a single identifier."
+    },
+    "2": {
+        "bug_files": [
+            "src/lib/compile_keywords.js",
+            "src/languages/python.js",
+            "src/languages/python-repl.js"
+        ],
+        "explanation": "1. compile_keywords.js: This utility builds the final regexes for all language keywords using custom look-around definitions. It currently treats underscores as breaking word boundaries, which makes the tail \u201cdef\u201d in \u201c_undef\u201d match the Python keyword pattern. We need to adjust its boundary logic to include underscore as a word character.\n2. python.js: The Python language definition lists \u2018def\u2019 among its keywords via compileKeywords. Fixing compile_keywords.js will correct python.js, but if any Python-specific keyword rules override defaults, they may also need adjustment here.\n3. python-repl.js: The REPL mode for Python reuses the same keyword-compilation logic. To keep consistent behavior in interactive snippets, its configuration should also use the improved boundary definitions so that _undef never splits.",
+        "bug_scenario": "When highlighting Python code in highlight.js v11+, an identifier named \u201c_undef\u201d is mis-tokenized so that the trailing \u201cdef\u201d is colored as the Python keyword def. In the screenshot you can see foo = _un<span class=\"hljs-keyword\">def</span> \u2013 the atom _undef should be entirely a plain identifier, not half plain and half keyword. This happens because highlight.js generates keyword-matching regexes that treat underscore _ as a non-word character boundary, so \u201cdef\u201d inside \u201c_undef\u201d looks like a standalone keyword."
+    }
+}

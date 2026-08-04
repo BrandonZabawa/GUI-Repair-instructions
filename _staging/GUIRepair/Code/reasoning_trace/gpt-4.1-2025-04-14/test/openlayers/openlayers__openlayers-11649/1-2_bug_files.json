@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/proj/projections.js",
+            "src/ol/proj/Units.js"
+        ],
+        "explanation": "These files are central to how OpenLayers handles projection definitions and registration with proj4js: \n1. 'src/ol/proj/proj4.js' - Integrates proj4js with OpenLayers, processes new projection definitions, and registers them. Any mapping of proj4js objects to OpenLayers projection parameters (units, axisOrientation) happens here; this is the most direct point of failure.\n2. 'src/ol/proj/Projection.js' - Defines the Projection object, setting its properties like units and axisOrientation from inputs; logic for default values (like fallback to 'degrees') is likely handled here if not in proj4.js.\n3. 'src/ol/proj/projections.js' - Manages projection registry, lookup, and parameter handling, possibly including normalization of definitions or default-setting.\n4. 'src/ol/proj/Units.js' - Defines unit-related constants and logic; if units for geographic CRS are missing, this is likely checked/assigned here.\n\nThese files are where you would implement or fix code for default assignment of 'degrees' to geographic CRS and correct setting/override of axisOrientation, making them most relevant to the bug.",
+        "bug_scenario": "The bug occurs when using OpenLayers with proj4js to define new projections (e.g., EPSG:4258) and register them. When registering, parameters such as 'units' (should be 'degrees' for geographic CRS) and 'axisOrientation' (should be 'neu', not default 'enu' for certain geographic CRS) are set incorrectly or left undefined. This causes map projections to be broken in OpenLayers, while proj4js itself defines the projection correctly. The provided screenshots show the disparity: proj4js has correct parameters set, but in OpenLayers, critical properties are undefined or wrong."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/proj/Units.js"
+        ],
+        "explanation": "- src/ol/proj/proj4.js is responsible for integrating proj4js definitions into OpenLayers. The logic that registers and translates proj4 definitions into ol.Projection instances is found here, so this is where unit and axis inference should be handled when missing in the source definition.\n- src/ol/proj/Projection.js defines the Projection class and its options (including units and axisOrientation). The defaults and validation for projection properties are centrally managed here, so if unspecified values are given (or inherited from proj4), fallback/default logic may need to be set up or corrected here.\n- src/ol/proj/Units.js contains definitions and lookup for supported units within OpenLayers. It may need adjustment for proper mapping from proj4js units or to provide fallbacks when units are unspecified, as in this bug.\n\nThese three files collectively manage the lifecycle and translation of projection definitions from proj4js to OpenLayers and are central to fixing missing/inferred projection parameters.",
+        "bug_scenario": "The bug scenario arises when registering a new projection definition from proj4js (for example, EPSG:4258) with OpenLayers (ol.proj.proj4.register). The issue is that after registration, ol.Projection for this CRS is missing required parameters: 'units' is undefined (should be 'degrees' for geographic CRS), and 'axisOrientation' defaults to 'enu' when it should be 'neu'. Because most proj4js CRS definitions do not specify units or axis orientation, OpenLayers should infer defaults, but it fails to do so, resulting in broken projections and rendering."
+    }
+}

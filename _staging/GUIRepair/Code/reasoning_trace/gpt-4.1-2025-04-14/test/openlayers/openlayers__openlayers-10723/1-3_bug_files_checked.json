@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Graticule.js",
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Projection.js"
+        ],
+        "explanation": "These files are likely central to the bug:\n\n1. src/ol/layer/Graticule.js: This file is responsible for generating and drawing meridians and parallels as overlays. The logic for calculating, drawing, and labeling these lines (especially across the dateline) resides here, making it the most direct candidate for the bug.\n\n2. src/ol/proj/proj4.js: The bug report mentions that proj4 always returns normalized longitudes, affecting how lines are drawn when crossing the dateline. If longitudes are wrapped or normalized incorrectly, meridian and parallel calculations get corrupted, especially for text labels.\n\n3. src/ol/proj/Projection.js: Since projections are directly involved in how coordinates are transformed and interpreted on the map, any issues with how extents or side-of-dateline calculations are made may also stem from logic in this file. Extent handling and projection initialization may need fixes to properly support dateline crossing scenarios.\n\nOther files in the repo structure (such as other layer, render, or canvas modules) could be indirectly related, but the three above are the most immediately relevant to fixing this specific rendering and labeling issue across the dateline.",
+        "bug_scenario": "The bug scenario involves the incorrect display of graticule lines (meridians and parallels) when the projection view crosses the dateline. The images show missing or partly incorrect graticule lines and label corruption, particularly around the date line. This issue appears with map projections (like the US National Atlas projection), where line calculations or label rendering are mishandled near the dateline, causing visual errors in map overlays and text formatting."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Graticule.js",
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/proj/projections.js"
+        ],
+        "explanation": "1. src/ol/layer/Graticule.js: This is the main file responsible for rendering geographic graticules (latitude/longitude lines). The logic for drawing lines, determining their start and end, and handling longitude normalization across the dateline is implemented here. Since the bug is about graticule misbehavior at the dateline, this file is the most direct source of the rendering issue.\n2. src/ol/proj/proj4.js: The bug report mentions 'proj4 always returns normalized longitudes.' Therefore, if the graticule code relies on normalized coordinates from Proj4, this could affect how parallels are drawn across the dateline. The integration with Proj4 may need adjustments to handle or not over-normalize coordinates.\n3. src/ol/proj/Projection.js: Defines how projections work, including longitude normalization and handling of longitude wrapping or bounds. Bugs can arise if the projection system makes assumptions that break when the extent spans the dateline.\n4. src/ol/proj/projections.js: Manages available projections and could affect how proj4 and other systems are registered, as well as how their coordinate transformations and normalizations are applied. This might require changes if longitude wrapping or dateline-crossing logic is centralized here.\n\nThese files are related to the bug because they directly relate to how the graticule is rendered, how longitude values are handled (especially normalization across dateline), and how projections are implemented in the application code.",
+        "bug_scenario": "The bug involves the Graticule layer not displaying correctly when the map's projection crosses the international date line (antemeridian). The visual evidence shows missing meridians and improperly rendered parallels (latitude lines), with most lines starting or ending at the dateline and some label encoding issues. The expected behavior is that all meridians and parallels within the view extent should appear smoothly across the dateline, but due to complications in longitude normalization (caused by proj4 or similar logic), the parallels do not extend or render as needed across the antimeridian."
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Modal/Modal.js//Modal",
+            "packages/react/src/components/ComposedModal/ComposedModal.js//ComposedModal",
+            "packages/react/src/components/ComposedModal/ComposedModal.js//ModalBody"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Modal/Modal.js//render",
+            "packages/react/src/components/ComposedModal/ComposedModal.js//ModalBody"
+        ],
+        "explanation": "The Modal class in Modal.js and the ComposedModal class in ComposedModal.js both render the modal container and content. In their render methods they apply CSS classes based on props (hasForm, hasScrollingContent) that should remove default horizontal padding when hasForm is true. The ModalBody function in ComposedModal.js is responsible for wrapping form content and toggling the `bx--modal-content--has-form` class. These are the key locations to adjust or extend the conditional class logic or style definitions so that side padding is removed on both sides, allowing inputs with width:100% to truly span the full modal body width.",
+        "bug_scenario": "In the ComposedModal/Modal components, form fields (e.g. TextInput) set to width:100% are not actually spanning the entire modal width. The modal body container still applies horizontal padding, so the input only fills the inner content area. According to design specs, when hasForm is true the modal body should remove both left and right padding so that form controls can stretch full width."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ComposedModal/ComposedModal.js//ComposedModal",
+            "packages/react/src/components/ComposedModal/ComposedModal.js//ModalBody",
+            "packages/react/src/components/Modal/Modal.js//Modal"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComposedModal/ComposedModal.js//ComposedModal.render",
+            "packages/react/src/components/ComposedModal/ComposedModal.js//ModalBody",
+            "packages/react/src/components/Modal/Modal.js//Modal.render"
+        ],
+        "explanation": "The CSS padding logic that Carbon applies to modal bodies lives in the ModalBody component of both Modal.js and ComposedModal.js. When hasForm is true, ModalBody should remove the default right\u2010hand padding (20%) so that form controls span the full width. In ComposedModal, the ModalBody function doesn\u2019t correctly read or apply the hasForm prop to its wrapper className, and the ComposedModal.render method doesn\u2019t pass the flag through or apply the `bx--modal-content--with-form` modifier class. Similarly, the Modal.render method in Modal.js must handle the hasForm prop on its built\u2010in ModalBody. Fixing those two render paths to respect hasForm (adding or removing the correct CSS modifier) will restore full\u2010width inputs in modals.",
+        "bug_scenario": "When using <ComposedModal> with a <TextInput style={{width:'100%'}}/> inside a <ModalBody hasForm>, the right\u2010hand padding (20%) that Carbon adds to modal content for alignment on non\u2010form layouts is still being applied. As a result, form fields do not span the full width of the modal body (as shown in the \u201cregression\u201d screenshot) even though hasForm is set, so the input is offset and too narrow."
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages.js",
+            "src/language-js/index.js",
+            "src/main/parser.js",
+            "src/standalone.js"
+        ],
+        "explanation": "\n1. src/languages.js\n   \u2022 This module exports the list of language plugins that Prettier will bundle. To include the Cherow parser plugin in Prettier\u2019s internalPlugins, you must require or import a new Cherow-based plugin here.\n\n2. src/language-js/index.js\n   \u2022 The JavaScript language definition registers which parsers are available for JavaScript files (babel, flow, espree, typescript, etc.). You need to add \u201ccherow\u201d to the parsers list and define a getter for parsers.cherow so that Prettier can call Cherow\u2019s parseScript under the parser name \u201ccherow.\u201d\n\n3. src/main/parser.js\n   \u2022 This core resolver reads opts.parser (string or function) and maps that to the appropriate plugin\u2019s parse function. To support opts.parser = \u201ccherow\u201d you must ensure resolveParser can locate and return the Cherow parser, falling back to the existing Babel/Flow resolver when a file has a Flow pragma or \u201c.js.flow\u201d extension.\n\n4. src/standalone.js\n   \u2022 In the standalone bundle, Prettier assembles all bundled plugins via languages.map into its internalPlugins. You must include the Cherow plugin so that standalone.format(text, { parser: 'cherow' }) works in the browser worker and Node.js standalone mode.",
+        "bug_scenario": "The attached screenshot is a speed benchmark comparing various JavaScript parsers on large JS libraries (jQuery, Angular, React, TypeScript, etc.). It shows that Cherow is about 40% faster than Babylon (the parser Prettier currently uses via @babel/parser). The user wants Prettier to switch to Cherow for parsing JavaScript by default to speed up format-on-save scenarios, while still falling back to the Babel-based Flow parser for files that use Flow syntax (\".js.flow\" or contain a @flow pragma)."
+    }
+}

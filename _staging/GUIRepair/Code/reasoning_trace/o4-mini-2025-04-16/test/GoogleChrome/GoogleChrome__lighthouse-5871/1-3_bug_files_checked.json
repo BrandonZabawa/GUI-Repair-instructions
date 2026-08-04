@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/lib/emulation.js",
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/report/report-generator.js"
+        ],
+        "explanation": "\u2022 lib/emulation.js is where Lighthouse calls Page.setUserAgentOverride and injects the emulated mobile UA for network requests. If this override string isn\u2019t propagated back into the LHR, the report will show a different UA.  \n\u2022 gather/driver.js is responsible for communicating with the DevTools protocol and fetching the Browser.getVersion userAgent. That value is currently used to populate runtimeSettings.userAgent in the final report.  \n\u2022 report/report-generator.js pulls the UA from Browser.getVersion (via driver) into LHR.runtimeSettings.userAgent. Because it never reads the emulation override, the printed UA doesn\u2019t match what was actually sent.  \nFixing this requires reading the emulated override UA (from emulation.js) and feeding it into the runtimeSettings in report-generator.js (instead of\u2014or in addition to\u2014the Browser.getVersion value obtained in driver.js).",
+        "bug_scenario": "When running Lighthouse with a mobile emulation (e.g. emulated Nexus 5) Lighthouse sends one User-Agent header over the network (the mobile UA override) but records a different UA string in the report\u2019s \u201cRuntime settings \u2192 User agent\u201d (the default Browser.getVersion UA). The mismatch is confusing because the UA you see in your webserver logs doesn\u2019t match what Lighthouse prints."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/lib/emulation.js",
+            "lighthouse-core/runner.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/lib/emulation.js is where the mobile emulation settings (including the UA override) are defined and pushed to the page via CDP\u2019s Emulation.setUserAgentOverride.\n\u2022 lighthouse-core/gather/driver.js implements the driver.getBrowserVersion() call that fetches the browser\u2019s UA (used for runtimeSettings.userAgent) but does so _before_ or _instead of_ reading the emulated override.\n\u2022 lighthouse-core/runner.js is where the LHR\u2019s runtimeSettings.userAgent is populated from driver.getBrowserVersion(); it therefore surfaces the wrong UA string.  \n\nTo fix the mismatch, the code in runner.js (or in gather/driver.js) should use the same UA string that emulation.js has applied, rather than the raw Browser.getVersion UA.",
+        "bug_scenario": "When Lighthouse runs in mobile emulation (for example, \u201cEmulated Nexus 5X\u201d) it installs a User-Agent override on the network via CDP (so your server logs show the emulated Android UA), but the string that Lighthouse prints under \u201cRuntime settings \u2192 User agent\u201d comes from Browser.getVersion (the desktop CrOS UA). The two values differ, which is confusing."
+    }
+}

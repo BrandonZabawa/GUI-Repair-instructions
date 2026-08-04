@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//getAnchor",
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint",
+            "src/ol/render/canvas/ImageBuilder.js//drawMultiPoint"
+        ],
+        "explanation": "The Icon.getAnchor() method computes the pixel anchor by applying the user\u2019s displacement but does not take the current scale into account, so increasing or decreasing scale changes the effective anchor Y. In the rendering pipeline, CanvasImageBuilder.setImageStyle() reads this raw anchor and capacity scale values, and drawPoint()/drawMultiPoint() use them directly to position the image. Because displacement is never adjusted for the style\u2019s scale, the drawn Y position shifts when scale changes. Fixing this requires updating getAnchor (or the rendering code) to account for scale when combining anchor and displacement.",
+        "bug_scenario": "When you apply different scale factors to identical icon styles with the same \u201cdisplacement\u201d settings, the bottom of the icons no longer line up on the same Y coordinate. In other words, changing \u201cscale\u201d shifts the icon vertically even though \u201cdisplacement\u201d is constant."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//getAnchor",
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint"
+        ],
+        "explanation": "Icon.getAnchor is responsible for combining the defined `anchor` and `displacement` into pixel coordinates, but it applies displacement before any scaling. CanvasImageBuilder.setImageStyle and drawPoint then take that raw anchor (and displacement) and draw the image with separate scale factors, so the displacement is never scaled along with the icon. In other words, the code applies scale to the image size but not to the displacement, causing the bottom edge to shift. Fixing the bug will involve updating getAnchor or the CanvasImageBuilder methods so that displacement (or anchor) is multiplied by the same scale factors before rendering.",
+        "bug_scenario": "In the OpenLayers example the user sets a fixed bottom anchor (using displacement) on two identical icons at different scales. When the `scale` option changes, the bottom of the icons no longer lines up\u2014their Y positions shift unexpectedly. The expectation is that icons scaled up or down remain bottom-aligned (i.e. the bottom edge stays on the same Y coordinate), but modifying `scale` currently also shifts the visual placement vertically."
+    }
+}

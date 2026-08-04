@@ -1,0 +1,75 @@
+diff --git a/packages/react/src/components/Checkbox/Checkbox.stories.js b/packages/react/src/components/Checkbox/Checkbox.stories.js
+index c4b90689..531b4e23 100644
+--- a/packages/react/src/components/Checkbox/Checkbox.stories.js
++++ b/packages/react/src/components/Checkbox/Checkbox.stories.js
+@@ -44,6 +44,14 @@ export const Playground = (args) => (
+   </fieldset>
+ );
+ 
++Playground.argTypes = {
++  readOnly: { control: 'boolean' },
++};
++
++Playground.args = {
++  readOnly: false,
++};
++
+ Playground.argTypes = {
+   checked: {
+     control: {
+diff --git a/packages/react/src/components/Checkbox/Checkbox.tsx b/packages/react/src/components/Checkbox/Checkbox.tsx
+index 6c2e55de..8a1e1f5a 100644
+--- a/packages/react/src/components/Checkbox/Checkbox.tsx
++++ b/packages/react/src/components/Checkbox/Checkbox.tsx
+@@ -69,6 +69,7 @@ const Checkbox = React.forwardRef(
+       onChange,
+       indeterminate,
+       hideLabel,
++      readOnly,
+       title = '',
+       ...other
+     }: CheckboxProps,
+@@ -78,7 +79,8 @@ const Checkbox = React.forwardRef(
+     const wrapperClasses = classNames(
+       `${prefix}--form-item`,
+       `${prefix}--checkbox-wrapper`,
+-      [className]
++      { [`${prefix}--checkbox--readonly`]: readOnly },
++      className
+     );
+     const innerLabelClasses = classNames(`${prefix}--checkbox-label-text`, {
+       [`${prefix}--visually-hidden`]: hideLabel,
+@@ -90,10 +92,14 @@ const Checkbox = React.forwardRef(
+           {...other}
+           type="checkbox"
+           onChange={(evt) => {
+-            onChange && onChange(evt, { checked: evt.target.checked, id });
++            // suppress any change while readOnly
++            if (!readOnly) {
++              onChange && onChange(evt, { checked: evt.target.checked, id });
++            }
+           }}
+           className={`${prefix}--checkbox`}
+           id={id}
++          readOnly={readOnly}
+           ref={(el) => {
+             if (el && indeterminate) {
+               el.indeterminate = indeterminate;
+@@ -169,11 +175,17 @@ Checkbox.propTypes = {
+    * Specify a title for the <label> node for the Checkbox
+    */
+   title: PropTypes.string,
++
++  /**
++   * Specify whether the Checkbox should be read-only
++   */
++  readOnly: PropTypes.bool,
+ };
+ 
+ Checkbox.defaultProps = {
+   onChange: () => {},
+   indeterminate: false,
++  readOnly: false,
+ };
+ 
+ Checkbox.displayName = 'Checkbox';

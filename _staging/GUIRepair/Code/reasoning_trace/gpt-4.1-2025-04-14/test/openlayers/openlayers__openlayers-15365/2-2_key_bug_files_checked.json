@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js"
+        ],
+        "explanation": "1. src/ol/layer/Group.js: This file implements the LayerGroup class, which is responsible for managing groups of layers and propagating group-level properties (like opacity) to child layers. The getLayerStatesArray method multiplies the group's opacity into the child layer states, which is crucial for ensuring that group opacity is applied throughout the rendering stack. If group opacity is not affecting vector tile labels, the propagation or usage of this opacity value may be incomplete or incorrect.\n\n2. src/ol/renderer/canvas/VectorTileLayer.js: This file contains the CanvasVectorTileLayerRenderer, which is responsible for rendering vector tile layers (including their labels) on the canvas. If group opacity is not being applied to labels, it is likely that the renderer is not using the correct (possibly multiplied) opacity value from the group/layer state when rendering text/labels. The bug likely lies in how the renderer applies the opacity from the layer state (which should already include the group opacity) to the label drawing routines.\n\nOther files, such as src/ol/layer/VectorTile.js, src/ol/render/canvas/TextBuilder.js, and src/ol/render/canvas/style.js, are involved in vector tile layer and label rendering, but the core of the bug is in the propagation of group opacity (Group.js) and its application in the renderer (VectorTileLayer.js).",
+        "bug_scenario": "The bug scenario is that when adjusting the opacity of a layer group using setOpacity(), the opacity change does not affect the labels rendered for vector tile layers within that group. While changing the opacity of the vector tile layer directly works as expected, and group opacity works for vector layers, the group opacity does not fade the labels of vector tile layers. This results in inconsistent opacity behavior for labels when using group opacity controls."
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/webgl/PaletteTexture.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "PaletteTexture.js stores a single WebGLTexture in its private field `texture_` and only calls `gl.createTexture()` when `texture_` is null. When the layer is removed, its renderer is disposed (and its context objects invalidated) but the PaletteTexture instance still holds the old texture. On re-add, `getTexture(gl)` returns the stale texture instead of creating a new one, leading to invalid-context bindTexture errors. In WebGLTileLayer.js, the renderer simply reuses the same PaletteTexture objects passed in via `paletteTextures_` and never resets or deletes them, so the palette is never reinitialized on layer reuse.",
+        "bug_scenario": "After switching the WebGLTileLayer to an NDVI style that uses a palette, repeatedly removing and re-adding the layer causes the tiles to render as a solid black layer. In the browser console you see warnings like \u201cbindTexture: object does not belong to this context\u201d. This happens because the palette textures are created only once (when the layer is first added) and never re-created after the layer (and its renderer) is torn down, so on the next add the code attempts to bind WebGLTexture objects that belong to a now-discarded context."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/format/KML.js",
+            "src/ol/format/XML.js",
+            "src/ol/style/Text.js"
+        ],
+        "explanation": "1. 'src/ol/format/KML.js': KML is an XML-based format where this problem was seen, so its parser is likely where entity decoding should happen (if it is not already).\n2. 'src/ol/format/XML.js': This module probably contains base XML parsing functions. Properly decoding XML entities should be handled here or in the functions it provides for use by XML-based format readers like KML.\n3. 'src/ol/style/Text.js': This handles text styling and rendering for features on the map. If decoding (or lack of it) happens just before text gets set for rendering, the issue may also manifest here or require a fix here (especially if entity codes are passed along from earlier parsing steps unprocessed).",
+        "bug_scenario": "The bug is that character entity codes (like &apos;) are appearing as raw text in map or label outputs instead of being decoded. As seen in the image, the label shows 'Andy&apos;s Pub, Terrasse' instead of 'Andy's Pub, Terrasse'. This bug occurs when XML-encoded data (such as from KML files) is not correctly decoded during parsing or rendering. The problem is likely related to how the text from such sources is parsed and/or rendered into labels, failing to turn character entities into actual characters."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/format/KML.js",
+            "src/ol/style/Text.js"
+        ],
+        "explanation": "Based on the bug report and the provided image, the problem arises when displaying text from XML-based formats (like KML) on the map. The encoding issue suggests that the text is not being HTML-decoded between parsing and rendering. \n- 'src/ol/format/KML.js': This is responsible for parsing KML data, which can include encoded characters. Bugs in this file would cause encoded entities to be retained in feature properties/labels.\n- 'src/ol/style/Text.js': This file handles how text is styled and rendered on the map. If decoding should happen during rendering rather than parsing, the fix may go here to ensure rendered labels display decoded characters.\nEither or both may need to be edited based on where the project architects prefer to decode the entities.",
+        "bug_scenario": "The bug is that XML/HTML entity codes (e.g., &amp;apos;) are showing up directly in the map labels rather than being properly decoded to their intended characters (e.g., ' for apostrophe). The visual provided shows 'Andy&amp;apos;s Pub, Terrasse' on the map and 'Andy\u2019s Pub, Terrasse' (with the correct apostrophe) elsewhere, highlighting that labels from the KML/XML data are not decoded before display."
+    }
+}

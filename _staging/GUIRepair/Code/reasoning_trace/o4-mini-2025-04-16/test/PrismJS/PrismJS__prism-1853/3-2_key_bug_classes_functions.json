@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-json.js//Prism.languages.json"
+        ],
+        "bug_functions": [
+            "components/prism-json.js//comment",
+            "components/prism-json.js//string"
+        ],
+        "explanation": "The heart of the bug lies in the JSON language definition in components/prism-json.js. The 'comment' pattern (/\\/\\/.*|\\/\\*[\\s\\S]*?(?:\\*\\/|$)/) appears before the 'string' pattern, both marked greedy. As a result, the moment Prism sees \"/*\" (even inside a string literal), it invokes the comment rule and consumes everything until the next '*/' (or end of file). The 'string' rule never gets a chance to match because its pattern comes after and the comment rule greedily claims the input. To fix this, the comment tokenizer must be constrained so that it does not fire inside JSON strings (for example by reordering rules or anchoring comment matches to locations outside of quoted values).",
+        "bug_scenario": "When Prism highlights a JSON snippet that contains the two\u2010character sequence \"/*\" as a string value (e.g. {\"A\": \"/*\", ...}), Prism\u2019s JSON syntax definition treats that \"/*\" as the start of a C\u2010style comment rather than as part of the string. The block comment pattern swallows the rest of the JSON, mis\u2010highlighting all subsequent lines as comment."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-json.js//Prism.languages.json"
+        ],
+        "bug_functions": [],
+        "explanation": "The core of the bug lies in the JSON grammar object Prism.languages.json defined in components/prism-json.js. It declares a 'comment' pattern (matching both // and /*\u2026*/ comments) before the 'string' pattern, so when the tokenizer sees \u201c/*\u201d inside a JSON string it classifies it as a comment. JSON does not allow comments, and quoted sequences like \"/*\" should remain part of the string. To fix this, the 'comment' entry must be removed or moved after the 'string' entry (or restricted) in the Prism.languages.json definition so that string values containing /* are correctly tokenized as strings, not comments.",
+        "bug_scenario": "When highlighting JSON with Prism, any string value containing the sequence /* is being treated as the start of a comment. Because the JSON grammar in Prism (components/prism-json.js) defines a comment token using the JavaScript-style comment regex (\\/\\*[\\s\\S]*?(?:\\*\\/|$)) before the string rule, the \u201c/*\u201d inside a quoted JSON string is swallowed by the comment matcher, breaking the rest of the JSON highlighting."
+    }
+}

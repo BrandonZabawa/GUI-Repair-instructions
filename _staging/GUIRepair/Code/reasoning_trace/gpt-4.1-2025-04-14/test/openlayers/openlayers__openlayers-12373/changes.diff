@@ -1,0 +1,36 @@
+diff --git a/src/ol/source/TileDebug.js b/src/ol/source/TileDebug.js
+index 36353da531..d0bfb4fd34 100644
+--- a/src/ol/source/TileDebug.js
++++ b/src/ol/source/TileDebug.js
+@@ -116,6 +116,9 @@ class TileDebug extends XYZ {
+       wrapX: options.wrapX !== undefined ? options.wrapX : true,
+       zDirection: options.zDirection,
+     });
++
++    // Add invertY option to handle {-y} template
++    this.invertY = options.invertY || false;
+   }
+ 
+   /**
+@@ -134,13 +137,20 @@ class TileDebug extends XYZ {
+       const textTileCoord = this.getTileCoordForTileUrlFunction(tileCoord);
+       let text;
+       if (textTileCoord) {
++        let displayY = textTileCoord[2];
++        if (this.invertY && this.tileGrid) {
++          // Invert Y for display if needed
++          const gridExtent = this.tileGrid.getExtent();
++          const gridHeight = this.tileGrid.getHeight(textTileCoord[0]);
++          displayY = gridHeight - textTileCoord[2] - 1;
++        }
+         text =
+           'z:' +
+           textTileCoord[0] +
+           ' x:' +
+           textTileCoord[1] +
+           ' y:' +
+-          textTileCoord[2];
++          (this.invertY ? displayY : textTileCoord[2]);
+       } else {
+         text = 'none';
+       }

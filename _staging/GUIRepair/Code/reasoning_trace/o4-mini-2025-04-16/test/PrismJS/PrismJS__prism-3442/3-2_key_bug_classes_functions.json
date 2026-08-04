@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-markup.js//Prism.languages.markup.tag"
+        ],
+        "bug_functions": [],
+        "explanation": "The incorrect highlighting comes from the grammar definition for HTML tags in Prism.languages.markup.tag. In particular, the \u2018attr-value\u2019 token\u2019s inside.punctuation rule uses the regex /\"|'/, which matches every single or double quote anywhere in the attribute value\u2014not just the delimiting quotes. Adjusting or scoping that punctuation pattern so it only matches the outer quotes (or removing it entirely for inner quotes) will prevent JSON-style quotes inside attributes from being highlighted as punctuation.",
+        "bug_scenario": "When Prism.js highlights HTML markup, it treats every single or double quote inside an attribute value as punctuation. In the example `<google-chart data='[[\"Month\", \"Days\"], [\"Jan\", 31]]'></google-chart>`, the JSON-style double quotes around Month, Days and Jan (inside the single-quoted attribute) are incorrectly highlighted as punctuation."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-markup.js"
+        ],
+        "bug_functions": [
+            "components/prism-markup.js//Prism.languages.markup.tag.inside['attr-value']"
+        ],
+        "explanation": "The heart of the bug lies in the definition of the attr-value grammar inside Prism.languages.markup.tag. In the default grammar (in components/prism-markup.js), the attr-value rule has an inside.punctuation subpattern that matches any \" or '. This causes every quote character inside attribute values to be tokenized as punctuation\u2014even when they are part of an embedded JSON or other string literal. To fix this, the attr-value grammar must be adjusted (or a more specific subgrammar inserted) so that only the delimiting quotes of the attribute value are treated as punctuation, and internal quotes in the content are either ignored or tokenized according to the embedded language\u2019s rules.",
+        "bug_scenario": "When highlighting HTML attributes containing embedded JSON (e.g. data='[[\"Month\", \"Days\"], [\"Jan\", 31]]'), Prism\u2019s markup grammar treats every double-quote and single-quote character inside the attribute value as punctuation. As a result, the quotes around \"Month\", \"Days\", and \"Jan\" are highlighted as punctuation tokens, which is visually incorrect for JSON strings inside an attribute."
+    }
+}

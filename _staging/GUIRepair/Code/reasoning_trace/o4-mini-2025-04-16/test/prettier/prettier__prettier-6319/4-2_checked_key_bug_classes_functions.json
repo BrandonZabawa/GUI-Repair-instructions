@@ -1,0 +1,97 @@
+{
+    "bug_classes": {},
+    "bug_functions": {
+        "1": {
+            "function_name": "babelOptions",
+            "file_path": "src/language-js/parser-babel.js",
+            "function_details": [
+                {
+                    "name": "babelOptions",
+                    "start_line": 8,
+                    "end_line": 45
+                }
+            ],
+            "function_code": [
+                "function babelOptions(extraPlugins = []) {",
+                "  return {",
+                "    sourceType: \"module\",",
+                "    allowAwaitOutsideFunction: true,",
+                "    allowImportExportEverywhere: true,",
+                "    allowReturnOutsideFunction: true,",
+                "    allowSuperOutsideMethod: true,",
+                "    allowUndeclaredExports: true,",
+                "    errorRecovery: true,",
+                "    createParenthesizedExpressions: true,",
+                "    plugins: [",
+                "      \"doExpressions\",",
+                "      \"objectRestSpread\",",
+                "      \"classProperties\",",
+                "      \"exportDefaultFrom\",",
+                "      \"exportNamespaceFrom\",",
+                "      \"asyncGenerators\",",
+                "      \"functionBind\",",
+                "      \"functionSent\",",
+                "      \"dynamicImport\",",
+                "      \"numericSeparator\",",
+                "      \"importMeta\",",
+                "      \"optionalCatchBinding\",",
+                "      \"optionalChaining\",",
+                "      \"classPrivateProperties\",",
+                "      [\"pipelineOperator\", { proposal: \"minimal\" }],",
+                "      \"nullishCoalescingOperator\",",
+                "      \"bigInt\",",
+                "      \"throwExpressions\",",
+                "      \"logicalAssignment\",",
+                "      \"classPrivateMethods\",",
+                "      \"v8intrinsic\",",
+                "      \"partialApplication\",",
+                "      [\"decorators\", { decoratorsBeforeExport: false }],",
+                "      ...extraPlugins,",
+                "    ],",
+                "  };",
+                "}"
+            ]
+        },
+        "2": {
+            "function_name": "createParse",
+            "file_path": "src/language-js/parser-babel.js",
+            "function_details": [
+                {
+                    "name": "createParse",
+                    "start_line": 47,
+                    "end_line": 74
+                }
+            ],
+            "function_code": [
+                "function createParse(parseMethod, ...pluginCombinations) {",
+                "  return (text, parsers, opts) => {",
+                "    // Inline the require to avoid loading all the JS if we don't use it",
+                "    const babel = require(\"@babel/parser\");",
+                "",
+                "    let ast;",
+                "    try {",
+                "      ast = tryCombinations(",
+                "        (options) => babel[parseMethod](text, options),",
+                "        pluginCombinations.map(babelOptions)",
+                "      );",
+                "    } catch (error) {",
+                "      throw createError(",
+                "        // babel error prints (l:c) with cols that are zero indexed",
+                "        // so we need our custom error",
+                "        error.message.replace(/ \\(.*\\)/, \"\"),",
+                "        {",
+                "          start: {",
+                "            line: error.loc.line,",
+                "            column: error.loc.column + 1,",
+                "          },",
+                "        }",
+                "      );",
+                "    }",
+                "    delete ast.tokens;",
+                "    return postprocess(ast, { ...opts, originalText: text });",
+                "  };",
+                "}"
+            ]
+        }
+    }
+}

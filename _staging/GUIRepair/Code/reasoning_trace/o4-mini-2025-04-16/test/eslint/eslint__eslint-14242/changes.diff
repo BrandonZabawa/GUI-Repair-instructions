@@ -1,0 +1,27 @@
+diff --git a/lib/cli.js b/lib/cli.js
+index 4216126b6..e63f7c118 100644
+--- a/lib/cli.js
++++ b/lib/cli.js
+@@ -296,6 +296,9 @@ const cli = {
+             results = await engine.lintFiles(files);
+         }
+ 
++        // capture original counts before we possibly strip warnings
++        const { errorCount: originalErrorCount, warningCount: originalWarningCount } = countErrors(results);
++
+         if (options.fix) {
+             debug("Fix mode enabled - applying fixes");
+             await ESLint.outputFixes(results);
+@@ -307,9 +310,10 @@ const cli = {
+         }
+ 
+         if (await printResults(engine, results, options.format, options.outputFile)) {
+-            const { errorCount, warningCount } = countErrors(results);
++            // after quiet, only errors remain; but use originalWarningCount for max‐warnings
++            const { errorCount } = countErrors(results);
+             const tooManyWarnings =
+-                options.maxWarnings >= 0 && warningCount > options.maxWarnings;
++                options.maxWarnings >= 0 && originalWarningCount > options.maxWarnings;
+ 
+             if (!errorCount && tooManyWarnings) {
+                 log.error(

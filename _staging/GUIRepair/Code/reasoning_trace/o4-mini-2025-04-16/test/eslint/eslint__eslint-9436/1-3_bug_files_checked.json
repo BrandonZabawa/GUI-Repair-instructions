@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/rules/no-constant-condition.js",
+            "lib/rules/no-constant-condition.js"
+        ],
+        "explanation": "The implementation of `no-constant-condition` in `lib/rules/no-constant-condition.js` calls `context.report` with the AST node for the whole statement (e.g. the `IfStatement` or the `CallExpression`), so ESLint highlights the full node range rather than the sub-node `test` range where the constant lives. To fix this, the rule must report against `node.test` (or pass `loc: node.test.loc`) so that only the constant condition is highlighted. The corresponding unit tests in `tests/lib/rules/no-constant-condition.js` must also be updated to assert the corrected start/end columns and lines for those constant-condition errors.",
+        "bug_scenario": "When using the `no-constant-condition` rule, ESLint underlines and reports the entire `if` statement (or the entire call expression containing the ternary) rather than just the constant expression itself. In the screenshot, the red \u201cUnexpected constant condition\u201d markers span from the `if` keyword on line 1 through the `}` on line 3, and similarly for the entire `something(true ? 1 : 0);` call, instead of pointing just at the `true` literal and the `true ? 1 : 0` expression."
+    },
+    "2": {
+        "bug_files": [
+            "lib/rules/no-constant-condition.js",
+            "lib/rules/no-constant-condition.js"
+        ],
+        "explanation": "The root of the problem lies in the implementation of the no-constant-condition rule (lib/rules/no-constant-condition.js). It reports the problem on the entire AST node (the IfStatement or ConditionalExpression) instead of reporting precisely on the constant test expression. Fixing this requires changing the reporter to point at node.test (for statements) or at the literal/operator tokens (for ternaries), rather than the parent node. The corresponding unit tests (tests/lib/rules/no-constant-condition.js) also need updating to assert the new, narrower locations for the errors.",
+        "bug_scenario": "When no-constant-condition is enabled, ESLint currently underlines or marks the entire `IfStatement` or the whole `ConditionalExpression` when the test is a constant. In our example it flags `if (true) { \u2026 }` from the `if` keyword through the closing brace, and it flags the entire `something(true ? 1 : 0);` call\u2014whereas the ESLint team expects the diagnostic to only cover the constant token itself (the `true` literal in both cases, plus the `?`\u2013`:` range in the ternary)."
+    }
+}

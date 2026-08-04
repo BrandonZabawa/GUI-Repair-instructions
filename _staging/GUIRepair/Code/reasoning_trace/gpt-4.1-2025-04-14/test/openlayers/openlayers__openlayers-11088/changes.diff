@@ -1,0 +1,50 @@
+diff --git a/src/ol/proj/proj4.js b/src/ol/proj/proj4.js
+index 099c80ece1..f27e132b2f 100644
+--- a/src/ol/proj/proj4.js
++++ b/src/ol/proj/proj4.js
+@@ -50,11 +50,43 @@ export function register(proj4) {
+           addEquivalentProjections([proj1, proj2]);
+         } else {
+           const transform = proj4(code1, code2);
++
++          // Helper to swap coordinates if axis orientation is not 'enu'
++          function swapIfNeeded(coord, axisOrientation) {
++            if (axisOrientation && axisOrientation.substr(0, 2) === 'ne') {
++              // Swap x/y for 'neu' (northing, easting, up)
++              return [coord[1], coord[0]];
++            }
++            return coord;
++          }
++
++          // Wrap forward and inverse transforms to handle axis order
++          const forward = function(coord) {
++            // proj1: source, proj2: dest
++            const srcAxis = proj1.getAxisOrientation ? proj1.getAxisOrientation() : 'enu';
++            const destAxis = proj2.getAxisOrientation ? proj2.getAxisOrientation() : 'enu';
++            let c = coord;
++            c = swapIfNeeded(c, srcAxis);
++            c = transform.forward(c);
++            c = swapIfNeeded(c, destAxis);
++            return c;
++          };
++          const inverse = function(coord) {
++            // proj2: source, proj1: dest
++            const srcAxis = proj2.getAxisOrientation ? proj2.getAxisOrientation() : 'enu';
++            const destAxis = proj1.getAxisOrientation ? proj1.getAxisOrientation() : 'enu';
++            let c = coord;
++            c = swapIfNeeded(c, srcAxis);
++            c = transform.inverse(c);
++            c = swapIfNeeded(c, destAxis);
++            return c;
++          };
++
+           addCoordinateTransforms(
+             proj1,
+             proj2,
+-            transform.forward,
+-            transform.inverse
++            forward,
++            inverse
+           );
+         }
+       }

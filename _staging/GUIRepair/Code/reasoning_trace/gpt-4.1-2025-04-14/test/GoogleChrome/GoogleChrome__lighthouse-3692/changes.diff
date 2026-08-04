@@ -1,0 +1,29 @@
+diff --git a/lighthouse-core/report/v2/renderer/report-renderer.js b/lighthouse-core/report/v2/renderer/report-renderer.js
+index 732fc99e9..845fb4b81 100644
+--- a/lighthouse-core/report/v2/renderer/report-renderer.js
++++ b/lighthouse-core/report/v2/renderer/report-renderer.js
+@@ -55,6 +55,24 @@ class ReportRenderer {
+    */
+   _renderReportHeader(report) {
+     const header = this._dom.cloneTemplate('#tmpl-lh-heading', this._templateContext);
++
++    // Insert warning if report was generated in Headless Chrome without network throttling
++    const envs = report.runtimeConfig.environment;
++    const isHeadless = envs.some(runtime =>
++      (runtime.name && runtime.name.toLowerCase().includes('headless')) ||
++      (runtime.description && runtime.description.toLowerCase().includes('headless'))
++    );
++    const noThrottling = envs.some(runtime =>
++      (runtime.description && runtime.description.toLowerCase().includes('network throttling not supported'))
++    );
++    if (isHeadless || noThrottling) {
++      const warning = this._dom.createElement('div', 'lh-headless-warning');
++      warning.style.color = 'red';
++      warning.style.marginBottom = '1em';
++      warning.innerHTML = '<strong>Note:</strong> Your site\'s mobile performance may be worse than the numbers presented in this report. Lighthouse could not test on a mobile connection because Headless Chrome does not support network throttling. See <a href="https://crbug.com/728451" target="_blank" rel="noopener">crbug.com/728451</a>.';
++      header.insertBefore(warning, header.firstChild);
++    }
++
+     this._dom.find('.lh-config__timestamp', header).textContent =
+         Util.formatDateTime(report.generatedTime);
+     const url = this._dom.find('.lh-metadata__url', header);

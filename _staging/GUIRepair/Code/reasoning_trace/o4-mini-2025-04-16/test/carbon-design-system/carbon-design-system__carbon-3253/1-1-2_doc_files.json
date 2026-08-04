@@ -1,0 +1,13 @@
+{
+    "1": {
+        "documents": [
+            "Dropdown/index.js",
+            "ListBox/index.js",
+            "Button/index.js",
+            "TextInput/index.js",
+            "Select/index.js"
+        ],
+        "explanation": "1. Dropdown/index.js \u2013 Contains the top-level Dropdown component logic for propagating disabled and tabIndex props.\n2. ListBox/index.js \u2013 Implements the listbox wrapper and sets tabIndex on the root element.\n3. Button/index.js \u2013 Renders the inner toggle button; we need to see how it handles disabled and tabIndex.\n4. TextInput/index.js \u2013 Shows a reference pattern for how another form component automatically overrides tabIndex to -1 when disabled.\n5. Select/index.js \u2013 A related component that also composes ListBox and Button, providing another example of managing focus for disabled items.\n\nReviewing these files will reveal how disabled and tabIndex are currently applied (or not applied) at each level and guide the fix so that child controls inherit `tabIndex=\"-1\"` when the Dropdown is disabled.",
+        "bug_scenario": "In the disabled Dropdown example the **outer listbox** wrapper correctly picks up `tabIndex=\"-1\"` and `class=\"bx--dropdown--disabled\"`, but the **inner toggle button** still has its default `tabIndex=\"0\"` even though it is disabled. This means keyboard users can still tab into the disabled toggle, breaking the expected focus flow. The screenshot shows:\n\n- A `<div id=\"pipeline\" role=\"listbox\" tabindex=\"-1\" class=\"bx--dropdown bx--dropdown--disabled bx--list-box bx--list-box--disabled\">` wrapper (correctly non-focusable)\n- A child `<div role=\"button\" ... tabindex=\"0\" disabled>` (still focusable via Tab)\n\nExpected behavior: when the parent Dropdown receives `disabled` and `tabIndex=\"-1\"`, _all_ interactive children (including the toggle button) should also automatically get `tabIndex=\"-1\"` so they cannot be focused."
+    }
+}

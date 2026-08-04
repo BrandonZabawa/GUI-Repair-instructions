@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//DropOnFlowBehavior",
+            "lib/features/modeling/behavior/UnsetDefaultFlowBehavior.js//DeleteSequenceFlowBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape",
+            "lib/features/modeling/behavior/UnsetDefaultFlowBehavior.js//isDefaultFlow"
+        ],
+        "explanation": "When dropping an intermediate catch event onto a flow, DropOnFlowBehavior.insertShape splits and reconnects the original sequence flow (using modeling.reconnectStart/reconnectEnd). That reconnection internally deletes the old connection, firing a 'connection.delete' command. DeleteSequenceFlowBehavior listens for 'connection.delete' and, when isDefaultFlow returns true, unsets the gateway\u2019s default property. Because insertShape deletes and recreates the non-default flow, isDefaultFlow misidentifies the removed connection as the default, causing the default attribute on the gateway to be cleared. To fix the bug, the split logic in insertShape or the isDefaultFlow check in DeleteSequenceFlowBehavior must be adjusted so that deleting a non-default connection does not remove the gateway\u2019s default attribute.",
+        "bug_scenario": "In the BPMN editor, an exclusive gateway has two outgoing flows, one marked as Default (downwards) and one non-default (rightwards). When the user drags a Timer Intermediate Catch Event onto the non-default (rightwards) sequence flow, the default marker on the gateway disappears (the gateway\u2019s default attribute is removed) even though the default branch remains intact."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//DropOnFlowBehavior",
+            "lib/features/modeling/behavior/UnsetDefaultFlowBehavior.js//DeleteSequenceFlowBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape",
+            "lib/features/modeling/behavior/UnsetDefaultFlowBehavior.js//preExecute('connection.delete')"
+        ],
+        "explanation": "DropOnFlowBehavior.insertShape is responsible for splitting/reconnecting a sequence flow when you drop a catch event on it. Under the hood it calls modeling.reconnectStart/end, which issues a connection.delete on the original flow. UnsetDefaultFlowBehavior (DeleteSequenceFlowBehavior) listens to every connection.delete and unsets the gateway\u2019s default property whenever its default sequence flow is removed. Because the reconnect logic deletes the old flow, this interceptor clears the default attribute even though the user didn\u2019t explicitly delete it. To fix the bug, DeleteSequenceFlowBehavior must be adapted so that it only unsets the default on user-initiated deletes (or can detect/process context flags) and ignores internal reconnect operations triggered by insertShape.",
+        "bug_scenario": "In the GIF you see an exclusive gateway with two outgoing sequence flows, one marked as the default. When you drop a Timer Intermediate Catch Event onto the non-default flow, the modeler reconnects the flow by deleting and re-creating it. During that implicit delete, the \u201cdefault\u201d attribute on the gateway is cleared (even though the default marker remains rendered), so the gateway actually loses its default flow in the underlying model."
+    }
+}

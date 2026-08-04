@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//React.forwardRef(render function)",
+            "packages/react/src/components/MultiSelect/MultiSelect.js//React.forwardRef(render function)"
+        ],
+        "explanation": "The core of this bug is in the React.forwardRef wrappers for the Dropdown and MultiSelect components. In both files, the forwardRef callback receives a ref argument but never attaches it to the outer wrapper (the <div>), instead attaching it to an inner <button>. Because of how props and the ref are handled (ref is not included in {...other}), the ref passed by the consumer is never actually assigned to any rendered element, leaving ref.current undefined. Fixing this requires ensuring the ref is forwarded onto a real DOM node (for example by moving the ref={ref} to the wrapper or explicitly spreading it) so that the consumer\u2019s ref points at an actual element.",
+        "bug_scenario": "A consumer of the Carbon Dropdown and MultiSelect components attaches a React ref expecting to receive the underlying DOM node. In the repro (shown in the screenshot), calling console.log(dropdownRef.current) always yields undefined, whereas a plain <button> ref works correctly. This indicates that the forwardRef implementation in both Dropdown and MultiSelect is not properly forwarding the ref to a rendered DOM element."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect"
+        ],
+        "explanation": "Both Dropdown and MultiSelect are defined as React.forwardRef components and attempt to hand the forwarded ref straight through to their inner <button> element (ref={ref}). Because the ref never actually gets bound, any ref you pass into <Dropdown ref={myRef} /> or <MultiSelect ref={myRef} /> ends up undefined. The forwardRef wrapper functions (Dropdown in Dropdown.js and MultiSelect in MultiSelect.js) and their use of ref on the button are the critical locations where the problem must be addressed.",
+        "bug_scenario": "When you attach a React ref to the Carbon Dropdown or MultiSelect components (via React.forwardRef), the ref.current always comes back undefined (see screenshot: Dropdown {current: undefined}), whereas attaching a ref to a plain <button> works correctly. In other words, the component never actually exposes its inner DOM node."
+    }
+}

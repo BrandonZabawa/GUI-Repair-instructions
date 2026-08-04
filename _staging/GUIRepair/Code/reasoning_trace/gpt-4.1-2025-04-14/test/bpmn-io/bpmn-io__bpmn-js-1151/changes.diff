@@ -1,0 +1,44 @@
+diff --git a/lib/features/copy-paste/BpmnCopyPaste.js b/lib/features/copy-paste/BpmnCopyPaste.js
+index f66694f6..05092092 100644
+--- a/lib/features/copy-paste/BpmnCopyPaste.js
++++ b/lib/features/copy-paste/BpmnCopyPaste.js
+@@ -59,6 +59,13 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+     copyProperties(businessObject.di, descriptor, 'isExpanded');
+ 
+     if (isLabel(descriptor)) {
++      // Copy label text (e.g., name or text) for label elements
++      var labelTarget = getBusinessObject(element.labelTarget);
++      if (labelTarget && (labelTarget.name !== undefined)) {
++        descriptor.labelText = labelTarget.name;
++      } else if (labelTarget && (labelTarget.text !== undefined)) {
++        descriptor.labelText = labelTarget.text;
++      }
+       return descriptor;
+     }
+ 
+@@ -119,7 +126,17 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+ 
+     // do NOT copy business object if external label
+     if (isLabel(descriptor)) {
+-      descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);
++      var labelTargetBO = getBusinessObject(cache[ descriptor.labelTarget ]);
++      descriptor.businessObject = labelTargetBO;
++
++      // Restore label text if it was copied
++      if (descriptor.labelText !== undefined) {
++        if (labelTargetBO && (labelTargetBO.name !== undefined)) {
++          labelTargetBO.name = descriptor.labelText;
++        } else if (labelTargetBO && (labelTargetBO.text !== undefined)) {
++          labelTargetBO.text = descriptor.labelText;
++        }
++      }
+ 
+       return;
+     }
+@@ -152,4 +169,4 @@ BpmnCopyPaste.$inject = [
+ 
+ function isLabel(element) {
+   return !!element.labelTarget;
+-}
+\ No newline at end of file
++}

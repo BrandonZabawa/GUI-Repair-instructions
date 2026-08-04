@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/uses-rel-preconnect.js",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js",
+            "lighthouse-core/gather/gatherers/html-without-javascript.js",
+            "lighthouse-core/gather/gatherers/dobetterweb/tags-blocking-first-paint.js"
+        ],
+        "explanation": "1. 'lighthouse-core/audits/uses-rel-preconnect.js' is the primary audit for checking usage of <link rel=\"preconnect\">. Since the bug is about detection of those hints, this is the most likely place to add logic to look at the DOM and recognize already present preconnect/dns-prefetch tags.\n2. 'lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js' may contain logic for detecting network opportunities like preconnect, and could be involved in the performance opportunities listing.\n3. 'lighthouse-core/gather/gatherers/html-without-javascript.js' (and to a lesser extent, 'tags-blocking-first-paint.js') are responsible for gathering HTML/link tags from the DOM that the audits may consume. Ensuring these gatherers correctly extract all <link rel=\"preconnect\"> is essential.\n\nOther files such as main auditors or opportunity performance calculations might reference or rely on the above gatherers or contain utility functions for preprocessing network/DOM artifacts, but the above are the most directly relevant to the bug scenario as described in the bug report.",
+        "bug_scenario": "The bug scenario is that Lighthouse (LH) is recommending the use of 'preconnect' or 'dns-prefetch' for certain domains (e.g., google-analytics.com and fonts.googleapis.com) even though the user has already included <link rel=\"preconnect\"> for those domains in their HTML. The bug occurs because Lighthouse is not detecting existing 'preconnect' or 'dns-prefetch' hints in the document DOM and thus makes a false positive suggestion for performance optimization. The user provided screenshots of HTML source including proper <link rel=\"preconnect\"> tags, and a Lighthouse audit that incorrectly suggests these optimizations again."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/uses-rel-preconnect.js",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js",
+            "lighthouse-core/gather/gatherers/dobetterweb/tags-blocking-first-paint.js"
+        ],
+        "explanation": "The main file likely responsible for this bug is 'lighthouse-core/audits/uses-rel-preconnect.js', as it directly audits the use of 'preconnect' and 'dns-prefetch' hints. It should inspect the DOM for existing 'link rel=\"preconnect\"' or 'dns-prefetch' elements and exclude already-handled origins from its suggestions. If this logic is missing or faulty, the audit will give false positives. Additionally, 'lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js' could be involved if it provides utilities or common logic for opportunity audits such as preconnect checks. 'lighthouse-core/gather/gatherers/tags-blocking-first-paint.js' might also be relevant, as it is involved in gathering link or resource tags from the page for performance audits. These files are directly related to the detection and recommendation logic for preconnect/dns-prefetch opportunities and are likely places to look for bugs or missing logic.",
+        "bug_scenario": "The bug scenario describes a false positive in Lighthouse's performance audit. The audit suggests using 'preconnect' or 'dns-prefetch' for two origins (Google Analytics and Google Fonts) even though the site's HTML already includes 'link rel=\"preconnect\"' tags for these origins. The bug reports that Lighthouse is not detecting these existing resource hints in the DOM, causing it to incorrectly recommend them as an improvement opportunity."
+    }
+}

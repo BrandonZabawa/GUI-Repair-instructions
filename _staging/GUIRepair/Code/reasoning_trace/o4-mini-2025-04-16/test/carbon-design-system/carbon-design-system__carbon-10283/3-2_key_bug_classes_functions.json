@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/components/src/components/date-picker/date-picker.js//DatePicker",
+            "packages/react/src/components/DatePicker/DatePicker.js//DatePicker",
+            "packages/react/src/components/DatePickerInput/DatePickerInput.js//DatePickerInput"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DatePicker/DatePicker.js//openCalendar",
+            "packages/react/src/components/DatePickerInput/DatePickerInput.js//render (icon onClick)",
+            "packages/components/src/components/date-picker/date-picker.js//_updateInputFields"
+        ],
+        "explanation": "The root cause is that opening the calendar via the icon does not move focus into the text input. Flatpickr\u2019s keyboard listeners are wired to the focused input (and/or its hidden internal input in range mode), so without focus the arrow keys never reach the calendar logic.  \n1) In packages/react/src/components/DatePicker/DatePicker.js the openCalendar method currently only calls Flatpickr.open(); it must also call .focus() on the input before or immediately after opening.  \n2) In packages/react/src/components/DatePickerInput/DatePickerInput.js the icon\u2019s onClick is wired to the openCalendar prop but does not re-focus the text field. That render method needs to wrap openCalendar and then call this.input.focus().  \n3) In the vanilla core version (packages/components/src/components/date-picker/date-picker.js), the internal _updateInputFields helper manages which <input> Flatpickr is tracking; that logic must also run or explicitly set focus when the calendar is shown via the icon. Ensuring focus moves to the correct input in all open paths restores keyboard navigation.",
+        "bug_scenario": "When the user clicks the calendar icon in the DatePicker, the popup calendar opens but the input field never receives focus. Because focus remains off the text input, Flatpickr\u2019s built-in keyboard handlers do not receive the arrow-key events, so the user cannot navigate the dates with the keyboard. When the same calendar is opened by clicking directly in the text input, the input already has focus and arrow-key navigation works as expected."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/DatePicker/DatePicker.js//DatePicker",
+            "packages/react/src/components/DatePicker/plugins/fixEventsPlugin.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DatePicker/DatePicker.js//openCalendar",
+            "packages/react/src/components/DatePicker/plugins/fixEventsPlugin.js//handleKeydown"
+        ],
+        "explanation": "The React DatePicker class defines and passes an openCalendar method into the DatePickerInput icon\u2019s onClick handler. That method currently only calls Flatpickr.open(), but does not shift focus to the input element. Without input focus, the fixEventsPlugin\u2019s handleKeydown listener (which only intercepts ArrowLeft/ArrowRight on the input) never fires, and default Flatpickr keyboard handling is suppressed. To restore arrow-key navigation when opening via the icon, openCalendar must set focus on the input before or after calling flatpickr.open(), ensuring handleKeydown sees the key events on the correct target.",
+        "bug_scenario": "When the calendar icon in the Carbon React DatePicker is clicked to open the calendar dropdown, focus does not move into the input field. As a result, keyboard arrow keys (\u2190/\u2192) no longer navigate date cells or move the cursor inside the input, making it inaccessible by keyboard. When the calendar is opened by clicking or focusing the text input itself, keyboard navigation works correctly."
+    }
+}

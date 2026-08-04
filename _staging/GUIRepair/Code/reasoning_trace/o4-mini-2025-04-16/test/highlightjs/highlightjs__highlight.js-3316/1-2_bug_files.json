@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/cpp.js",
+            "src/languages/arduino.js"
+        ],
+        "explanation": "Both cpp.js and arduino.js define the lists of C++ and Arduino data types and keywords for the highlighter. The commit in question moved primitive types (int, char, unsigned long, etc.) from the RESERVED_TYPES (treated as keywords) into RESERVED_KEYWORDS (then styled as built-ins), altering their CSS class. To restore the prior behavior\u2014where primitives are colored as keywords\u2014you must edit these two files to merge the primitive-type list back into the keyword group (and remove or adjust any separate type list).",
+        "bug_scenario": "After the recent refactor (commit 1be7a28) C++ primitive types (int, char, unsigned long long, signed int, etc.) were moved out of the \u201ckeyword\u201d bucket into their own category and are now highlighted as built-ins. In the \u201cAfter\u201d screenshots they render in a different color (brown) which clashes with how mainstream editors (VSCode, CLion, Xcode, Notepad++) display them (in keyword color). Users find this inconsistent and confusing; primitives should be highlighted as keywords."
+    },
+    "2": {
+        "bug_files": [
+            "CHANGES.md",
+            "src/languages/cpp.js",
+            "src/languages/arduino.js"
+        ],
+        "explanation": "1. CHANGES.md \u2013 documents the change that moved primitive types from RESERVED_TYPES into RESERVED_KEYWORDS. To restore previous behavior, this entry will need updating (or removing).\n2. src/languages/cpp.js \u2013 contains the definition of the lists RESERVED_TYPES and RESERVED_KEYWORDS that drive how each token is highlighted. The recent commit shifted built-ins like int, char, long out of the keyword bucket; reverting or merging those lists here will restore the old highlight.\n3. src/languages/arduino.js \u2013 extends the C++ mode and was updated to use keyword style for Arduino types. It references the same keyword/type lists; if cpp.js is rolled back, arduino.js behavior must be aligned too.",
+        "bug_scenario": "After the v11.0.0 refactor, primitive C and C++ types (int, char, long, signed, unsigned, etc.) have been moved out of the main keyword list into a separate \u201ctype\u201d category. In practice this means that declarations like \u201cstatic int test;\u201d or \u201cconst char *test;\u201d no longer show their built-in types in the same color as other keywords. In editors like VSCode, CLion, XCode and Notepad++ the primitive types remain highlighted uniformly, but in our cpp highlighter they now render in the default text color or as \u201ctypes\u201d instead of keywords. The images illustrate the before (all primitives in blue) vs. after (primitives greyed or styled differently) behavior."
+    }
+}

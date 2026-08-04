@@ -1,0 +1,78 @@
+diff --git a/lighthouse-core/audits/first-meaningful-paint.js b/lighthouse-core/audits/first-meaningful-paint.js
+index 32718ace1..f40636b1b 100644
+--- a/lighthouse-core/audits/first-meaningful-paint.js
++++ b/lighthouse-core/audits/first-meaningful-paint.js
+@@ -63,6 +63,10 @@ class FirstMeaningfulPaint extends Audit {
+         throw new Error('No `navigationStart` event found in trace');
+       }
+ 
++      if (!tabTrace.firstContentfulPaintEvt) {
++        throw new Error('No `firstContentfulPaint` event found in trace');
++      }
++
+       const result = this.calculateScore({
+         navigationStart: tabTrace.navigationStartEvt,
+         firstMeaningfulPaint: tabTrace.firstMeaningfulPaintEvt,
+@@ -86,7 +90,7 @@ class FirstMeaningfulPaint extends Audit {
+   static calculateScore(evts) {
+     const getTs = evt => evt && evt.ts;
+     const getTiming = evt => {
+-      if (!evt) {
++      if (!evt || !evts.navigationStart) {
+         return undefined;
+       }
+       const timing = (evt.ts - evts.navigationStart.ts) / 1000;
+@@ -112,6 +116,17 @@ class FirstMeaningfulPaint extends Audit {
+     //   4000ms: score=50
+     //   >= 14000ms: score≈0
+     const firstMeaningfulPaint = getTiming(evts.firstMeaningfulPaint);
++
++    if (typeof firstMeaningfulPaint !== 'number' || isNaN(firstMeaningfulPaint)) {
++      return {
++        duration: 0,
++        score: 0,
++        rawValue: 0,
++        debugString: 'Could not compute First Meaningful Paint due to missing trace events.',
++        extendedInfo
++      };
++    }
++
+     const distribution = TracingProcessor.getLogNormalDistribution(SCORING_MEDIAN,
+         SCORING_POINT_OF_DIMINISHING_RETURNS);
+     let score = 100 * distribution.computeComplementaryPercentile(firstMeaningfulPaint);
+diff --git a/lighthouse-core/gather/computed/trace-of-tab.js b/lighthouse-core/gather/computed/trace-of-tab.js
+index 4ec5cba45..b7698c2a2 100644
+--- a/lighthouse-core/gather/computed/trace-of-tab.js
++++ b/lighthouse-core/gather/computed/trace-of-tab.js
+@@ -57,16 +57,25 @@ class TraceOfTab extends ComputedArtifact {
+     // Find our first paint of this frame
+     const firstPaint = frameEvents.find(e => e.name === 'firstPaint');
+     // Our navStart will be the latest one before fP.
+-    const navigationStart = frameEvents.filter(e =>
+-        e.name === 'navigationStart' && e.ts < firstPaint.ts).pop();
++    let navigationStart;
++    if (firstPaint) {
++      navigationStart = frameEvents.filter(e =>
++          e.name === 'navigationStart' && e.ts < firstPaint.ts).pop();
++    } else {
++      navigationStart = frameEvents.find(e => e.name === 'navigationStart');
++    }
+ 
+     // FCP will follow at/after the FP
+-    const firstContentfulPaint = frameEvents.find(e =>
+-      e.name === 'firstContentfulPaint' && e.ts >= firstPaint.ts);
++    const firstContentfulPaint = firstPaint
++      ? frameEvents.find(e =>
++          e.name === 'firstContentfulPaint' && e.ts >= firstPaint.ts)
++      : frameEvents.find(e => e.name === 'firstContentfulPaint');
+ 
+     // fMP will follow at/after the FP
+-    let firstMeaningfulPaint = frameEvents.find(e =>
+-        e.name === 'firstMeaningfulPaint' && e.ts >= firstPaint.ts);
++    let firstMeaningfulPaint = firstPaint
++      ? frameEvents.find(e =>
++          e.name === 'firstMeaningfulPaint' && e.ts >= firstPaint.ts)
++      : frameEvents.find(e => e.name === 'firstMeaningfulPaint');
+ 
+     // If there was no firstMeaningfulPaint event found in the trace, the network idle detection
+     // may have not been triggered before Lighthouse finished tracing.

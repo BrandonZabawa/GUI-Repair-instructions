@@ -1,0 +1,56 @@
+diff --git a/packages/react/src/components/CodeSnippet/CodeSnippet.js b/packages/react/src/components/CodeSnippet/CodeSnippet.js
+index 38452e82..34227e61 100644
+--- a/packages/react/src/components/CodeSnippet/CodeSnippet.js
++++ b/packages/react/src/components/CodeSnippet/CodeSnippet.js
+@@ -33,6 +33,7 @@ function CodeSnippet({
+   showLessText,
+   hideCopyButton,
+   wrapText,
++  disabled = false,
+   ...rest
+ }) {
+   const [expandedCode, setExpandedCode] = useState(false);
+@@ -112,14 +113,16 @@ function CodeSnippet({
+     [`${prefix}--snippet--${type}`]: type,
+     [`${prefix}--snippet--expand`]: expandedCode,
+     [`${prefix}--snippet--light`]: light,
+-    [`${prefix}--snippet--no-copy`]: hideCopyButton,
++    [`${prefix}--snippet--no-copy`]: hideCopyButton || disabled,
+     [`${prefix}--snippet--wraptext`]: wrapText,
++    [`${prefix}--snippet--disabled`]: disabled,
+   });
+ 
+   const expandCodeBtnText = expandedCode ? showLessText : showMoreText;
+ 
+   if (type === 'inline') {
+-    if (hideCopyButton) {
++    // if it's disabled, just render read-only code
++    if (hideCopyButton || disabled) {
+       return (
+         <span className={codeSnippetClasses}>
+           <code id={uid}>{children}</code>
+@@ -145,7 +148,7 @@ function CodeSnippet({
+       <div
+         ref={codeContainerRef}
+         role={type === 'single' ? 'textbox' : null}
+-        tabIndex={type === 'single' ? 0 : null}
++        tabIndex={type === 'single' && !disabled ? 0 : null}
+         className={`${prefix}--snippet-container`}
+         aria-label={ariaLabel || copyLabel || 'code-snippet'}
+         onScroll={(type === 'single' && handleScroll) || null}>
+@@ -172,6 +175,7 @@ function CodeSnippet({
+           onClick={onClick}
+           feedback={feedback}
+           iconDescription={copyButtonDescription}
++          disabled={disabled}
+         />
+       )}
+       {shouldShowMoreLessBtn && (
+@@ -273,6 +277,7 @@ CodeSnippet.defaultProps = {
+   showMoreText: 'Show more',
+   showLessText: 'Show less',
+   wrapText: false,
++  disabled: false,
+ };
+ 
+ export default CodeSnippet;

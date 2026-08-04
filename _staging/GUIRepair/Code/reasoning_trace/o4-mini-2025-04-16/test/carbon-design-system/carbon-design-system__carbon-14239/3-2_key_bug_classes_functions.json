@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Tile/Tile.tsx//ExpandableTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/internal/useNoInteractiveChildren.js//getInteractiveContent"
+        ],
+        "explanation": "The ExpandableTile component in Tile.tsx is responsible for detecting interactive children (using getInteractiveContent) and choosing between the non-interactive (button wrapper with aria-expanded) and interactive variant (div wrapper plus dedicated toggle button). Its current implementation applies aria-expanded unconditionally to the root, which is invalid when the root is not a native button or role=\"button\". The helper getInteractiveContent in useNoInteractiveChildren.js is what drives the detection of interactive content and therefore the variant switch. These two pieces must be updated so that in the interactive variant the root container does not receive aria-expanded (or is given the correct role), and that StructuredList is treated as inert content so that aria-expanded and role assignments align with WCAG rules.",
+        "bug_scenario": "In the \u201cExpandable With Interactive\u201d story the ExpandableTile is rendered with a StructuredList child (no visible interactive content), so it falls back to the non-interactive variant (a single <button> wrapper) by default. To force the interactive variant, the user added a hidden <button>, but in that mode the root element still carries aria-expanded=\"false\" without an accessible role, triggering an a11y violation \u201cARIA attribute is not allowed: aria-expanded=\\\"false\\\"\u201d on #expandable-tile-1. The root wrapper should either not receive aria-expanded or must include the correct role when rendering the interactive variant."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Tile/Tile.tsx//ExpandableTile"
+        ],
+        "bug_functions": [
+            "packages/react/src/internal/useNoInteractiveChildren.js//useNoInteractiveChildren",
+            "packages/react/src/internal/useNoInteractiveChildren.js//getInteractiveContent"
+        ],
+        "explanation": "ExpandableTile in Tile.tsx decides whether to render a <button> or a <div> wrapper based on whether it detects interactive children (via getInteractiveContent/useNoInteractiveChildren). It always applies aria-expanded (and preserves the id) on the wrapper, regardless of its element type. When it becomes a <div>, aria-expanded is invalid without a role. The logic in ExpandableTile that assigns aria-expanded to the root element and the hooks that detect interactive children are therefore the spots to update: move or reassign aria-expanded to the toggle button in the interactive\u2010children case (and/or give the wrapper a proper role) and adjust detection if necessary so StructuredList content doesn\u2019t force the wrong rendering path.",
+        "bug_scenario": "The screenshot shows the IBM Equal Accessibility Checker running against the \u201cExpandable With Interactive\u201d Storybook example. In that scenario, the tile contains an interactive child (a hidden button) so the component renders its outer wrapper as a <div>. However the <div> still receives the aria-expanded=\"false\" attribute (and keeps the user-supplied id) even though a <div> with no interactive role is not permitted to have aria-expanded. The checker flags \u201cARIA attribute is not allowed: aria-expanded=\u2018false\u2019\u201d on the <div> (#expandable-tile-1)."
+    }
+}

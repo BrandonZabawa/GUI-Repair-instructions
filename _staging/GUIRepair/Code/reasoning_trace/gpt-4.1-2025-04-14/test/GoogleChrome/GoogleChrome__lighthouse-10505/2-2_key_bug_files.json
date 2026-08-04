@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/computed/metrics/interactive.js",
+            "lighthouse-core/audits/metrics/interactive.js",
+            "lighthouse-core/lib/tracehouse/trace-processor.js"
+        ],
+        "explanation": "1. 'lighthouse-core/computed/metrics/interactive.js' is the core file responsible for computing the Time to Interactive (TTI) metric. It contains logic for finding overlapping CPU and network quiet periods and throws the NO_TTI_CPU_IDLE_PERIOD error if it cannot find a suitable idle window after FCP. This is the most likely location of the bug, as the error is thrown from here when the page is idle immediately after a slow FCP.\n2. 'lighthouse-core/audits/metrics/interactive.js' is the audit file that invokes the computation of the TTI metric and reports the result (or error) in the Lighthouse report. Any changes to how TTI errors are handled or surfaced would involve this file.\n3. 'lighthouse-core/lib/tracehouse/trace-processor.js' is responsible for processing trace events and extracting timings such as FCP, navigationStart, and main thread events. If there is an issue with how trace events are interpreted (e.g., missing or misaligned timings), it could affect the detection of CPU idle periods and thus TTI calculation. This file is relevant for ensuring the correct trace data is used in the TTI computation.\n\nOther metric files (like first-contentful-paint.js or first-cpu-idle.js) are not directly responsible for TTI or the specific error in question, so they are not included as key bug files.",
+        "bug_scenario": "The bug scenario involves running a Lighthouse performance audit (in DevTools or CLI) on a page with a delayed First Contentful Paint (FCP). When using 'provided' throttling (not simulated), Lighthouse sometimes fails to compute the 'Time to Interactive' (TTI) metric, resulting in a NO_TTI_CPU_IDLE_PERIOD error. The screenshot shows that while FCP and other metrics are reported, TTI and Total Blocking Time fail with errors, specifically mentioning NO_TTI_CPU_IDLE_PERIOD. The error is triggered when the page is idle immediately after a slow FCP, causing Lighthouse to not find a suitable CPU idle period for TTI calculation."
+    }
+}

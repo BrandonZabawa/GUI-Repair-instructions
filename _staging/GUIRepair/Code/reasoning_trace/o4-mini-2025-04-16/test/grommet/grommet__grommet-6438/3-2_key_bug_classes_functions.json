@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/Calendar/Calendar.js//Calendar",
+            "src/js/components/Calendar/utils.js"
+        ],
+        "bug_functions": [
+            "src/js/components/Calendar/Calendar.js//buildDisplayBounds",
+            "src/js/components/Calendar/Calendar.js//CalendarDay",
+            "src/js/components/Calendar/utils.js//withinDates",
+            "src/js/components/Calendar/utils.js//betweenDates"
+        ],
+        "explanation": "The Calendar class in Calendar.js is responsible for laying out and rendering the grid of days via buildDisplayBounds and CalendarDay. It also receives calendarProps.bounds from DateInput and should disable any days outside that range. Under the hood, Calendar uses utility functions withinDates and betweenDates (from Calendar/utils.js) to determine whether each date falls inside or outside the allowed bounds. Because buildDisplayBounds is not pruning out\u2010of\u2010range days (and CalendarDay isn\u2019t disabling them), and because withinDates/betweenDates logic isn\u2019t applied (or handles the string\u2010to\u2010Date conversion incorrectly), days like June 30 appear selectable even though they fall before the July 1 lower bound. Fixing this will involve updating buildDisplayBounds to honor the bounds and ensuring CalendarDay uses withinDates/betweenDates to disable out\u2010of\u2010bounds dates.",
+        "bug_scenario": "In a DateInput configured with calendarProps.bounds of ['2020-07-01','2020-07-31'], the calendar is still allowing the user to click and select June 30, 2020\u2014i.e. a day outside of the specified bounds\u2014and it\u2019s being highlighted and returned by the onChange handler."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/Calendar/Calendar.js//Calendar",
+            "src/js/components/Calendar/Calendar.js//CalendarDay"
+        ],
+        "bug_functions": [
+            "src/js/components/Calendar/utils.js//withinDates",
+            "src/js/components/Calendar/utils.js//betweenDates",
+            "src/js/components/Calendar/Calendar.js//normalizeInput",
+            "src/js/components/Calendar/Calendar.js//buildDisplayBounds"
+        ],
+        "explanation": "\u2022 Calendar (in Calendar.js) is responsible for rendering the grid of days and honoring calendarProps.bounds. It currently builds its displayBounds and day buttons without effectively clamping or disabling days outside the provided bounds. \n\u2022 CalendarDay renders each day cell and is where the disabled flag should be applied for out-of-bounds dates. \n\u2022 buildDisplayBounds computes the range of dates shown on the calendar but does not consider calendarProps.bounds when generating days from adjacent months. It needs to be updated to either prune displayBounds to the bounds or mark dates outside the bounds. \n\u2022 normalizeInput in Calendar.js is used to convert raw bound values (strings or Dates) into Date objects internally, but it isn\u2019t currently applied to calendarProps.bounds, so withinDates may be comparing native Date instances to raw strings. \n\u2022 withinDates and betweenDates (in utils.js) perform the actual check of whether a given Date lies within the \"bounds\" range. They must correctly handle string inputs and return undefined for out-of-range dates so that CalendarDay can set disabled=true. \n\nTo fix the bug, ensure that calendarProps.bounds is passed through normalizeInput, that buildDisplayBounds or the day-rendering logic invokes withinDates(date, bounds) on each day cell, and that CalendarDay disables clicks for any date not within bounds.",
+        "bug_scenario": "The bug occurs when a DateInput is rendered with calendarProps.bounds restricting selectable dates (e.g. ['2020-07-01','2020-07-31']), yet the calendar still shows and allows selecting the last day of the previous month (June 30). That out-of-range date should have been disabled but isn\u2019t."
+    }
+}

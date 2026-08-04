@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/common/figures.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/common/figures.lua//discoverLinkedFigure",
+            "src/resources/filters/common/figures.lua//discoverLinkedFigureDiv",
+            "src/resources/filters/common/figures.lua//createFigureDiv",
+            "src/format/reveal/format-reveal.ts//applyStretch",
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor"
+        ],
+        "explanation": "The Lua filter in `figures.lua` is responsible for finding linked figures and turning them into divs with captions. `discoverLinkedFigure` and `discoverLinkedFigureDiv` match a Paragraph containing only a link whose content is an Image\u2014but they return the Image node itself (dropping the Link wrapper). Later, `createFigureDiv` rewraps that Image in a Div, stripping out the original `<a>` tag. On the RevealJS side, `revealHtmlPostprocessor` invokes `applyStretch` to reposition single images; that code likewise works directly on the raw `<img>` and will not restore the lost `<a>`. Together, these functions explain why a standalone linked image loses its hyperlink in the final HTML.",
+        "bug_scenario": "On a RevealJS slide containing only a linked image\u2014i.e. a Markdown paragraph whose sole content is `[![](\u2026)](https://\u2026)`\u2014the resulting HTML drops the anchor. In other words, when the image is \u201cstandalone\u201d (no surrounding text) and wrapped in a link, the filters detect it as a figure and rebuild it without the link, so the hyperlink won\u2019t work."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/common/figures.lua//discoverLinkedFigure",
+            "src/resources/filters/common/figures.lua//createFigureDiv",
+            "src/format/reveal/format-reveal.ts//applyStretch"
+        ],
+        "explanation": "The Lua filter discoverLinkedFigure is the routine that should detect a standalone linked image, but it returns only the inner Image element (dropping the Link wrapper). After that, createFigureDiv builds a figure Div from the raw image and transfers only figure attributes (never restoring the original link). On the output side, the TypeScript function applyStretch only looks for pure <img> tags (and paragraphs containing them) when applying slide\u2010level layout tweaks, so it never sees\u2014or preserves\u2014the surrounding anchor. Together, these routines are responsible for discovering, wrapping, and laying out standalone images, and they must be updated to carry the link wrapper through to the final HTML output.",
+        "bug_scenario": "When you put a single image on its own slide in a RevealJS presentation and wrap that image in a markdown link (e.g. `[![](fireworks.jpg)](https://example.com)`), Quarto strips off the link wrapper and renders just the static image. In the user\u2019s example the fireworks photo (shown in the screenshot) is meant to be clickable but the link is being dropped on slides that contain only the image."
+    }
+}

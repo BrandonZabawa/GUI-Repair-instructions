@@ -1,0 +1,72 @@
+{
+    "1/1": {
+        "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js": [
+            {
+                "SEARCH": [
+                    "this.preExecute('shape.create', function(context) {",
+                    "var shape = context.shape,",
+                    "host = context.host,",
+                    "businessObject,",
+                    "boundaryEvent;",
+                    "",
+                    "var attrs = {",
+                    "cancelActivity: true",
+                    "};",
+                    "",
+                    "if (host && is(shape, 'bpmn:IntermediateThrowEvent')) {",
+                    "attrs.attachedToRef = host.businessObject;",
+                    "",
+                    "businessObject = bpmnFactory.create('bpmn:BoundaryEvent', attrs);",
+                    "",
+                    "boundaryEvent = {",
+                    "type: 'bpmn:BoundaryEvent',",
+                    "businessObject: businessObject",
+                    "};",
+                    "",
+                    "context.shape = elementFactory.createShape(boundaryEvent);",
+                    "}",
+                    "}, true);"
+                ],
+                "REPLACE": [
+                    "  this.preExecute('shape.create', function(context) {",
+                    "    var shape = context.shape,",
+                    "        host = context.host,",
+                    "        businessObject,",
+                    "        boundaryEvent;",
+                    "",
+                    "    var attrs = {",
+                    "      cancelActivity: true",
+                    "    };",
+                    "",
+                    "    if (host && is(shape, 'bpmn:IntermediateThrowEvent')) {",
+                    "      attrs.attachedToRef = host.businessObject;",
+                    "",
+                    "      // Copy properties from the intermediate event's businessObject",
+                    "      var oldBusinessObject = shape.businessObject;",
+                    "      businessObject = bpmnFactory.create('bpmn:BoundaryEvent', attrs);",
+                    "",
+                    "      // Use moddleCopy to copy properties except for those that should not be transferred",
+                    "      // (e.g., id, attachedToRef, etc.)",
+                    "      var moddleCopy = context.moddleCopy || (window && window.moddleCopy); // fallback if not injected",
+                    "      if (moddleCopy && oldBusinessObject) {",
+                    "        // Get all property names except those to skip",
+                    "        var skipProps = ['id', 'attachedToRef', 'cancelActivity'];",
+                    "        var propertyNames = Object.keys(oldBusinessObject.$attrs || {}).filter(function(key) {",
+                    "          return skipProps.indexOf(key) === -1;",
+                    "        });",
+                    "        moddleCopy.copyElement(oldBusinessObject, businessObject, propertyNames);",
+                    "      }",
+                    "",
+                    "      boundaryEvent = {",
+                    "        type: 'bpmn:BoundaryEvent',",
+                    "        businessObject: businessObject",
+                    "      };",
+                    "",
+                    "      context.shape = elementFactory.createShape(boundaryEvent);",
+                    "    }",
+                    "  }, true);"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/format/KML.js//KML"
+        ],
+        "bug_functions": [
+            "src/ol/format/KML.js//readVec2",
+            "src/ol/format/KML.js//readScale",
+            "src/ol/format/KML.js//iconStyleParser"
+        ],
+        "explanation": "All of the misplacement and oversizing issues originate in the KML format parsing. \n\n\u2022 readVec2 (in KML.js) is responsible for parsing a <hotSpot> Vec2 object, including x, y, xunits, yunits and origin, but it currently ignores or misinterprets the KML \u2018origin\u2019 attribute and does not invert the y value to account for KML\u2019s bottom-left coordinate system (it treats y like a top-left fraction). Fixing readVec2 so it reads the optional origin property and inverts the y fraction (1\u2212y for top-left canvases) will correct the star anchor.  \n\n\u2022 readScale (in KML.js) reads the <scale> element, but currently it does not correctly convert the KML scale into the Icon style scale (for example confusing percentages or not defaulting to 1). Ensuring readScale returns the numeric multiplier exactly as KML intends will align the symbol sizes.  \n\n\u2022 iconStyleParser (in KML.js) takes the Vec2 and scale values and applies them to a new Icon style. It does not set the anchorOrigin and anchorXUnits/anchorYUnits based on the parsed Vec2 origin, so OpenLayers falls back to the default TOP_LEFT origin and center fraction anchor. By updating iconStyleParser to pass the parsed origin ('bottom-left', etc.) and the correct units into the Icon constructor (via setAnchor, setAnchorOrigin, setAnchorUnits, and setScale), the icons will be both correctly sized and correctly centered on the KML points.",
+        "bug_scenario": "When dragging the provided KML into the OpenLayers KMZ example, the point icons (the two star symbols) are being placed at the bottom\u2010center of their circles rather than at the true center, and the symbols are rendered much larger than in Google Earth. In Google Earth the stars sit precisely at the circle centers and use the KML <scale> to size the icons appropriately."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/format/KML.js//KML",
+            "src/ol/style/Icon.js//Icon"
+        ],
+        "bug_functions": [
+            "src/ol/format/KML.js//iconStyleParser",
+            "src/ol/format/KML.js//readVec2",
+            "src/ol/format/KML.js//readScale",
+            "src/ol/format/KML.js//createFeatureStyleFunction",
+            "src/ol/style/Icon.js//getAnchor"
+        ],
+        "explanation": "\u2022 KML (in format/KML.js) is responsible for reading the <IconStyle> block of the KML and turning it into an ol/style/Icon. Within it:\n  \u2013 iconStyleParser() should pick up the <hotSpot> element (the Vec2 anchor) and the <scale> element, but currently it ignores or mishandles them.\n  \u2013 readVec2() and readScale() are the parsers that read the KML hotSpot (x,y & units) and KML scale; if these return undefined or are never called, the defaults will be used.\n  \u2013 createFeatureStyleFunction() takes the parsed style parameters and actually constructs the OL style; a bug here means the parsed anchor and scale are never applied to the Icon.\n\n\u2022 Icon (in style/Icon.js)\n  \u2013 The constructor and its default scale (1) and anchor ([0.5,0.5] fraction) are being used instead of the values from the KML.  \n  \u2013 getAnchor() computes the final pixel anchor on the image; if the hotSpot units/values never reach the Icon instance, getAnchor() will only ever return the default center anchor, hence the symbol appears center-bottom and too large.\n\nFixing this will involve making iconStyleParser() wire up the KML hotSpot and scale into the Icon options, ensuring that readVec2()/readScale() are hooked into the parser table, and that createFeatureStyleFunction() passes those options through to new Icon({anchor, anchorXUnits, anchorYUnits, scale,\u2026}).",
+        "bug_scenario": "When dragging the provided KML into the OpenLayers drag-and-drop KMZ example, the point symbols (the little stars in this case) are not placed at the true point location. In the screenshot you can see the star icons are anchored at their center-bottom instead of the geographic point. In addition the icons are rendered much larger than the same KML in Google Earth. This indicates that the KML parser in OpenLayers is not picking up the <IconStyle> hotSpot (anchor) or <scale> values correctly, and so is falling back to the Icon class\u2019s default anchor ([0.5,0.5] fraction) and scale (1)."
+    }
+}

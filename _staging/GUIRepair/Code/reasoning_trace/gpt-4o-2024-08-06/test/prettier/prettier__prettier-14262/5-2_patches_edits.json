@@ -1,0 +1,205 @@
+{
+    "1/5": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"ParenthesizedExpression\": {",
+                    "const shouldHug =",
+                    "!hasComment(node.expression) &&",
+                    "(node.expression.type === \"ObjectExpression\" ||",
+                    "node.expression.type === \"ArrayExpression\");",
+                    "if (shouldHug) {",
+                    "return [\"(\", print(\"expression\"), \")\"];",
+                    "}",
+                    "return group([",
+                    "\"(\",",
+                    "indent([softline, print(\"expression\")]),",
+                    "softline,",
+                    "\")\",",
+                    "]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    case \"ParenthesizedExpression\": {",
+                    "      const shouldHug =",
+                    "        !hasComment(node.expression) &&",
+                    "        (node.expression.type === \"ObjectExpression\" ||",
+                    "          node.expression.type === \"ArrayExpression\");",
+                    "      if (shouldHug) {",
+                    "        return [\"(\", print(\"expression\"), \")\"];",
+                    "      }",
+                    "      // Ensure parentheses are preserved for JSDoc with @satisfies",
+                    "      if (node.expression.type === \"ObjectExpression\" && hasComment(node, CommentCheckFlags.Leading)) {",
+                    "        return group([",
+                    "          \"(\",",
+                    "          indent([softline, print(\"expression\")]),",
+                    "          softline,",
+                    "          \")\",",
+                    "        ]);",
+                    "      }",
+                    "      return group([",
+                    "        \"(\",",
+                    "        indent([softline, print(\"expression\")]),",
+                    "        softline,",
+                    "        \")\",",
+                    "      ]);",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/language-js/print/object.js": [
+            {
+                "SEARCH": [
+                    "function printObject(path, options, print) {",
+                    "const semi = options.semi ? \";\" : \"\";",
+                    "const node = path.getValue();",
+                    "",
+                    "let propertiesField;"
+                ],
+                "REPLACE": [
+                    "function printObject(path, options, print) {",
+                    "  const semi = options.semi ? \";\" : \"\";",
+                    "  const node = path.getValue();",
+                    "",
+                    "  // Check for JSDoc satisfies",
+                    "  if (path.getParentNode().leadingComments?.some(comment => /@satisfies/.test(comment.value))) {",
+                    "    return group([",
+                    "      \"(\",",
+                    "      indent([softline, original(node, options, print)]),",
+                    "      softline,",
+                    "      \")\",",
+                    "    ]);",
+                    "  }",
+                    "  ",
+                    "  let propertiesField;"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/language-js/print/object.js": [
+            {
+                "SEARCH": [
+                    "function printObject(path, options, print) {",
+                    "const semi = options.semi ? \";\" : \"\";",
+                    "const node = path.getValue();",
+                    "",
+                    "let propertiesField;"
+                ],
+                "REPLACE": [
+                    "function printObject(path, options, print) {",
+                    "  const semi = options.semi ? \";\" : \"\";",
+                    "  const node = path.getValue();",
+                    "",
+                    "  let propertiesField;",
+                    "",
+                    "  // Check if the node's leading comment includes @satisfies annotation to preserve parentheses",
+                    "  const hasSatisfiesAnnotation =",
+                    "    node.leadingComments && node.leadingComments.some(comment =>",
+                    "      comment.value.includes(\"@satisfies\")",
+                    "    );",
+                    "",
+                    "  if (hasSatisfiesAnnotation) {",
+                    "    return group([",
+                    "      \"(\",",
+                    "      printNode(path, options, print),",
+                    "      \")\"",
+                    "    ]);",
+                    "  }"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "const needsParens = pathNeedsParens(path, options);",
+                    "",
+                    "if (!needsParens) {",
+                    "if (args && args.needsSemi) {",
+                    "parts.unshift(\";\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const needsParens =",
+                    "  pathNeedsParens(path, options) ||",
+                    "  (node.type === \"ParenthesizedExpression\" && hasJsDocSatisfies(node));",
+                    "",
+                    "if (!needsParens) {",
+                    "  if (args && args.needsSemi) {",
+                    "    parts.unshift(\";\");",
+                    "  }"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "function printPathNoParens(path, options, print, args) {",
+                    "const node = path.getValue();",
+                    "const semi = options.semi ? \";\" : \"\";",
+                    "",
+                    "if (!node) {",
+                    "return \"\";",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printPathNoParens(path, options, print, args) {",
+                    "  const node = path.getValue();",
+                    "  const semi = options.semi ? \";\" : \"\";",
+                    "",
+                    "  if (!node) {",
+                    "    return \"\";",
+                    "  }",
+                    "",
+                    "  if (node.leadingComments) {",
+                    "    for (const comment of node.leadingComments) {",
+                    "      if (comment.value.includes(\"@satisfies\")) {",
+                    "        return [\"(\", print(node.type), \")\"];",
+                    "      }",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ],
+        "src/language-js/print/object.js": [
+            {
+                "SEARCH": [
+                    "function printObject(path, options, print) {",
+                    "const semi = options.semi ? \";\" : \"\";",
+                    "const node = path.getValue();",
+                    "",
+                    "let propertiesField;",
+                    "",
+                    "if (node.type === \"TSTypeLiteral\") {",
+                    "propertiesField = \"members\";",
+                    "} else if (node.type === \"TSInterfaceBody\") {"
+                ],
+                "REPLACE": [
+                    "function printObject(path, options, print) {",
+                    "  const semi = options.semi ? \";\" : \"\";",
+                    "  const node = path.getValue();",
+                    "",
+                    "  let propertiesField;",
+                    "",
+                    "  if (node.leadingComments) {",
+                    "    for (const comment of node.leadingComments) {",
+                    "      if (comment.value.includes(\"@satisfies\")) {",
+                    "        return group([\"(\", leftBrace, indent([softline, ...props]), softline, rightBrace, \")\"]);",
+                    "      }",
+                    "    }",
+                    "  }",
+                    "",
+                    "  if (node.type === \"TSTypeLiteral\") {",
+                    "    propertiesField = \"members\";",
+                    "  } else if (node.type === \"TSInterfaceBody\") {"
+                ]
+            }
+        ]
+    }
+}

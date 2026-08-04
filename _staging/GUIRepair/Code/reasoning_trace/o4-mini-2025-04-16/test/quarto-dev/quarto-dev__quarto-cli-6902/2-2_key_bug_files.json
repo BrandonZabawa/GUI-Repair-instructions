@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/parsefiguredivs.lua",
+            "src/resources/filters/common/figures.lua",
+            "src/resources/filters/crossref/figures.lua"
+        ],
+        "explanation": "1) parsefiguredivs.lua is the primary pre-render filter that walks Div/Figure AST nodes and turns them into FloatRefTarget. Its parse_float_div and Figure handlers only fire when a user-supplied identifier exists, so unlabeled subimages never become subfloats nor get auto-IDs.\n\n2) common/figures.lua defines isFigureDiv and discoverFigure logic that determines which Divs or Paras count as figures. It requires explicit fig-cap attributes or existing captions/IDs, so multi-column Divs with unlabeled images slip through and aren\u2019t parsed as subfigures.\n\n3) crossref/figures.lua skips any FloatRefTarget with no identifier (i.e. is_unlabeled_float), so even if a float were created, it wouldn\u2019t be indexed or rendered with subcaptions. Together, these prevent unlabeled subimages from being auto-labeled and subcaptioned.",
+        "bug_scenario": "When a multi-column figure Div contains two images without explicit IDs, Quarto\u2019s LaTeX filter generates them as two separate top-level floats (Figure 1: Surus and Figure 2: Hanno), and then the parent as Figure 3, instead of subcaptions (a) and (b) under a single figure. Only when the user provides IDs on the subimages does Quarto emit \\subcaption and proper sub-figure labels. Thus, unlabeled subfigures aren\u2019t being auto\u2013identified as subfloats and don\u2019t get subcaptions."
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "components/cascader-select/cascader-select.tsx",
+            "components/cascader/cascader.tsx",
+            "components/virtual-list/main.scss",
+            "components/virtual-list/style.js"
+        ],
+        "explanation": "1. components/cascader-select/cascader-select.tsx: This is where CascaderSelect passes the useVirtual flag down into the Cascader and ultimately into the underlying list renderer. We need to inject or merge a default white background style into the pop-up list (e.g. via listStyle or extra wrapper) when virtualization is on. \n\n2. components/cascader/cascader.tsx: The Cascader component\u2019s renderMenus/renderFilteredList methods instantiate the VirtualList. It does not currently add any background for each row, so the transparent default shows through. We must adjust its VirtualList props (e.g. itemStyle or containerStyle) to set backgroundColor: '#fff' for each item. \n\n3. components/virtual-list/main.scss: The generic virtual-list styles are imported here, but there is no rule to force a solid background on each item. We need to add a CSS rule under the VirtualList root (or its row class) like background-color: $color-white. \n\n4. components/virtual-list/style.js: This file wires in the main.scss, so it is the entry point for styling the virtual list. After adding the new SCSS rule you will confirm it is picked up by this loader. Without touching this, the new background styles may not be applied to the bundled CSS.",
+        "bug_scenario": "In the CascaderSelect demo above we enabled useVirtual to render a very large three-level tree. When the dropdown first opens or is scrolled, many of the menu items have a strange, semi-transparent or gray background \u201cbleed\u201d instead of the expected solid white. In other words, virtual scrolling is not applying the normal white background to each row so you can see through to alternating gray or default container backgrounds."
+    }
+}

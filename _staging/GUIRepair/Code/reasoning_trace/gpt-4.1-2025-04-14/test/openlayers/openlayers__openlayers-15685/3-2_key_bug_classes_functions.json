@@ -1,0 +1,37 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Style.js//Style",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer",
+            "src/ol/render/canvas/Builder.js//CanvasBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Style.js//setFill",
+            "src/ol/style/Style.js//getFill",
+            "src/ol/renderer/canvas/VectorTileLayer.js//renderFeature",
+            "src/ol/render/canvas/Builder.js//setFillStrokeStyle",
+            "src/ol/render/canvas/Builder.js//createFill",
+            "src/ol/render/canvas/Builder.js//updateFillStyle"
+        ],
+        "explanation": "The issue centers on how fills are applied to vector tile layers. The Style class (src/ol/style/Style.js) is responsible for storing and updating fill styles via setFill and getFill. These methods are directly involved in setting or retrieving the problematic fill. CanvasVectorTileLayerRenderer in src/ol/renderer/canvas/VectorTileLayer.js manages how styles are rendered for vector tile layers, with renderFeature likely orchestrating the actual drawing and thus potentially layering fills incorrectly. The CanvasBuilder class (src/ol/render/canvas/Builder.js) constructs canvas instructions for rendering features, and its methods (setFillStrokeStyle, createFill, updateFillStyle) are central to how fills are applied to features. If fill instructions are duplicated or applied out of order, a ghost layer could result. Fixing the bug would thus entail reviewing and correcting fill style application/propagation in these classes and functions.",
+        "bug_scenario": "The bug scenario involves using setFill() to style a VectorTile layer in OpenLayers (ol@9.1.0). When setting a fill style on a VectorTile layer, an unwanted semi-transparent 'ghost' layer appears above other layers. This also causes flickering when hovering the mouse over the map. The problem disappears if the fill is removed from the style, but fill is needed for visual styling. The screenshot shows the extra fill obscuring vector tile features, confirming the overlay issue."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Style.js//Style",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer",
+            "src/ol/render/canvas/Builder.js//CanvasBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Style.js//setFill",
+            "src/ol/style/Style.js//getFill",
+            "src/ol/renderer/canvas/VectorTileLayer.js//renderFeature",
+            "src/ol/renderer/canvas/VectorTileLayer.js//renderTileImage_",
+            "src/ol/render/canvas/Builder.js//setFillStrokeStyle",
+            "src/ol/render/canvas/Builder.js//createFill",
+            "src/ol/render/canvas/Builder.js//updateFillStyle"
+        ],
+        "explanation": "These classes and functions are central to the bug for the following reasons:\n\n1. src/ol/style/Style.js//Style, setFill, getFill: These are responsible for defining and applying the style (including the fill) to vector features. The setFill method is explicitly called in the bug scenario and is directly related to how the fill is managed.\n\n2. src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer, renderFeature, renderTileImage_: This renderer class and its methods handle the actual drawing of the VectorTile layer on the canvas. renderFeature and renderTileImage_ are likely involved in how the style (and its fill) is rendered for each feature/tile and could be responsible for drawing the unwanted overlay if fill handling is incorrect.\n\n3. src/ol/render/canvas/Builder.js//CanvasBuilder, setFillStrokeStyle, createFill, updateFillStyle: The CanvasBuilder manages the low-level instructions for rendering fills and strokes. These functions are critical in transitioning the style's fill value into actual rendering commands. If the fill from the style is incorrectly applied, or not properly isolated between different elements, it could result in the fill being drawn as an extra overlay.\n\nIn summary, the bug likely results from a mismanagement of the style's fill property as it flows from Style through the canvas vector tile renderer and down into the builder that creates drawing instructions, resulting in an extra fill being rendered above the intended features.",
+        "bug_scenario": "The bug scenario is as follows: When using OpenLayers (ol@9.1.0) and applying a style to a VectorTile layer which includes a fill (set by setFill()), an unexpected additional semitransparent layer appears above other layers. This causes a visual 'ghost' overlay. The issue is specifically tied to the use of setFill() on a style for VectorTile layers, and if the fill is removed, the issue disappears. The problem also leads to map flickering on mouse hover, as shown in the attached screenshot (which displays an unwanted shaded overlay over the map). The expected behavior is that the fill should apply only to the VectorTile features, not create an extra overlay layer."
+    }
+}

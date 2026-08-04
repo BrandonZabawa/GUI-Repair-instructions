@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/Layer.js//getRenderTransform",
+            "src/ol/renderer/canvas/Layer.js//useContainer",
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame"
+        ],
+        "explanation": "The bug stems from how the canvas is sized and transformed when rotation is applied. CanvasLayerRenderer.getRenderTransform computes a CSS transform based on the unrotated width/height and applies it in useContainer, but does not adjust the underlying canvas pixel dimensions to accommodate the larger bounding box of a rotated rectangle. CanvasVectorLayerRenderer.renderFrame is responsible for resizing and clearing the canvas before drawing -- it sets width/height to the viewport size but never expands it to cover the rotated corners. Together these methods create a canvas that\u2019s too small once rotated, causing the vector graphics to be cropped.",
+        "bug_scenario": "A large polygon drawn on a vector layer is fully visible when the map is unrotated, but as soon as the user rotates the view (e.g. shift\u2009+\u2009ALT\u2009+\u2009drag), the edges of the polygon are clipped. The canvas backing the vector layer is not being enlarged to cover the rotated extent, so parts of the geometry disappear at the corners when rotated."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/Layer.js//getRenderTransform",
+            "src/ol/renderer/canvas/Layer.js//useContainer",
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame"
+        ],
+        "explanation": "The cropping issue on rotate stems from how the canvas is sized and transformed. CanvasLayerRenderer.getRenderTransform computes the transform for rendering the layer into a canvas that will then be rotated, but it uses the unrotated width/height without accounting for the increased diagonal extent under rotation. CanvasLayerRenderer.useContainer sets up and reuses a canvas element with 100% CSS width/height and applies a CSS rotation transform string, but does not update the underlying canvas pixel dimensions to match the rotated bounding box. Finally, CanvasVectorLayerRenderer.renderFrame calls getRenderTransform to draw geometry into the canvas and then rotates it, but it only resizes the canvas to frameState.size (viewport size) rather than expanding it for rotation. The combination of these three pieces means the rendered content is drawn into too-small a pixel buffer and then rotated in place, resulting in features being cut off. Adjusting one or more of these methods to grow the canvas or adjust the render transform to cover the rotated extent will fix the bug.",
+        "bug_scenario": "When the map is rotated (e.g. with shift+alt+drag), the vector layer\u2019s canvas is too small and cuts off (crops) features at the edges. In an unrotated map the polygon draws full width; as soon as the view is rotated the same canvas is reused and rotated via CSS, but its pixel dimensions aren\u2019t adjusted for the rotated bounding box, so parts of the polygon fall outside and are clipped."
+    }
+}

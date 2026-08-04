@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js",
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js"
+        ],
+        "explanation": "The core of this bug is that the audit responsible for reporting compression ('Enable text compression') mistakenly flags already-compressed resources. This logic is likely implemented in 'lighthouse-core/audits/byte-efficiency/uses-request-compression.js', which performs the audit for text compression by analyzing network requests and resource encoding. Data for this audit is gathered by 'lighthouse-core/gather/gatherers/dobetterweb/response-compression.js', which inspects responses for compression headers and gathers information used by the audit. A problem in either or both files\u2014such as misinterpreting response headers, incorrect artifact construction, or analyzing cached requests\u2014would cause the false positive experienced by the user. These two files are directly related to the reported bug, as they comprise the code that collects and evaluates whether responses are properly compressed.",
+        "bug_scenario": "The bug scenario is that the Lighthouse audit incorrectly reports that compression (gzip) is not enabled on the /api/blob endpoint, even though DevTools and manual testing (with curl) confirm that gzip compression is indeed applied. The audit claims there are significant GZIP savings available, presenting a false positive. The screenshot shows that multiple instances of the /api/blob resource are listed as uncompressed with potential GZIP savings, although they are properly compressed according to other tools and methods."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js",
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js"
+        ],
+        "explanation": "The core of this bug is related to the 'Enable text compression' audit, so the most relevant files are: 1) 'lighthouse-core/audits/byte-efficiency/uses-request-compression.js' \u2014 this file contains the logic for the audit that reports missing compression and is responsible for flagging resources as lacking compression. Any bugs in compression detection, misinterpretation of network records, or thresholds would reside here. 2) 'lighthouse-core/gather/gatherers/dobetterweb/response-compression.js' \u2014 this file is responsible for gathering information about HTTP response compression during the page load. If network requests with valid compression are not being detected correctly by the gatherer, it would directly cause the audit to erroneously report them as missing compression. These are the key files where the bug is likely to be present or needs to be fixed to correctly detect and report resource compression.",
+        "bug_scenario": "The bug scenario involves Lighthouse erroneously reporting that compression is missing for certain resources (e.g., /api/blob), even though network tools and direct curl requests confirm that gzip compression is present and working. The audit, 'Enable text compression', lists the resource as uncompressed, indicating a potential bug in how resource compression is detected or reported in the audit module."
+    }
+}

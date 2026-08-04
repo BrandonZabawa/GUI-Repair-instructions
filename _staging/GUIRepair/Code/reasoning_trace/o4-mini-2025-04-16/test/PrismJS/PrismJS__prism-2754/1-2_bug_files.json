@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-jsx.js",
+            "components/prism-jsx.min.js",
+            "components/prism-tsx.js",
+            "components/prism-tsx.min.js"
+        ],
+        "explanation": "The problematic logic lives in the Prism language definition for JSX/TSX (components/prism-jsx.js and prism-tsx.js). In those files the \u2018interpolation\u2019 pattern is defined with a regex like /\\{[^}]+\\}/, which can\u2019t handle additional nested braces inside the expression. Since spread props use an object literal wrapped in braces ({...{onClick, disabled}}), the inner brace closes the match early. Everything after that point falls back to the default markup grammar, breaking tag and attribute tokenization. To fix this you must update those grammar definitions to support balanced braces (either with a different regex approach or a small parser) so nested expressions are recognized correctly.",
+        "bug_scenario": "When you use JSX spread props syntax, for example <Button {...{onClick, disabled}}>\u2026, Prism\u2019s JSX grammar fails to handle the nested braces correctly. Its interpolation regex matches only up to the first closing brace, so the rest of the JSX is no longer tokenized under the JSX/HTML rules and you lose the proper tag and attribute highlighting. This is why the first Button shows \u201cwrong highlighting\u201d while the explicit onClick={\u2026} version works."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-jsx.js",
+            "components/prism-jsx.min.js"
+        ],
+        "explanation": "The bug lies in the language definition for JSX. Prism\u2019s `prism-jsx.js` (and its minified counterpart) extend the JavaScript grammar with XML/HTML-like tag parsing and define how attribute values (including expressions inside `{\u2026}`) are tokenized. The nested object spread (`...{onClick, disabled}`) is not recognized by this grammar, causing the tokenizer to exit the tag context early and drop back to plain-text. Fixing this requires updating the JSX grammar in `prism-jsx.js` (and regenerating `prism-jsx.min.js`) so that spread operators inside JSX expression attributes are properly handled.",
+        "bug_scenario": "When Prism\u2019s JSX grammar encounters a JSX attribute with a nested object spread (e.g. <Button {...{onClick, disabled}}>), it fails to correctly tokenize the spread inside the curly braces. As a result the opening tag\u2019s syntax highlighting \u201cbreaks\u201d (colors reset to plain text) at the spread operator. Regular props (onClick={onClick} disabled={disabled}) are highlighted correctly, but the nested object literal inside a spread confuses the JSX tokenizer and the rest of the tag is not highlighted."
+    }
+}

@@ -1,0 +1,25 @@
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index 36a618c43..9d8e8a02f 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -689,7 +689,19 @@ class Driver {
+         // happen _after_ onload: https://crbug.com/768961
+         this.sendCommand('Page.enable');
+         this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});
+-        this.sendCommand('Page.navigate', {url});
++        // Check if already at the target URL, and force reload if so
++        return this.sendCommand('Runtime.evaluate', {
++          expression: 'window.location.href',
++          returnByValue: true
++        }).then(result => {
++          const currentUrl = result.result.value;
++          if (currentUrl === url) {
++            // Force reload if already at the target URL
++            return this.sendCommand('Page.reload', {ignoreCache: true});
++          } else {
++            return this.sendCommand('Page.navigate', {url});
++          }
++        });
+       })
+       .then(_ => waitForLoad && this._waitForFullyLoaded(pauseAfterLoadMs,
+           networkQuietThresholdMs, cpuQuietThresholdMs, maxWaitMs))

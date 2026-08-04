@@ -1,0 +1,58 @@
+diff --git a/src/ol/renderer/canvas/TileLayer.js b/src/ol/renderer/canvas/TileLayer.js
+index a57967c859..0d00e9cbc4 100644
+--- a/src/ol/renderer/canvas/TileLayer.js
++++ b/src/ol/renderer/canvas/TileLayer.js
+@@ -369,16 +369,21 @@ class CanvasTileLayerRenderer extends CanvasLayerRenderer {
+       ((tileResolution / viewResolution) * pixelRatio) / tilePixelRatio;
+ 
+     // set forward and inverse pixel transforms
+-    composeTransform(
+-      this.pixelTransform,
+-      frameState.size[0] / 2,
+-      frameState.size[1] / 2,
+-      1 / pixelRatio,
+-      1 / pixelRatio,
+-      rotation,
+-      -width / 2,
+-      -height / 2
+-    );
++composeTransform(
++this.pixelTransform,
++frameState.size[0] / 2,
++frameState.size[1] / 2,
++1 / pixelRatio,
++1 / pixelRatio,
++rotation,
++-width / 2,
++-height / 2
++);
++// Adjust for rotation precision
++if (Math.abs(rotation % (Math.PI / 2)) < 0.01) {
++this.pixelTransform[0] = Math.round(this.pixelTransform[0]);
++this.pixelTransform[3] = Math.round(this.pixelTransform[3]);
++}
+ 
+     const canvasTransform = toTransformString(this.pixelTransform);
+ 
+diff --git a/src/ol/renderer/canvas/VectorTileLayer.js b/src/ol/renderer/canvas/VectorTileLayer.js
+index b6071332a3..58a6a6d160 100644
+--- a/src/ol/renderer/canvas/VectorTileLayer.js
++++ b/src/ol/renderer/canvas/VectorTileLayer.js
+@@ -834,9 +834,14 @@ class CanvasVectorTileLayerRenderer extends CanvasTileLayerRenderer {
+     }
+     const tileExtent = tileGrid.getTileCoordExtent(tileCoord, this.tmpExtent);
+     const pixelScale = renderPixelRatio / resolution;
+-    const transform = resetTransform(this.tmpTransform_);
+-    scaleTransform(transform, pixelScale, -pixelScale);
+-    translateTransform(transform, -tileExtent[0], -tileExtent[3]);
++const transform = resetTransform(this.tmpTransform_);
++scaleTransform(transform, pixelScale, -pixelScale);
++translateTransform(transform, -tileExtent[0], -tileExtent[3]);
++// Adjust for rotation precision
++if (Math.abs(this.renderedRotation_ % (Math.PI / 2)) < 0.01) {
++transform[0] = Math.round(transform[0]);
++transform[3] = Math.round(transform[3]);
++}
+     for (let i = 0, ii = executorGroups.length; i < ii; ++i) {
+       const executorGroup = executorGroups[i];
+       executorGroup.execute(

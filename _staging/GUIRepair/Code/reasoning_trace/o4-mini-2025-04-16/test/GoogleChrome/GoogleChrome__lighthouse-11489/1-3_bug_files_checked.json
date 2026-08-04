@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/html/renderer/util.js",
+            "lighthouse-core/report/html/renderer/details-renderer.js"
+        ],
+        "explanation": "\u2022 util.js defines the formatBytes (and related) functions that convert a raw byte count into a human-readable string. It currently drops the fraction when it\u2019s zero. By adjusting its NumberFormat options to always include at least one fraction digit (minimumFractionDigits: 1), \u201c18 KiB\u201d will become \u201c18.0 KiB\u201d.\n\u2022 details-renderer.js is the component that renders table cells of type \u201cbytes\u201d by calling util.formatBytes. It\u2019s the consumer of the formatting utility for the Transfer Size column, so it\u2019s closely tied to how that output appears in the report.",
+        "bug_scenario": "In the \u201cLarge JavaScript libraries\u201d details table the Transfer Size column values are formatted by our byte-formatting utility such that \u201cround\u201d KiB values drop the \u201c.0\u201d decimal. For example, date-fns (18 \u00d7 1024 B) renders as \u201c18 KiB\u201d while luxon (20.4 KiB) renders correctly with \u201c20.4 KiB\u201d. This causes the numbers in the column to misalign and makes visual comparison harder, especially for users with low vision."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/report/html/renderer/util.js",
+            "lighthouse-core/report/html/renderer/details-renderer.js"
+        ],
+        "explanation": "\u2022 util.js (lighthouse-core/report/html/renderer/util.js) defines the formatBytes (or similar) function that turns a raw byte count into a human-readable string (e.g. \u201c18 KiB\u201d). Currently it omits \u201c.0\u201d for whole KiB values. This is exactly where you\u2019d enforce \u201calways show one decimal digit.\u201d\n\n\u2022 details-renderer.js (lighthouse-core/report/html/renderer/details-renderer.js) is the component that lays out the table rows and invokes util.formatBytes on every \u201cbytes\u201d cell. It\u2019s indirectly responsible for rendering the sizes in the report. Although it doesn\u2019t contain the formatting logic itself, it\u2019s where the formatted output appears in the UI. Adjusting util.js will flow through here to fix the bug.",
+        "bug_scenario": "In the \u201cLarge JavaScript libraries\u201d details table, libraries whose transfer\u2010size in KiB is an integer (for example 18 KiB) are rendered without any decimal place (\"18 KiB\"), while non-integer sizes (for example 20.4 KiB) show one decimal. This misalignment in the \"Transfer Size\" column makes it harder to scan the table and poses an accessibility issue for users with low vision."
+    }
+}

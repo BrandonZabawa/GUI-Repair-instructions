@@ -1,0 +1,66 @@
+diff --git a/src/core/knitr.ts b/src/core/knitr.ts
+index a96c444d4..375b5384a 100644
+--- a/src/core/knitr.ts
++++ b/src/core/knitr.ts
+@@ -29,34 +29,35 @@ export interface KnitrRequiredPackages {
+ const pkgVersRequirement = {
+   knitr: {
+     type: ">=",
+-    version: "1.30",
+-  },
+-};
++const result = await execProcess({
++  cmd: [
++    await rBinaryPath("Rscript"),
++    resourcePath("capabilities/knitr.R"),
++  ],
++  stdout: "piped",
++});
+ 
+-export async function knitrCapabilities() {
+-  try {
+-    const result = await execProcess({
+-      cmd: [
+-        await rBinaryPath("Rscript"),
+-        resourcePath("capabilities/knitr.R"),
+-      ],
+-      stdout: "piped",
+-    });
+-    if (result.success && result.stdout) {
+-      const jsonLines = result.stdout
+-        .replace(/^.*--- YAML_START ---/sm, "")
+-        .replace(/--- YAML_END ---.*$/sm, "");
++// Handle empty stdout case
++if (result.success && result.stdout && result.stdout.trim() !== "") {
++  const jsonLines = result.stdout
++    .replace(/^.*--- YAML_START ---/sm, "")
++    .replace(/--- YAML_END ---.*$/sm, "");
+ 
+-      const caps = readYamlFromString(jsonLines) as KnitrCapabilities;
+-      // check knitr requirement
+-      const knitrVersion = caps.packages.knitr
+-        ? coerce(caps.packages.knitr)
+-        : undefined;
+-      caps.packages.knitrVersOk = knitrVersion
+-        ? satisfies(
+-          knitrVersion,
+-          Object.values(pkgVersRequirement["knitr"]).join(" "),
+-        )
++  const caps = readYamlFromString(jsonLines) as KnitrCapabilities;
++  // Add fallback for missing fig-cap
++  const knitrVersion = caps.packages.knitr
++    ? coerce(caps.packages.knitr)
++    : undefined;
++  caps.packages.knitrVersOk = knitrVersion
++    ? satisfies(
++      knitrVersion,
++      Object.values(pkgVersRequirement["knitr"]).join(" "),
++    )
++    : false;
++  return caps;
++} else {
++  return undefined;
++}
+         : false;
+       return caps;
+     } else {

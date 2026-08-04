@@ -1,0 +1,35 @@
+diff --git a/src/resources/filters/common/figures.lua b/src/resources/filters/common/figures.lua
+index 98b1f41e1..b28cb6170 100644
+--- a/src/resources/filters/common/figures.lua
++++ b/src/resources/filters/common/figures.lua
+@@ -29,7 +29,9 @@ end
+ 
+ -- is this an image containing a figure
+ function isFigureImage(el)
+-  return hasFigureRef(el) and #el.caption > 0
++  local hasCapAttr = attribute(el, kFigCap, nil) ~= nil
++  local hasCap    = #el.caption > 0
++  return hasFigureRef(el) and (hasCap or hasCapAttr)
+ end
+ 
+ -- is this a Div containing a figure
+@@ -50,7 +52,8 @@ function discoverFigure(el, captionRequired)
+   end
+   if #el.content == 1 and el.content[1].t == "Image" then
+     local image = el.content[1]
+-    if not captionRequired or #image.caption > 0 then
++    local hasCapAttr = attribute(image, kFigCap, nil) ~= nil
++    if not captionRequired or #image.caption > 0 or hasCapAttr then
+       return image
+     else
+       return nil
+@@ -69,7 +72,8 @@ function discoverLinkedFigure(el, captionRequired)
+       local link = el.content[1]
+       if #link.content == 1 and link.content[1].t == "Image" then
+         local image = link.content[1]
+-        if not captionRequired or #image.caption > 0 then
++        local hasCapAttr = attribute(image, kFigCap, nil) ~= nil
++        if not captionRequired or #image.caption > 0 or hasCapAttr then
+           return image
+         end
+       end

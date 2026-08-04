@@ -1,0 +1,381 @@
+{
+    "1/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "function readPointGeometry(object) {",
+                    "return new Point(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readLineStringGeometry(object) {",
+                    "return new LineString(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiLineStringGeometry(object) {",
+                    "return new MultiLineString(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiPointGeometry(object) {",
+                    "return new MultiPoint(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiPolygonGeometry(object) {",
+                    "return new MultiPolygon(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readPolygonGeometry(object) {",
+                    "return new Polygon(object['coordinates']);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function readPointGeometry(object) {",
+                    "if (!Array.isArray(object['coordinates']) || !object['coordinates'].every(Number.isFinite)) {",
+                    "throw new Error('Invalid coordinates for Point');",
+                    "}",
+                    "return new Point(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readLineStringGeometry(object) {",
+                    "if (!Array.isArray(object['coordinates']) || !object['coordinates'].every(coord => Array.isArray(coord) && coord.every(Number.isFinite))) {",
+                    "throw new Error('Invalid coordinates for LineString');",
+                    "}",
+                    "return new LineString(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiLineStringGeometry(object) {",
+                    "if (!Array.isArray(object['coordinates']) || !object['coordinates'].every(line => Array.isArray(line) && line.every(coord => Array.isArray(coord) && coord.every(Number.isFinite)))) {",
+                    "throw new Error('Invalid coordinates for MultiLineString');",
+                    "}",
+                    "return new MultiLineString(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiPointGeometry(object) {",
+                    "if (!Array.isArray(object['coordinates']) || !object['coordinates'].every(coord => Array.isArray(coord) && coord.every(Number.isFinite))) {",
+                    "throw new Error('Invalid coordinates for MultiPoint');",
+                    "}",
+                    "return new MultiPoint(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiPolygonGeometry(object) {",
+                    "if (!Array.isArray(object['coordinates']) || !object['coordinates'].every(polygon => Array.isArray(polygon) && polygon.every(ring => Array.isArray(ring) && ring.every(coord => Array.isArray(coord) && coord.every(Number.isFinite))))) {",
+                    "throw new Error('Invalid coordinates for MultiPolygon');",
+                    "}",
+                    "return new MultiPolygon(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readPolygonGeometry(object) {",
+                    "if (!Array.isArray(object['coordinates']) || !object['coordinates'].every(ring => Array.isArray(ring) && ring.every(coord => Array.isArray(coord) && coord.every(Number.isFinite)))) {",
+                    "throw new Error('Invalid coordinates for Polygon');",
+                    "}",
+                    "return new Polygon(object['coordinates']);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "const geoJSONFeatures = geoJSONFeatureCollection['features'];",
+                    "for (let i = 0, ii = geoJSONFeatures.length; i < ii; ++i) {",
+                    "features.push(",
+                    "this.readFeatureFromObject(geoJSONFeatures[i], opt_options)",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const geoJSONFeatures = geoJSONFeatureCollection['features'] || [];",
+                    "for (let i = 0, ii = geoJSONFeatures.length; i < ii; ++i) {",
+                    "try {",
+                    "const feature = this.readFeatureFromObject(geoJSONFeatures[i], opt_options);",
+                    "if (feature) {",
+                    "features.push(feature);",
+                    "}",
+                    "} catch (err) {",
+                    "console.error(\"Error reading feature from GeoJSON object:\", err);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "function readLineStringGeometry(object) {",
+                    "return new LineString(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiLineStringGeometry(object) {",
+                    "return new MultiLineString(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiPointGeometry(object) {",
+                    "return new MultiPoint(object['coordinates']);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function readLineStringGeometry(object) {",
+                    "const coordinates = object['coordinates'] || [];",
+                    "return new LineString(coordinates);",
+                    "}",
+                    "",
+                    "function readMultiLineStringGeometry(object) {",
+                    "const coordinates = object['coordinates'] || [];",
+                    "return new MultiLineString(coordinates);",
+                    "}",
+                    "",
+                    "function readMultiPointGeometry(object) {",
+                    "const coordinates = object['coordinates'] || [];",
+                    "return new MultiPoint(coordinates);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "function readPolygonGeometry(object) {",
+                    "return new Polygon(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiPolygonGeometry(object) {",
+                    "return new MultiPolygon(object['coordinates']);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function readPolygonGeometry(object) {",
+                    "if (!Array.isArray(object['coordinates']) || object['coordinates'].length === 0) {",
+                    "throw new Error('Invalid Polygon coordinates');",
+                    "}",
+                    "return new Polygon(object['coordinates']);",
+                    "}",
+                    "",
+                    "function readMultiPolygonGeometry(object) {",
+                    "if (!Array.isArray(object['coordinates']) || object['coordinates'].length === 0) {",
+                    "throw new Error('Invalid MultiPolygon coordinates');",
+                    "}",
+                    "return new MultiPolygon(object['coordinates']);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "function readGeometry(object, opt_options) {",
+                    "if (!object) {",
+                    "return null;",
+                    "}",
+                    "",
+                    "/** @type {import(\"../geom/Geometry.js\").default} */",
+                    "let geometry;",
+                    "switch (object['type']) {"
+                ],
+                "REPLACE": [
+                    "function readGeometry(object, opt_options) {",
+                    "if (!object || !object['coordinates'] || !object['coordinates'].length) {",
+                    "return null;",
+                    "}",
+                    "",
+                    "/** @type {import(\"../geom/Geometry.js\").default} */",
+                    "let geometry;",
+                    "switch (object['type']) {"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "switch (object['type']) {",
+                    "case 'Point': {",
+                    "geometry = readPointGeometry(",
+                    "/** @type {GeoJSONPoint} */ (object)",
+                    ");"
+                ],
+                "REPLACE": [
+                    "if (!Array.isArray(object['coordinates']) || object['coordinates'].length === 0) {",
+                    "throw new RangeError('Invalid array length in GeoJSON coordinates');",
+                    "}",
+                    "",
+                    "switch (object['type']) {",
+                    "case 'Point': {",
+                    "geometry = readPointGeometry(",
+                    "/** @type {GeoJSONPoint} */ (object)",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "if (geometry) {",
+                    "object.geometry = writeGeometry(geometry, opt_options);",
+                    "",
+                    "delete properties[feature.getGeometryName()];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (geometry) {",
+                    "const coordinates = geometry.getCoordinates();",
+                    "if (Array.isArray(coordinates) && coordinates.length >= 2) { // Ensure valid coordinate array",
+                    "object.geometry = writeGeometry(geometry, opt_options);",
+                    "} else {",
+                    "console.warn('Invalid coordinates:', coordinates);",
+                    "// Optionally handle invalid geometries here e.g., assign default coordinates or skip feature",
+                    "object.geometry = null;",
+                    "}",
+                    "delete properties[feature.getGeometryName()];",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "function readLineStringGeometry(object) {",
+                    "return new LineString(object['coordinates']);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function readLineStringGeometry(object) {",
+                    "const coordinates = object['coordinates'];",
+                    "// Validate the coordinates length to avoid RangeError",
+                    "if (!Array.isArray(coordinates) || coordinates.length === 0) {",
+                    "throw new Error('Invalid LineString coordinates: must be a non-empty array.');",
+                    "}",
+                    "return new LineString(coordinates);",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "function readPolygonGeometry(object) {",
+                    "return new Polygon(object['coordinates']);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function readPolygonGeometry(object) {",
+                    "const coordinates = object['coordinates'];",
+                    "// Validate the coordinates length to avoid RangeError",
+                    "if (!Array.isArray(coordinates) || coordinates.length === 0) {",
+                    "throw new Error('Invalid Polygon coordinates: must be a non-empty array.');",
+                    "}",
+                    "return new Polygon(coordinates);",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/Vector.js": [
+            {
+                "SEARCH": [
+                    "this.loader_ = xhr(",
+                    "this.url_,",
+                    "/** @type {import(\"../format/Feature.js\").default} */ (this.format_)",
+                    ");"
+                ],
+                "REPLACE": [
+                    "this.loader_ = function(extent, resolution, projection, success, failure) {",
+                    "xhr(",
+                    "this.url_,",
+                    "/** @type {import(\"../format/Feature.js\").default} */ (this.format_),",
+                    "function(features) {",
+                    "try {",
+                    "// Add some validation logic or handling if necessary before adding features",
+                    "success(features);",
+                    "} catch (e) {",
+                    "console.error('Failed to load features:', e);",
+                    "onError();",
+                    "}",
+                    "},",
+                    "failure",
+                    ");",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "case 'LineString': {",
+                    "geometry = readLineStringGeometry(",
+                    "/** @type {GeoJSONLineString} */ (object)",
+                    ");",
+                    "break;",
+                    "}",
+                    "case 'MultiLineString': {",
+                    "geometry = readMultiLineStringGeometry(",
+                    "/** @type {GeoJSONMultiLineString} */ (object)",
+                    ");",
+                    "break;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "case 'LineString': {",
+                    "const coordinates = object['coordinates'];",
+                    "if (coordinates.length < 2) {",
+                    "throw new Error('Invalid LineString: less than 2 coordinates.');",
+                    "}",
+                    "geometry = readLineStringGeometry(",
+                    "/** @type {GeoJSONLineString} */ (object)",
+                    ");",
+                    "break;",
+                    "}",
+                    "case 'MultiLineString': {",
+                    "const lines = object['coordinates'];",
+                    "for (const line of lines) {",
+                    "if (line.length < 2) {",
+                    "throw new Error('Invalid MultiLineString: line with less than 2 coordinates.');",
+                    "}",
+                    "}",
+                    "geometry = readMultiLineStringGeometry(",
+                    "/** @type {GeoJSONMultiLineString} */ (object)",
+                    ");",
+                    "break;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/format/GeoJSON.js": [
+            {
+                "SEARCH": [
+                    "if (geoJSONObject['type'] === 'FeatureCollection') {",
+                    "const geoJSONFeatures = geoJSONFeatureCollection['features'];",
+                    "for (let i = 0, ii = geoJSONFeatures.length; i < ii; ++i) {",
+                    "features.push(",
+                    "this.readFeatureFromObject(geoJSONFeatures[i], opt_options)",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (geoJSONObject['type'] === 'FeatureCollection') {",
+                    "const geoJSONFeatures = geoJSONFeatureCollection['features'] || [];",
+                    "for (let i = 0, ii = geoJSONFeatures.length; i < ii; ++i) {",
+                    "const featureObj = geoJSONFeatures[i];",
+                    "if (featureObj && featureObj['type'] === 'Feature') {",
+                    "features.push(",
+                    "this.readFeatureFromObject(featureObj, opt_options)",
+                    ");",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

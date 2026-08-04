@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//propTypes",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//defaultProps"
+        ],
+        "explanation": "The OverflowMenu component\u2019s static propTypes includes a deprecate() validator on the `light` prop, causing a warning whenever PropTypes are checked\u2014even when the user never passed `light`. In addition, defaultProps typically provides a default value for `light`, which means the deprecation validator runs on every render. To fix the bug, the propTypes entry for `light` must be adjusted (or removed) so it only warns when the user explicitly supplies the prop, and/or the defaultProps entry for `light` should be removed so the deprecation check isn\u2019t triggered by the default value.",
+        "bug_scenario": "The user renders an <OverflowMenu> with two <OverflowMenuItem> children and does not set the deprecated \u201clight\u201d prop, but nevertheless sees the console warning \u201cThe `light` prop for `OverflowMenu` is no longer needed and has been deprecated\u2026\u201d. This unexpected warning is breaking their tests, which fail on any console warning even if they didn\u2019t explicitly set that prop."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//deprecate"
+        ],
+        "explanation": "The deprecation warning is injected by the custom `deprecate` validator in the OverflowMenu component\u2019s propTypes for the `light` prop. Even though the user never sets `light`, the validator is still run (possibly because `defaultProps.light` is defined or the prop is always present), causing the warning unconditionally. To fix this, the `light` propType should only call the `deprecate` warning when the prop is explicitly provided (e.g. by checking `props.hasOwnProperty('light')`) or remove any default value so that `deprecate` does not fire when the prop is omitted.",
+        "bug_scenario": "The user renders an OverflowMenu without ever passing a `light` prop, yet a deprecation warning for the `light` prop still appears in the console. The screenshot shows the warning: \u201cThe `light` prop for `OverflowMenu` is no longer needed and has been deprecated\u2026\u201d. This warning breaks test suites that fail on unexpected console warnings."
+    }
+}

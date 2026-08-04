@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/webgl/VectorStyleRenderer.js//VectorStyleRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/webgl/utils.js//writePolygonTrianglesToBuffers"
+        ],
+        "explanation": "The bug is about how polygon holes (linear rings with opposite winding) are handled in the WebGL rendering pipeline. The core of this process involves converting polygon data into triangles for the GPU. The class VectorStyleRenderer in src/ol/render/webgl/VectorStyleRenderer.js is responsible for preparing WebGL buffers and rendering the geometries, so any logic about how rings are interpreted and passed to the GPU would be here. The function writePolygonTrianglesToBuffers in src/ol/render/webgl/utils.js is the utility that actually creates the triangles for polygons, including holes, using earcut. If the winding order (clockwise/counter-clockwise) of the rings is wrong, or if the function does not properly distinguish between outer and inner rings, the fill will be incorrect\u2014as observed in the bug scenario. Ensuring the correct orientation of rings before triangulation is essential, and any oversight here will cause the bug described.",
+        "bug_scenario": "The bug scenario is that when using the WebGL vector layer renderer to display polygons with holes (linear rings), the fill-color is incorrectly applied: rather than only filling the intended area (the polygon minus the holes), the color appears to overlap or fill holes as well, especially when the GeoJSON input is valid (according to GeoJSON spec and tools). The expectation is that the rendering behaves like the classic VectorLayer and geojson.io, where the fill correctly excludes holes. The bug appears to be related to the handling of ring orientation (clockwise/counter-clockwise) when triangulating/filling polygons in WebGL."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/webgl/VectorStyleRenderer.js//VectorStyleRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/webgl/utils.js//writePolygonTrianglesToBuffers"
+        ],
+        "explanation": "The main class responsible for preparing and rendering vector data in WebGL is VectorStyleRenderer (in src/ol/render/webgl/VectorStyleRenderer.js). This class coordinates the generation of WebGL buffers for polygons, lines, and points, and is directly responsible for how polygons (including those with holes) are rendered. The function writePolygonTrianglesToBuffers (in src/ol/render/webgl/utils.js) is the core utility that creates the triangles for rendering polygons, using the earcut library. It processes the polygon's rings and passes them for triangulation, and any mishandling of ring orientation (clockwise/counterclockwise) will cause the holes to be filled incorrectly. Since the bug only manifests when using the WebGL renderer and not the standard vector renderer, the core issue is in how rings are passed to earcut or how their orientation is interpreted/handled in the WebGL rendering pipeline. Thus, VectorStyleRenderer (responsible for preparing data) and writePolygonTrianglesToBuffers (responsible for the actual triangulation and buffer population) are the key elements for this bug.",
+        "bug_scenario": "The provided bug report describes an issue in a WebGL-based vector rendering layer (such as OpenLayers' WebGL renderer) where polygons with holes are rendered incorrectly. Specifically, when using valid GeoJSON polygons (with correct ring orientation), the fill color appears to overlap or fill holes erroneously, whereas invalid GeoJSON (with incorrect orientation) displays as expected. The images show polygons where holes are filled or not subtracted as they should be. The investigation points toward problems with handling the orientation of polygon rings (clockwise/counterclockwise) in the triangulation or rendering process, likely related to how the WebGL renderer interprets and fills these polygons."
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/interaction/Select.js//Select",
+            "src/ol/layer/Layer.js//Layer"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Select.js//Select.constructor",
+            "src/ol/layer/Layer.js//Layer.setMap"
+        ],
+        "explanation": "In Select.js, the Select interaction creates an internal VectorLayer (featureOverlay_) without exposing any zIndex option, then attaches it as an unmanaged layer via featureOverlay_.setMap(map). In Layer.js, Layer.setMap for unmanaged layers listens to the PRECOMPOSE event and forces the layerState.zIndex to Infinity, ensuring the select overlay always draws at the top. To fix this, Select.constructor must allow configuring or overriding the overlay\u2019s zIndex (e.g. by passing a zIndex to VectorLayer), and/or Layer.setMap\u2019s unmanaged branch must respect a user-provided zIndex rather than unconditionally using Infinity.",
+        "bug_scenario": "The user adds a separate \u201chover\u201d layer of red dots to highlight underlying clustered features, but when they select a feature with ol.interaction.Select (custom SVG icon), that selection\u2019s overlay is always rendered on top\u2014regardless of any zIndex settings\u2014so the red\u2013dot hover markers never appear above the selected symbol."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/interaction/Select.js//Select",
+            "src/ol/layer/Layer.js//Layer"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Select.js//constructor",
+            "src/ol/layer/Layer.js//setMap"
+        ],
+        "explanation": "ol.interaction.Select creates its own unmanaged VectorLayer (featureOverlay_) to render selected features. In Layer.setMap(), unmanaged layers are always pushed into the frameState with zIndex = Infinity (so they draw on top). Because the Select overlay is unmanaged, its zIndex is forced to Infinity and cannot be overridden by user layer zIndex settings. To fix this, the Select constructor (where featureOverlay_ is created and attached) and/or Layer.setMap (which assigns zIndex = Infinity to unmanaged layers) must be updated to allow the select overlay\u2019s zIndex to be customized or to not hardcode Infinity for this special overlay.",
+        "bug_scenario": "The user is creating a cluster layer (with red \u201chover\u201d dots) in one vector layer and a custom SVG icon for selection in another. No matter what zIndex is set on those two layers, the selected\u2010feature overlay that ol.interaction.Select creates is always rendered above everything else. As a result, the red hover dots always end up underneath the selected icon (instead of above it) even though the red\u2010dot layer has a higher user\u2010configured zIndex. The screenshots show the desired ordering (red dots on top of the selected box) versus the actual ordering (red dots below)."
+    }
+}

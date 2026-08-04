@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/format/reveal/format-reveal.ts//applyStretch",
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor"
+        ],
+        "explanation": "The overlap issue stems from the routine that auto\u2010stretches images (applyStretch) not accounting for the height taken by the aside block, so stretched figures encroach on the aside area. The revealHtmlPostprocessor is responsible for collecting and injecting aside elements after image handling but doesn\u2019t adjust stretch behavior or reflow images once asides are laid out. Together, these two functions must be modified so that applyStretch measures available slide height minus the aside region, and revealHtmlPostprocessor ensures asides are inserted before final sizing or triggers a reflow that respects aside space.",
+        "bug_scenario": "On slides that contain only a single figure and an \u201caside\u201d block, the image is stretched to fill the entire slide height, so the aside text (and any caption) overlaps and even covers part of the figure. The desired behavior is that the aside always occupies the bottom region of the slide and the figure\u2019s stretch should be constrained above the aside."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/format/reveal/format-reveal.ts//applyStretch",
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor"
+        ],
+        "explanation": "The function applyStretch is responsible for adding the \u201cstretch\u201d class and resizing single-image slides; it needs to be updated so that it accounts for the height of any aside block at the bottom and does not over-stretch the image into that region. The revealHtmlPostprocessor function is where asides are collected and injected into slides, and it also orchestrates when applyStretch is called. Adjusting the order or logic there (for example, injecting the aside before measuring available height, or skipping/stretching images differently when an aside is present) will ensure that asides always reserve their own bottom space and never overlap the stretched image.",
+        "bug_scenario": "On slides that contain a single full-slide image plus an aside block at the bottom, the image\u2019s auto-stretch logic is pushing the picture behind or up into the aside region. The aside text (and, if present, the figure caption) ends up overlapping the bottom of the image instead of reserving its own space. In the screenshots, you can see the kitten image filling almost the full height of the slide and the \u201cSomething here\u2026\u201d aside running on top of the image and caption."
+    }
+}

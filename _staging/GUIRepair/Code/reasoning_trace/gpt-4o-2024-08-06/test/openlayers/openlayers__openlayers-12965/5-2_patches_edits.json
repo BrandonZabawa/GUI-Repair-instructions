@@ -1,0 +1,483 @@
+{
+    "1/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "/**",
+                    "* @param {import(\"../../layer/WebGLTile.js\").default} tileLayer Tile layer.",
+                    "* @param {Options} options Options.",
+                    "*/",
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "/**",
+                    "* @param {import(\"../../layer/WebGLTile.js\").default} tileLayer Tile layer.",
+                    "* @param {Options} options Options.",
+                    "*/",
+                    "constructor(tileLayer, options) {",
+                    "const sharedContext = WebGLTileLayerRenderer.sharedContext || new WebGLHelper();",
+                    "WebGLTileLayerRenderer.sharedContext = sharedContext;",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "helper: sharedContext",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "createRenderer() {",
+                    "const source = this.getSource();",
+                    "const parsedStyle = parseStyle(",
+                    "this.style_,",
+                    "'bandCount' in source ? source.bandCount : 4",
+                    ");",
+                    "",
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "createRenderer(sharedWebGLHelper) {",
+                    "const source = this.getSource();",
+                    "const parsedStyle = parseStyle(",
+                    "this.style_,",
+                    "'bandCount' in source ? source.bandCount : 4",
+                    ");",
+                    "",
+                    "return new WebGLTileLayerRenderer(this, sharedWebGLHelper, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "});",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "...",
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "...",
+                    "/** @private */",
+                    "this.program_;",
+                    "...",
+                    "}",
+                    "...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "...",
+                    "/**",
+                    "* @param {import(\"../../layer/WebGLTile.js\").default} tileLayer Tile layer.",
+                    "* @param {WebGLHelper} sharedWebGLHelper Shared WebGL helper.",
+                    "* @param {Options} options Options.",
+                    "*/",
+                    "constructor(tileLayer, sharedWebGLHelper, options) {",
+                    "super(tileLayer, sharedWebGLHelper, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "...",
+                    "/** @private @type {WebGLProgram} */",
+                    "this.program_ = null;",
+                    "...",
+                    "}",
+                    "...",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "const options = opt_options ? assign({}, opt_options) : {};"
+                ],
+                "REPLACE": [
+                    "const options = opt_options ? assign({}, opt_options) : {};",
+                    "if (options.context && options.context instanceof WebGLRenderingContext) {",
+                    "this.webglContext_ = options.context;",
+                    "} else {",
+                    "this.webglContext_ = null;",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.helper = new WebGLHelper({",
+                    "uniforms: options.uniforms",
+                    "});"
+                ],
+                "REPLACE": [
+                    "this.helper = options.context || new WebGLHelper({",
+                    "uniforms: options.uniforms",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};"
+                ],
+                "REPLACE": [
+                    "constructor(opt_options, sharedGlContext = null) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "this.gl_ = sharedGlContext ? sharedGlContext : getContext(this.canvas_);"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "createRenderer() {",
+                    "const source = this.getSource();"
+                ],
+                "REPLACE": [
+                    "createRenderer(sharedGlContext) {",
+                    "const source = this.getSource();",
+                    "const glContext = sharedGlContext || new WebGLHelper().getGL();"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "constructor(tileLayer, options, sharedHelper) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "this.helper = sharedHelper; // Use shared helper"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "this.gl_ = getContext(this.canvas_);"
+                ],
+                "REPLACE": [
+                    "this.gl_ = existingContext || getContext(this.canvas_);"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.helper = new WebGLHelper({",
+                    "uniforms: options.uniforms,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "this.helper = new WebGLHelper({",
+                    "uniforms: options.uniforms,",
+                    "sharedContext: map.getSharedWebGLContext()",
+                    "});"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "createRenderer() {",
+                    "const source = this.getSource();",
+                    "...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "createRenderer() {",
+                    "const source = this.getSource();",
+                    "this.getMap().setSharedWebGLContext(this.context_ || source.createWebGLContext());",
+                    "...",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const gl = this.helper.getGL(); // each tile layer gets its own context"
+                ],
+                "REPLACE": [
+                    "const gl = sharedContext || this.helper.getGL(); // share context if available"
+                ]
+            }
+        ],
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "this.gl_ = getContext(this.canvas_); // default separate context"
+                ],
+                "REPLACE": [
+                    "this.gl_ = sharedContext || getContext(this.canvas_); // use shared context if possible"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "class WebGLHelper extends Disposable {",
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "",
+                    "this.boundHandleWebGLContextLost_ = this.handleWebGLContextLost.bind(this);",
+                    "",
+                    "this.boundHandleWebGLContextRestored_ =",
+                    "this.handleWebGLContextRestored.bind(this);",
+                    "",
+                    "this.canvas_ = document.createElement('canvas');",
+                    "this.canvas_.style.position = 'absolute';",
+                    "this.canvas_.style.left = '0';",
+                    "",
+                    "this.gl_ = getContext(this.canvas_);"
+                ],
+                "REPLACE": [
+                    "class WebGLHelper extends Disposable {",
+                    "static sharedContext = null;  // Static variable to store shared context",
+                    "",
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "",
+                    "this.boundHandleWebGLContextLost_ = this.handleWebGLContextLost.bind(this);",
+                    "",
+                    "this.boundHandleWebGLContextRestored_ =",
+                    "this.handleWebGLContextRestored.bind(this);",
+                    "",
+                    "if (!WebGLHelper.sharedContext) {",
+                    "this.canvas_ = document.createElement('canvas');",
+                    "this.canvas_.style.position = 'absolute';",
+                    "this.canvas_.style.left = '0';",
+                    "WebGLHelper.sharedContext = getContext(this.canvas_);",
+                    "}",
+                    "",
+                    "this.gl_ = WebGLHelper.sharedContext;  // Use shared context"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "",
+                    "this.tileTransform_ = createTransform();",
+                    "...",
+                    "this.helper = new WebGLHelper({",
+                    "uniforms: options.uniforms,",
+                    "postProcesses: opt_options.postProcesses,",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "",
+                    "this.tileTransform_ = createTransform();",
+                    "...",
+                    "this.helper = WebGLHelper.sharedContext ? WebGLHelper : new WebGLHelper({",
+                    "uniforms: options.uniforms,",
+                    "postProcesses: options.postProcesses,",
+                    "});",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "createRenderer() {",
+                    "const source = this.getSource();",
+                    "const parsedStyle = parseStyle(",
+                    "this.style_,",
+                    "'bandCount' in source ? source.bandCount : 4",
+                    ");",
+                    "",
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "createRenderer(sharedHelper) {",
+                    "const source = this.getSource();",
+                    "const parsedStyle = parseStyle(",
+                    "this.style_,",
+                    "'bandCount' in source ? source.bandCount : 4",
+                    ");",
+                    "",
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "helper: sharedHelper",
+                    "});",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "",
+                    "...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "",
+                    "this.helper = options.helper || new WebGLHelper();",
+                    "",
+                    "...",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "...",
+                    "this.program_;",
+                    "...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});",
+                    "",
+                    "// Use a shared context for WebGL layers",
+                    "const sharedHelper = WebGLHelper.getSharedInstance();",
+                    "this.helper = sharedHelper;",
+                    "",
+                    "/** @type {WebGLProgram} @private */",
+                    "this.program_;",
+                    "...",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "...",
+                    "this.gl_ = getContext(this.canvas_);",
+                    "...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "",
+                    "if (WebGLHelper.instance) {",
+                    "return WebGLHelper.instance;",
+                    "}",
+                    "",
+                    "...",
+                    "this.gl_ = getContext(this.canvas_);",
+                    "...",
+                    "",
+                    "WebGLHelper.instance = this;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "",
+                    "// Existing code...",
+                    "",
+                    "this.gl_ = getContext(this.canvas_);"
+                ],
+                "REPLACE": [
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "",
+                    "// Existing code...",
+                    "",
+                    "if (!WebGLHelper.sharedContext) {",
+                    "WebGLHelper.sharedContext = getContext(this.canvas_);",
+                    "}",
+                    "this.gl_ = WebGLHelper.sharedContext;"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/dobetterweb/no-vulnerable-libraries.js//NoVulnerableLibrariesAudit"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/dobetterweb/no-vulnerable-libraries.js//normalizeVersion"
+        ],
+        "explanation": "The runtime error occurs in NoVulnerableLibrariesAudit.normalizeVersion(), which assumes the passed-in version is a string and directly invokes version.match(...). When version is a Number (or any non-string), .match is undefined. To fix the bug, normalizeVersion must coerce non-string versions to strings (or otherwise guard against non-string inputs) before calling match. This makes normalizeVersion the key function to update, and NoVulnerableLibrariesAudit the class containing it.",
+        "bug_scenario": "When running the \u201cAvoids front-end JavaScript libraries with known security vulnerabilities\u201d audit on a site (e.g. a Magento 2 page using require.js), the Chrome Library Detector reports a library version as a non-string (for example a Number). Inside no-vulnerable-libraries.js, version.match(...) is called unguarded in normalizeVersion, leading to \u201cTypeError: version.match is not a function\u201d."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/dobetterweb/no-vulnerable-libraries.js//NoVulnerableLibrariesAudit"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/dobetterweb/no-vulnerable-libraries.js//normalizeVersion",
+            "lighthouse-core/audits/dobetterweb/no-vulnerable-libraries.js//audit",
+            "lighthouse-core/audits/dobetterweb/no-vulnerable-libraries.js//getVulnerabilities"
+        ],
+        "explanation": "The root of the error lies in NoVulnerableLibrariesAudit.normalizeVersion(): it expects its version parameter to be a string and immediately calls version.match(SEMVER_REGEX). If version is a number (or any non-string), version.match is undefined and throws. The audit() function invokes normalizeVersion(lib.version) without type checking, and getVulnerabilities() then works with the (bad) output. To fix the bug, normalizeVersion should first coerce non-string inputs to strings (or bail/skip non-string versions) before calling .match, or audit() should enforce that lib.version is a string.",
+        "bug_scenario": "When Lighthouse\u2019s \u201cAvoids front-end JavaScript libraries with known security vulnerabilities\u201d audit runs against sites (like Magento 2 pages using require.js bundling), the Chrome Library Detector may report a non-string version value (for example a Number). The audit code in no-vulnerable-libraries.js unconditionally calls version.match(\u2026) in normalizeVersion(), causing a \u201cversion.match is not a function\u201d TypeError and crashing the audit (as shown in the screenshot)."
+    }
+}

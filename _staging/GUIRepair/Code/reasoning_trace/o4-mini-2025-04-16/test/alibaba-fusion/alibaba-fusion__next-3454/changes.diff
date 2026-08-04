@@ -1,0 +1,22 @@
+diff --git a/src/number-picker/number-picker.jsx b/src/number-picker/number-picker.jsx
+index f6bd771e9..fa849f218 100644
+--- a/src/number-picker/number-picker.jsx
++++ b/src/number-picker/number-picker.jsx
+@@ -195,6 +195,17 @@ class NumberPicker extends React.Component {
+     }
+ 
+     static getDerivedStateFromProps(nextProps, prevState) {
++        // 同步 max/min prop 到 state，保证 max/min 改变时能实时生效
++        const { max: propMax, min: propMin, stringMode } = nextProps;
++        const newMax = propMax === MAX_SAFE_INTEGER && stringMode ? Infinity : propMax;
++        const newMin = propMin === MIN_SAFE_INTEGER && stringMode ? -Infinity : propMin;
++        if (newMax !== prevState.max || newMin !== prevState.min) {
++            return {
++                max: newMax,
++                min: newMin,
++            };
++        }
++
+         // 用户键入非法值后render逻辑，未触发onChange，业务组件无感知，不强制受控value
+         if (prevState.onlyDisplay) {
+             return {

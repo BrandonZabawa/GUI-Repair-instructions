@@ -1,0 +1,61 @@
+{
+    "1/1": {
+        "lighthouse-core/computed/trace-of-tab.js": [
+            {
+                "SEARCH": [
+                    "const traceOfTab = await LHTraceProcessor.computeTraceOfTab(trace);",
+                    "const {timings, timestamps, firstContentfulPaintEvt} = traceOfTab;",
+                    "const {firstContentfulPaint: firstContentfulPaintTiming} = timings;",
+                    "const {firstContentfulPaint: firstContentfulPaintTs} = timestamps;",
+                    "if (",
+                    "!firstContentfulPaintEvt ||",
+                    "firstContentfulPaintTiming === undefined ||",
+                    "firstContentfulPaintTs === undefined",
+                    ") {",
+                    "throw new LHError(LHError.errors.NO_FCP);",
+                    "}",
+                    "",
+                    "// We already know that `traceOfTab` is good to go at this point, but tsc doesn't yet.",
+                    "// Help tsc out by reconstructing the object manually with the known defined values.",
+                    "return {",
+                    "...traceOfTab,",
+                    "firstContentfulPaintEvt,",
+                    "timings: {...timings, firstContentfulPaint: firstContentfulPaintTiming},",
+                    "timestamps: {...timestamps, firstContentfulPaint: firstContentfulPaintTs},",
+                    "};",
+                    "||||||| ORIGINAL",
+                    "// (original code as above)"
+                ],
+                "REPLACE": [
+                    "    const traceOfTab = await LHTraceProcessor.computeTraceOfTab(trace);",
+                    "    // pull in firstPaint as a fallback for background tabs",
+                    "    const {timings, timestamps, firstContentfulPaintEvt, firstPaintEvt} = traceOfTab;",
+                    "    const {",
+                    "      firstContentfulPaint: firstContentfulPaintTiming,",
+                    "      firstPaint: firstPaintTiming",
+                    "    } = timings;",
+                    "    const {",
+                    "      firstContentfulPaint: firstContentfulPaintTs,",
+                    "      firstPaint: firstPaintTs",
+                    "    } = timestamps;",
+                    "",
+                    "    // If FCP is missing (e.g. background tab), fall back to First Paint",
+                    "    const finalFcpEvt = firstContentfulPaintEvt || firstPaintEvt;",
+                    "    const finalFcpTiming = firstContentfulPaintTiming !== undefined",
+                    "      ? firstContentfulPaintTiming",
+                    "      : (firstPaintTiming !== undefined ? firstPaintTiming : 0);",
+                    "    const finalFcpTs = firstContentfulPaintTs !== undefined",
+                    "      ? firstContentfulPaintTs",
+                    "      : (firstPaintTs !== undefined ? firstPaintTs : 0);",
+                    "",
+                    "    return {",
+                    "      ...traceOfTab,",
+                    "      firstContentfulPaintEvt: finalFcpEvt,",
+                    "      timings: {...timings, firstContentfulPaint: finalFcpTiming},",
+                    "      timestamps: {...timestamps, firstContentfulPaint: finalFcpTs},",
+                    "    };"
+                ]
+            }
+        ]
+    }
+}

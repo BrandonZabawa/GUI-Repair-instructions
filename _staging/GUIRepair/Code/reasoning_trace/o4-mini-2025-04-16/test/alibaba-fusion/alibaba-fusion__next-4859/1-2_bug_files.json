@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "components/cascader-select/main.scss",
+            "components/cascader-select/style.ts",
+            "components/virtual-list/main.scss",
+            "components/virtual-list/style.js"
+        ],
+        "explanation": "CascaderSelect\u2019s panels inherit their background and padding rules from its own SCSS and style definitions (main.scss and style.ts), but when you switch to virtual scrolling those definitions aren\u2019t applied to the overscan/empty areas introduced by the VirtualList. The VirtualList component\u2019s styles (main.scss and the style.js entry) currently lack a default panel background for its container and overscan zones, so you see the underlying gray or transparent color instead of white. Updating these four files to set a consistent background (for both the list container and its virtualized rows) will restore the expected uniform white panel background.",
+        "bug_scenario": "When you enable virtual scrolling (useVirtual) on CascaderSelect and open the dropdown panels, the empty/overscan regions of the list show a gray or transparent background instead of the uniform white used in non-virtual mode. In the screenshot you can see panels with mismatched backgrounds behind the city and district items as you scroll."
+    },
+    "2": {
+        "bug_files": [
+            "components/cascader-select/cascader-select.tsx",
+            "components/cascader-select/style.ts",
+            "components/cascader-select/main.scss",
+            "components/cascader/cascader.tsx",
+            "components/cascader/style.ts",
+            "components/cascader/main.scss",
+            "components/virtual-list/style.js",
+            "components/virtual-list/main.scss"
+        ],
+        "explanation": "All of these files participate in rendering or styling the virtualized CascaderSelect popup. \n\n\u2022 components/cascader-select/cascader-select.tsx: forwards useVirtual and listStyle to the underlying Cascader, and needs to ensure the popup container and columns carry the correct background when virtualization is active.  \n\u2022 components/cascader-select/style.ts & main.scss: define the CSS-in-JS and core SCSS rules for the CascaderSelect wrapper, including background colors and borders that must be applied to the virtual list viewport.  \n\u2022 components/cascader/cascader.tsx: implements the column rendering logic; when useVirtual is true it switches to a VirtualList. It must wrap the virtualized items in the same background container used by the non-virtualized menu.  \n\u2022 components/cascader/style.ts & main.scss: supply the base styles for the cascader menu and columns; missing or mismatched styles here cause the visible gaps behind virtual items.  \n\u2022 components/virtual-list/style.js & main.scss: define the generic virtual\u2010list container styles. The default styles do not carry a background, so when cascader injects a VirtualList it appears transparent on the parent popup\u2019s background. You need to override or supply the proper background color here to match the cascader menu columns.",
+        "bug_scenario": "When using CascaderSelect with virtual scrolling enabled, the 3-column popup menu shows inconsistent or missing background colors behind items outside the currently rendered window. The screenshot reproduces a white \u201cgap\u201d on the left column and mismatched backgrounds on the middle/right columns, caused by the virtualization container not inheriting the proper column background color."
+    }
+}

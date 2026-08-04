@@ -1,0 +1,84 @@
+{
+    "bug_classes": {},
+    "bug_functions": {
+        "1": {
+            "function_name": "datumValue",
+            "file_path": "src/js/components/DataTable/buildState.js",
+            "function_details": [
+                {
+                    "name": "datumValue",
+                    "start_line": 21,
+                    "end_line": 31
+                }
+            ],
+            "function_code": [
+                "export const datumValue = (datum, property) => {",
+                "  if (!property) return undefined;",
+                "  const parts = property.split('.');",
+                "  if (parts.length === 1) {",
+                "    return datum[property];",
+                "  }",
+                "  if (!datum[parts[0]]) {",
+                "    return undefined;",
+                "  }",
+                "  return datumValue(datum[parts[0]], parts.slice(1).join('.'));",
+                "};"
+            ]
+        },
+        "2": {
+            "function_name": "filterAndSortData",
+            "file_path": "src/js/components/DataTable/buildState.js",
+            "function_details": [
+                {
+                    "name": "filterAndSortData",
+                    "start_line": 65,
+                    "end_line": 106
+                }
+            ],
+            "function_code": [
+                "export const filterAndSortData = (data, filters, onSearch, sort) => {",
+                "  let result = data;",
+                "  if (!onSearch) {",
+                "    const regexps = {};",
+                "    Object.keys(filters)",
+                "      .filter((n) => filters[n])",
+                "      .forEach((n) => {",
+                "        regexps[n] = new RegExp(escapeRegExp(filters[n]), 'i');",
+                "      });",
+                "    if (Object.keys(regexps).length > 0) {",
+                "      result = data.filter(",
+                "        (datum) =>",
+                "          !Object.keys(regexps).some(",
+                "            (property) => !regexps[property].test(datumValue(datum, property)),",
+                "          ),",
+                "      );",
+                "    }",
+                "  }",
+                "",
+                "  if (sort && !sort.external) {",
+                "    const { property, direction } = sort;",
+                "    result = result === data ? [...data] : result; // don't sort caller's data",
+                "    const sortAsc = direction === 'asc';",
+                "    const before = sortAsc ? 1 : -1;",
+                "    const after = sortAsc ? -1 : 1;",
+                "    result.sort((d1, d2) => {",
+                "      const d1Val = datumValue(d1, property);",
+                "      const d2Val = datumValue(d2, property);",
+                "      if (typeof d1Val === 'string' && typeof d2Val === 'string') {",
+                "        const sortResult = d1Val.localeCompare(d2Val, undefined, {",
+                "          sensitivity: 'base',",
+                "        });",
+                "        return sortAsc ? sortResult : -sortResult;",
+                "      }",
+                "      if (d1Val > d2Val) return before;",
+                "      if (d1Val < d2Val) return after;",
+                "      return 0;",
+                "    });",
+                "  }",
+                "",
+                "  return result;",
+                "};"
+            ]
+        }
+    }
+}

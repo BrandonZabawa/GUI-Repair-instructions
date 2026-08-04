@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/TileWMS.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/renderer/canvas/TileLayer.js"
+        ],
+        "explanation": "\u2022 src/ol/source/TileWMS.js  \u2013 This is where the gutter option is defined and passed to the WMS request. It verifies that a gutter is requested but doesn\u2019t drive any cropping logic in the WebGL path. \n\n\u2022 src/ol/renderer/webgl/TileLayer.js  \u2013 The WebGL tile layer renderer builds its vertex buffers and texture coordinates assuming the full image covers the tile. Because it never factors in the gutter, the extra pixels end up sampled and drawn, leading to visible seams and duplicated borders.\n\n\u2022 src/ol/webgl/TileTexture.js  \u2013 This helper uploads the HTMLImageElement or canvas to a WebGLTexture without cropping or adjusting the source rectangle. To support a gutter, it needs to either crop on a temporary canvas or supply adjusted sub\u2010image parameters to WebGL.\n\n\u2022 src/ol/renderer/canvas/TileLayer.js  \u2013 The canvas renderer\u2019s implementation is the reference: it calls context.drawImage with explicit sourceRect arguments that crop out the gutter before drawing. Studying and porting this crop logic into the WebGL path will correct the misplacement and duplication issues.",
+        "bug_scenario": "When using an ol/source/TileWMS with the gutter option together with an ol/layer/WebGLTile layer, the extra pixels requested as a gutter are never clipped off before the WebGL texture is created. As a result each tile\u2019s gutter area shows up in the rendered tiles, causing misalignment and visible duplicate borders between tiles. In contrast, the normal canvas\u2010based Tile layer correctly crops out the gutter region before drawing."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/TileWMS.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js"
+        ],
+        "explanation": "TileWMS.js is where the gutter option is declared and extra pixels are requested from the server. TileLayer.js (in renderer/webgl) is the WebGLTile layer renderer that never applies any cropping to the loaded tile images. TileTexture.js is the low-level WebGL helper that uploads the tile image (including its gutter) directly into a GPU texture. Because neither the renderer nor the texture uploader honors the gutter setting, the extra border pixels end up in the final rendered output instead of being clipped away.",
+        "bug_scenario": "When you use ol/source/TileWMS with the gutter option on an ol/layer/WebGLTile, the WebGL renderer does not crop out the extra gutter pixels before uploading the tile as a texture. As a result, you see duplicated border pixels and misaligned tiles in the WebGLTile layer (whereas the regular ol/layer/Tile correctly clips the gutter)."
+    }
+}

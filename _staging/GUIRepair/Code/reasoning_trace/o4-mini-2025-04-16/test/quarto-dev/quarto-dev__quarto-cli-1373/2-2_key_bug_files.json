@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/command/render/codetools.ts",
+            "src/config/types.ts"
+        ],
+        "explanation": "All of the logic that decides (1) whether we have a source URL at all (resolveKeepSource) and (2) whether to render the code-tools button/menu and wire up the \u2018View source\u2019 link lives in codetools.ts. In both resolveKeepSource and resolveCodeTools we treat only `true` or `undefined` values as enabling source\u2010view functionality; any string (e.g. the URL) is dropped. That is why a URL disables the button entirely. We need to update codetools.ts so that if `source` is a string we still treat it as a truthy request for \u2018View source\u2019 (and wire `data-quarto-source-url` to that string). In addition, our TypeScript definitions in src/config/types.ts should be updated so that `code-tools.source` may be declared as `boolean | string` rather than only `boolean`. Those two changes will restore the menu when `source` is a URL.",
+        "bug_scenario": "In the first screenshot the user has set `code-tools: source: true` in their QMD header and after rendering they see the \u201c</> Code\u201d button in the HTML preview, which toggles the code-tools menu correctly. In the second screenshot they change the header to `code-tools: source: <URL-to-a-remote-file>` but when they render again the code-tools button and menu never appear. In other words, supplying a string URL for `source` silently disables the entire code-tools UI, even though the intention was merely to point \u201cView source\u201d at a remote file."
+    }
+}

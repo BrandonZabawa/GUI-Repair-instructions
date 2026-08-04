@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements",
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/computed/network-records.js//NetworkRecords"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js//collectIFrameElements",
+            "lighthouse-core/gather/driver.js//_handleTargetAttached",
+            "lighthouse-core/computed/network-records.js//compute_"
+        ],
+        "explanation": "\u2022 IFrameElements (and its helper collectIFrameElements): this gatherer only captures iframe metadata (size, position, src) but never fetches or attributes network timing or CPU/render work for those frames. It needs extension to record subframe load metrics.  \n\u2022 Driver._handleTargetAttached (in gather/driver.js): this is where Lighthouse auto-attaches to new targets (including iframes) and should enable Network tracing for subtargets. As written, it does not propagate or merge iframe network events into the main devtoolsLog.  \n\u2022 NetworkRecords.compute_ (in computed/network-records.js): this computed artifact turns a devtoolsLog into networkRecords, but since the devtoolsLog lacks iframe requests, the networkRecords omit iframe loads entirely. Together, these classes/functions are the points where iframe resource collection and attribution would need to be added or merged into the main page\u2019s metrics to correctly account for iframe performance in the parent report.",
+        "bug_scenario": "When Lighthouse audits a page that embeds a throttled, high-DOM iframe, the parent page\u2019s performance score ignores the iframe\u2019s network and rendering costs. In the example, the parent page (with iframe) scores ~71, while running Lighthouse directly on the slow iframe page alone scores ~39. This disparity misleads users into thinking the parent page is faster than it actually is because iframe work is not accounted for."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements",
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/computed/network-records.js//NetworkRecords",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js//collectIFrameElements",
+            "lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements.afterPass",
+            "lighthouse-core/gather/driver.js//Driver._handleTargetAttached",
+            "lighthouse-core/gather/driver.js//Driver._handleReceivedMessageFromTarget",
+            "lighthouse-core/computed/network-records.js//NetworkRecords.compute_",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.collectArtifacts"
+        ],
+        "explanation": "\u2022 IFrameElements (in `iframe-elements.js`) is the only gatherer that even looks at <iframe> nodes, but its output is never hooked into any metric or audit. We need to collect actual network and CPU work for each iframe, not just its DOMRect.\n\u2022 Driver (in `driver.js`) has the low-level machinery to auto-attach to iframe subtargets and record network events from them (`_handleTargetAttached`, `_handleReceivedMessageFromTarget`). If those methods don\u2019t correctly enable and merge Network.domain messages for child frames, the devtoolsLog feeding the computed artifacts will miss all iframe requests.\n\u2022 NetworkRecords (in `network-records.js`) builds all of Lighthouse\u2019s network requests from the raw devtoolsLog. If the log never contains iframe requests, no computed artifact or audit can account for that work.\n\u2022 GatherRunner.collectArtifacts is responsible for flattening all gatherer outputs into the final `artifacts` object. It needs to be aware of iframe gatherers (and potentially merge their network and trace data) so that later performance audits include iframe costs.\n\nTogether these classes and methods form the data-collection and artifact-generation pipeline. To fix the bug, iframe network, CPU and rendering events must be captured at the Driver level, fed through NetworkRecords, and then aggregated (via GatherRunner) into the parent\u2019s performance artifacts\u2014rather than being dropped entirely.",
+        "bug_scenario": "When Lighthouse runs against a page that embeds a slow, large-DOM iframe it currently reports the parent page\u2019s performance without any of the iframe\u2019s cost. In the attached screenshots, the parent page (which includes the iframe) scores 71, even though running Lighthouse directly on the iframe\u2019s URL yields a much worse score of 39. In other words, all network, CPU and rendering work done in the iframe is being ignored in the parent\u2019s performance metrics."
+    }
+}

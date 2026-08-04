@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/form/item.jsx",
+            "src/form/form.jsx",
+            "types/form/index.d.ts"
+        ],
+        "explanation": "\u2022 src/form/item.jsx\n  \u2013 This is where Form.Item reads its props and implements the useLabelForErrorMessage logic. We need to add support for a new errorMessageLabel prop here. When errorMessageLabel is provided, Form.Item should use its value (rather than the original label prop or the wrapped label node) to generate the aria-label or id that links to the error message.\n\n\u2022 src/form/form.jsx\n  \u2013 The Form component reads the top-level useLabelForErrorMessage flag and passes that down through context. We should expose a getLabel API (or otherwise forward the errorMessageLabel) here so that Form.Item can retrieve either the default or the overridden label. If we want a Form instance method getLabel(), it must be implemented here.\n\n\u2022 types/form/index.d.ts\n  \u2013 Add TypeScript definitions for the new errorMessageLabel prop on Form.Item (and corresponding changes for the Form.getLabel method if we expose it). This ensures IDE autocompletion and type safety when someone uses the new API.",
+        "bug_scenario": "In the screenshot we can see a custom BizFormItem wrapping Form.Item. BizFormItem takes a ReactNode label (with an icon) and passes it into Form.Item along with children (the actual <Input/>). Because BizFormItem injects that extra <span> around the label and spreads its own wrapper markup, the Input is no longer the direct first child of Form.Item. As a result, when Form is rendered with useLabelForErrorMessage, the validation engine cannot locate the correct label node for the aria-link and error display, so the error message never shows. The user wants to supply an explicit errorMessageLabel prop so that Form.Item can use that text for labeling validation messages regardless of extra DOM wrappers."
+    },
+    "2": {
+        "bug_files": [
+            "src/form/item.jsx",
+            "types/form/index.d.ts"
+        ],
+        "explanation": "1. src/form/item.jsx is where Form.Item renders its label and invokes the useLabelForErrorMessage logic. We must extend its props to accept errorMessageLabel and, if provided, use it directly to build the field\u2019s error message (instead of trying to read textContent from the rendered label node).\n2. types/form/index.d.ts defines the TypeScript interface for Form.Item props. We need to add errorMessageLabel here so that TS consumers can pass the new prop without type errors.",
+        "bug_scenario": "In our application we often wrap Next\u2019s Form.Item in custom components (e.g. adding icons or extra DOM around the label). When the top-level Form is rendered with useLabelForErrorMessage=true, Form.Item tries to pull its label text out of the DOM to use as the human-readable \u201cfield name\u201d in validation messages. As soon as you wrap the label in extra JSX (a <span> plus an <Icon> for example), that DOM\u2010scraping logic breaks and Next falls back to using the raw field name. We need a way to explicitly pass in the text we want used in the error message \u2014 hence a new errorMessageLabel prop on Form.Item that, when present, overrides both the field name and any label-scraping logic."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/core/handlers/embed.ts//embedHandler"
+        ],
+        "bug_functions": [
+            "src/core/handlers/embed.ts//embedHandler.directive",
+            "src/core/handlers/embed.ts//(Jupyter Notebook Embed).handle"
+        ],
+        "explanation": "The core of the problem is that the embed directive only knows how to handle Jupyter notebooks (via the single handler in kHandlers) and returns handled=false for ordinary files. As a result, embedHandler.directive collects zero markdown fragments and the renderer emits an empty cell container. Fixing this requires extending embedHandler (in src/core/handlers/embed.ts) with logic to read and emit arbitrary text files (e.g. .R scripts), not just notebooks. The key functions are embedHandler.directive (which drives the overall embed logic) and the existing Jupyter Notebook Embed.handle (whose pattern should be duplicated or generalized for file-based embeds).",
+        "bug_scenario": "When using Quarto\u2019s knitr embed engine in a revealjs presentation, the external R script (code.R) is not showing in the slide. The slide renders only an empty <div class=\"cell\" data-file=\"code.R\"></div>, whereas the same embed code works in a plain HTML document."
+    },
+    "2": {
+        "bug_classes": [
+            "src/core/handlers/embed.ts//embedHandler"
+        ],
+        "bug_functions": [
+            "src/core/handlers/embed.ts//embedHandler.directive",
+            "src/core/handlers/embed.ts//kHandlers[0].handle",
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor"
+        ],
+        "explanation": "The primary bug is in src/core/handlers/embed.ts. The embedHandler.directive function only iterates over kHandlers, which currently contains a single Jupyter Notebook Embed handler (kHandlers[0].handle). That handler returns handled=false for plain files like code.R, so no markdown fragments are produced for file embeds, leaving an empty <div>. There is no generic file\u2010read handler to inject the raw code. Additionally, the revealHtmlPostprocessor in format-reveal.ts may further strip or ignore empty <div class=\"cell\"> containers, but the root cause is that embedHandler never produces any content for non\u2010notebook files under the Reveal.js pipeline. Fixing this requires adding or modifying a handler in embed.ts (or upstream) to read the file contents and emit them as markdown when rendering revealjs presentations.",
+        "bug_scenario": "When rendering a Quarto document with format: revealjs and engine: knitr, the `{embed, file=\"code.R\"}` chunk creates a slide with an empty `<div class=\"cell\" data\u2010file=\"code.R\">` instead of the code from `code.R`. In contrast, the same embed directive works as expected in plain HTML output \u2013 the contents of code.R are injected as a code block. The included screenshots show (1) a Reveal.js slide titled \u201cEmbed!\u201d with no code and (2) an HTML slide titled \u201cEmbed!\u201d displaying the R code."
+    }
+}

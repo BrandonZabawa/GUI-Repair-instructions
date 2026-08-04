@@ -1,0 +1,53 @@
+diff --git a/packages/react/src/components/ComboBox/ComboBox.js b/packages/react/src/components/ComboBox/ComboBox.js
+index 7d4d82bf..0b893269 100644
+--- a/packages/react/src/components/ComboBox/ComboBox.js
++++ b/packages/react/src/components/ComboBox/ComboBox.js
+@@ -257,8 +257,9 @@ export default class ComboBox extends React.Component {
+     const titleClasses = cx(`${prefix}--label`, {
+       [`${prefix}--label--disabled`]: disabled,
+     });
++    const labelId = `${id}__label`;
+     const title = titleText ? (
+-      <label htmlFor={id} className={titleClasses}>
++      <label id={labelId} htmlFor={id} className={titleClasses}>
+         {titleText}
+       </label>
+     ) : null;
+@@ -311,6 +312,7 @@ export default class ComboBox extends React.Component {
+               <input
+                 className={`${prefix}--text-input`}
+                 aria-label={ariaLabel}
++                aria-labelledby={titleText ? `${id}__label` : undefined}
+                 aria-disabled={disabled}
+                 aria-controls={`${id}__menu`}
+                 aria-autocomplete="list"
+@@ -346,7 +348,7 @@ export default class ComboBox extends React.Component {
+               />
+             </ListBox.Field>
+             {isOpen && (
+-              <ListBox.Menu aria-label={ariaLabel} id={id}>
++              <ListBox.Menu aria-label={ariaLabel} id={`${id}__menu`}>
+                 {this.filterItems(items, itemToString, inputValue).map(
+                   (item, index) => (
+                     <ListBox.MenuItem
+diff --git a/packages/react/src/components/ListBox/ListBoxField.js b/packages/react/src/components/ListBox/ListBoxField.js
+index cbbe84d6..840fc5b9 100644
+--- a/packages/react/src/components/ListBox/ListBoxField.js
++++ b/packages/react/src/components/ListBox/ListBoxField.js
+@@ -36,12 +36,13 @@ const ListBoxField = ({
+ }) => (
+   <div
+     role={rest['aria-expanded'] ? 'combobox' : rest.role || 'combobox'}
+-    aria-owns={(rest['aria-expanded'] && `${id}__menu`) || null}
+-    aria-controls={(rest['aria-expanded'] && `${id}__menu`) || null}
++    aria-owns={`${id}__menu`}
++    aria-controls={`${id}__menu`}
+     className={`${prefix}--list-box__field`}
+     tabIndex={(!disabled && tabIndex) || -1}
+     {...rest}
+-    aria-label={rest['aria-expanded'] ? t('close.menu') : t('open.menu')}>
++    // Only set aria-label if not already provided (e.g., by aria-labelledby)
++    aria-label={rest['aria-label'] || (rest['aria-expanded'] ? t('close.menu') : t('open.menu'))}>
+     {children}
+   </div>
+ );

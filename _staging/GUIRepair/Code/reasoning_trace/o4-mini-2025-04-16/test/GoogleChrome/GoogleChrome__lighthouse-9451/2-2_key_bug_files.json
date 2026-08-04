@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/offline.js",
+            "lighthouse-core/gather/gatherers/start-url.js",
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js"
+        ],
+        "explanation": "\u2022 gatherers/offline.js contains the beforePass hook that should flip Chrome into offline mode via driver.goOffline(), but because the driver implementation is flawed, the browser never truly goes offline.  \n\u2022 gatherers/start-url.js is responsible for fetching the manifest\u2019s start_url while offline and listening for network.responseReceived events (checking response.fromServiceWorker). Since goOffline never takes effect, _attemptStartURLFetch always resolves a failure.  \n\u2022 gather/driver.js provides the goOffline() and goOnline() methods that actually toggle Chrome\u2019s offline emulation. The incorrect or missing protocol calls here mean the network remains online in spite of goOffline.  \n\u2022 gather/gather-runner.js is what orchestrates each pass (including invoking beforePass, pass, and afterPass). If the offline gatherer\u2019s goOffline happens at the wrong time or is undone by setupPassNetwork or navigation logic here, the offline state is never preserved when start-url runs.",
+        "bug_scenario": "When Lighthouse runs the \"offline-start-url\" audit on a PWA (for example https://www.bhphotovideo.com/) it is supposed to simulate a full offline experience so that the service worker\u2019s fall-back UI (e.g. \u201cYou are offline\u2026\u201d) is served and all network requests show as fromServiceWorker=true. Instead, Lighthouse pulls in the live desktop page and all requests report fromServiceWorker=false, fromDiskCache=false. In other words, the offline pass never actually goes offline, so the PWA\u2019s offline UI never appears."
+    }
+}

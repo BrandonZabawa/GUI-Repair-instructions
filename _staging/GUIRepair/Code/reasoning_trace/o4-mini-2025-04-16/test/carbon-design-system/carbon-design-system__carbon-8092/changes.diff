@@ -1,0 +1,97 @@
+diff --git a/packages/react/src/components/Select/Select.js b/packages/react/src/components/Select/Select.js
+index 30ae2a11..b56075c2 100644
+--- a/packages/react/src/components/Select/Select.js
++++ b/packages/react/src/components/Select/Select.js
+@@ -29,6 +29,8 @@ const Select = React.forwardRef(function Select(
+     hideLabel,
+     invalid,
+     invalidText,
++    warn,
++    warnText,
+     helperText,
+     light,
+     size,
+@@ -41,6 +43,7 @@ const Select = React.forwardRef(function Select(
+     [`${prefix}--select--inline`]: inline,
+     [`${prefix}--select--light`]: light,
+     [`${prefix}--select--invalid`]: invalid,
++    [`${prefix}--select--warning`]: warn,
+     [`${prefix}--select--disabled`]: disabled,
+     [className]: className,
+   });
+@@ -58,6 +61,12 @@ const Select = React.forwardRef(function Select(
+       {invalidText}
+     </div>
+   ) : null;
++  const warningId = `${id}-warning-msg`;
++  const warning = warn ? (
++    <div className={`${prefix}--form-requirement`} id={warningId}>
++      {warnText}
++    </div>
++  ) : null;
+   const helperTextClasses = classNames(`${prefix}--form__helper-text`, {
+     [`${prefix}--form__helper-text--disabled`]: disabled,
+   });
+@@ -67,6 +76,8 @@ const Select = React.forwardRef(function Select(
+   const ariaProps = {};
+   if (invalid) {
+     ariaProps['aria-describedby'] = errorId;
++  } else if (warn) {
++    ariaProps['aria-describedby'] = warningId;
+   }
+   const input = (() => {
+     return (
+@@ -85,6 +96,9 @@ const Select = React.forwardRef(function Select(
+         {invalid && (
+           <WarningFilled16 className={`${prefix}--select__invalid-icon`} />
+         )}
++        {warn && (
++          <WarningFilled16 className={`${prefix}--select__warning-icon`} />
++        )}
+       </>
+     );
+   })();
+@@ -102,8 +116,8 @@ const Select = React.forwardRef(function Select(
+               className={`${prefix}--select-input__wrapper`}
+               data-invalid={invalid || null}>
+               {input}
+-            </div>
+-            {error}
++          </div>
++            {error || warning}
+           </div>
+         )}
+         {!inline && (
+@@ -113,7 +127,7 @@ const Select = React.forwardRef(function Select(
+             {input}
+           </div>
+         )}
+-        {!inline && error ? error : helper}
++        {!inline && (error || warning) ? (error || warning) : helper}
+       </div>
+     </div>
+   );
+@@ -180,6 +194,14 @@ Select.propTypes = {
+    * Message which is displayed if the value is invalid.
+    */
+   invalidText: PropTypes.node,
++  /**
++   * Message which is displayed if the value is a warning.
++   */
++  warnText: PropTypes.node,
++  /**
++   * Specify if the current value is a warning state.
++   */
++  warn: PropTypes.bool,
+ 
+   /**
+    * Provide label text to be read by screen readers when interacting with the
+@@ -216,6 +238,8 @@ Select.defaultProps = {
+   inline: false,
+   invalid: false,
+   invalidText: '',
++  warn: false,
++  warnText: '',
+   helperText: '',
+   light: false,
+ };

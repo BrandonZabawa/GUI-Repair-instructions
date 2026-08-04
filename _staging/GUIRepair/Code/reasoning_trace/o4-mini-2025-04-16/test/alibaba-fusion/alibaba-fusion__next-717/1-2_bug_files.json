@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/select/base.jsx",
+            "src/select/data-store.js",
+            "src/select/util.js",
+            "src/select/select.jsx"
+        ],
+        "explanation": "\n\u2022 src/select/data-store.js  \n  The DataStore module builds the internal option list from props.dataSource and maps fillProps to value/label. When dataSource is empty it never synthesizes an option for defaultValue, so lookups for 'jack' return nothing. That logic needs to detect a defaultValue with no matching dataSource entry and create a fallback option.\n\n\u2022 src/select/base.jsx  \n  The Base component initializes its selected label by querying DataStore. It doesn\u2019t handle the case where DataStore has no matching item and should fall back to the raw defaultValue. This is why the blank appears instead of the text.\n\n\u2022 src/select/util.js  \n  Utility routines like getLabelByValue or normalizeValue assume there is always a corresponding option record. They don\u2019t handle the fillProps/defaultValue-without-dataSource scenario. They need to return the defaultValue string when no option is found.\n\n\u2022 src/select/select.jsx  \n  The top-level Select component passes defaultValue down and invokes DataStore with fillProps, but doesn\u2019t supply its own fallback. It wires props through but relies fully on DataStore and util; without adjustments here the problem can\u2019t be patched.\n\nAll four files participate in taking your defaultValue + fillProps and turning it into a rendered label. Because none of them handle an empty dataSource with a defaultValue, the Select ends up blank rather than showing \u201cjack.\u201d",
+        "bug_scenario": "When you render a <Select> without providing a dataSource but you do pass fillProps=\"name\" and defaultValue=\"jack\", the component never shows the default label \u201cjack\u201d. In the screenshot you see the dropdown input rendered with an empty label instead of \u201cjack\u201d. The Select component only renders labels for values it finds in its internal option list, and when the dataSource is empty it has no option for \u201cjack\u201d, so it displays blank."
+    },
+    "2": {
+        "bug_files": [
+            "src/select/select.jsx",
+            "src/select/data-store.js",
+            "src/select/base.jsx",
+            "src/select/util.js"
+        ],
+        "explanation": "All of the key Select-related files live under src/select/. \n\n\u2022 select.jsx: This is the high-level wrapper that reads props (including fillProps and defaultValue) and instantiates the DataStore. It currently does not generate a placeholder record for defaultValue when no dataSource is provided.  \n\u2022 data-store.js: This module builds and caches the internal list of options. Because it initializes with an empty dataSource when none is passed, it drops the defaultValue record entirely instead of synthesizing one from fillProps.  \n\u2022 base.jsx: This component pulls the selected label/value from the DataStore and renders it in the control. Without a matching record in the store, it has no label to display.  \n\u2022 util.js: Contains helpers for mapping record properties (valueKey/labelKey) and for converting props.fillProps into the option\u2019s display field. It needs to handle the fall-through case of defaultValue when dataSource is empty.  \n\nTogether, these files coordinate how defaultValue + fillProps are turned into an internal record and then rendered. The bug arises because no record is created when dataSource is empty, so no text is ever shown. A fix would inject a synthetic record (e.g. { value: \"jack\", name: \"jack\" }) into DataStore during initialization when defaultValue is present and no dataSource is provided.",
+        "bug_scenario": "The user is rendering a <Select> component with fillProps=\"name\" and defaultValue=\"jack\" but does not supply any dataSource or option children. They expect the Select to display the text \"jack\" (using the fillProps name field), yet the dropdown renders with an empty label (only the arrow icon shows)."
+    }
+}

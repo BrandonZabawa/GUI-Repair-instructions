@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "resources/filters/quarto-pre/table-captions.lua",
+            "resources/filters/common/tables.lua",
+            "resources/filters/quarto-pre/table-classes.lua",
+            "resources/filters/quarto-pre/table-colwidth.lua",
+            "src/command/render/filters.ts"
+        ],
+        "explanation": "All of the listed files participate in how Quarto/PT-ML and Lua filters handle tables, spanners and captions before they\u2019re fed to Pandoc\u2019s HTML writer and the site\u2019s CSS.  \n\n\u2022 resources/filters/quarto-pre/table-captions.lua  \n  This Lua filter injects the Markdown caption into the Pandoc AST \u2013 it determines where in the <table> element the <caption> node lands.  In the presence of a spanner header the current logic never surfaces the caption.  \n\n\u2022 resources/filters/common/tables.lua  \n  This common filter sets up core table structures (including handling multi-row thead elements and spanners).  If captions live in the wrong section of the AST, the table filter can walk past them.  \n\n\u2022 resources/filters/quarto-pre/table-classes.lua  \n  This filter assigns CSS classes to table elements (e.g. to detect spanners) \u2013 caption styling in the final HTML can depend on those classes.  \n\n\u2022 resources/filters/quarto-pre/table-colwidth.lua  \n  This filter figures column widths when there are spanners.  Mis-computed widths can shift where a caption is inserted or even hide it behind thead rows.  \n\n\u2022 src/command/render/filters.ts  \n  This TypeScript file defines the order in which Quarto applies the Lua filters.  The caption filter must run after spanner-related filters; if it runs too early or too late the AST has changed shape and captions never make it into the HTML output.",
+        "bug_scenario": "When you generate an HTML table in Quarto that has both a multi-column \u201cspanner\u201d header (via gt::tab_spanner()) and a caption (via tbl-cap), the caption never appears and the spanner styling breaks.  In the produced HTML/CSS output you end up with an un-spanned header row, no visible caption, and mis-drawn header rules; in the desired output you should see the caption above the spanner and the spanner accurately spanning the two subcolumns."
+    },
+    "2": {
+        "bug_files": [
+            "resources/filters/quarto-pre/table-captions.lua",
+            "resources/filters/common/table-rawhtml.lua",
+            "resources/filters/common/tables.lua",
+            "src/format/html/format-html-scss.ts"
+        ],
+        "explanation": "\u2022 resources/filters/quarto-pre/table-captions.lua is the Lua filter that injects the <caption> element before the table. Its insertion point currently splits off the table\u2019s embedded <style> block (which GT uses to style spanners) from the <table>.\n\u2022 resources/filters/common/table-rawhtml.lua handles raw-HTML tables (GT outputs tables as raw HTML) and may wrap or reorder the style block and <table>, so it can exacerbate misplacement when a caption is present.\n\u2022 resources/filters/common/tables.lua performs general table processing (headers, bodies, spanners, etc.) and may not account for the caption element when computing column groups for spanners.\n\u2022 src/format/html/format-html-scss.ts generates the Quarto HTML/CSS bundle (including rules for captions and table spanners). The CSS selectors and scss rules here need to be adjusted so that captions don\u2019t interrupt the spanner styling (for example, by moving caption styles into the same wrapper as the styled table or by tightening selectors to the <table> element). Adjusting these four files will allow the caption to be placed cleanly and restore the full-width spanner behavior.",
+        "bug_scenario": "When a gt table with a spanner (using gt::tab_spanner()) is rendered by Quarto with a caption (set via #| tbl-cap), the injected caption element is placed between the table\u2019s <style> block and the <table> itself. That breaks the CSS rules that style the spanner row (the \"Subheader\"), so the grey spanner bar spans only the sub-columns and sits misaligned. In the produced HTML you see the caption unexpectedly inside the table wrapper and the spanner header truncated; in the desired HTML the caption sits cleanly above the table and the spanner spans all its columns."
+    }
+}

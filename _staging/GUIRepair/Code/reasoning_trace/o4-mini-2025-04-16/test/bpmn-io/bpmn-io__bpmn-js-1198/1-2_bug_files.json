@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/AppendBehavior.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/behavior/UnsetDefaultFlowBehavior.js"
+        ],
+        "explanation": "All three files participate in the sequence of actions that lead to the default attribute being cleared:\n\n\u2022 AppendBehavior.js handles the case where you click the append icon on the gateway and create a new intermediate catch event. It eventually issues a create-connection command.  \n\u2022 DropOnFlowBehavior.js handles the scenario where you drag and drop a Timer Intermediate Catch Event directly onto an existing sequence flow. It too issues modeling commands that modify connections.  \n\u2022 UnsetDefaultFlowBehavior.js listens for connection-create/connection-update events and automatically unsets the gateway\u2019s defaultFlow property when it detects certain changes to outgoing sequence flows. Because both append and drop actions go through the same connection logic, UnsetDefaultFlowBehavior fires and clears the defaultFlow on the gateway even though the newly created flow is not the default. This is why these files need to be adjusted to prevent the default attribute from being removed in this case.",
+        "bug_scenario": "When you have an exclusive gateway with two outgoing sequence flows (one marked as the default) and you append or drop a Timer Intermediate Catch Event onto the non-default flow (either by dragging a timer event from the palette onto that flow or by using the append handle), the gateway\u2019s \u201cdefault\u201d attribute on the business object is unexpectedly removed. Visually the default arrow remains, but the BPMN XML no longer contains the defaultFlow reference on the gateway."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/AttachEventBehavior.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/behavior/UnsetDefaultFlowBehavior.js"
+        ],
+        "explanation": "All three of these files play a role in how an intermediate catch event is attached to a sequence flow and how the model is updated:\n\n\u2022 AttachEventBehavior.js \u2013 orchestrates attaching an event to an existing flow, firing the commands that ultimately split the flow and create new connectors. Any mis-ordering here can leave the gateway\u2019s default flag out of sync.\n\n\u2022 DropOnFlowBehavior.js \u2013 carries out the actual \u2018drop on connection\u2019 logic, splitting the original sequence flow into two and reconnecting the new event in between. In the process it re-wires the outgoing flows on the gateway and may fail to preserve the default reference on the gateway\u2019s business object.\n\n\u2022 UnsetDefaultFlowBehavior.js \u2013 listens for sequence flow changes and unsets the default attribute when flows are updated. Its hook is too broad and clears the gateway default even when a non-default branch is modified. Together these three behaviors need to be adjusted so that inserting an intermediate catch event on a non-default flow does not clear the gateway\u2019s default attribute.",
+        "bug_scenario": "When you take an exclusive gateway with two outgoing sequence\u2010flows (one marked as the default) and drop a Timer Intermediate Catch Event onto the non-default flow, the code splits that flow (to insert the event), and in the process the gateway\u2019s \u201cdefault\u201d attribute is unexpectedly cleared. Visually the default marker stays on one branch, but the gateway\u2019s default reference is actually removed from the business object.\n\nIn short: dropping a timer (or other catch event) onto a non-default outbound flow of an exclusive gateway unsets the gateway\u2019s default flow property."
+    }
+}

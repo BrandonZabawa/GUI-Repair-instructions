@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/render/canvas/BuilderGroup.js"
+        ],
+        "explanation": "The canvas-based VectorLayer renderer (VectorLayer.js) applies opacity but does not fully clear the declutter buffer between frames. The base canvas Layer class (Layer.js) issues clearRect calls only on the main canvas, not on the offscreen buffer used for decluttering. That buffer is managed by BuilderGroup.js, which accumulates symbols when globalAlpha<1 prevents a full clear. Together these three files are responsible for clearing and drawing decluttered vector features under opacity, so they must be updated to reset or clear the offscreen declutter canvas before each render.",
+        "bug_scenario": "When you add a VectorLayer with declutter:true and set its opacity to less than 1, panning or animating the map leaves the previous frame\u2019s features visible (you see a ghosting or smearing effect) instead of fully clearing them before each new draw."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Vector.js",
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "1. src/ol/layer/Vector.js: Defines and propagates the `declutter` option on VectorLayer. The layer class stores the flag that drives specialized declutter rendering in the renderer.  \n2. src/ol/renderer/canvas/Layer.js: Base canvas layer renderer. Contains the core logic for clearing or preserving the canvas between frames depending on opacity and composite settings. The bug manifests when opacity<1 prevents a full clear.  \n3. src/ol/renderer/canvas/VectorLayer.js: Canvas renderer for VectorLayer. Implements declutter by rendering to an off\u2010screen buffer and then compositing it back. It fails to clear that off\u2010screen buffer when `declutter` is true and opacity<1, causing ghosting artifacts during panning.",
+        "bug_scenario": "When a VectorLayer is created with declutter:true and opacity<1, panning the map leaves \"ghost\" images of features on the canvas. Instead of clearing the previous frame before redraw, the off\u2010screen declutter buffer (and/or main layer canvas) isn\u2019t erased, so every move adds a faint copy of the old frame on top of the new one."
+    }
+}

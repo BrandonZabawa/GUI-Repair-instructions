@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/manifest-short-name-length.js//ManifestShortNameLength"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/manifest-short-name-length.js//ManifestShortNameLength.audit"
+        ],
+        "explanation": "The root cause of the bug is in the ManifestShortNameLength audit logic. The 'audit' static method within the ManifestShortNameLength class computes the label length even when short_name is missing, resulting in a 0-length string and a misleading warning. This logic should be adjusted to not trigger a length warning if short_name is missing (i.e., undefined or empty), as enforced presence of short_name is the responsibility of a different audit (manifest-short-name.js). Therefore, the class and its audit method are the relevant bug elements.",
+        "bug_scenario": "The bug scenario is that when a manifest's short_name is missing, the audit incorrectly triggers a failure, reporting '12 chars is the suggested maximum homescreen label length (Found: 0 chars).' This is a false positive, as the warning should only appear if a short_name is actually present but too long, not when it is missing entirely."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/manifest-short-name-length.js//ManifestShortNameLength"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/manifest-short-name-length.js//ManifestShortNameLength.audit"
+        ],
+        "explanation": "The bug is rooted in how the audit function in ManifestShortNameLength handles missing short_name values. It computes the length of an empty string when short_name (and name) are both missing, leading to an erroneous failure message. The logic should distinguish between a missing value and a value that is present but too long (or too short). The ManifestShortNameLength.audit method is directly responsible for this logic, so changes are needed here to properly handle the absence of the property and avoid false positives. Other classes and functions (such as those in the manifest parser or the audit for the presence of short_name) do not perform this specific check or produce this specific error message.",
+        "bug_scenario": "The scenario depicted in the image and described in the bug report is that Lighthouse reports a failure for the manifest's short_name length audit when the short_name is missing entirely. Instead of indicating that the property is absent, it treats the missing value as an empty string (0 chars), causing a misleading 'false positive' error stating '12 chars is the suggested maximum homescreen label length (Found: 0 chars)'. This is confusing because the problem is not that the value is too short, but that it is absent."
+    }
+}

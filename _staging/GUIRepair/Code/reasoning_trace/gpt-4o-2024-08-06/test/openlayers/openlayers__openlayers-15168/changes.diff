@@ -1,0 +1,50 @@
+diff --git a/src/ol/reproj.js b/src/ol/reproj.js
+index 1e92b248f3..a1d2d71bdb 100644
+--- a/src/ol/reproj.js
++++ b/src/ol/reproj.js
+@@ -259,24 +259,27 @@ export function render(
+     stitchContext.imageSmoothingEnabled = false;
+   }
+ 
+-  const stitchScale = pixelRatio / sourceResolution;
+-
+-  sources.forEach(function (src, i, arr) {
+-    const xPos = src.extent[0] - sourceDataExtent[0];
+-    const yPos = -(src.extent[3] - sourceDataExtent[3]);
+-    const srcWidth = getWidth(src.extent);
+-    const srcHeight = getHeight(src.extent);
+-
+-    // This test should never fail -- but it does. Need to find a fix the upstream condition
+-    if (src.image.width > 0 && src.image.height > 0) {
+-      stitchContext.drawImage(
+-        src.image,
+-        gutter,
+-        gutter,
+-        src.image.width - 2 * gutter,
+-        src.image.height - 2 * gutter,
+-        xPos * stitchScale,
+-        yPos * stitchScale,
++const sourceResolutionX = sourceResolution; // Assuming sourceResolution is for x
++const sourceResolutionY = sourceResolution * (3 / 2); // Adjust for aspect ratio 3km by 2km
++const stitchScaleX = pixelRatio / sourceResolutionX;
++const stitchScaleY = pixelRatio / sourceResolutionY;
++
++sources.forEach(function (src, i, arr) {
++const xPos = src.extent[0] - sourceDataExtent[0];
++const yPos = -(src.extent[3] - sourceDataExtent[3]);
++const srcWidth = getWidth(src.extent);
++const srcHeight = getHeight(src.extent);
++stitchContext.drawImage(
++src.image,
++gutter,
++gutter,
++src.image.width - 2 * gutter,
++src.image.height - 2 * gutter,
++xPos * stitchScaleX,
++yPos * stitchScaleY,
++srcWidth * stitchScaleX,
++srcHeight * stitchScaleY
++);
+         srcWidth * stitchScale,
+         srcHeight * stitchScale
+       );

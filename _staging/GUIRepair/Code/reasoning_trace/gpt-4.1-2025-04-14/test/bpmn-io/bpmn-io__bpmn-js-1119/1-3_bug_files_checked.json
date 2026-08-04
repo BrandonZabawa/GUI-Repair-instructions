@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/modeling/behavior/ReplaceElementBehaviour.js",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "explanation": "These files are closely related to the logic for replacing connections and elements, updating semantic parents, and maintaining correct BPMN data structures during editing actions: (1) ReplaceConnectionBehavior.js and ReplaceElementBehaviour.js contain the rules and side effects for replacing connections/elements \u2014 critical for handling the flow replacement bug. (2) UpdateSemanticParentHandler.js deals with assigning the correct parent to BPMN elements, directly related to ensuring the sequence flow is parented under the correct participant/process. (3) BpmnUpdater.js manages updates to the diagram's elements, especially after modifications like connection replacement. (4) Modeling.js coordinates core modeling operations, invoking and combining the relevant commands and handlers involved in reconnections or replacements. Changes to any of these could address re-parenting and crash issues described in the bug report and visible in the scenario images.",
+        "bug_scenario": "The bug involves a broken sequence flow after replacing a message flow with a sequence flow between participants in a BPMN diagram. The connection (sequence flow) is not properly re-parented to the correct participant (Process) or may not appear under the correct parent, leading to rendering issues and sometimes crashing the modeler. Specifically, dramatic effects are seen when reconnecting a flow so its source is a Participant: the modeler may stop working and highlights the participant in red (as seen in the second image). This indicates parent-child assignment problems in the underlying data structure when handling such replacements/reconnections."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/modeling/behavior/ReplaceElementBehaviour.js",
+            "lib/features/modeling/util/ModelingUtil.js",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js",
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "explanation": "These files are relevant for the following reasons: (1) ReplaceConnectionBehavior.js and ReplaceElementBehaviour.js handle logic for replacing connections/elements, including updating the parent when switching from a message flow to a sequence flow. (2) ModelingUtil.js likely contains utilities to correctly parent or re-parent BPMN elements and connections, which may be failing when reconnecting such flows. (3) UpdateSemanticParentHandler.js is responsible for updating the semantic parent of BPMN elements\u2014critical when moving connections between participants/processes. (4) BpmnUpdater.js tracks and updates BPMN model changes, including changes to parent/ownership for elements during manipulations such as reconnections and replacements. Fixes would involve ensuring that, upon reconnection and replacement, the new sequence flow is always parented according to the BPMN rules (inside the correct participant/process) to avoid invalid model and crashes.",
+        "bug_scenario": "The scenario occurs when a user tries to replace a message flow connection between two tasks, each in a separate participant, with a sequence flow by reconnecting. In the expected behavior, the new sequence flow should be correctly assigned to the participant/process that Task B belongs to. In the bugged scenario, the sequence flow is not correctly parented\u2014sometimes it's missing or incorrectly placed, and the modeler crashes or highlights the participant in red (indicating an error state). The images show the correct and buggy behaviors: the participant is outlined in red in the buggy version, signaling an invalid model state."
+    }
+}

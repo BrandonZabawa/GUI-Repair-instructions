@@ -1,0 +1,63 @@
+diff --git a/packages/react/src/components/Button/Button.js b/packages/react/src/components/Button/Button.js
+index fcecceca..10cbd539 100644
+--- a/packages/react/src/components/Button/Button.js
++++ b/packages/react/src/components/Button/Button.js
+@@ -38,6 +38,7 @@ const Button = React.forwardRef(function Button(
+     onFocus,
+     onMouseEnter,
+     onMouseLeave,
++    id,
+     ...other
+   },
+   ref
+@@ -125,6 +126,20 @@ const Button = React.forwardRef(function Button(
+       hasIconOnly && tooltipAlignment,
+   });
+ 
++  // Danger state accessibility
++  const dangerKinds = ['danger', 'danger--tertiary', 'danger--ghost'];
++  const isDanger = dangerKinds.includes(kind);
++  // Generate a unique id for aria-describedby if not provided
++  const dangerId = id ? `${id}-danger-desc` : undefined;
++  const dangerDescription = isDanger ? (
++    <span
++      id={dangerId}
++      className="bx--visually-hidden"
++    >
++      Danger!
++    </span>
++  ) : null;
++
+   const commonProps = {
+     tabIndex,
+     className: buttonClasses,
+@@ -148,6 +163,11 @@ const Button = React.forwardRef(function Button(
+   const anchorProps = {
+     href,
+   };
++
++  // Add aria-describedby for danger buttons
++  if (isDanger && dangerId) {
++    otherProps['aria-describedby'] = dangerId;
++  }
+   const assistiveText = hasIconOnly ? (
+     <div
+       ref={tooltipRef}
+@@ -179,7 +199,8 @@ const Button = React.forwardRef(function Button(
+     },
+     assistiveText,
+     children,
+-    buttonImage
++    buttonImage,
++    dangerDescription
+   );
+ });
+ 
+@@ -189,6 +210,7 @@ Button.propTypes = {
+    * Specify how the button itself should be rendered.
+    * Make sure to apply all props to the root node and render children appropriately
+    */
++  id: PropTypes.string,
+   as: PropTypes.oneOfType([
+     PropTypes.func,
+     PropTypes.string,

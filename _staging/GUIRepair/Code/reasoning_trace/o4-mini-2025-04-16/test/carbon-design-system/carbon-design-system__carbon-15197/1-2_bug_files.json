@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/ListBox/ListBoxMenu.js",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js"
+        ],
+        "explanation": "1) Dropdown.js is where the React Dropdown is assembled using Downshift and the ListBox primitives\u2014it passes down props to the ListBoxMenu and ListBoxMenuItem. Any fix for keyboard focus or ARIA attributes ultimately needs to start here or in the passed downshiftProps. 2) ListBoxMenu.js renders the wrapper with role=\"listbox\" but never sets a tabindex (e.g. tabindex=\"0\" or \"-1\") nor manages aria-activedescendant. Without a focusable container, screen readers and keyboard users cannot focus or interact with the listbox. 3) ListBoxMenuItem.js renders each <li> with role=\"option\" but never adds a tabindex attribute (e.g. tabindex=\"-1\" on inactive items, tabindex=\"0\" on the active one) or makes them intrinsically focusable. That omission leaves no tabbable children, triggering the a11y violation.",
+        "bug_scenario": "When the Dropdown component is opened (either on the Carbon site or in the user\u2019s code), the IBM Equal Access Accessibility Checker flags a critical violation: \u201cNone of the descendent elements with \u201coption\u201d role is tabbable.\u201d In the DOM you can see a <ul> (or wrapper div) with role=\"listbox\" and many <li role=\"option\">, but neither the container nor the options themselves have any tabindex or are otherwise keyboard-focusable. That means neither the listbox nor its options can receive keyboard focus, causing a WCAG accessibility failure."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ListBox/ListBox.js",
+            "packages/react/src/components/ListBox/ListBoxMenu.js",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js",
+            "packages/react/src/components/Dropdown/Dropdown.js"
+        ],
+        "explanation": "The violation is rooted in the ListBox-based implementation of Dropdown. \n\n\u2022 ListBox.js defines the outer container (role=listbox) and controls focus via aria-activedescendant but does not set a tabindex on the container (or the options), so no element in the list is actually tabbable.\n\n\u2022 ListBoxMenu.js renders the <ul> container for the options but does not add any focusable attributes (e.g. tabindex) on the container.\n\n\u2022 ListBoxMenuItem.js renders each <li> with role=\u2019option\u2019 but likewise omits tabindex attributes on each option, so individual options are never in the tab sequence.\n\n\u2022 Dropdown.js composes the ListBox components into the final <Dropdown> API\u2014so while it passes through props and downshift behavior, it doesn\u2019t modify the focusability of the underlying ListBox elements.\n\nTo resolve the violation, the ListBox container or each option item must be made keyboard-focusable (for example by adding tabindex=0 on each <li role=\"option\"> or making the container tabbable and using aria-activedescendant to manage focus). These files must be updated to add the appropriate tabindex or focus management attributes to satisfy automated accessibility checks.",
+        "bug_scenario": "When opening a <Dropdown> on a carbon-react page (v10 or v11), the IBM Equal Access Accessibility Checker flags a critical violation under the listbox role: \u201cNone of the descendent elements with \u2018option\u2019 role is tabbable.\u201d In other words, each <li role=\u2019option\u2019> inside the opened menu cannot receive keyboard focus, so a standard accessibility tool reports that the options themselves aren\u2019t in the tab order."
+    }
+}

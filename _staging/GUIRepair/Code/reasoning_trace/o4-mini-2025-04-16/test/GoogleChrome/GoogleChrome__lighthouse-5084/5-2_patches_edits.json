@@ -1,0 +1,43 @@
+{
+    "1/1": {
+        "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js": [
+            {
+                "SEARCH": [
+                    "const savingsOnTTI = Math.max(",
+                    "Interactive.getLastLongTaskEndTime(simulationBeforeChanges.nodeTimings) -",
+                    "Interactive.getLastLongTaskEndTime(simulationAfterChanges.nodeTimings),",
+                    "0",
+                    ");",
+                    "",
+                    "// Round waste to nearest 10ms",
+                    "return Math.round(savingsOnTTI / 10) * 10;"
+                ],
+                "REPLACE": [
+                    "    const savingsOnTTI = Math.max(",
+                    "      Interactive.getLastLongTaskEndTime(simulationBeforeChanges.nodeTimings) -",
+                    "        Interactive.getLastLongTaskEndTime(simulationAfterChanges.nodeTimings),",
+                    "      0",
+                    "    );",
+                    "",
+                    "    // Fallback: compute savings based on end of graph (max endTime across all nodes),",
+                    "    // useful when there are no long tasks to delay (e.g. a single network request).",
+                    "    let endOfGraphBefore = 0;",
+                    "    let endOfGraphAfter = 0;",
+                    "    for (const timing of simulationBeforeChanges.nodeTimings.values()) {",
+                    "      endOfGraphBefore = Math.max(endOfGraphBefore, timing.endTime || 0);",
+                    "    }",
+                    "    for (const timing of simulationAfterChanges.nodeTimings.values()) {",
+                    "      endOfGraphAfter = Math.max(endOfGraphAfter, timing.endTime || 0);",
+                    "    }",
+                    "    const savingsOnEndOfGraph = Math.max(endOfGraphBefore - endOfGraphAfter, 0);",
+                    "",
+                    "    // Use the larger of the TTI\u2010based and end\u2010of\u2010graph savings.",
+                    "    const savings = Math.max(savingsOnTTI, savingsOnEndOfGraph);",
+                    "",
+                    "    // Round waste to nearest 10ms",
+                    "    return Math.round(savings / 10) * 10;"
+                ]
+            }
+        ]
+    }
+}

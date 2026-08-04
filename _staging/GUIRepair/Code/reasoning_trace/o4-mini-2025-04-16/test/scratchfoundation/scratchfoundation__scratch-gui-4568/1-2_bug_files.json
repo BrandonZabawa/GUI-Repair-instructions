@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/components/monitor/slider-monitor.jsx",
+            "src/containers/slider-monitor.jsx",
+            "src/lib/monitor-adapter.js",
+            "src/containers/monitor.jsx",
+            "src/components/context-menu/context-menu.jsx",
+            "src/reducers/monitors.js"
+        ],
+        "explanation": "1. src/components/monitor/slider-monitor.jsx: This is the React component that renders the slider UI and currently hard-codes its min/max to 0\u2013100 rather than using props.sliderMin and props.sliderMax.  \n2. src/containers/slider-monitor.jsx: This container is responsible for selecting sliderMin/sliderMax from Redux (or VM) and for dispatching updates when the user edits the range\u2014its mapState/mapDispatch need to pick up and push custom range values.  \n3. src/lib/monitor-adapter.js: When loading Scratch 2.0 monitors, this file adapts VM monitor data into GUI monitor props. It must be updated to read the VM\u2019s sliderMin/sliderMax fields for imported custom ranges instead of dropping them.  \n4. src/containers/monitor.jsx: This generic monitor container builds the context-menu payload (showing items on right-click). To expose the \u201cSlider Range\u2026\u201d menu option for slider monitors, the logic here needs to detect monitor.mode==='slider' and add the menu entry.  \n5. src/components/context-menu/context-menu.jsx: This component renders context-menu items; it must include a handler for the new \u201cSlider Range\u2026\u201d action that opens the range\u2010editing modal.  \n6. src/reducers/monitors.js: This reducer holds monitor settings in the Redux store; it needs to handle new action types (e.g. SET_SLIDER_MIN, SET_SLIDER_MAX) so that when the user confirms new range values, the state updates and the slider redraws with the custom limits.",
+        "bug_scenario": "When you import a Scratch 2.0 project (or create a slider monitor in 3.0), any custom slider minimum and maximum values get reset to the default 0\u2013100 range and cannot be changed via right-click because the \u201cSlider Range\u201d dialog is not wired up. In Scratch 2.0 you could right-click a slider monitor to open a dialog and adjust its Min/Max (and thereby its decimal step size), but in the current Scratch 3.0 GUI: 1) imported custom ranges are ignored, 2) new sliders default to 0\u2013100 only, and 3) there is no context-menu item or modal to change them."
+    },
+    "2": {
+        "bug_files": [
+            "src/components/monitor/slider-monitor.jsx",
+            "src/containers/slider-monitor.jsx",
+            "src/lib/monitor-adapter.js",
+            "src/reducers/monitors.js"
+        ],
+        "explanation": "\u2022 src/components/monitor/slider-monitor.jsx: This is the React component rendering the slider and the \u201cSlider Range\u201d dialog. It currently only reads hard-coded min/max defaults (0/100) and never picks up any custom ranges from props or writes back changes to the monitor state.  \n\u2022 src/containers/slider-monitor.jsx: This container connects the slider UI to Redux/VM state. It should map custom sliderMin/sliderMax (and dispatch actions to update them) but at the moment it only wires up a fixed 0/100 default and no UPDATE_MONITOR_RANGE action.  \n\u2022 src/lib/monitor-adapter.js: This adapter translates the VM\u2019s monitor metadata into props for the UI components. It does not extract any custom range fields from the monitor object (for example, a Scratch 2.0 project\u2019s min/max) and instead always omits them, so the UI never even receives them.  \n\u2022 src/reducers/monitors.js: The reducer handles updates to monitor state (including any range changes). Currently it has no case for persisting a user\u2019s new min/max or for importing the VM\u2019s provided custom range, so even if the UI tried to dispatch a change it wouldn\u2019t stick in the Redux store.",
+        "bug_scenario": "When you right-click a slider monitor in Scratch 3.0 you get the \u201cSlider Range\u201d dialog but its Min/Max fields always default to 0/100 for any slider created in 3.0. Imported Scratch 2.0 projects with a custom range still show the slider visually at that custom range, but as soon as you open that dialog you only see 0/100 (and if you hit OK you overwrite the old values). In other words Scratch 3.0 hard-codes the slider range UI to 0\u2013100 and never reads or writes any other range values."
+    }
+}

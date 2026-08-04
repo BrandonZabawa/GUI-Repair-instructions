@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/linter/source-code-fixer.js//SourceCodeFixer"
+        ],
+        "bug_functions": [
+            "lib/linter/source-code-fixer.js//compareMessagesByFixRange",
+            "lib/linter/source-code-fixer.js//SourceCodeFixer.applyFixes"
+        ],
+        "explanation": "All of the autofixes are collected and then blindly sorted by their textual ranges in SourceCodeFixer.applyFixes (using compareMessagesByFixRange) before being applied. This ignores the user\u2019s intended rule order (prefer-const first, then no-undef-init) or any inter-fix dependencies. As a result, the initializer removal from no-undef-init runs immediately after the const promotion instead of being suppressed or reordered, yielding an illegal \u201cconst foo;\u201d statement. To fix this bug, applyFixes must incorporate rule order (or downstream dependencies) into its sorting or filtering logic rather than relying only on fix ranges.",
+        "bug_scenario": "The screenshot shows VS Code with a simple file testfile.js containing \u201clet teste = undefined;\u201d on the left and the user\u2019s .eslintrc.js on the right, where \u201cprefer-const\u201d is set to error and \u201cno-undef-init\u201d to warn. In the integrated terminal the user runs \u201ceslint --fix testfile.js\u201d. The GIF demonstrates ESLint automatically converting the declaration to \u201cconst teste;\u201d by first promoting to const (prefer-const) and then stripping \u201c= undefined\u201d (no-undef-init). This produces invalid JavaScript (a const without an initializer) because ESLint applied fixes solely based on source location instead of respecting the configured rule order or the dependency between the two fixes."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/linter/source-code-fixer.js//SourceCodeFixer"
+        ],
+        "bug_functions": [
+            "lib/linter/source-code-fixer.js//compareMessagesByFixRange",
+            "lib/linter/source-code-fixer.js//SourceCodeFixer.applyFixes"
+        ],
+        "explanation": "All of ESLint\u2019s autofixes are applied in `SourceCodeFixer.applyFixes`, which first collects all fixable messages and then sorts them with `compareMessagesByFixRange` before applying. Because that comparator only considers fix ranges (start and end positions) and ignores rule order or original message order, the `prefer-const` fix (which has the same range as `no-undef-init`) may be applied first, then the removal fix from `no-undef-init`, resulting in `const foo;`. To preserve the intended sequence (remove undefined init first, then convert to const), the sort function in `compareMessagesByFixRange` needs a tie-breaker that respects the rule or message declaration order rather than solely source positions.",
+        "bug_scenario": "When running ESLint\u2019s auto-fix (with both `prefer-const` and `no-undef-init` enabled) on code like `let foo = undefined;`, ESLint first converts to `const foo = undefined;` (from `prefer-const`) and then removes the `= undefined` (from `no-undef-init`), yielding `const foo;` which is a syntax error because `const` declarations require an initializer. The fix application order ignores the user-defined rule order and instead applies fixes purely by source-range sort, causing this invalid transformation."
+    }
+}

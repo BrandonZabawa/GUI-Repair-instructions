@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/typescript.js",
+            "src/languages/lib/ecmascript.js"
+        ],
+        "explanation": "The root of this issue is in the TypeScript language definition (src/languages/typescript.js), which was touched by the v10.3.0 commit and is responsible for parsing generic parameter lists (including keywords like \u201cextends\u201d).  A change there caused the \u201cextends\u201d keyword to be treated as a generic-mode terminator instead of remaining inside the angle brackets, so everything that follows is mis-lexer\u2019d.  The shared ECMA-Script helper (src/languages/lib/ecmascript.js) carries the underlying generic-mode logic that TypeScript reuses \u2013 any alteration in how that helper handles angle-bracketed contexts or keywords like \u201cextends\u201d will also affect TypeScript.  Together, these two files define and implement the generic parsing rules, so they must be adjusted to restore correct highlighting of \u201cextends\u201d in generics.",
+        "bug_scenario": "In v10.3.0 the TypeScript grammar no longer correctly highlights generic type parameters that use the \u201cextends\u201d keyword.  As soon as \u201cextends\u201d appears inside the angle-bracket list, the highlighter abandons the generic mode and mis-tokenizes the rest of the line (as shown in the first screenshot).  Reverting to v10.2.1 produces the correct highlighting (second screenshot)."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/typescript.js",
+            "src/languages/lib/ecmascript.js"
+        ],
+        "explanation": "Both of these files control how highlight.js tokenizes TypeScript and modern JavaScript syntax. The TypeScript definition (src/languages/typescript.js) layers its generic and `extends` rules on top of the core ECMAScript patterns (src/languages/lib/ecmascript.js). The regression was introduced by a change in how `extends` and angle-bracket generics are parsed \u2014 so you need to adjust the generic-parameter regex or keyword handling in typescript.js (and, if the base generic rule lives in ecmascript.js, update it there as well) to restore correct highlighting after `extends`.",
+        "bug_scenario": "When upgrading from highlight.js v10.2.1 to v10.3.0, TypeScript snippets that declare generics with the `extends` keyword start mis-highlighting everything that follows. In the repro (shown in the first screenshot) an `interface Prefixer<Something extends string>` and a generic function `cloneWith<T, A extends keyof T, V>` break the highlighter: the `extends` stops being treated as a type-parameter delimiter, template literals and arrow functions no longer get their correct colors, and generic braces are swallowed. Rolling back to v10.2.1 (second screenshot) restores correct coloring."
+    }
+}

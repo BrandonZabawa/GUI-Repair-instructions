@@ -1,0 +1,29 @@
+diff --git a/core/config/validation.js b/core/config/validation.js
+index 587d51f5c..49148e347 100644
+--- a/core/config/validation.js
++++ b/core/config/validation.js
+@@ -253,6 +253,24 @@ function assertArtifactTopologicalOrder(navigations) {
+ function assertValidConfig(resolvedConfig) {
+   const {warnings} = assertValidFRNavigations(resolvedConfig.navigations);
+ 
++  // If the user has a performance category (i.e. they’re running perf audits),
++  // ensure they also supplied the trace gatherer (Trace or traces).
++  if (resolvedConfig.categories && resolvedConfig.categories.performance) {
++    const artifacts = resolvedConfig.artifacts || [];
++    const hasTraceGatherer = artifacts.some(a =>
++      // default-config uses id 'Trace' (gatherer 'trace')
++      // legacy-compat uses id 'traces' (gatherer 'trace-compat')
++      a.id === 'Trace' || a.id === 'traces'
++    );
++    if (!hasTraceGatherer) {
++      throw new Error(
++        'Performance audits require the trace gatherer. ' +
++        'Please add {id: "Trace", gatherer: "trace"} (or the legacy "traces"/"trace-compat")\n' +
++        'to your config.artifacts before running any performance audits.'
++      );
++    }
++  }
++
+   for (const artifactDefn of resolvedConfig.artifacts || []) {
+     assertValidFRGatherer(artifactDefn.gatherer);
+   }

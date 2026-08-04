@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider",
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider.prototype.update",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler.prototype.execute",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler.prototype.revert"
+        ],
+        "explanation": "The issue occurs because the system attempts to update or revert a label of an element that has just been deleted, causing an illegal invocation. The key classes and functions are:\n- 'LabelEditingProvider' (and its update method) because it orchestrates direct label editing, listens for events such as element removal, and triggers updates to labels.\n- 'UpdateLabelHandler' (and its execute/revert methods) because this handler is responsible for performing the low-level update and revert operations on element labels during command stack operations. If the element is deleted but the label update still tries to execute or revert, it will result in an illegal invocation error.\nTo fix the bug, code in these areas needs to ensure that label updates are not attempted for elements that have been removed from the canvas/model, likely by checking element existence or direct editing state before proceeding.",
+        "bug_scenario": "The bug scenario involves deleting a BPMN element (such as a task or activity) while direct editing of its label is still active. When the element is removed via the context pad during direct editing, an 'illegal invocation' exception is thrown. The animation shows the context pad (with the trash/delete icon) being used to delete an element that is currently selected for label editing, resulting in the editor crashing."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider",
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider.prototype.update",
+            "lib/features/modeling/Modeling.js//Modeling.prototype.updateLabel",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler.prototype.execute",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler.prototype.revert"
+        ],
+        "explanation": "The bug is related to label editing and element deletion occurring simultaneously, resulting in a command stack error. The key bug classes and functions are:\n\n- lib/features/label-editing/LabelEditingProvider.js: This file contains the provider that manages label editing, activation, and completion/cancellation logic. It registers event handlers for element removal and label updates. If direct editing is active on an element being deleted, the cancel/complete logic here is crucial.\n- lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider.prototype.update: This function calls modeling.updateLabel, which is the source of the error in the stack trace when the label edit is finalized after the element is deleted.\n- lib/features/modeling/Modeling.js: Contains the Modeling class, which exposes the updateLabel method that wraps and calls the command stack to execute the 'element.updateLabel' action. The stack trace shows the error is thrown here.\n- lib/features/modeling/Modeling.js//Modeling.prototype.updateLabel: This function initiates the problematic command stack execution when the label is being updated for a deleted element.\n- lib/features/label-editing/cmd/UpdateLabelHandler.js: This handler is registered for the 'element.updateLabel' command and manages the actual updating, execution, and revert logic for label changes.\n- lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler: The constructor and its methods (execute, revert) perform the label update and could be operating on a deleted or invalid element if not properly guarded, leading to the illegal invocation error.\n\nThese classes/functions are bug-related because they directly participate in the label editing and deletion workflow, particularly the overlap in timing that allows an update to be attempted on an element that has just been removed.",
+        "bug_scenario": "The animated bug scenario image shows a BPMN diagram editor where an element is being directly edited (label editing is active). During this direct edit, the user selects the trash/delete icon in the context pad to remove the element. This sequence triggers an 'illegal invocation' exception, as described in the bug report. The stack trace points to the updateLabel action, which is being executed or reverted after the element has been deleted, leading to the error."
+    }
+}

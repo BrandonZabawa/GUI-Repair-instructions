@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/table/selection.jsx//SelectionTable"
+        ],
+        "bug_functions": [
+            "src/table/selection.jsx//SelectionTable.normalizeChildren",
+            "src/table/selection.jsx//SelectionTable.renderSelectionHeader"
+        ],
+        "explanation": "SelectionTable 是在 rowSelection 模式下为 Table 注入全选列的高阶组件：\n- normalizeChildren 方法负责在所有 Column 之前插入一列 selection 列，并把它的 title 和 cell 固定绑定到内部的渲染函数。\n- renderSelectionHeader 方法生成默认的“全选”复选框，且该复选框的渲染逻辑与样式不可被外部通过普通 Column 的 title 或 cell 属性覆盖。\n要支持用户自定义 header 上的全选单元格，就必须修改 normalizeChildren，使其读取 rowSelection 或 Column 上传入的自定义 headerRender 或 title/cell 参数；或者增强 renderSelectionHeader，让它在检测到用户传入自定义渲染函数时使用用户逻辑，而不是一成不变地渲染内部 Checkbox。",
+        "bug_scenario": "在使用 Table 的 rowSelection 开启多选模式时，表格会自动在最前面插入一个带“全选”复选框的列头单元格。但目前无法对这个“全选”列头单元格的渲染内容做自定义——它总是由内部的 renderSelectionHeader 方法渲染固定的 Checkbox，无法像普通列那样通过 cell 或 title 属性进行覆盖。"
+    },
+    "2": {
+        "bug_classes": [
+            "src/table/selection.jsx//SelectionTable",
+            "src/table/base/header.jsx//Header"
+        ],
+        "bug_functions": [
+            "src/table/selection.jsx//normalizeChildren",
+            "src/table/selection.jsx//renderSelectionHeader"
+        ],
+        "explanation": "The SelectionTable HOC in src/table/selection.jsx is responsible for injecting the selection column.  Its normalizeChildren() method always inserts a Col with title bound to renderSelectionHeader, so consumers have no way to override the header cell content.  The renderSelectionHeader() function then unconditionally returns the checkbox markup.  To allow custom header content, normalizeChildren must be enhanced to accept a user-provided header renderer (for example via a new rowSelection.headerCell or rowSelection.title property) and default to renderSelectionHeader only when no override is provided.  The Header class in src/table/base/header.jsx simply takes the title field of each column and renders it verbatim in the <th>, so once the injected Col.title can be customized, Header will render that custom content correctly.",
+        "bug_scenario": "In the screenshot we see a multi-row header (using ColumnGroup) where the framework has automatically prepended a “select-all” column.  In the first row (group header) this cell is empty, and in the second row the default checkbox is rendered.  The user wants to supply their own custom header rendering for that “select-all” cell (for example to change its label or render a different component) but today the Table only renders the default checkbox and does not allow overriding it."
+    }
+}

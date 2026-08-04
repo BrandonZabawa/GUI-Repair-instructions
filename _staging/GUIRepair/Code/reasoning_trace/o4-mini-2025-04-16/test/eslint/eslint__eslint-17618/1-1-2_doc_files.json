@@ -1,0 +1,12 @@
+{
+    "1": {
+        "documents": [
+            "extend/code-path-analysis.md",
+            "use/configure/language-options.md",
+            "use/command-line-interface.md",
+            "assets/images/code-path-analysis/"
+        ],
+        "explanation": "1. extend/code-path-analysis.md \u2013 This document explains how ESLint performs code path analysis for logical expressions and shows examples of the control-flow graphs, so it\u2019s essential for understanding how the graph should be constructed.\n2. use/configure/language-options.md \u2013 Since the bug involves the ECMAScript 2020 feature nullish coalescing (`??`), this document shows how to enable the correct parser options (ecmaVersion) to reproduce the issue.\n3. use/command-line-interface.md \u2013 Demonstrates how to invoke ESLint from the CLI with a given file so you can reproduce the control-flow graph output against a test case that uses `(a && b) ?? c`.\n4. assets/images/code-path-analysis/ \u2013 Contains the sample control-flow diagrams and DOT files used in the documentation; reviewing these will help you compare the expected graph (with the missing branch) to the output you get in your environment.",
+        "bug_scenario": "The bug involves the control-flow graph (code path analysis) that ESLint generates for the expression `(a && b) ?? c`. In the provided DOT image, ESLint shows two possible paths:\n\n1. a \u2192 b \u2192 c \u2192 exit\n2. a \u2192 exit (short-circuit from the first `&&` operand)\n\nHowever, when `(a && b)` is evaluated, if `a` is falsy, `b` should be skipped and the nullish-coalescing operand `c` should be evaluated. That means there should be a third path in the graph: `a` (falsy) \u2192 `c` \u2192 exit. The missing edge from the falsy evaluation of `a` directly to `c` causes the code-path analyzer to under-report one branch, so code like `(null && foo()) ?? bar()` would actually only run `bar()`, but the graph does not reflect that branch."
+    }
+}

@@ -1,0 +1,306 @@
+{
+    "1/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "if (tile && tile.getState() == TileState.LOADED) {",
+                    "sources.push({",
+                    "extent: this.sourceTileGrid_.getTileCoordExtent(tile.tileCoord),",
+                    "image: tile.getImage()",
+                    "});",
+                    "}",
+                    "}.bind(this));"
+                ],
+                "REPLACE": [
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "if (tile && (tile.getState() == TileState.LOADED || tile.getState() == TileState.ABORT)) {",
+                    "sources.push({",
+                    "extent: this.sourceTileGrid_.getTileCoordExtent(tile.tileCoord),",
+                    "image: tile.getImage()",
+                    "});",
+                    "}",
+                    "}.bind(this));"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "if (tile && tile.getState() == TileState.LOADED) {",
+                    "sources.push({",
+                    "extent: this.sourceTileGrid_.getTileCoordExtent(tile.tileCoord),",
+                    "image: tile.getImage()",
+                    "});",
+                    "}",
+                    "}.bind(this));"
+                ],
+                "REPLACE": [
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "if (tile && (tile.getState() == TileState.LOADED || tile.getState() == TileState.ABORT)) {",
+                    "sources.push({",
+                    "extent: this.sourceTileGrid_.getTileCoordExtent(tile.tileCoord),",
+                    "image: tile.getImage()",
+                    "});",
+                    "}",
+                    "}.bind(this));"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "let leftToLoad = 0;",
+                    "",
+                    "this.sourcesListenerKeys_ = [];",
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "const state = tile.getState();",
+                    "if (state == TileState.IDLE || state == TileState.LOADING) {",
+                    "leftToLoad++;"
+                ],
+                "REPLACE": [
+                    "let leftToLoad = 0;",
+                    "",
+                    "this.sourcesListenerKeys_ = [];",
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "const state = tile.getState();",
+                    "if (state == TileState.IDLE || state == TileState.LOADING || state == TileState.ABORT) {",
+                    "leftToLoad++;"
+                ]
+            }
+        ],
+        "src/ol/Tile.js": [
+            {
+                "SEARCH": [
+                    "disposeInternal() {",
+                    "this.setState(TileState.ABORT);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "disposeInternal() {",
+                    "if (this.state !== TileState.LOADED) {",
+                    "this.setState(TileState.ABORT);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/Tile.js": [
+            {
+                "SEARCH": [
+                    "disposeInternal() {",
+                    "this.setState(TileState.ABORT);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "disposeInternal() {",
+                    "if (this.state !== TileState.ABORT && this.state !== TileState.LOADED) {",
+                    "this.setState(TileState.ABORT);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (tile) {",
+                    "this.sourceTiles_.push(tile);",
+                    "}",
+                    "}",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (tile) {",
+                    "if (tile.getState() === TileState.IDLE || tile.getState() === TileState.LOADING) {",
+                    "tile.load(); // Ensure IDLE or LOADING tiles are loaded",
+                    "}",
+                    "this.sourceTiles_.push(tile);",
+                    "}",
+                    "}",
+                    "}",
+                    "}",
+                    "",
+                    "this.sourceTiles_ = this.sourceTiles_.filter(tile => tile.getState() !== TileState.ERROR); // Remove tiles in ERROR state only"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/Tile.js": [
+            {
+                "SEARCH": [
+                    "disposeInternal() {",
+                    "this.setState(TileState.ABORT);",
+                    "}",
+                    "",
+                    "load() {",
+                    "abstract();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "disposeInternal() {",
+                    "// Tiles should not move to ABORT immediately to avoid reprojection issues",
+                    "if (this.state !== TileState.LOADED) {",
+                    "this.setState(TileState.ABORT);",
+                    "}",
+                    "}",
+                    "",
+                    "load() {",
+                    "// Ensuring that tiles are loaded or re-fetched if they are essential",
+                    "if (this.state === TileState.ABORT) {",
+                    "// Reload or retry for required tiles",
+                    "this.setState(TileState.LOADING);",
+                    "// Logic to re-fetch the tile...",
+                    "}",
+                    "abstract();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (!getArea(sourceExtent)) {",
+                    "this.state = TileState.EMPTY;",
+                    "} else {",
+                    "const sourceRange = sourceTileGrid.getTileRangeForExtentAndZ(",
+                    "sourceExtent, this.sourceZ_);",
+                    "",
+                    "for (let srcX = sourceRange.minX; srcX <= sourceRange.maxX; srcX++) {",
+                    "for (let srcY = sourceRange.minY; srcY <= sourceRange.maxY; srcY++) {",
+                    "const tile = getTileFunction(this.sourceZ_, srcX, srcY, pixelRatio);",
+                    "if (tile) {",
+                    "this.sourceTiles_.push(tile);",
+                    "}",
+                    "}",
+                    "}",
+                    "",
+                    "if (this.sourceTiles_.length === 0) {",
+                    "this.state = TileState.EMPTY;",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (!getArea(sourceExtent)) {",
+                    "this.state = TileState.ERROR; // State changed to ERROR to trigger refetch",
+                    "} else {",
+                    "const sourceRange = sourceTileGrid.getTileRangeForExtentAndZ(",
+                    "sourceExtent, this.sourceZ_);",
+                    "",
+                    "for (let srcX = sourceRange.minX; srcX <= sourceRange.maxX; srcX++) {",
+                    "for (let srcY = sourceRange.minY; srcY <= sourceRange.maxY; srcY++) {",
+                    "const tile = getTileFunction(this.sourceZ_, srcX, srcY, pixelRatio);",
+                    "if (tile) {",
+                    "this.sourceTiles_.push(tile);",
+                    "}",
+                    "}",
+                    "}",
+                    "",
+                    "// Ensure we attempt to load at least once before marking EMPTY",
+                    "if (this.state !== TileState.LOADED && this.sourceTiles_.length === 0) {",
+                    "setTimeout(() => {",
+                    "this.load(); // Attempt to refetch/load the tile",
+                    "}, 100);",
+                    "}",
+                    "",
+                    "if (this.state !== TileState.LOADED && this.sourceTiles_.length === 0) {",
+                    "this.state = TileState.EMPTY;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (state == TileState.IDLE || state == TileState.LOADING) {"
+                ],
+                "REPLACE": [
+                    "if (state == TileState.IDLE || state == TileState.LOADING || state == TileState.ABORT) {"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (state == TileState.IDLE || state == TileState.LOADING) {"
+                ],
+                "REPLACE": [
+                    "if (state == TileState.IDLE || state == TileState.LOADING || state == TileState.ABORT) {"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.state = TileState.ERROR;",
+                    "} else {",
+                    "const z = this.wrappedTileCoord_[0];"
+                ],
+                "REPLACE": [
+                    "this.state = TileState.ERROR;",
+                    "} else if (this.state != TileState.ABORT) {",
+                    "const z = this.wrappedTileCoord_[0];"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/Tile.js": [
+            {
+                "SEARCH": [
+                    "disposeInternal() {",
+                    "this.setState(TileState.ABORT);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "disposeInternal() {",
+                    "if (this.state !== TileState.LOADING) {",
+                    "this.setState(TileState.ABORT);",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "if (tile && tile.getState() == TileState.LOADED) {",
+                    "sources.push({",
+                    "extent: this.sourceTileGrid_.getTileCoordExtent(tile.tileCoord),",
+                    "image: tile.getImage()",
+                    "});",
+                    "}",
+                    "}.bind(this));"
+                ],
+                "REPLACE": [
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "const state = tile.getState();",
+                    "if (tile && (state == TileState.LOADED || state == TileState.ABORT)) {",
+                    "sources.push({",
+                    "extent: this.sourceTileGrid_.getTileCoordExtent(tile.tileCoord),",
+                    "image: tile.getImage()",
+                    "});",
+                    "}",
+                    "}.bind(this));"
+                ]
+            }
+        ]
+    }
+}

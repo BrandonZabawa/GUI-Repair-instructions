@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/format/KML.js//KML"
+        ],
+        "bug_functions": [
+            "src/ol/format/KML.js//readNameFromNode",
+            "src/ol/format/KML.js//createNameStyleFunction",
+            "src/ol/format/KML.js//createFeatureStyleFunction",
+            "src/ol/xml.js//getAllTextContent",
+            "src/ol/xml.js//getAllTextContent_"
+        ],
+        "explanation": "When the KML parser reads the <name> element it uses getAllTextContent (from ol/xml.js) to collect the raw node text. If the name was wrapped in CDATA or contains an XML entity (e.g. &apos;), getAllTextContent simply concatenates the text nodes without resolving those entity codes. The un-decoded string then flows into KML.readNameFromNode and ultimately into createNameStyleFunction (and the style function created by createFeatureStyleFunction), which assign the literal \"&apos;\" to the Text style. To fix the bug you either need to extend getAllTextContent/_ to replace known XML entities (e.g. &apos; \u2192 ') or decode the string in readNameFromNode or in createNameStyleFunction before handing it off to the renderer.",
+        "bug_scenario": "When reading KML placemarks that contain XML character entity references (for example <name>Andy&amp;apos;s Pub</name>), the map labels render the raw entity \u201c&apos;\u201d instead of an apostrophe. In the screenshot you can see the label \u201cAndy&amp;apos;s Pub, Terrasse\u201d drawn on the map, whereas the decoded text \u201cAndy\u2019s Pub, Terrasse\u201d appears correctly elsewhere (e.g. in the feature list)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/format/KML.js//KML"
+        ],
+        "bug_functions": [
+            "src/ol/format/KML.js//readName",
+            "src/ol/format/KML.js//readNameFromNode",
+            "src/ol/format/KML.js//createNameStyleFunction"
+        ],
+        "explanation": "The KML class in KML.js is responsible for parsing the <name> element and turning it into a label. The methods readName and readNameFromNode extract text via getAllTextContent but never decode HTML/XML entities, so the literal sequence \u201c&apos;\u201d remains in the string. Then createNameStyleFunction takes that un-decoded string and sets it as the Text style value, leading to labels showing \u201c&apos;\u201d instead of an apostrophe. To fix the bug, entity decoding (or a call to decodeURIComponent on the extracted name) needs to be inserted in these methods before the text is handed off to the Text style.",
+        "bug_scenario": "The screenshots show a KML\u2010based map with placemark labels. Although the underlying KML data contains a name of \"Andy&amp;apos;s\" (i.e. the apostrophe is encoded as an XML entity), the rendered label on the map literally displays \u201cAndy&amp;apos;s Pub, Terrasse\u201d instead of decoding the entity to \u201cAndy's Pub, Terrasse.\u201d"
+    }
+}

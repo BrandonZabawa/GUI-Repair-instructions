@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-javascript.js//template-string",
+            "components/prism-javascript.js//interpolation"
+        ],
+        "explanation": "Prism\u2019s JavaScript grammar defines template literals via the `template-string` pattern (inserted before the generic `string` rule) and its inner `interpolation` pattern. Because its complex regex for matching backticks and nested `${\u2026}` is too greedy and doesn\u2019t reset correctly after encountering backticks inside comments, the opening backtick in the first real template literal is skipped. Fixing or simplifying these two patterns will restore correct matching of subsequent template literals.",
+        "bug_scenario": "When Prism highlights a JavaScript file that contains in sequence:\n1) A regex literal with a single quote (e.g. replace(/'/, `'`)),\n2) Then a comment containing backticks (e.g. // `load bearing comment`),\n3) Followed by normal template literals (e.g. const var3 = `break starts here`;),\nit fails to correctly match the opening backtick of the first template literal after the comment. The opening template-punctuation is never tokenized, so the rest of the file\u2019s backticks and interpolations are mis-parsed."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-javascript.js//Prism.languages.insertBefore('javascript','string', {...})",
+            "components/prism-javascript.js//template-string (pattern and greedy flag)",
+            "components/prism-javascript.js//interpolation (inside.template-string)",
+            "components/prism-javascript.min.js//Prism.languages.insertBefore('javascript','string', {...})",
+            "components/prism-javascript.min.js//template-string (pattern and greedy flag)",
+            "components/prism-javascript.min.js//interpolation (inside.template-string)"
+        ],
+        "explanation": "The core of the bug is in the JavaScript grammar extension that handles template literals. Prism.languages.insertBefore('javascript','string', {...}) defines the \"template-string\" token with a regex pattern and nested interpolation rules. A flaw in the template-string or its interpolation lookbehind allows certain earlier constructs (a regex with a single quote, a comment containing backticks) to desynchronize the backtick matching. After that point, the closing backtick in a normal template literal isn\u2019t recognized by the template-string pattern, so the parser remains in template mode for the rest of the file. Fixing or tightening the template-string/interpolation patterns in these functions will restore correct backtick pairing and prevent the open-span condition.",
+        "bug_scenario": "In the screenshot we see that two early template literals (`this is fine`) are highlighted correctly. A comment containing backticks (`load bearing comment`) also renders as expected. But the first normal template literal after that (var3 = `break starts here`) fails to close properly: the closing backtick is tokenized as punctuation and the grammar never exits the template-string mode. As a result, var4 and all following code remain styled as if inside a template literal."
+    }
+}

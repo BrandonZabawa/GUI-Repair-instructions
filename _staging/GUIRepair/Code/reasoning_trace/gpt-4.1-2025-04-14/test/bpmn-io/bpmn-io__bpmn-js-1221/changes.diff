@@ -1,0 +1,46 @@
+diff --git a/lib/features/copy-paste/BpmnCopyPaste.js b/lib/features/copy-paste/BpmnCopyPaste.js
+index 8c778193..25e15038 100644
+--- a/lib/features/copy-paste/BpmnCopyPaste.js
++++ b/lib/features/copy-paste/BpmnCopyPaste.js
+@@ -138,6 +138,9 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+     if (isLabel(descriptor)) {
+       descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);
+ 
++      // Fire event for label paste to allow behaviors to react
++      eventBus.fire('element.pasted', { descriptor: descriptor, context: context });
++
+       return;
+     }
+ 
+@@ -157,6 +160,9 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+     ]);
+ 
+     removeProperties(descriptor, 'oldBusinessObject');
++
++    // Fire event for element paste to allow behaviors to react
++    eventBus.fire('element.pasted', { descriptor: descriptor, context: context });
+   });
+ 
+ }
+diff --git a/lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js b/lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js
+index adaadf96..b1056e55 100644
+--- a/lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js
++++ b/lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js
+@@ -78,6 +78,17 @@ export default function AdaptiveLabelPositioningBehavior(eventBus, modeling) {
+     adjustLabelPosition(element, optimalPosition);
+   }
+ 
++  // Listen for element.pasted event to adjust label position after paste
++  eventBus.on('element.pasted', function(event) {
++    var descriptor = event.descriptor;
++    var element = descriptor.businessObject;
++
++    // Only adjust if the element has an external label
++    if (element && hasExternalLabel(element)) {
++      checkLabelAdjustment(element);
++    }
++  });
++
+   function adjustLabelPosition(element, orientation) {
+ 
+     var elementMid = getMid(element),

@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/ImageArcGISRest.js//ImageArcGISRest"
+        ],
+        "bug_functions": [
+            "src/ol/source/ImageArcGISRest.js//constructor",
+            "src/ol/source/ImageArcGISRest.js//getImageInternal"
+        ],
+        "explanation": "The ImageArcGISRest class in src/ol/source/ImageArcGISRest.js is the core class responsible for requesting images from an ArcGIS Rest service and determining the size and extent of the requested image. The 'constructor' initializes the ratio_ field, setting the default (problematic) value of 1.5. The 'getImageInternal' function uses this ratio_ value to calculate the image extent and size. This logic directly impacts how the requested image aligns with the map view, and thus is the root of the layer-map mismatch and misalignment bug. Any fix for this issue involves changing the default ratio or adjusting how the ratio is used in these methods. The renderer class (CanvasImageLayerRenderer) does not handle the ratio parameter and simply renders what is provided by the source, so the bug is not in the renderer.",
+        "bug_scenario": "The bug scenario involves a mismatch and misalignment between ArcGIS MapServer image layers and the map in OpenLayers 7.4, especially when the device zoom/scaling is not 100% or when the map is rotated. The root of the issue is the default ratio value (1.5) in the ImageArcGISRest source. This causes the requested image size to be larger than the map viewport, resulting in rendering problems and misalignment, particularly at certain scaling or after rotations. The only known workaround is to forcibly set the ratio to 1, but this does not address the root of the problem."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/ImageArcGISRest.js//ImageArcGISRest"
+        ],
+        "bug_functions": [
+            "src/ol/source/ImageArcGISRest.js//constructor",
+            "src/ol/source/ImageArcGISRest.js//getImageInternal"
+        ],
+        "explanation": "The 'ImageArcGISRest' class in 'src/ol/source/ImageArcGISRest.js' is directly responsible for ArcGIS Rest imagery source handling, including the 'ratio' parameter logic. The constructor sets the default value of 'this.ratio_' to 1.5 (i.e., 'this.ratio_ = options.ratio !== undefined ? options.ratio : 1.5;'), which is at the core of the bug.\n\nThe 'getImageInternal' function uses 'this.ratio_' to manipulate the image request extent and, consequently, the size and alignment of the returned image layer. Any issues with the ratio value propagate through this function, leading to mismatches between the layer and the map, especially when the map is rotated or the display scaling is not standard. Edits to these areas would be required to resolve the bug by adjusting how the ratio is set and/or used in computations.\n\nThe renderer ('src/ol/renderer/canvas/ImageLayer.js') does not manage the ratio logic; it relies on the image and extent handed to it by the source, so it is not a primary source of the bug.",
+        "bug_scenario": "The bug scenario involves a visual mismatch between ArcGIS MapServer layers and the map in OpenLayers 7.4 when using the ImageArcGISRest source. Specifically, the problem is due to the default value of the 'ratio' parameter in ImageArcGISRest being set to 1.5. When a user's display scaling is not 100% or after rotation, this leads to misalignment of the image layer with the map. Setting the ratio to 1 circumvents the problem, indicating that the default handling and application of the ratio parameter is flawed, especially under certain display and transformation conditions."
+    }
+}

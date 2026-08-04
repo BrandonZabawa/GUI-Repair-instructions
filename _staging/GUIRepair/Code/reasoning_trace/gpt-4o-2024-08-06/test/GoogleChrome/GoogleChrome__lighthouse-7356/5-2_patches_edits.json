@@ -1,0 +1,211 @@
+{
+    "1/5": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "_waitForFCP() {",
+                    "/** @type {(() => void)} */",
+                    "let cancel = () => {",
+                    "throw new Error('_waitForFCP.cancel() called before it was defined');",
+                    "};",
+                    "",
+                    "const promise = new Promise(resolve => {",
+                    "/** @param {LH.Crdp.Page.LifecycleEventEvent} e */",
+                    "const lifecycleListener = e => {",
+                    "if (e.name === 'firstContentfulPaint') {",
+                    "cancel();",
+                    "resolve();",
+                    "}",
+                    "};",
+                    "",
+                    "this.on('Page.lifecycleEvent', lifecycleListener);",
+                    "",
+                    "let canceled = false;",
+                    "cancel = () => {",
+                    "if (canceled) return;",
+                    "canceled = true;",
+                    "this.off('Page.lifecycleEvent', lifecycleListener);",
+                    "};",
+                    "});",
+                    "",
+                    "return {",
+                    "promise,",
+                    "cancel,",
+                    "};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  _waitForFCP() {",
+                    "    /** @type {(() => void)} */",
+                    "    let cancel = () => {",
+                    "      throw new Error('_waitForFCP.cancel() called before it was defined');",
+                    "    };",
+                    "",
+                    "    const promise = new Promise((resolve, reject) => {",
+                    "      /** @param {LH.Crdp.Page.LifecycleEventEvent} e */",
+                    "      const lifecycleListener = e => {",
+                    "        if (e.name === 'firstContentfulPaint') {",
+                    "          cancel();",
+                    "          resolve();",
+                    "        }",
+                    "      };",
+                    "",
+                    "      this.on('Page.lifecycleEvent', lifecycleListener);",
+                    "",
+                    "      let canceled = false;",
+                    "      cancel = () => {",
+                    "        if (canceled) return;",
+                    "        canceled = true;",
+                    "        this.off('Page.lifecycleEvent', lifecycleListener);",
+                    "      };",
+                    "",
+                    "      // Add a timeout threshold for FCP",
+                    "      const fcpTimeout = setTimeout(() => {",
+                    "        cancel();",
+                    "        reject(new Error('FCP event timed out'));",
+                    "      }, 30000); // 30 seconds threshold",
+                    "",
+                    "      promise.finally(() => clearTimeout(fcpTimeout));",
+                    "    });",
+                    "",
+                    "    return {",
+                    "      promise,",
+                    "      cancel,",
+                    "    };",
+                    "  }"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "lighthouse-core/gather/gather-runner.js": [
+            {
+                "SEARCH": [
+                    "await driver.gotoURL(passContext.url, {",
+                    "waitForFCP: passContext.passConfig.recordTrace,",
+                    "waitForLoad: true,",
+                    "passContext,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "  await driver.gotoURL(passContext.url, {",
+                    "    waitForFCP: passContext.passConfig.recordTrace,",
+                    "    waitForLoad: true,",
+                    "    maxWaitForLoadedMs: 45000, // Reduced maximum wait time from default",
+                    "    passContext,",
+                    "  });"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "const promise = new Promise(resolve => {",
+                    "/** @param {LH.Crdp.Page.LifecycleEventEvent} e */",
+                    "const lifecycleListener = e => {",
+                    "if (e.name === 'firstContentfulPaint') {",
+                    "cancel();",
+                    "resolve();",
+                    "}",
+                    "};",
+                    "",
+                    "this.on('Page.lifecycleEvent', lifecycleListener);"
+                ],
+                "REPLACE": [
+                    "    const promise = new Promise((resolve, reject) => {",
+                    "      /** @param {LH.Crdp.Page.LifecycleEventEvent} e */",
+                    "      const lifecycleListener = e => {",
+                    "        if (e.name === 'firstContentfulPaint') {",
+                    "          cancel();",
+                    "          resolve();",
+                    "        }",
+                    "      };",
+                    "",
+                    "      const fcpTimeout = setTimeout(() => {",
+                    "        cancel();",
+                    "        const err = new LHError(",
+                    "          LHError.errors.PROTOCOL_TIMEOUT,",
+                    "          {protocolMethod: 'Page.lifecycleEvent', message: 'Timed out waiting for FCP'}",
+                    "        );",
+                    "        reject(err);",
+                    "      }, this._nextProtocolTimeout);",
+                    "",
+                    "      this.on('Page.lifecycleEvent', lifecycleListener);",
+                    "      cancel = () => {",
+                    "        clearTimeout(fcpTimeout);"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "// Listener for onload. Resolves on first FCP event.",
+                    "const waitForFCP = shouldWaitForFCP ? this._waitForFCP() : this._waitForNothing();",
+                    "// Network listener. Resolves when the network has been idle for networkQuietThresholdMs.",
+                    "const waitForNetworkIdle = this._waitForNetworkIdle(networkQuietThresholdMs);",
+                    "// CPU listener. Resolves when the CPU has been idle for cpuQuietThresholdMs after network idle.",
+                    "let waitForCPUIdle = this._waitForNothing();"
+                ],
+                "REPLACE": [
+                    "    // Listener for onload. Resolves on first FCP event with threshold handling.",
+                    "    const waitForFCP = shouldWaitForFCP ? this._waitForFCPWithThreshold() : this._waitForNothing();",
+                    "    // Network listener. Resolves when the network has been idle for networkQuietThresholdMs.",
+                    "    const waitForNetworkIdle = this._waitForNetworkIdle(networkQuietThresholdMs);",
+                    "    // CPU listener. Resolves when the CPU has been idle for cpuQuietThresholdMs after network idle.",
+                    "    let waitForCPUIdle = this._waitForNothing();",
+                    "    ",
+                    "    if (!waitForFCP.promise && waitForNetworkIdle.promise && waitForCPUIdle.promise) {",
+                    "        await this._waitForAdditionalTimeout(maxWaitForLoadedMs / 2);",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "const DEFAULT_PROTOCOL_TIMEOUT = 30000;",
+                    "class Driver {",
+                    "...",
+                    "",
+                    "async _waitForFCP() {",
+                    "...",
+                    "if (e.name === 'firstContentfulPaint') {",
+                    "cancel();",
+                    "resolve();",
+                    "}",
+                    "...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const DEFAULT_PROTOCOL_TIMEOUT = 30000; ",
+                    "class Driver {",
+                    "  ...",
+                    "  ",
+                    "  async _waitForFCP() {",
+                    "    ...",
+                    "        if (e.name === 'firstContentfulPaint') {",
+                    "          cancel();",
+                    "          resolve();",
+                    "        }",
+                    "    ...",
+                    "  }",
+                    "  ",
+                    "  /** ",
+                    "   * Sets a threshold for how long to wait for FCP. ",
+                    "   * Default is 35s, adjust as necessary to prevent timeouts. ",
+                    "   * @param {number} threshold ",
+                    "   */",
+                    "  setFCPThreshold(threshold = 35000) {",
+                    "    this._fcpThreshold = threshold;",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

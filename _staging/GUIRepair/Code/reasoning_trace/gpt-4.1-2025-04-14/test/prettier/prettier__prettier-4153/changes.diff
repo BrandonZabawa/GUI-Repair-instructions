@@ -1,0 +1,32 @@
+diff --git a/src/language-markdown/embed.js b/src/language-markdown/embed.js
+index ed22cbbf2..f7b302df4 100644
+--- a/src/language-markdown/embed.js
++++ b/src/language-markdown/embed.js
+@@ -13,7 +13,9 @@ function embed(path, print, textToDoc, options) {
+   const node = path.getValue();
+ 
+   if (node.type === "code") {
+-    const parser = getParserName(node.lang);
++    // Extract only the language identifier (first word) for parser detection
++    const lang = node.lang ? node.lang.match(/^[^\s{]+/)[0] : "";
++    const parser = getParserName(lang);
+     if (parser) {
+       const styleUnit = options.__inJsTemplate ? "~" : "`";
+       const style = styleUnit.repeat(
+diff --git a/src/language-markdown/printer-markdown.js b/src/language-markdown/printer-markdown.js
+index a45b03926..84e81b4f2 100644
+--- a/src/language-markdown/printer-markdown.js
++++ b/src/language-markdown/printer-markdown.js
+@@ -195,9 +195,11 @@ function genericPrint(path, options, print) {
+           privateUtil.getMaxContinuousCount(node.value, styleUnit) + 1
+         )
+       );
++      // Extract only the language identifier (first word) for syntax highlighting
++      const lang = node.lang ? node.lang.match(/^[^\s{]+/)[0] : "";
+       return concat([
+         style,
+-        node.lang || "",
++        lang,
+         hardline,
+         join(hardline, node.value.split("\n")),
+         hardline,

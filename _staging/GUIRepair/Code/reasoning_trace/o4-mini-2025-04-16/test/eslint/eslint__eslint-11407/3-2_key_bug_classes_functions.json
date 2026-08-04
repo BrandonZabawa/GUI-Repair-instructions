@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "lib/rules/implicit-arrow-linebreak.js//formatComments",
+            "lib/rules/implicit-arrow-linebreak.js//findFirstToken",
+            "lib/rules/implicit-arrow-linebreak.js//addParentheses",
+            "lib/rules/implicit-arrow-linebreak.js//autoFixBesides",
+            "lib/rules/implicit-arrow-linebreak.js//validateExpression"
+        ],
+        "explanation": "All of the broken output stems from the rule\u2019s autofix logic in lib/rules/implicit-arrow-linebreak.js. formatComments and findFirstToken control how comments are moved around, but they don\u2019t account correctly for block vs. expression bodies, so comments end up in the wrong place. autoFixBesides orchestrates the replaceTextRange calls to collapse the arrow body onto one line, then\u2014when it detects nested arrows\u2014it delegates to addParentheses. The addParentheses function loops over every arrow token and unconditionally wraps bodies in parentheses and appends closing parentheses, even when the body is a block or when comments intervene. Finally, validateExpression selects the autofix but misidentifies some node types (e.g., a catch block with comments) as needing an implicit return, causing the extra wrapping. Fixing or guarding these functions will prevent the invalid characters from being inserted.",
+        "bug_scenario": "When running ESLint\u2019s implicit-arrow-linebreak rule in \u201c--fix\u201d mode on an arrow function whose body is preceded by an inline comment, the autofixer mangles the code by inserting extra parentheses and stray closing tokens on many lines. In the screenshot, you can see dozens of mismatched closing parentheses and vertical bars scattered throughout the file\u2014the fixer assumed an implicit object return, wrapped everything in parentheses, and then kept inserting closing parentheses on each nested arrow."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/rules/implicit-arrow-linebreak.js"
+        ],
+        "bug_functions": [
+            "lib/rules/implicit-arrow-linebreak.js//validateExpression",
+            "lib/rules/implicit-arrow-linebreak.js//autoFixBesides",
+            "lib/rules/implicit-arrow-linebreak.js//addParentheses"
+        ],
+        "explanation": "The rule implementation in lib/rules/implicit-arrow-linebreak.js is responsible for reporting and fixing linebreaks around arrow function bodies. validateExpression decides whether to apply a fix, and when an unintended linebreak is found it calls autoFixBesides to generate whitespace and comment fixes. autoFixBesides invokes addParentheses to wrap nested arrow bodies in parentheses. The logic in addParentheses (and the surrounding comment\u2010formatting in autoFixBesides) miscalculates where and how many parentheses are needed when comments are present, and the overlapping fixes subsequently confuse SourceCodeFixer into emitting stray tokens. Correcting the bug will require adjusting addParentheses and/or autoFixBesides to properly handle comments and avoid generating unmatched parentheses.",
+        "bug_scenario": "When running ESLint with the implicit-arrow-linebreak rule and autofix turned on against a promise chain that contains inline comments immediately after an arrow (e.g. .then(() => /* comment */ expr) .catch(...)), the fixer will wrap the body in extra parentheses and move or duplicate comment text. It ends up inserting unmatched parentheses around the arrow bodies and comments and even breaks the following .catch by treating it as an implicit object return, producing hundreds of stray parentheses and invalid code."
+    }
+}

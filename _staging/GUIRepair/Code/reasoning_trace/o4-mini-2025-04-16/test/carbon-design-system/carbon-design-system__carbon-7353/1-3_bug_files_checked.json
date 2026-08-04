@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Tabs/Tabs.js",
+            "packages/react/src/components/Tabs/Tabs-test.js"
+        ],
+        "explanation": "In Tabs.js the overflow controls are rendered as <button> elements wrapping icon components, but no aria-label or title is provided. Those buttons require accessible names (e.g. aria-label=\u201cScroll tabs left\u201d/\u201cScroll tabs right\u201d). Tabs-test.js defines expectations around rendering of overflow controls and should be updated to assert the presence of those new aria-label attributes. Both files are directly responsible for generating and testing the problematic buttons, so they must be modified to add and verify accessible labels.",
+        "bug_scenario": "When the browser width is reduced, the Tabs component renders overflow \u201cprevious\u201d and \u201cnext\u201d arrow buttons (class bx--tab-overflow__btn) to scroll through hidden tab labels. Those buttons contain only an icon and have no visible text or aria-label/aria-labelledby attributes, so screen readers cannot announce their purpose. Accessibility tools report \u201cForm control element <button> has no associated label.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Tabs/Tabs.js",
+            "packages/react/src/components/Tabs/Tabs-test.js",
+            "packages/components/src/components/tabs/tabs.js",
+            "packages/components/src/components/tabs/tabs.config.js"
+        ],
+        "explanation": "1. packages/react/src/components/Tabs/Tabs.js \u2014 this is where the React wrapper renders the overflow navigation buttons. It currently outputs <button> elements with icon children but no aria-label or aria-labelledby. You need to add props like aria-label={translateWithId('scrollLeft')} and aria-label={translateWithId('scrollRight')} on the two buttons so that assistive technologies can announce their purpose.\n\n2. packages/react/src/components/Tabs/Tabs-test.js \u2014 the unit tests for the Tabs component. After adding aria-label attributes, these tests will need to verify that the overflow buttons render with the correct accessible names.\n\n3. packages/components/src/components/tabs/tabs.js \u2014 the vanilla JavaScript component implementation in the core components library also creates the same overflow buttons if used outside React. It likewise needs to be updated to include aria-label attributes on those controls.\n\n4. packages/components/src/components/tabs/tabs.config.js \u2014 this config file defines the translation keys (e.g. scrollLeft, scrollRight) that supply localized strings for the aria-label values. You should ensure the keys are present and correctly mapped, so React and vanilla code can pull the right labels when rendering the buttons.",
+        "bug_scenario": "When the Carbon React Tabs component is rendered in a narrow container (e.g. <300px wide), it collapses its tab list into a scrollable region and shows \u201coverflow\u201d buttons (prev/next) for navigating the hidden tabs. Those buttons are plain <button> elements containing only an icon; they lack any aria-label or <label> association. As a result, accessibility tools flag \u201cForm control element <button> has no associated label\u201d (WCAG 4.1.2 Name, Role, Value). Users of screen readers cannot discover the purpose of these controls."
+    }
+}

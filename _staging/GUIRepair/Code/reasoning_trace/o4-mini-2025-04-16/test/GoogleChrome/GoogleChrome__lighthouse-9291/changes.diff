@@ -1,0 +1,29 @@
+diff --git a/lighthouse-core/lib/lh-error.js b/lighthouse-core/lib/lh-error.js
+index cf2c5be0d..45a7c536d 100644
+--- a/lighthouse-core/lib/lh-error.js
++++ b/lighthouse-core/lib/lh-error.js
+@@ -61,10 +61,21 @@ class LighthouseError extends Error {
+     super(errorDefinition.code);
+     this.name = 'LHError';
+     this.code = errorDefinition.code;
+-    // Insert the i18n reference with errorCode and all additional ICU replacement properties.
+-    this.friendlyMessage = str_(errorDefinition.message, {errorCode: this.code, ...properties});
++    // Build the friendly message by substituting placeholders in the UIStrings template.
++    let msg = errorDefinition.message;
++    // Always replace {errorCode}.
++    msg = msg.replace(/{errorCode}/g, this.code);
++    // Replace any additional placeholders with provided properties.
++    if (properties) {
++      for (const key of Object.keys(properties)) {
++        // e.g. replace "{statusCode}" or "{errorDetails}", etc.
++        const value = String(properties[key]);
++        msg = msg.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
++        this[key] = properties[key];
++      }
++    }
++    this.friendlyMessage = msg;
+     this.lhrRuntimeError = !!errorDefinition.lhrRuntimeError;
+-    if (properties) Object.assign(this, properties);
+ 
+     Error.captureStackTrace(this, LighthouseError);
+   }

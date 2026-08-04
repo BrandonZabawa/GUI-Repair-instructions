@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/ContextEventType.js",
+            "src/ol/webgl/Helper.js",
+            "src/ol/webgl/RenderTarget.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/renderer/webgl/Layer.js",
+            "src/ol/Map.js",
+            "src/ol/PluggableMap.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This is the main class representing a WebGL TileLayer. It is responsible for initializing and managing the WebGL context for each layer; the bug report is about reducing per-layer context creation.\n2. src/ol/renderer/webgl/TileLayer.js: Implements the renderer for WebGL tile layers, which manages the context used for rendering. Sharing or pooling contexts would require changes here.\n3. src/ol/webgl/ContextEventType.js: Defines context-related events, potentially involved in context loss/restoration and context sharing logic.\n4. src/ol/webgl/Helper.js: Encapsulates logic for dealing with WebGL contexts (creation, management), and may need changes to support context sharing.\n5. src/ol/webgl/RenderTarget.js: Manages render targets for the WebGL context(s), which may need to be aware of shared contexts.\n6. src/ol/webgl/TileTexture.js: Handles textures per-tile, often tightly coupled with context lifecycle; context sharing impacts texture management.\n7. src/ol/renderer/webgl/Layer.js: Base class for WebGL layer rendering, handling WebGL context lifecycles on a per-layer basis\u2014critical for changes about sharing.\n8. src/ol/Map.js and 9. src/ol/PluggableMap.js: These classes manage the overall lifecycle of layers and renderers, where shared context management and orchestration may need changes to distribute a single context to multiple layers.\n\nOther files in source, style, or control are not directly related to the lifecycle or allocation of WebGL contexts for tile layers. The files listed contain code for WebGL layer context instantiation and would need to be edited to implement context sharing.",
+        "bug_scenario": "The bug is that each WebGLTileLayer creates its own WebGL context, quickly reaching browser context limits (around 16), so having many TileLayers (especially with raster data from separate GeoTIFFs) results in failures or misbehavior once the context cap is reached. The suggested solution is to allow TileLayers within a map to share a single WebGL context."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/Helper.js",
+            "src/ol/webgl/ContextEventType.js",
+            "src/ol/webgl/RenderTarget.js",
+            "src/ol/webgl/TileTexture.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/Map.js",
+            "src/ol/PluggableMap.js"
+        ],
+        "explanation": "The core of the bug is in the architecture of how WebGL contexts are managed for WebGL-based TileLayers. 'src/ol/layer/WebGLTile.js' defines the WebGL tile layer, which currently creates a WebGL context per layer. 'src/ol/renderer/webgl/TileLayer.js' contains the renderer logic that attaches contexts to WebGL tile layers. Both will require modifications to allow context sharing among tile layers. The various utilities and helpers in 'src/ol/webgl/Helper.js' (handles context creation, state management), 'src/ol/webgl/ContextEventType.js', 'src/ol/webgl/RenderTarget.js', and 'src/ol/webgl/TileTexture.js' all directly manage/consume WebGL contexts and would need reviewing/updating to work with shared contexts. 'src/ol/renderer/Layer.js' and the map logic in 'src/ol/Map.js' and 'src/ol/PluggableMap.js' coordinate the setup and teardown lifecycle of layers and renderers, and would need updates to ensure the context is created once and shared appropriately across all WebGL tile layers. These are the files where changes would be necessary to implement context sharing and thereby fix the bug.",
+        "bug_scenario": "The bug relates to excessive usage of WebGL contexts by WebGL-based TileLayers in OpenLayers. Each TileLayer creates its own WebGL context, and browsers impose a limit on the number of WebGL contexts (typically 16). When more than this are instantiated, older contexts may be released by the browser, causing rendering failures or misbehavior in applications utilizing many raster images via WebGL TileLayers. The desired improvement is to allow all WebGL TileLayers in a single map to share a single WebGL context, reducing the chances of hitting browser-imposed limits and avoiding rendering breakdowns."
+    }
+}

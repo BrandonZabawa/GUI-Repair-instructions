@@ -1,0 +1,84 @@
+diff --git a/packages/react/src/components/Tab/Tab.js b/packages/react/src/components/Tab/Tab.js
+index ead5751e..8eb2bbe7 100644
+--- a/packages/react/src/components/Tab/Tab.js
++++ b/packages/react/src/components/Tab/Tab.js
+@@ -131,19 +131,21 @@ export default class Tab extends React.Component {
+       [`${prefix}--tabs__nav-item--selected`]: selected,
+     });
+ 
+-    const anchorProps = {
+-      id,
+-      className: `${prefix}--tabs__nav-link`,
+-      href,
+-      role: 'tab',
+-      tabIndex: !disabled ? tabIndex : -1,
+-      ['aria-selected']: selected,
+-      ['aria-disabled']: disabled,
+-      ['aria-controls']: id && `${id}__panel`,
+-      ref: e => {
+-        this.tabAnchor = e;
+-      },
+-    };
++const anchorProps = {
++id,
++className: `${prefix}--tabs__nav-link`,
++href,
++role: 'tab',
++tabIndex: !disabled ? tabIndex : -1,
++['aria-selected']: selected,
++['aria-disabled']: disabled,
++['aria-controls']: id && `${id}__panel`,
++['aria-posinset']: index + 1,
++['aria-setsize']: this.props.totalTabs,
++ref: e => {
++this.tabAnchor = e;
++},
++};
+ 
+     return (
+       <li
+diff --git a/packages/react/src/components/Tabs/Tabs.js b/packages/react/src/components/Tabs/Tabs.js
+index 96dafa96..66c1d305 100644
+--- a/packages/react/src/components/Tabs/Tabs.js
++++ b/packages/react/src/components/Tabs/Tabs.js
+@@ -235,22 +235,24 @@ export default class Tabs extends React.Component {
+      * the whole tab panel as a single focus component when it looks like a tab
+      * panel and separate components when it looks like a select list.
+      */
+-    const tabsWithProps = this.getTabs().map((tab, index) => {
+-      const tabPanelIndex = index === this.state.selected ? 0 : -1;
+-      const tabIndex = !this.state.dropdownHidden ? 0 : tabPanelIndex;
+-      const newTab = React.cloneElement(tab, {
+-        index,
+-        selected: index === this.state.selected,
+-        handleTabClick: this.handleTabClick(onSelectionChange),
+-        tabIndex,
+-        ref: e => {
+-          this.setTabAt(index, e);
+-        },
+-        handleTabKeyDown: this.handleTabKeyDown(onSelectionChange),
+-      });
+-
+-      return newTab;
+-    });
++const totalTabs = this.getTabs().length;
++const tabsWithProps = this.getTabs().map((tab, index) => {
++const tabPanelIndex = index === this.state.selected ? 0 : -1;
++const tabIndex = !this.state.dropdownHidden ? 0 : tabPanelIndex;
++const newTab = React.cloneElement(tab, {
++index,
++selected: index === this.state.selected,
++handleTabClick: this.handleTabClick(onSelectionChange),
++tabIndex,
++ref: e => {
++this.setTabAt(index, e);
++},
++handleTabKeyDown: this.handleTabKeyDown(onSelectionChange),
++totalTabs,
++});
++
++return newTab;
++});
+ 
+     const tabContentWithProps = React.Children.map(tabsWithProps, tab => {
+       const {

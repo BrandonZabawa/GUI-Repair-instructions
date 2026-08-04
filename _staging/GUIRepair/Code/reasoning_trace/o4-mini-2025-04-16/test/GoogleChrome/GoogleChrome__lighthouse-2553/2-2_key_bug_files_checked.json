@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/handlebar-helpers.js",
+            "lighthouse-core/report/v2/renderer/util.js"
+        ],
+        "explanation": "Both files are the central places where numbers and sizes are formatted in the HTML and standalone report code. In handlebar-helpers.js, the formatNumber and formatTransferSize helpers call toLocaleString with only maximumFractionDigits, causing dropped trailing zeros. The decimal helper also uses toFixed inconsistently. In util.js (v2 renderer), formatNumber and formateBytesToKB similarly set only a maximumFractionDigits. To adopt toLocaleString for all number output\u2014including fixed fraction digits when desired\u2014you\u2019ll need to update these methods in both files to supply matching minimumFractionDigits options along with maximumFractionDigits (or otherwise normalize precision).",
+        "bug_scenario": "The screenshot shows various calls to JavaScript\u2019s Number.prototype.toLocaleString with only the maximumFractionDigits option (and in one case also minimumFractionDigits). You can see thousands-separator insertion works (\u201c2,445\u201d), fractional values round correctly when present, but trailing zeros are dropped unless you explicitly set minimumFractionDigits. For example, 2445.00 formatted with maximumFractionDigits:2 yields \u201c2,445\u201d instead of \u201c2,445.00\u201d. The inconsistent display of decimal places (omission of zeros) is undesirable."
+    }
+}

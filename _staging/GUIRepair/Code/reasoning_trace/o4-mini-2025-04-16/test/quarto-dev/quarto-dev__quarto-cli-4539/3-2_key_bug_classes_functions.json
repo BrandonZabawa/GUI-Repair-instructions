@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/table-captions.lua",
+            "src/resources/filters/quarto-pre/table-rawhtml.lua",
+            "src/resources/filters/common/tables.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/table-captions.lua//tableCaptions",
+            "src/resources/filters/quarto-pre/table-captions.lua//applyTableCaptions",
+            "src/resources/filters/quarto-pre/table-rawhtml.lua//tableMergeRawHtml",
+            "src/resources/filters/quarto-pre/table-rawhtml.lua//respecifyGtCSS",
+            "src/resources/filters/common/tables.lua//htmlTableCaptionPattern"
+        ],
+        "explanation": "The lua filter table-captions.lua is responsible for walking the AST to insert captions and spanner labels (tableCaptions and applyTableCaptions). Any error in how captions are wrapped around raw HTML tables or how the caption node interacts with spanner cells can misplace or restyle the spanner. The raw-HTML filter in table-rawhtml.lua merges consecutive HTML blocks (tableMergeRawHtml) and re-emits GT\u2019s CSS at lower specificity (respecifyGtCSS) to avoid conflicts; incorrect CSS specificity here can cause spanner rules to be overridden when captions are injected. The common/tables.lua patterns (htmlTableCaptionPattern) dictate how <caption> tags are detected and updated. Together, these functions control both the AST injection of captions and the post-render CSS/HTML processing that is misplacing the spanner bars when a caption is present.",
+        "bug_scenario": "When a gt table with a tab_spanner is rendered in Quarto HTML with an injected caption (via tbl-cap), the caption insertion logic breaks the spanner layout. In the produced HTML the spanner header (\u201cSubheader\u201d) and its underline span the entire table or become misaligned with the x/y columns. In the desired output, the caption appears below the spanner but the spanner bar correctly spans only the intended columns."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/table-captions.lua",
+            "src/resources/filters/common/tables.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/table-captions.lua//tableCaptions",
+            "src/resources/filters/quarto-pre/table-captions.lua//applyTableCaptions",
+            "src/resources/filters/quarto-pre/table-captions.lua//tableCaptionsAndLabels",
+            "src/resources/filters/common/tables.lua//htmlTablePattern"
+        ],
+        "explanation": "The caption filter (tableCaptions in table-captions.lua) walks Div blocks looking for tbl-cap attributes, then applies captions by either converting AST tables (the Table visitor) or raw HTML tables (the RawBlock visitor in applyTableCaptions) into simple tables. In doing so it calls pandoc.utils.to_simple_table and then re-emits the table via from_simple_table, which loses the extra header row used by gt spanners. The htmlTablePattern function in tables.lua is used to detect the <table> tags for raw HTML caption insertion and so also participates in the misplacement. To preserve spanners, the caption injection logic in applyTableCaptions (and its call sites tableCaptions and tableCaptionsAndLabels) must be adjusted so that it does not rebuild the table via to_simple_table when spanners are present, or else re-inserts the spanner row into the reconstructed table.",
+        "bug_scenario": "When a gt table with a column spanner (the gray \u201cSubheader\u201d spanning the x and y columns) is rendered in Quarto with a caption (via the tbl-cap attribute), the caption injection logic in the Lua filters re-wraps or re-parses the HTML table and drops or mis-positions the spanner row. In the produced output you see the spanner either pushed below the caption or lost entirely; the desired output preserves the spanner header above the table body, with the caption above it."
+    }
+}

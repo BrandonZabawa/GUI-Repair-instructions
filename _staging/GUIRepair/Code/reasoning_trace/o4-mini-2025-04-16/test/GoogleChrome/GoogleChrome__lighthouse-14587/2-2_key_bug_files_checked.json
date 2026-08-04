@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "cli/cli-flags.js",
+            "core/lib/emulation.js",
+            "core/config/config-helpers.js"
+        ],
+        "explanation": "\n1. cli/cli-flags.js defines and parses the --no-emulatedUserAgent flag but never wires it through correctly into the final settings (so even with that flag the system still thinks it should emulate a UA).\n\n2. core/lib/emulation.js\u2019s parseUseragentIntoMetadata() unconditionally injects Moto G4 metadata whenever formFactor==='mobile'. Because the code only looks at formFactor to pick device details, disabling screenEmulation or UA spoofing alone does not prevent it from labeling the run as \u201cMoto G4.\u201d\n\n3. core/config/config-helpers.js\u2019s resolveSettings() logic merges the default mobile UA back in after applying CLI flags, so flags.emulatedUserAgent=false is overwritten. The settings object seen by the report generator still has emulatedUserAgent===true and formFactor==='mobile', causing the report template to render the \u201cEmulated Moto G4\u201d string.\n\nFixing the bug requires:\n- Ensuring --no-emulatedUserAgent actually sets settings.emulatedUserAgent to false in the merged settings (cli-flags.js + config-helpers.js).\n- Adjusting parseUseragentIntoMetadata() or the report-generation template to skip Moto G4 metadata when settings.emulatedUserAgent===false (core/lib/emulation.js).\n- (Optionally) augment resolveSettings() to preserve the real device flag and pass it through to the UI renderer so the footer can say \"Testing on a real device...\" instead of defaulting to \"Emulated\".",
+        "bug_scenario": "When running Lighthouse CLI against a real Android device (a Moto Power G) with screen emulation disabled, no UA spoofing (using --no-emulatedUserAgent), and DevTools\u2013based throttling, the generated HTML footer still reads \u201cEmulated Moto G4 with Lighthouse 9.6.8\u201d (and shows the Moto G4 icon) instead of indicating that the audit was performed on a physical device."
+    }
+}

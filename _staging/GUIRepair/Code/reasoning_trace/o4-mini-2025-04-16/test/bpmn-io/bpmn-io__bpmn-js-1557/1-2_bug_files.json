@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "explanation": "\u2022 BpmnUpdater.js (features/modeling/BpmnUpdater.js) implements updateDiParent and updateParent for element replacements. It does not guard against shapes that have no DI parent when outside of a Pool, leading to an undefined access.  \n\u2022 BpmnReplace.js (features/replace/BpmnReplace.js) defines the morph rules for DataStoreReference \u2192 DataObjectReference. It drives the replace command that eventually invokes BpmnUpdater; we need to extend it to either prevent or properly handle morphs outside of a Pool.  \n\u2022 Modeling.js (features/modeling/Modeling.js) calls into the updater after executing the replace command. It may require additional context checks (e.g., disallow or adapt DI updates) when replacing DataStoreReference outside of a Pool.",
+        "bug_scenario": "When a DataStoreReference is placed outside of any Pool and then morphed into a DataObjectReference via the replace/morph UI, the BPMN engine tries to update its DI parent in BpmnUpdater.updateDiParent. Since the original DataStoreReference has no process/shape parent outside of a Pool, the updater\u2019s call to parent.get('di') (or similar) reads undefined and throws a TypeError."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/modeling/behavior/ReplaceElementBehaviour.js",
+            "lib/features/replace-preview/BpmnReplacePreview.js",
+            "lib/features/rules/BpmnRules.js"
+        ],
+        "explanation": "\n- lib/features/modeling/BpmnUpdater.js: The error stack trace points here (updateDiParent), which is responsible for reparenting the DI entry when a shape is replaced. It fails when there is no DI parent for a DataObjectReference outside of a pool.\n- lib/features/replace/BpmnReplace.js: Defines the core replacement logic for BPMN elements, including DataStoreReference \u2192 DataObjectReference. It invokes BpmnUpdater under the hood.\n- lib/features/replace/ReplaceOptions.js: Specifies the available replace options for data store/data object shapes, so any misconfiguration here can lead to invalid replacement without a valid DI context.\n- lib/features/modeling/behavior/ReplaceElementBehaviour.js: Hooks into modeling commands to perform the replace operation and triggers the updater logic that fails.\n- lib/features/replace-preview/BpmnReplacePreview.js: Calculates visual preview bounds and may influence DI adjustments post-replace, potentially contributing to missing DI parent assignment.\n- lib/features/rules/BpmnRules.js: Contains rules that control when and how elements can be morphed. A missing rule could allow the illegal morph outside of a pool or fail to guard against missing DI contexts.",
+        "bug_scenario": "User models a collaboration with a DataStoreReference placed outside of a pool. They then morph this DataStoreReference into a DataObjectReference using the element replace functionality. During this operation, the console throws an uncaught TypeError originating from BpmnUpdater.js: \u201cCannot read properties of undefined (reading 'get')\u201d. The failure occurs because updateDiParent tries to look up a DI parent for the new DataObjectReference, but no appropriate DI parent exists outside of a pool, causing an undefined lookup."
+    }
+}

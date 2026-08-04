@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/layer/Layer.js"
+        ],
+        "explanation": "\u2022 src/ol/renderer/webgl/TileLayer.js: At line 338 this file uses layer.getMinZoom() directly when computing a tile grid index for WebGL tile rendering, causing mismatches between view zoom and tile grid levels.\n\u2022 src/ol/renderer/canvas/TileLayer.js: The Canvas renderer contains a similar code path that also uses getMinZoom() as a tile grid zoom index and would suffer from the same missing\u2010tile issue.\n\u2022 src/ol/layer/Layer.js: This file shows the correct pattern (lines 415\u2013423) using view.getResolutionForZoom or tileGrid.getZForResolution in conjunction with getMinZoom()/getMaxResolution. It serves as the reference implementation for fixing the renderer logic by replacing the direct getMinZoom() usage with a resolution\u2010to\u2010z lookup.",
+        "bug_scenario": "In the WebGL (and similarly the Canvas) TileLayer renderers, layer.getMinZoom() is being used directly as a tile grid zoom index when fetching and rendering tiles. Because getMinZoom() returns a view\u2010centric zoom level (not a tile\u2010grid index), supplying it directly to the tile grid can result in no tiles being requested or rendered when the view\u2019s zoom range doesn\u2019t align with the source tile grid\u2019s levels\u2014e.g.\na source with zoom levels 0\u20133 in a map view that spans 0\u201318 will end up sending z=3 (minZoom) instead of the grid index for the current resolution, so tiles at other zooms never load."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/canvas/TileLayer.js"
+        ],
+        "explanation": "Both the WebGL and Canvas TileLayer renderers use layer.getMinZoom() directly when determining which tile grid Z to request. getMinZoom() returns a view zoom (unrelated to grid Z), so treating it as a tile index leads to skipped tile loads. These two files must be edited to remove or replace layer.getMinZoom() with the correct conversion (e.g. tileGrid.getZForResolution(layer.getMaxResolution()) or view.getResolutionForZoom(layer.getMinZoom())).",
+        "bug_scenario": "When rendering a TileLayer, the WebGL (and by symmetry the Canvas) renderer is incorrectly using layer.getMinZoom() as if it were a tile-grid zoom index. Since layer.getMinZoom() returns a view zoom level, not a tile grid Z, tiles whose view zoom doesn\u2019t match the grid are never requested or rendered \u2014 resulting in missing tiles when the map view\u2019s minZoom differs from the source\u2019s tileGrid levels."
+    }
+}

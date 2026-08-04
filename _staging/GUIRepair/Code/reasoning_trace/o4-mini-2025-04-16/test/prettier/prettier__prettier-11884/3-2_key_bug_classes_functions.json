@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-js/print/type-parameters.js//printTypeParameters"
+        ],
+        "explanation": "The function printTypeParameters in type-parameters.js controls how TypeScript type parameter lists are printed, including when and where to insert commas and line breaks. Its non-inline (broken-line) branch uses join([\",\", line], \u2026) plus a trailingComma computed by shouldPrintComma/ifBreak. For an empty parameter array, join produces no elements but the trailingComma still emits a comma when the group breaks. As a result, an empty list is rendered as [ , ]. To fix the bug, printTypeParameters must detect the empty list case and suppress the trailingComma (or skip the broken-line path) when there are zero type parameters.",
+        "bug_scenario": "When formatting a TypeScript generic with an empty extends clause and a long identifier that forces line breaking (print-width = 120), the printer renders the empty array as [ , ] \u2013 i.e. it inserts a comma in an otherwise empty bracketed list. This is visible in the playground output and the screenshot: instead of \u201cextends []\u201d on one line, it breaks into \u201cextends [ , ]\u201d with a stray comma."
+    },
+    "2": {
+        "bug_classes": [
+            "src/language-js/print/type-parameters.js"
+        ],
+        "bug_functions": [
+            "src/language-js/print/type-parameters.js//printTypeParameters",
+            "src/language-js/print/type-parameters.js//printTypeParameter",
+            "src/language-js/print/typescript.js//printTypescript"
+        ],
+        "explanation": "The bug lives in the code that prints TypeScript generics and conditional types:\n\n\u2022 printTypeParameters (in type-parameters.js) is responsible for deciding when to inline or break the generic parameter list and when to emit a trailingComma via ifBreak. In the case of an empty tuple (length 0) nested inside a conditional type, it falls into the multiline branch, uses join([\",\", line], \u2026) plus a trailingComma ifBreak(','), and softline markers that together produce \u201c[ , ]\u201d.\n\n\u2022 printTypeParameter contributes the individual pieces of a single parameter (including default values like an empty tuple) but doesn\u2019t special-case an entirely empty tuple type, so it passes through to the multiline logic above.\n\n\u2022 printTypescript (in typescript.js) orchestrates printing of AST nodes including conditional types and passes parameters through printTypeParameters. Any fix to suppress the trailing comma on an empty tuple must be applied here or in printTypeParameters to detect an empty tuple and skip the ifBreak comma in that specific context.",
+        "bug_scenario": "When formatting TypeScript generics that include a conditional on an empty tuple type, Prettier breaks the type parameters across multiple lines and, because of its multiline/comma logic, ends up inserting a stray comma inside what should be an empty array. In the Playground screenshot you can see:\n  aaddffgg extends [  , ]\ninstead of staying as an unbroken [] when the identifier length and print-width trigger a break."
+    }
+}

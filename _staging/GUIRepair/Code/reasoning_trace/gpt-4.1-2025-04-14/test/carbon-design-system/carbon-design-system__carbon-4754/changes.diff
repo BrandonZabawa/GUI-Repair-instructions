@@ -1,0 +1,90 @@
+diff --git a/packages/react/src/components/Accordion/Accordion.js b/packages/react/src/components/Accordion/Accordion.js
+index 0ffeef74..6b67a0ec 100644
+--- a/packages/react/src/components/Accordion/Accordion.js
++++ b/packages/react/src/components/Accordion/Accordion.js
+@@ -12,11 +12,18 @@ import React from 'react';
+ 
+ const { prefix } = settings;
+ 
+-function Accordion({ children, className: customClassName, ...rest }) {
++function Accordion({ children, className: customClassName, align = 'start', ...rest }) {
+   const className = cx(`${prefix}--accordion`, customClassName);
++  // Pass align prop to children if they are AccordionItems
++  const childrenWithAlign = React.Children.map(children, child => {
++    if (React.isValidElement(child) && typeof child.type === 'function') {
++      return React.cloneElement(child, { align });
++    }
++    return child;
++  });
+   return (
+     <ul className={className} {...rest}>
+-      {children}
++      {childrenWithAlign}
+     </ul>
+   );
+ }
+@@ -31,6 +38,11 @@ Accordion.propTypes = {
+    * Specify an optional className to be applied to the container node
+    */
+   className: PropTypes.string,
++
++  /**
++   * Specify the alignment of the chevron in the heading ('start' | 'end')
++   */
++  align: PropTypes.oneOf(['start', 'end']),
+ };
+ 
+ export default Accordion;
+diff --git a/packages/react/src/components/Accordion/AccordionItem.js b/packages/react/src/components/Accordion/AccordionItem.js
+index 4482a541..9bae6b19 100644
+--- a/packages/react/src/components/Accordion/AccordionItem.js
++++ b/packages/react/src/components/Accordion/AccordionItem.js
+@@ -23,6 +23,7 @@ function AccordionItem({
+   onHeadingClick,
+   renderExpando: Expando = defaultRenderExpando,
+   title = 'title',
++  align = 'start',
+   ...rest
+ }) {
+   const [isOpen, setIsOpen] = useState(open);
+@@ -76,11 +77,23 @@ function AccordionItem({
+         onKeyDown={onKeyDown}
+         title={iconDescription}
+         type="button">
+-        <ChevronRight16
+-          aria-label={iconDescription}
+-          className={`${prefix}--accordion__arrow`}
+-        />
+-        <div className={`${prefix}--accordion__title`}>{title}</div>
++        {align === 'start' ? (
++          <>
++            <ChevronRight16
++              aria-label={iconDescription}
++              className={`${prefix}--accordion__arrow`}
++            />
++            <div className={`${prefix}--accordion__title`}>{title}</div>
++          </>
++        ) : (
++          <>
++            <div className={`${prefix}--accordion__title`}>{title}</div>
++            <ChevronRight16
++              aria-label={iconDescription}
++              className={`${prefix}--accordion__arrow`}
++            />
++          </>
++        )}
+       </Expando>
+       <div className={`${prefix}--accordion__content`}>{children}</div>
+     </li>
+@@ -128,6 +141,11 @@ AccordionItem.propTypes = {
+    * The handler of the massaged `click` event on the heading.
+    */
+   onHeadingClick: PropTypes.func,
++
++  /**
++   * Specify the alignment of the chevron in the heading ('start' | 'end')
++   */
++  align: PropTypes.oneOf(['start', 'end']),
+ };
+ 
+ export default AccordionItem;

@@ -1,0 +1,41 @@
+diff --git a/lighthouse-core/gather/computed/critical-request-chains.js b/lighthouse-core/gather/computed/critical-request-chains.js
+index 7d51fd370..7c05bfbc6 100644
+--- a/lighthouse-core/gather/computed/critical-request-chains.js
++++ b/lighthouse-core/gather/computed/critical-request-chains.js
+@@ -22,6 +22,26 @@ class CriticalRequestChains extends ComputedArtifact {
+   static isCritical(request) {
+     const resourceTypeCategory = request._resourceType && request._resourceType._category;
+ 
++    // Exclude data URIs
++    if (request._url && request._url.startsWith('data:')) {
++      return false;
++    }
++
++    // Exclude iframes (Documents that are not the main frame)
++    // _resourceType._name === 'Document' and has a frameId different from main frame
++    if (
++      request._resourceType &&
++      request._resourceType._name === 'Document' &&
++      request.frameId &&
++      request.frameId !== request._mainFrameId // _mainFrameId may not exist, fallback to checking initiatorType
++    ) {
++      return false;
++    }
++    // Alternatively, if above doesn't work, check initiatorType
++    if (request.initiatorType === 'iframe') {
++      return false;
++    }
++
+     // XHRs are fetched at High priority, but we exclude them, as they are unlikely to be critical
+     // Images are also non-critical.
+     // Treat any images missed by category, primarily favicons, as non-critical resources
+@@ -38,7 +58,8 @@ class CriticalRequestChains extends ComputedArtifact {
+   }
+ 
+   static extractChain(networkRecords) {
+-    networkRecords = networkRecords.filter(req => req.finished);
++    // Exclude data URI requests (at least leaf nodes, but here we filter all)
++    networkRecords = networkRecords.filter(req => req.finished && !(req._url && req._url.startsWith('data:')));
+ 
+     // Build a map of requestID -> Node.
+     const requestIdToRequests = new Map();

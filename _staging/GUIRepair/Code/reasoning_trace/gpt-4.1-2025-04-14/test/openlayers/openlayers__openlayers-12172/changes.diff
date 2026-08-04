@@ -1,0 +1,65 @@
+diff --git a/src/ol/render/canvas/ImageBuilder.js b/src/ol/render/canvas/ImageBuilder.js
+index 9df168dce5..da7b782f36 100644
+--- a/src/ol/render/canvas/ImageBuilder.js
++++ b/src/ol/render/canvas/ImageBuilder.js
+@@ -113,6 +113,19 @@ class CanvasImageBuilder extends CanvasBuilder {
+     const stride = pointGeometry.getStride();
+     const myBegin = this.coordinates.length;
+     const myEnd = this.appendFlatPointCoordinates(flatCoordinates, stride);
++
++    // Apply displacement to coordinates
++    const displacement = this.image_ && this.image_.style && this.image_.style.getDisplacement
++      ? this.image_.style.getDisplacement()
++      : [0, 0];
++
++    if (displacement && (displacement[0] !== 0 || displacement[1] !== 0)) {
++      for (let i = myBegin; i < myEnd; i += stride) {
++        this.coordinates[i] += displacement[0];
++        this.coordinates[i + 1] += displacement[1];
++      }
++    }
++
+     this.instructions.push([
+       CanvasInstruction.DRAW_IMAGE,
+       myBegin,
+@@ -168,6 +181,19 @@ class CanvasImageBuilder extends CanvasBuilder {
+     const stride = multiPointGeometry.getStride();
+     const myBegin = this.coordinates.length;
+     const myEnd = this.appendFlatPointCoordinates(flatCoordinates, stride);
++
++    // Apply displacement to coordinates
++    const displacement = this.image_ && this.image_.style && this.image_.style.getDisplacement
++      ? this.image_.style.getDisplacement()
++      : [0, 0];
++
++    if (displacement && (displacement[0] !== 0 || displacement[1] !== 0)) {
++      for (let i = myBegin; i < myEnd; i += stride) {
++        this.coordinates[i] += displacement[0];
++        this.coordinates[i + 1] += displacement[1];
++      }
++    }
++
+     this.instructions.push([
+       CanvasInstruction.DRAW_IMAGE,
+       myBegin,
+diff --git a/src/ol/style/Icon.js b/src/ol/style/Icon.js
+index 916f6c5aa3..b8864b3575 100644
+--- a/src/ol/style/Icon.js
++++ b/src/ol/style/Icon.js
+@@ -368,7 +368,6 @@ class Icon extends ImageStyle {
+       return this.origin_;
+     }
+     let offset = this.offset_;
+-    const displacement = this.getDisplacement();
+ 
+     if (this.offsetOrigin_ != IconOrigin.TOP_LEFT) {
+       const size = this.getSize();
+@@ -390,8 +389,6 @@ class Icon extends ImageStyle {
+         offset[1] = iconImageSize[1] - size[1] - offset[1];
+       }
+     }
+-    offset[0] += displacement[0];
+-    offset[1] += displacement[1];
+     this.origin_ = offset;
+     return this.origin_;
+   }

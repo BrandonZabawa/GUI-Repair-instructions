@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/rules/BpmnRules.js//BpmnRules",
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste"
+        ],
+        "bug_functions": [
+            "lib/features/rules/BpmnRules.js//canCopy",
+            "lib/features/copy-paste/BpmnCopyPaste.js//copyPaste.copyElement",
+            "lib/features/copy-paste/BpmnCopyPaste.js//resolveReferences"
+        ],
+        "explanation": "1. BpmnRules (in BpmnRules.js) wires up the element.copy rule via canCopy. That function currently disallows boundary events outright, preventing any copy operation on them. 2. Even if you bypass the rule, BpmnCopyPaste (in BpmnCopyPaste.js) never records the boundary event\u2019s host on the descriptor inside its copyPaste.copyElement handler, so resolveReferences has no descriptor.host to work with. Without that host ID the pasted businessObject has no attachedToRef set. By updating canCopy to allow boundary events and extending copyElement to populate descriptor.host (e.g. descriptor.host = element.businessObject.attachedToRef.id), resolveReferences can restore the attachment on paste and the boundary event will reattach correctly.",
+        "bug_scenario": "When you select a boundary event on a task and hit copy/paste nothing happens \u2013 the BPMN rules explicitly prevent the \u201celement.copy\u201d operation for boundary events. If you stub out the rule you can force a copy, but the pasted event flies in as a free\u2010floating circle because the host (attachedToRef) relationship was never captured in the copy descriptor and thus never re\u00adattached on paste."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/rules/BpmnRules.js//BpmnRules"
+        ],
+        "bug_functions": [
+            "lib/features/rules/BpmnRules.js//canCopy",
+            "lib/features/rules/BpmnRules.js//isBoundaryEvent",
+            "lib/features/rules/BpmnRules.js//isBoundaryCandidate"
+        ],
+        "explanation": "The BpmnRules class in lib/features/rules/BpmnRules.js defines model rules for creating, moving, dropping and copying elements. Within that class, the canCopy function (registered under the \u201celements.copy\u201d rule) inspects each element and explicitly disallows boundary events (using helper functions isBoundaryEvent and isBoundaryCandidate). These methods detect event shapes attached to activity borders and force canCopy to return false, which is why boundary events cannot be copied. To fix the bug we must adjust or remove that copy\u2010rule logic in BpmnRules so boundary events are allowed to be copied.",
+        "bug_scenario": "The user attempts to copy a boundary event that is attached to the border of an activity. By default the \u201celements.copy\u201d rule in BpmnRules.js detects boundary events (via helper functions like isBoundaryEvent/isBoundaryCandidate) and prevents them from being copied. If that rule is disabled, the boundary event can indeed be duplicated and pasted, but the out\u2010of\u2010the\u2010box rule still blocks copying. The GIF shows selecting the boundary event, pressing copy, and nothing happening until the rule is turned off."
+    }
+}

@@ -1,0 +1,60 @@
+diff --git a/src/ol/renderer/webgl/Layer.js b/src/ol/renderer/webgl/Layer.js
+index d3de5d205f..fb3fed1824 100644
+--- a/src/ol/renderer/webgl/Layer.js
++++ b/src/ol/renderer/webgl/Layer.js
+@@ -51,6 +51,12 @@ export const WebGLWorkerMessageType = {
+  * Holds all logic related to data manipulation & some common rendering logic
+  * @template {import("../../layer/Layer.js").default} LayerType
+  */
++/**
++ * Shared WebGLHelper registry per map instance.
++ * @private
++ */
++const mapWebGLHelperRegistry = typeof WeakMap !== 'undefined' ? new WeakMap() : new Map();
++
+ class WebGLLayerRenderer extends LayerRenderer {
+   /**
+    * @param {LayerType} layer Layer.
+@@ -87,7 +93,8 @@ class WebGLLayerRenderer extends LayerRenderer {
+   }
+ 
+   removeHelper_() {
+-    if (this.helper) {
++    // Only dispose the helper if this is the owner (i.e., not shared)
++    if (this.helper && this.helper._ol_isSharedHelper !== true) {
+       this.helper.dispose();
+       delete this.helper;
+     }
+@@ -99,11 +106,28 @@ class WebGLLayerRenderer extends LayerRenderer {
+    * @return {boolean} Layer is ready to be rendered.
+    */
+   prepareFrame(frameState) {
++    // Try to share a single WebGLHelper per map
+     if (!this.helper && !!this.getLayer().getSource()) {
+-      this.helper = new WebGLHelper({
+-        postProcesses: this.postProcesses_,
+-        uniforms: this.uniforms_,
+-      });
++      let map = frameState.map;
++      if (map) {
++        let sharedHelper = mapWebGLHelperRegistry.get(map);
++        if (!sharedHelper) {
++          sharedHelper = new WebGLHelper({
++            postProcesses: this.postProcesses_,
++            uniforms: this.uniforms_,
++          });
++          // Mark as shared so we don't dispose it from a single renderer
++          sharedHelper._ol_isSharedHelper = true;
++          mapWebGLHelperRegistry.set(map, sharedHelper);
++        }
++        this.helper = sharedHelper;
++      } else {
++        // fallback: no map reference, create a new helper (legacy behavior)
++        this.helper = new WebGLHelper({
++          postProcesses: this.postProcesses_,
++          uniforms: this.uniforms_,
++        });
++      }
+ 
+       const className = this.getLayer().getClassName();
+       if (className) {

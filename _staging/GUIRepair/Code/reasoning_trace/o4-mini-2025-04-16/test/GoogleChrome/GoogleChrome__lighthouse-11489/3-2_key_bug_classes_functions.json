@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/html/renderer/util.js//Util",
+            "lighthouse-core/report/html/renderer/details-renderer.js//DetailsRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/html/renderer/util.js//formatBytes",
+            "lighthouse-core/report/html/renderer/details-renderer.js//_renderBytes"
+        ],
+        "explanation": "The core of the bug is in the byte-formatting utility in util.js (likely named formatBytes) which currently drops the decimal when the fraction is zero, and in DetailsRenderer._renderBytes, which calls that utility to generate the table cell. To always show one decimal place (even \u201c.0\u201d), you need to adjust formatBytes in util.js to use a minimumFractionDigits of 1, and ensure DetailsRenderer._renderBytes passes the right granularity or formatting options so that values like 18 \u00d7 1024 render as \u201c18.0 KiB.\u201d",
+        "bug_scenario": "In the \u201cLarge JavaScript libraries\u201d details table, the \u201cTransfer Size\u201d column omits the \u201c.0\u201d for exact-KiB values (e.g. \u201c18 KiB\u201d instead of \u201c18.0 KiB\u201d), causing the decimal alignment to break and making it harder to scan the column."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/html/renderer/util.js//Util",
+            "lighthouse-core/report/html/renderer/details-renderer.js//DetailsRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/html/renderer/util.js//Util.formatBytes",
+            "lighthouse-core/report/html/renderer/details-renderer.js//DetailsRenderer._renderBytes"
+        ],
+        "explanation": "The byte-formatting logic lives in Util.formatBytes (or its equivalent) and is responsible for turning a raw byte count into a human-readable string. Currently it omits the fractional digit when it\u2019s zero. DetailsRenderer._renderBytes calls that utility and injects the formatted text into the table. To ensure the decimal column always lines up, you must update the byte-formatting utility in util.js to force one decimal place (even when it\u2019s .0), and verify that _renderBytes passes the correct granularity parameter so the rendered output always shows the trailing zero.",
+        "bug_scenario": "The screenshot shows the \u201cLarge JavaScript libraries\u201d table in the Lighthouse HTML report. In the \u201cTransfer Size\u201d column, libraries whose sizes divide evenly into KiB (e.g. 18 \u00d7 1024 bytes) are rendered as \u201c18 KiB\u201d (no decimal) while other sizes show one decimal (\u201c20.4 KiB\u201d, \u201c70.4 KiB\u201d). Because integer sizes drop the \u201c.0\u201d, the column\u2019s decimal digits don\u2019t align, making visual scanning harder for users."
+    }
+}

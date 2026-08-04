@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/PaletteTexture.js//PaletteTexture"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//reset",
+            "src/ol/renderer/webgl/TileLayer.js//renderTile",
+            "src/ol/webgl/PaletteTexture.js//getTexture"
+        ],
+        "explanation": "The core of the bug is that palette textures become invalid when the WebGL context is lost or when layers are removed/re-added, leading to attempts to bind textures that are no longer compatible with the current context. \n\n- src/ol/layer/WebGLTile.js//WebGLTileLayer: This class manages the layer's style and palette. Its logic for (re-)constructing renderers and handling style changes is key to ensuring palette textures are refreshed or recreated as needed.\n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: This class handles the low-level WebGL rendering, including managing and binding palette textures (paletteTextures_). Its reset and renderTile methods interact directly with WebGL textures and thus need to ensure that textures are valid for the current context when rendering or after a layer is re-added.\n- src/ol/webgl/PaletteTexture.js//PaletteTexture: The getTexture method here constructs and caches a WebGLTexture based on the current context. However, if the context changes (e.g. removed/re-added layer), the cached texture becomes invalid, and getTexture should detect and recreate the texture for the new context.\n\nSpecifically:\n- WebGLTileLayerRenderer.reset and renderTile use paletteTextures_ and bind their textures. If these are not recreated for the new WebGL context, rendering will break.\n- PaletteTexture.getTexture is responsible for creating and caching the WebGLTexture. It should check if the cached texture belongs to the current context, and recreate if not.\n\nA fix would require ensuring that PaletteTexture/WebGLTileLayerRenderer/WebGLTileLayer correctly recreate palette textures when the context changes or when the layer is re-added, avoiding use of stale textures.",
+        "bug_scenario": "When using a WebGLTileLayer with a palette-based style, removing the layer from the map and adding it back causes the layer to render as a black area. Console warnings/errors indicate WebGL context/resource issues, such as 'bindTexture: tex is from a different (or lost) WebGL context.' This suggests that palette textures (WebGLTexture objects) are not properly re-initialized or re-associated with the correct context when the layer is re-added."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/webgl/PaletteTexture.js//PaletteTexture"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//renderTile",
+            "src/ol/renderer/webgl/TileLayer.js//reset"
+        ],
+        "explanation": "The core issue is that WebGL textures (especially palette textures) are associated with a specific WebGL context. When a WebGLTileLayer is removed and re-added to the map, the underlying WebGL context may be lost or changed, but the code may try to reuse stale WebGLTexture objects (e.g., from PaletteTexture), leading to INVALID_OPERATION errors when binding them in a new context. \n\n- `src/ol/layer/WebGLTile.js//WebGLTileLayer`: This class manages the layer and its style, including palette information. It is responsible for (re-)creating or updating the renderer and passing style information, so it is central to managing palette lifecycles.\n- `src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer`: This class does the actual rendering, manages the connection to the WebGL context, and holds the palette textures. Its `reset` and `renderTile` methods are critical: `reset` is called when styles change and should re-create shaders and textures as needed, while `renderTile` binds textures for rendering. Both must manage palette textures properly, especially after the renderer or context is re-initialized.\n- `src/ol/webgl/PaletteTexture.js//PaletteTexture`: This class encapsulates a palette as a WebGLTexture. Its `getTexture(gl)` method creates or returns a texture, but it may not check if the texture was created for a different (now-lost) context, so it can return stale textures after a context change.\n\nThe bug likely arises because PaletteTexture does not invalidate or recreate its WebGLTexture when the context changes, and/or because the renderer does not ensure palette textures are valid when re-initializing after add/remove. Fixes may include tracking the current GL context in PaletteTexture and invalidating/recreating the texture when the context changes, or ensuring the renderer always re-creates palette textures after context loss or renderer reset.",
+        "bug_scenario": "The bug scenario involves WebGLTileLayer in an OpenLayers-based map application. When a layer with a palette style is removed from the map and then re-added, it stops rendering correctly, showing a black layer instead of the expected styled tiles. The console reports WebGL errors like 'bindTexture: tex is from a different (or lost) WebGL context.' This indicates a problem with how palette textures (used for color mapping) are managed across layer removal and re-addition, particularly with regards to WebGL context loss or re-creation."
+    }
+}

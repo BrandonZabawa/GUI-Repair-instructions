@@ -1,0 +1,69 @@
+diff --git a/packages/react/src/components/ComboBox/ComboBox.js b/packages/react/src/components/ComboBox/ComboBox.js
+index af8d885b..94b37004 100644
+--- a/packages/react/src/components/ComboBox/ComboBox.js
++++ b/packages/react/src/components/ComboBox/ComboBox.js
+@@ -102,7 +102,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+   } = props;
+ 
+   const textInput = useRef();
+-  const comboBoxInstanceId = getInstanceId();
++  const comboBoxInstanceId = useRef(getInstanceId()).current;
+   const [inputValue, setInputValue] = useState(
+     getInputValue({
+       initialSelectedItem,
+@@ -115,6 +115,23 @@ const ComboBox = React.forwardRef((props, ref) => {
+   const [doneInitialSelectedItem, setDoneInitialSelectedItem] = useState(null);
+   const savedOnInputChange = useRef(onInputChange);
+ 
++  // Track open state for global close event
++  const [isComboBoxOpen, setIsComboBoxOpen] = useState(false);
++
++  // Listen for global close event
++  useEffect(() => {
++    function handleGlobalComboBoxClose(e) {
++      // Only close if not the one being opened
++      if (e.detail && e.detail !== comboBoxInstanceId) {
++        setIsComboBoxOpen(false);
++      }
++    }
++    window.addEventListener('carbon-combobox-close-all', handleGlobalComboBoxClose);
++    return () => {
++      window.removeEventListener('carbon-combobox-close-all', handleGlobalComboBoxClose);
++    };
++  }, [comboBoxInstanceId]);
++
+   if (!doneInitialSelectedItem || prevSelectedItem !== selectedItem) {
+     setDoneInitialSelectedItem(true);
+     setPrevSelectedItem(selectedItem);
+@@ -184,6 +201,17 @@ const ComboBox = React.forwardRef((props, ref) => {
+       onToggleClick(event);
+     }
+ 
++    // If opening, close all other ComboBoxes
++    if (!isOpen) {
++      // Dispatch global event with this instance id
++      window.dispatchEvent(
++        new CustomEvent('carbon-combobox-close-all', { detail: comboBoxInstanceId })
++      );
++      setIsComboBoxOpen(true);
++    } else {
++      setIsComboBoxOpen(false);
++    }
++
+     if (event.target === textInput.current && isOpen) {
+       event.preventDownshiftDefault = true;
+       event.persist();
+@@ -236,6 +264,13 @@ const ComboBox = React.forwardRef((props, ref) => {
+         clearSelection,
+         toggleMenu,
+       }) => {
++        // If global event closed us, force Downshift menu closed
++        useEffect(() => {
++          if (!isComboBoxOpen && isOpen) {
++            toggleMenu(); // close menu if global event closed us
++          }
++        }, [isComboBoxOpen, isOpen, toggleMenu]);
++
+         const rootProps = getRootProps(
+           {},
+           {

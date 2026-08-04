@@ -1,0 +1,37 @@
+diff --git a/lighthouse-core/aggregator/aggregate.js b/lighthouse-core/aggregator/aggregate.js
+index 845f310bb..f4d89828b 100644
+--- a/lighthouse-core/aggregator/aggregate.js
++++ b/lighthouse-core/aggregator/aggregate.js
+@@ -166,6 +166,7 @@ class Aggregate {
+ 
+       // Step through each item in the expected results, and add them
+       // to the overall score and add each to the subItems list.
++      let hasFailure = false;
+       expectedNames.forEach(e => {
+         if (!filteredAndRemappedResults[e]) {
+           throw new Error(`aggregations: expected audit results not found under audit name ${e}`);
+@@ -173,16 +174,22 @@ class Aggregate {
+ 
+         subItems.push(filteredAndRemappedResults[e].name);
+ 
+-        overallScore += Aggregate._convertToWeight(
++        const weight = Aggregate._convertToWeight(
+             filteredAndRemappedResults[e],
+             item.audits[e],
+             e);
++
++        if (weight === 0) {
++          hasFailure = true;
++        }
++
++        overallScore += weight;
+       });
+ 
+       maxScore = Aggregate._getTotalWeight(item.audits);
+ 
+       return {
+-        overall: (overallScore / maxScore),
++        overall: hasFailure ? 0 : (overallScore / maxScore),
+         name: item.name,
+         description: item.description,
+         subItems: subItems

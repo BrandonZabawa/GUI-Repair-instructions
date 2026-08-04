@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/GroupBehavior.js//GroupBehavior",
+            "lib/features/modeling/behavior/util/CategoryUtil.js//[module]",
+            "lib/features/modeling/behavior/SubProcessPlaneBehavior.js//SubProcessPlaneBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/GroupBehavior.js//getDefinitions",
+            "lib/features/modeling/behavior/GroupBehavior.js//execute('shape.create')",
+            "lib/features/modeling/behavior/util/CategoryUtil.js//createCategoryValue",
+            "lib/features/modeling/behavior/SubProcessPlaneBehavior.js//_createNewDiagram"
+        ],
+        "explanation": "\u2022 GroupBehavior.getDefinitions() picks up the *collapsed subprocess plane* definitions as the target container for new categories, instead of the global <definitions>.  \n\u2022 In GroupBehavior.execute('shape.create'), createCategoryValue(definitions, bpmnFactory) is passed this wrong definitions object, so the Category/CategoryValue live in the plane\u2019s rootElements.  \n\u2022 CategoryUtil.createCategoryValue always appends the new Category into definitions.get('rootElements') but doesn\u2019t discriminate between root and plane definitions.  \n\u2022 SubProcessPlaneBehavior._createNewDiagram (and its surrounding plane setup) never lifts or re-wires those plane-local category elements back into the exported BPMN <definitions>.  \nAs a result the CategoryValueRef points at an ID that isn\u2019t serialized in the main definitions block, causing the unresolved reference on re-import.",
+        "bug_scenario": "When you drop a BPMN Group inside a collapsed subprocess, the tooling creates a new bpmn:Category and bpmn:CategoryValue in the _plane_ definitions for that subprocess (via SubProcessPlaneBehavior), not the main <definitions>. GroupBehavior then wires the group\u2019s categoryValueRef to that new CategoryValue. Because SubProcessPlaneBehavior never serializes or re-attaches those plane definitions back into the root <definitions> when exporting, the CategoryValue never appears in the XML. On re-import the group\u2019s categoryValueRef points to a non-existent ID, triggering \u201cunresolved reference <CategoryValue_\u2026>.\u201d"
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/GroupBehavior.js//GroupBehavior",
+            "lib/features/modeling/behavior/util/CategoryUtil.js//createCategoryValue",
+            "lib/import/BpmnImporter.js//BpmnImporter"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/GroupBehavior.js//GroupBehavior.execute('shape.create')",
+            "lib/features/modeling/behavior/util/CategoryUtil.js//createCategoryValue",
+            "lib/import/BpmnImporter.js//BpmnImporter.prototype.add"
+        ],
+        "explanation": "\u2022 GroupBehavior creates and assigns a new bpmn:CategoryValue whenever a Group is created (see execute('shape.create')). It always adds the new Category and CategoryValue to the root definitions, even when inside a collapsed subprocess plane.  \n\u2022 createCategoryValue (in CategoryUtil.js) is responsible for instantiating the bpmn:Category and bpmn:CategoryValue and pushing them into definitions.rootElements. This logic is too rigid: it does not account for the nested context of a collapsed subprocess plane, so upon XML export/re-import those Category elements end up in the wrong place (or without a corresponding BPMNDI entry).  \n\u2022 BpmnImporter.prototype.add only handles the import of BPMNPlane, BPMNShape and BPMNEdge elements; it never imports plain bpmn:Category or bpmn:CategoryValue elements out of definitions. As a result the CategoryValueRef on the Group points to a semantic element that never got created on import, triggering the unresolved reference warning.",
+        "bug_scenario": "The user models a collapsed sub-process, drills into it, and adds a bpmn:Group inside that collapsed subprocess. On saving and re-importing the XML, the engine reports \u201cunresolved reference <CategoryValue_\u2026>\u201d. In the screenshots you can see the collapsed subprocess boundary (dashed), the newly created Group inside it, and then the import warning complaining that the CategoryValue reference for that group cannot be resolved."
+    }
+}

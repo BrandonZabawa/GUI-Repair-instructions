@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/fsharp.js//export default function(hljs)",
+            "src/languages/fsharp.js//hljs.COMMENT('\\\\(\\\\*','\\\\*\\\\)')"
+        ],
+        "explanation": "All of the F# syntax rules\u2014including comment delimiters\u2014are defined inside the exported function in fsharp.js. The call to hljs.COMMENT('\\\\(\\\\*','\\\\*\\\\)') registers \"(* ... *)\" as the F# multiline comment delimiters. Because Operators.(*) contains the exact sequence \"(*\", the highlighter treats it as the start of a comment. To fix this, you need to adjust or reorder the comment rule (or add an exception) within the exported function so that Operators.(*) and similar operator calls are not interpreted as comment delimiters.",
+        "bug_scenario": "In the F# code snippet the call to Operators.(*) is being picked up as the start of a multiline comment (\"(*\"), so the rest of the code block is highlighted as if it were inside a comment. In the screenshot you can see that everything after the line with Operators.(*) is greyed out as though it were part of a comment, even though it isn\u2019t."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/fsharp.js//export default function(hljs)",
+            "src/languages/fsharp.js//hljs.COMMENT('\\\\(\\\\*','\\\\*\\\\)')"
+        ],
+        "explanation": "The root of the highlighting bug is in src/languages/fsharp.js, inside the main exported function that defines the F# grammar. In its contains list it invokes hljs.COMMENT('\\\\(\\\\*','\\\\*\\\\)') to detect F# multi-line comments. Because it simply looks for any literal \"(*\" and \"*)\", an operator call written as \"(*)\" is incorrectly recognized as the start and end of a comment delimiter. This means that Operators.(*) will be treated as a comment, and everything that follows is swallowed as comment text. To fix the issue, the comment rule or its placement/order in the grammar must be refined so that it does not trigger on operator usage patterns like Operators.(*) without a real comment context.",
+        "bug_scenario": "In an F# code snippet posted in Discord\u2019s syntax-highlighted code block, using the Operators.(*) function triggers the F# multi-line comment rule (which begins on \"(*\" and ends on \"*)\"). The highlighter mistakes the operator call \"(*)\" for the start of a comment, causing the rest of the code block to be rendered as a comment."
+    }
+}

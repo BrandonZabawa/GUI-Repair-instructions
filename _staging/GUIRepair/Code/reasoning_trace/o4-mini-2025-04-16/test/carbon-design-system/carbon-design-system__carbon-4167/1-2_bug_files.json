@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableSelectRow.js",
+            "packages/react/src/components/DataTable/TableSelectAll.js",
+            "packages/react/src/components/DataTable/DataTable.js"
+        ],
+        "explanation": "\u2022 TableSelectRow.js is the React component responsible for rendering the <td> wrapper around the inline checkbox. It should include the bx--table-column-checkbox class on its <td>, but in this release the logic never actually emits that class on the cell. Fixing this file (ensuring the class is always applied) resolves the missing-class issue.\n\n\u2022 TableSelectAll.js shows how the header cell for the \"select all\" checkbox correctly applies bx--table-column-checkbox on a <th>. We include it for comparison so the row-cell file can be aligned to the same pattern.\n\n\u2022 DataTable.js (where getSelectionProps is defined) wires up the props passed into both TableSelectAll and TableSelectRow. While getSelectionProps currently only returns input-level props (id, name, onClick, checked, etc.), you could also inject a className here to ensure TableSelectRow receives it. Any change to how getSelectionProps packages its return value will affect both selection components.\n\nTogether, edits in these files will restore the missing class on the row-checkbox cell and re-apply the correct Carbon styles (restoring 48px row height).",
+        "bug_scenario": "When you render a selectable DataTable in React (v7.5.0) using <TableSelectRow> for each row, the generated <td> around the inline checkbox is coming out with no \u201cbx--table-column-checkbox\u201d class. Because that class never lands on the cell, the Carbon table styles for selectable\u2010row height (48px) aren\u2019t applied and your rows render taller (52px). On the core Carbon site the same pattern adds <td class=\"bx--table-column-checkbox\">, but in the React implementation it is missing."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableSelectRow.js",
+            "packages/react/src/components/DataTable/TableSelectAll.js",
+            "packages/react/src/components/DataTable/index.js"
+        ],
+        "explanation": "\u2022 TableSelectRow.js is responsible for rendering the <td> wrapper around each row\u2019s checkbox. It interpolates a className but doesn\u2019t supply a default, so in practice the required \u201cbx--table-column-checkbox\u201d class never ends up on the <td>. \u2022 TableSelectAll.js does the same for the header checkbox (<th> wrapper) and likewise must include the same class on its cell. \u2022 index.js exports these components for DataTable.TableSelectRow and DataTable.TableSelectAll. Fixing the className handling in TableSelectRow and TableSelectAll will restore the correct wrapper class on the cell and the proper row height.",
+        "bug_scenario": "When you render a selectable DataTable in React (using <TableSelectAll> in the header and <TableSelectRow> on each row via getSelectionProps), the <td> that should wrap the checkbox does not receive the \u201cbx--table-column-checkbox\u201d class. On the vanilla Carbon example page you can see that for selectable rows the checkbox cell is wrapped in <td class=\"bx--table-column-checkbox\">, and that gives the row the expected 48 px height. In the React implementation the <td> is rendered without that class, so the row content is shifted and the row height becomes 52 px."
+    }
+}

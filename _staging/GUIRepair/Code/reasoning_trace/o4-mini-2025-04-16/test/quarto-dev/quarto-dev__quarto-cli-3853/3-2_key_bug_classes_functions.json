@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/crossref/theorems.lua//crossrefTheorems",
+            "src/resources/filters/crossref/theorems.lua//crossrefPreprocessTheorems",
+            "src/resources/filters/quarto-pre/theorems.lua//quartoPreTheorems"
+        ],
+        "explanation": "All of the extra vertical space and the misplaced QED symbol stem from the Lua filters that wrap theorem and proof Divs for LaTeX output. In crossrefTheorems, the code for PDF/LaTeX inserts raw \u201c\\begin{\u2026}\u201d and \u201c\\end{\u2026}\u201d blocks inside a Para, leaving Pandoc\u2019s default \\leavevmode\\vadjust pre{\\hypertarget{\u2026}{}}% anchor at the top of the block and an empty Para before the \\end{proof}. Those stray anchors and blank paragraphs produce the unwanted vertical gaps and low QED. The pre\u2010filter quartoPreTheorems (and its preliminary crossrefPreprocessTheorems) also drive how the Div is classified and handed off for LaTeX wrapping, so any change to suppress or relocate the \\hypertarget must happen there or in crossrefTheorems.",
+        "bug_scenario": "The two PDF screenshots show that every definition/theorem/example block in a Quarto\u2010generated LaTeX PDF has a large extra vertical gap immediately before the \u201cDefinition 1.1\u201d (and similarly before theorem, example, etc.) compared to a handwritten LaTeX version. Inspecting the .tex reveals a stray \u201c\\leavevmode\\vadjust pre{\\hypertarget{\u2026}{}}%\u201d line just above \u201c\\begin{definition}\u201d, and proof environments get an inserted empty paragraph before \u201c\\end{proof}\u201d so the QED box sits too low."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/common/theorems.lua",
+            "src/resources/filters/quarto-pre/theorems.lua",
+            "src/resources/filters/crossref/theorems.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/common/theorems.lua//hasTheoremRef",
+            "src/resources/filters/quarto-pre/theorems.lua//quartoPreTheorems",
+            "src/resources/filters/crossref/theorems.lua//crossrefPreprocessTheorems",
+            "src/resources/filters/crossref/theorems.lua//crossrefTheorems"
+        ],
+        "explanation": "\u2022 hasTheoremRef (common/theorems.lua) identifies Divs that should be treated as theorem environments \u2013 any change to filtering logic here will affect which blocks get the anchor injection.\\n\u2022 quartoPreTheorems (quarto-pre/theorems.lua) applies a Div filter early; although it only sets unnumbered/unlisted classes now, it\u2019s the first hook for theorem-like blocks and could be extended to suppress the upstream anchor.\\n\u2022 crossrefPreprocessTheorems (crossref/theorems.lua) also walks Divs to unnumber embedded Headers; it runs before crossrefTheorems and could remove the blank line or anchor.\\n\u2022 crossrefTheorems (crossref/theorems.lua) is where the RawInline LaTeX for \\begin{\u2026} and \\end{\u2026} is injected; it currently wraps the closing tag in a pandoc.Para, introducing an extra paragraph break. Adjusting these functions (e.g. using RawBlock instead of Para for \\end{proof} and suppressing the \\leavevmode\u2026 anchor) will eliminate the excessive vertical space and correct QED placement.",
+        "bug_scenario": "When rendering theorem-like callouts (Definition, Example, Theorem, Proof) to LaTeX/PDF, each environment is preceded by Pandoc\u2019s hyperlink anchor macro (\\leavevmode\\vadjust pre{\u2026}) which injects unwanted vertical space before the environment begins. In proofs, an extra blank paragraph is emitted just before \\end{proof}, causing the QED symbol to drop too low."
+    }
+}

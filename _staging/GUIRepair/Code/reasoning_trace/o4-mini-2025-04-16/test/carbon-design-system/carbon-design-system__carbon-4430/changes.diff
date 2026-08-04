@@ -1,0 +1,107 @@
+diff --git a/packages/react/src/components/DataTable/DataTable.js b/packages/react/src/components/DataTable/DataTable.js
+index 69b3dc30..02fa790b 100644
+--- a/packages/react/src/components/DataTable/DataTable.js
++++ b/packages/react/src/components/DataTable/DataTable.js
+@@ -281,9 +281,10 @@ export default class DataTable extends React.Component {
+    * @returns {object}
+    */
+   getSelectionProps = ({ onClick, row, ...rest } = {}) => {
+-    const { translateWithId: t } = this.props;
++    const { translateWithId: t, filterRows } = this.props;
++    const { filterInputValue, rowIds, rowsById, cellsById } = this.state;
+ 
+-    // If we're given a row, return the selection state values for that row
++    // Per‐row checkbox
+     if (row) {
+       const translationKey = row.isSelected
+         ? translationKeys.unselectRow
+@@ -303,13 +304,27 @@ export default class DataTable extends React.Component {
+       };
+     }
+ 
+-    // Otherwise, we're working on `TableSelectAll` which handles toggling the
+-    // selection state of all rows.
+-    const rowCount = this.state.rowIds.length;
+-    const selectedRowCount = this.getSelectedRows().length;
+-    const checked = rowCount > 0 && selectedRowCount === rowCount;
++    // “Select All” checkbox: only consider filtered (visible) rows
++    const filteredRowIds =
++      typeof filterInputValue === 'string'
++        ? filterRows({
++            rowIds,
++            headers: this.props.headers,
++            cellsById,
++            inputValue: filterInputValue,
++          })
++        : rowIds;
++
++    const totalVisible = filteredRowIds.length;
++    const selectedVisible = filteredRowIds.filter(
++      id => rowsById[id].isSelected
++    ).length;
++
++    const checked = totalVisible > 0 && selectedVisible === totalVisible;
+     const indeterminate =
+-      rowCount > 0 && selectedRowCount > 0 && selectedRowCount !== rowCount;
++      totalVisible > 0 &&
++      selectedVisible > 0 &&
++      selectedVisible < totalVisible;
+ 
+     const translationKey = checked
+       ? translationKeys.unselectAll
+@@ -422,18 +437,49 @@ export default class DataTable extends React.Component {
+   };
+ 
+   /**
+-   * Handler for toggling the selection state of all rows in the database
++   * Handler for toggling the selection state of all rows in the current filter
+    */
+   handleSelectAll = () => {
+     this.setState(state => {
+-      const { rowIds, rowsById } = state;
+-      const selectableRows = rowIds.reduce((acc, rowId) => {
+-        return (acc += rowsById[rowId].disabled ? 0 : 1);
++      const { filterRows } = this.props;
++      const { filterInputValue, rowIds, rowsById, cellsById } = state;
++
++      // Determine the set of visible (filtered) rows
++      const filteredRowIds =
++        typeof filterInputValue === 'string'
++          ? filterRows({
++              rowIds,
++              headers: this.props.headers,
++              cellsById,
++              inputValue: filterInputValue,
++            })
++          : rowIds;
++
++      // Count how many visible rows can be selected
++      const selectableVisible = filteredRowIds.reduce((acc, id) => {
++        return acc + (rowsById[id].disabled ? 0 : 1);
+       }, 0);
+-      const isSelected = this.getSelectedRows().length !== selectableRows;
++
++      // Should we select or unselect them?
++      const currentlySelectedVisible = filteredRowIds.filter(
++        id => rowsById[id].isSelected
++      ).length;
++      const isSelected = currentlySelectedVisible !== selectableVisible;
++
++      // Build new rowsById toggling only the visible rows
++      const newRowsById = { ...rowsById };
++      filteredRowIds.forEach(id => {
++        if (!newRowsById[id].disabled) {
++          newRowsById[id] = {
++            ...newRowsById[id],
++            isSelected,
++          };
++        }
++      });
++
+       return {
+         shouldShowBatchActions: isSelected,
+-        ...this.setAllSelectedState(state, isSelected),
++        rowsById: newRowsById,
+       };
+     });
+   };

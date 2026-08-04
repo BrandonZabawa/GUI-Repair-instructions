@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler",
+            "lib/features/modeling/Modeling.js//Modeling"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider.prototype.update",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//execute",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//revert",
+            "lib/features/modeling/Modeling.js//Modeling.prototype.updateLabel"
+        ],
+        "explanation": "These classes and functions all participate in the \u2018element.updateLabel\u2019 command that fires when an inline edit is completed or rolled back. LabelEditingProvider.prototype.update is where direct-editing hands off new text and bounds to Modeling.updateLabel. Modeling.prototype.updateLabel invokes the commandStack, binding to UpdateLabelHandler. UpdateLabelHandler.execute and .revert perform the actual text and shape updates (setLabel, resize, remove). Because the delete action fires while direct-editing is still active, the sequence of complete\u2192updateLabel\u2192execute/revert is invoked in the wrong context, triggering the illegal invocation. Fixing the bug will require adjusting how or when LabelEditingProvider cancels or completes edits (and thus invokes Modeling.updateLabel) before the shape is deleted, or correcting the handler\u2019s binding so that execute/revert always have a valid invocation context.",
+        "bug_scenario": "A user begins editing an element\u2019s label (double-click) and while the inline text editor is active, clicks the trash/delete icon in the context pad to delete that element. The diagram-js direct-editing provider responds by first trying to complete (or cancel) the edit, which calls into BPMN-JS\u2019s Modeling.updateLabel command. During the commandStack <execute>/<revert> phase for element.updateLabel (an illegal invocation exception is thrown, blowing up the editor). The gif shows the blue dashed editing box around a shape and then the context-pad trash icon being clicked."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js//LabelEditingProvider",
+            "lib/features/modeling/Modeling.js//Modeling",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/LabelEditingProvider.js//update",
+            "lib/features/modeling/Modeling.js//updateLabel",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//execute",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//revert"
+        ],
+        "explanation": "The fault lies in the direct-editing cleanup/complete path: LabelEditingProvider.prototype.update calls model.updateLabel unconditionally when direct editing ends, even if the element was removed. That dispatches the \u2018element.updateLabel\u2019 command via Modeling.prototype.updateLabel, which in turn invokes the UpdateLabelHandler.execute (and possibly revert). Because the element has just been deleted, the handler ends up calling DOM/text\u2010manipulation functions on a stale or detached element, leading to the illegal invocation error. Guarding against updateLabel on removed elements (or cancelling direct editing before deletion) in LabelEditingProvider.update or within Modeling.updateLabel/UpdateLabelHandler would prevent this exception.",
+        "bug_scenario": "In the provided GIF the user double-clicks a shape to start editing its label and then immediately clicks the trash-can icon on the context pad to delete the same shape. Because direct editing is still active, deleting the element triggers the label\u2010update machinery (execute/revert) on an element that no longer exists, resulting in an \u201cillegal invocation\u201d exception in the element.updateLabel phase."
+    }
+}

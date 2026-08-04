@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/print/statement.js"
+        ],
+        "explanation": "The inconsistent handling of comments on `case` vs. `default` labels arises in the printer logic for switch statements, which lives in `src/language-js/print/statement.js`.  \n\nThat file contains the code that renders each `SwitchCase` node (including the `default:` branch). It decides when to break the line and when to attach comments inline. Because the logic for `default` is (unintentionally) slightly different than for `case`\u2014forcing a line break before the comment\u2014it needs to be adjusted there so that `default:` comments are treated the same way as `case:` comments.",
+        "bug_scenario": "When you run Prettier 2.3.2 on a switch statement that has an inline comment on the `default:` label, Prettier moves that comment down to its own line, even though it preserves inline comments on `case` labels.  \n\nFor example, given this input:\n\n```js\nfunction read_statement() {\n  switch (peek_keyword()) {\n    case Keyword.impl: // impl<T> Growling<T> for Wolf {}\n      return ImplDeclaration.read();\n\n    default: // expression;\n      return ExpressionStatement.read();\n  }\n}\n```\n\nPrettier outputs:\n\n```js\nfunction read_statement() {\n  switch (peek_keyword()) {\n    case Keyword.impl: // impl<T> Growling<T> for Wolf {}\n      return ImplDeclaration.read();\n\n    default:\n      // expression;\n      return ExpressionStatement.read();\n  }\n}\n```\n\nBut the desired behavior is to keep the comment inline on the `default:` line (`default: // expression;`)."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/print/statement.js",
+            "src/language-js/print/comment.js"
+        ],
+        "explanation": "The formatting logic for switch cases\u2014including the special `default` node\u2014lives in src/language-js/print/statement.js where the printer builds the `case`/`default` header and attaches comments. That file currently treats the `default` clause\u2019s trailing comment differently, forcing it onto the next line. The comment-handling utilities in src/language-js/print/comment.js control how comments are bound as trailing or dangling; they play a role in determining whether a `//` comment stays on the same line after a colon. Fixing this bug requires adjusting the SwitchCase printing in statement.js so that it uses the same inline-trailing-comment logic as for `case`, and if necessary tweaking the comment-placement rules in comment.js to ensure the `default: // ...` stays together.",
+        "bug_scenario": "When formatting a JavaScript switch statement, Prettier preserves inline comments after the colon on `case` clauses (e.g. `case X: // comment`) but for the `default` clause it pulls the comment onto its own line. In other words, given\n\n  switch (x) {\n    case A: // ok inline comment\n      \u2026\n    default: // should stay inline\n      \u2026\n  }\n\nPrettier currently rewrites the `default` so the `// comment` lives on the next line. The expected behavior is to keep the default\u2019s trailing comment on the same line, exactly as it does for ordinary `case` clauses."
+    }
+}

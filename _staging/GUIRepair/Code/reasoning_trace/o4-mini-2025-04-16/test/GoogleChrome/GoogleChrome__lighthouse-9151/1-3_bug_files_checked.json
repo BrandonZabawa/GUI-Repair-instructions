@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/html/renderer/pwa-category-renderer.js",
+            "lighthouse-core/report/html/renderer/category-renderer.js",
+            "lighthouse-core/report/html/renderer/util.js"
+        ],
+        "explanation": "1. pwa-category-renderer.js \u2013 This file is responsible for assembling the PWA header markup. It currently only injects the PWA icon and label, but never hooks up the gauge drawing or score element that would render the colored arc and percentage.  \n2. category-renderer.js \u2013 This general renderer contains the shared logic for creating category gauges (arc drawing, score text, CSS classes). The PWA renderer doesn\u2019t call into or properly extend its gauge-creation methods, so no arc or text appears.  \n3. util.js \u2013 This utility holds the mapping of category IDs to color classes and default settings for rendering gauges. There is no entry for the PWA category, so even if the PWA renderer invoked the gauge code, it would fallback to gray (and not draw an arc) due to the missing color mapping. All three files must be updated so that the PWA renderer uses the shared gauge API (from category-renderer.js) and util.js defines a PWA color entry, enabling the colored arc and percentage text to appear.",
+        "bug_scenario": "When rendering the Lighthouse HTML report header, the PWA category gauge is coming out as a plain gray circle with only the \u201cPWA\u201d icon inside it. Unlike the other categories (Performance, Accessibility, Best Practices, SEO), it has no colored arc, no numeric percentage, and no hover label styling."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/report/html/renderer/pwa-category-renderer.js",
+            "lighthouse-core/report/html/renderer/category-renderer.js",
+            "lighthouse-core/report/html/html-report-assets.js"
+        ],
+        "explanation": "1. pwa-category-renderer.js: This is the renderer that spits out the PWA header. It never invokes the shared gauge\u2010building routines in CategoryRenderer, so no arc or score label gets injected for PWA. \n2. category-renderer.js: The generic CategoryRenderer contains the logic to create and style the circular gauge (including applying the colored arc and numeric label), but it does not handle the \u201cpwa\u201d category. It needs an entry for \u2018pwa\u2019 so the gauge template and CSS class get applied. \n3. html-report-assets.js: This file bundles the CSS that gives each category\u2019s gauge its color via `.lh-gauge--<category>` rules. There is currently no rule for `.lh-gauge--pwa`, so even if the gauge element were built correctly it would remain a plain gray circle. Updating these three files together restores the colored arc and number for the PWA gauge.",
+        "bug_scenario": "When rendering just the PWA category header (via PwaCategoryRenderer) the gauge shows only a grey circle with the PWA icon\u2014instead of the familiar colored arc and percentage label that all other category gauges (Performance, Accessibility, Best Practices, SEO) display."
+    }
+}

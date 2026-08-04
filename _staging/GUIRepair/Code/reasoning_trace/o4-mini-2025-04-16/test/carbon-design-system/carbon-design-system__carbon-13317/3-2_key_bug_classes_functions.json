@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//RadioButtonGroup",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//RadioButtonGroupContext"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//getRadioButtons",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//handleOnChange"
+        ],
+        "explanation": "All of the validation logic and display must be introduced in RadioButtonGroup. The RadioButtonGroup component (and its context) is where group-level props (invalid, warn, helperText) would be accepted and propagated; without changes here no state or message ever renders. The getRadioButtons function clones child RadioButton components but does not inject any validation flags or control icons/text. The handleOnChange function controls selection changes but also needs to hook into validation-related state updates. In short, RadioButtonGroup.js is the key file to extend parser of new props, add CSS modifiers (for error/warn/helper), and render the validation message and icon under the fieldset.",
+        "bug_scenario": "The design spec shows that RadioButtonGroup must support three validation-related states: an error state (red border, error icon and a red error message below the group), a warning state (yellow warning icon and message), and a helper state (information icon with helper text). In the provided screenshot, each state applies distinct styling to the fieldset and displays an icon and text under the radio buttons. The current implementation of RadioButtonGroup renders only the legend and the list of RadioButton children; it does not accept or render any validation props (e.g. invalid, warn, helperText) nor display the corresponding message or icons."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//RadioButtonGroup",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//getRadioButtons",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//handleOnChange"
+        ],
+        "explanation": "The RadioButtonGroup component is responsible for rendering the field wrapper and children but currently only handles selection, disabled, read-only, orientation, and legendText. It has no support for invalid/error, warning, or helper text states. To implement the validation API (invalid, invalidText, warn, warnText, helperText), we need to:\n1. Extend RadioButtonGroup\u2019s propTypes and function signature to accept new props for validation and helper text.\n2. Update wrapperClasses to include CSS modifiers for error and warning (e.g. `${prefix}--form-item--invalid`, `${prefix}--form-item--warning`).\n3. Render the validation or helper message below the fieldset (mirroring other form components).\n4. Potentially pass validation state down to each RadioButton via getRadioButtons so they render with the correct icon/color.\n\nhandleOnChange may also be enhanced to trigger warning or error callbacks. These changes all occur within RadioButtonGroup.js in the RadioButtonGroup, getRadioButtons, and handleOnChange functions.",
+        "bug_scenario": "The spec screenshot shows a RadioButtonGroup in a white theme illustrating the following states:\n- Default unselected and selected states (empty and filled circles)\n- Hover (cursor change)\n- Focus (blue outline)\n- Disabled (greyed-out controls)\n- Invalid (red outline, error icon to the left of each radio, and red error text below)\n- Warn (yellow warning icon, yellow border, and warning message below)\n- Help (information icon and helper text below)\n\nIt also shows how grouped radio buttons should render with group labels, spacing, and multiline messages wrapping under the group."
+    }
+}

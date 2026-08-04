@@ -1,0 +1,35 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/reproj/Image.js//ReprojImage",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//getResolution",
+            "src/ol/source/GeoTIFF.js//getBoundingBox",
+            "src/ol/source/GeoTIFF.js//getOrigin",
+            "src/ol/source/GeoTIFF.js//configure_",
+            "src/ol/reproj/Image.js//reproject_",
+            "src/ol/reproj/Tile.js//reproject_"
+        ],
+        "explanation": "All of the identified functions are involved in determining the pixel extent, resolution, and canvas height/width used when reading the GeoTIFF and reprojection pipelines.\\n\\n\u2022 GeoTIFFSource.getResolution, getBoundingBox and getOrigin: these compute the spatial resolution and image bounds from the TIFF metadata. They currently assume a single scalar resolution (i.e. square pixels) and return one value for both X and Y dimensions. With non-square pixels the Y resolution is different, so using a single value underestimates the number of rows (height) needed.\\n\\n\u2022 GeoTIFFSource.configure_: this builds the TileGrid from those extents and resolutions, again relying on one resolution value which leads the tile grid to be too short in Y when pixels are tall or wide.\\n\\n\u2022 ReprojImage.reproject_ and ReprojTile.reproject_: once the source tiles/images are loaded, these methods calculate the canvas width and height by dividing the X and Y span of the target extent by the single targetResolution. They never account for independent X/Y resolutions, so the rendered canvas height is incorrect and crops the image.\\n\\nTo fix the bug, the code must be updated to compute and propagate separate X and Y resolutions (pixelWidth and pixelHeight) throughout getResolution, getBoundingBox, configure_, and the reprojection routines, so that both width and height sizes use the correct per-axis resolution.",
+        "bug_scenario": "The user is loading a Cloud-Optimized GeoTIFF (COG) that has non-square pixels (i.e. pixel width \u2260 pixel height). In OpenLayers only the upper portion of the raster is rendered \u2013 the bottom is blank \u2013 whereas other viewers (e.g. geotiff.io, QGIS) correctly display the entire image. The QGIS screenshot shows the full extent of the gray-scale elevation data, but when the same COG is loaded into the OpenLayers example sandbox, the canvas is drawn too short in the Y dimension, effectively cropping off the lower section."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/reproj/Image.js//ReprojImage",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//getResolution",
+            "src/ol/source/GeoTIFF.js//getOrigin",
+            "src/ol/source/GeoTIFF.js//getBoundingBox",
+            "src/ol/reproj/Image.js//ReprojImage.reproject_",
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_"
+        ],
+        "explanation": "The GeoTIFFSource methods getBoundingBox, getOrigin, and getResolution currently return a single resolution value (or extent) and assume square pixels. For non-square pixels, X and Y resolutions differ, so using one value miscalculates the image\u2019s height or origin, cropping the bottom. In the reprojection pipeline, ReprojImage.reproject_ and ReprojTile.reproject_ compute canvas width and height based on a single targetResolution_ as well. They therefore size the output canvas incorrectly when pixels aren\u2019t square, again truncating the lower part. Adjusting these methods to handle separate horizontal and vertical resolutions (and deriving both width and height appropriately) will ensure the full image is rendered.",
+        "bug_scenario": "When loading a Cloud-Optimized GeoTIFF with non-square pixels in OpenLayers, only the upper part of the image is rendered. The lower portion is missing because the code computes a single \u201cresolution\u201d value and derives the canvas height from it, ignoring differing X and Y pixel sizes. In contrast, QGIS or geotiff.io display the full image correctly."
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/connections/cri.js"
+        ],
+        "explanation": "1. driver.js: This is where Lighthouse\u2019s driver connects to Chrome and calls Network.enable, Page.enable, etc. It currently only operates on the main session, never calls Target.setDiscoverTargets or handles Target.targetCreated/Target.attachToTarget for OOPIFs. It must be updated to subscribe to new targets, attach to iframe sessions, and re-issue Network.enable for each. 2. connections/cri.js: This implements the low-level CDP connection and session management. It dispatches raw protocol events and provides session() forks, but it doesn\u2019t yet expose logic for discovering targets or auto-attaching to new iframe sessions. It needs hooks to forward Target.targetCreated events up to driver.js and support sending commands to newly attached sessions so their network events are recorded.",
+        "bug_scenario": "When a page contains a cross-origin iframe that Chrome spins up in a separate process (an \u201cOOPIF\u201d), Lighthouse\u2019s driver only enables the Network domain on the main target session. In contrast, DevTools listens for Target.targetCreated, calls Target.attachToTarget on the new session, and then issues Network.enable over that session so it sees the iframe\u2019s requests. The trace in the screenshots shows DevTools sending multiple Target.sendMessageToTarget calls for Network.enable, Page.enable, etc., on both the main session and the OOPIF session, but Lighthouse never discovers or attaches to those extra targets and so never receives Network.requestWillBeSent events from the iframe\u2019s process."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/connections/cri.js",
+            "lighthouse-core/gather/connections/extension.js",
+            "lighthouse-core/gather/connections/raw.js"
+        ],
+        "explanation": "All of the files under lighthouse-core/gather form the plumbing that Lighthouse uses to talk to Chrome over the DevTools Protocol.  \n1) driver.js is the high-level driver that orchestrates the CDP commands (Network.enable, Page.navigate, tracing.start, etc.) against a single session.  It never calls Target.setDiscoverTargets or handles Target.targetCreated/attachToTarget to spawn new sessions.  \n2) cri.js is the implementation of the CDP connection using chrome-remote-interface.  It only supports a single session/channel and doesn\u2019t subscribe or re-emit Target events.  \n3) extension.js is the connection layer used when Lighthouse runs inside the DevTools extension context\u2014it also only speaks to the main frame and ignores new targets.  \n4) raw.js is the low-level WebSocket-based connection for Puppeteer/raw CDP connections\u2014again only wired for a single session.  \nFixing OOPIF support will require updating driver.js to call Target.setDiscoverTargets, handle Target.targetCreated/targetInfoChanged, call attachToTarget for each iframe target, and re-emit or multiplex commands and events via cri.js/extension.js/raw.js so that Network.enable (and other domains) runs against every attached session.",
+        "bug_scenario": "When Lighthouse drives Chrome over the DevTools Protocol it only calls Network.enable (and Page.enable, Profiler.enable, etc.) once on the main target session.  If a page contains a cross-origin iframe (an \u201cOOPIF\u201d), Chrome spins that frame up in a separate target/process.  DevTools works around this by calling Target.setDiscoverTargets, listening for Target.targetCreated events, attaching to the new sessionId with Target.attachToTarget, then sending Network.enable (and other domains) on that session so it sees the iframe\u2019s requests.  Lighthouse never does any target discovery or multi-session work, so it never captures network events from OOPIFs\u2014only the main frame\u2019s requests."
+    }
+}

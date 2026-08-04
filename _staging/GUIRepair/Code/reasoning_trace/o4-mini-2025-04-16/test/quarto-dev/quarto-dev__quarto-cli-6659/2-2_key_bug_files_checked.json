@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/common/figures.lua",
+            "src/resources/filters/quarto-pre/figures.lua"
+        ],
+        "explanation": "Both of these filters implement the logic that discovers and renders figures based on the presence of a caption. In common/figures.lua, `discoverFigure` (and related helpers) only returns an Image when `#image.caption > 0`, so an empty caption vector causes the image to be ignored. In quarto-pre/figures.lua the `Div` and `Para` handlers propagate `fig-cap` into the block content only when the attribute is non-nil, but an empty caption attribute ends up getting dropped before discoverFigure runs. Together these two files control how zero-length captions are handled, and must be updated to treat an empty caption value as \u201ccaption present but empty\u201d rather than \u201cno figure.\u201d",
+        "bug_scenario": "The reproducer shows two R code chunks in a Quarto document. The first chunk uses `#| fig-cap: !expr caption` with `caption <- \"hello world\"`, and correctly renders the image with the caption \u201chello world.\u201d The second chunk sets `caption <- character(0)`, so the caption expression evaluates to a zero-length character vector. In this case the figure is dropped entirely from the HTML output \u2013 you don\u2019t see the image or any placeholder. (The attached image is a stylized pencil sketch of two cartoon characters\u2014one pony playing a keyboard and a Jigglypuff-like creature\u2014each holding a microphone and singing.)"
+    }
+}

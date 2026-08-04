@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/uses-responsive-images.js",
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js",
+            "lighthouse-core/gather/gatherers/image-elements.js"
+        ],
+        "explanation": "The uses-responsive-images audit (byte-efficiency/uses-responsive-images.js) flags images that are larger than their rendered dimensions, which is exactly the scenario with the oversized sprite. The uses-optimized-images audit (byte-efficiency/uses-optimized-images.js) checks images for additional compression savings. Both rely on the image-elements gatherer (gather/gatherers/image-elements.js) to collect metadata about each <img> and its natural size. To address the warning you\u2019ll need to adjust how spritesheet2.png is generated (match its intrinsic dimensions to the CSS/display size) or supply appropriately sized versions via srcset, and ensure the image is encoded as efficiently as possible. These files contain the logic that produces the \u201cProperly size images\u201d recommendation and would be the starting point if you wanted to customize or debug the audit behavior.",
+        "bug_scenario": "When running a Lighthouse performance audit from Chrome DevTools against https://tisort.ist, the \u201cProperly size images\u201d check reports that the sprite sheet at https://images.tisort.ist/spritesheet2.png (54 KB) can be reduced by ~53 KB. The user has already optimized the PNG via external tools but still sees the warning. The audit\u2019s suggestion comes from Lighthouse\u2019s byte-efficiency audits, namely the responsive-images and optimized-images checks, which compare the actual display size and compression level of the image to its natural dimensions and encoding."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/image-elements.js",
+            "lighthouse-core/audits/byte-efficiency/uses-responsive-images.js"
+        ],
+        "explanation": "The root of the issue is that Lighthouse\u2019s \u201cProperly size images\u201d audit uses two pieces of code to flag oversized images. First, the gatherer in image-elements.js walks the page, finds every <img>, and records its naturalWidth/naturalHeight and on-screen size (clientWidth/clientHeight). Second, the audit logic in uses-responsive-images.js compares those sizes and estimates the number of bytes that could be saved by serving a smaller image. A sprite sheet intentionally mixes many icons into one large image and displays only a small slice at a time\u2014yet the audit sees it as a single <img> that\u2019s \u201ctoo big\u201d for its container. To fix or suppress this false positive, you\u2019d need to adjust the gatherer or audit logic in these two files (for example, ignore sprite sheets based on filename patterns or CSS usage) so that sprites are excluded from the standard responsive\u2010image sizing check.",
+        "bug_scenario": "When you run Lighthouse\u2019s \u201cProperly size images\u201d audit on your site (for example by using Chrome DevTools\u2019 Audit panel), it flags your spritesheet2.png (54 KB) and claims you could save about 53 KB. In reality, spritesheet2.png is a deliberately oversized sprite sheet\u2014only a small portion is ever shown at once\u2014so the audit\u2019s logic is treating it like a standard <img> and computing wasted bytes based purely on natural vs. display dimensions. This leads to a large false\u2010positive savings report for your sprite sheet, even though you\u2019ve already optimized its file size."
+    }
+}

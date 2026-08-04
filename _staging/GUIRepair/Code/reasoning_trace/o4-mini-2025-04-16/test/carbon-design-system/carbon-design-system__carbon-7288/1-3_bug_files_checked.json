@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ListBox/ListBox.js",
+            "packages/react/src/components/ListBox/ListBoxPropTypes.js",
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/Dropdown/index.js",
+            "packages/react/src/components/MultiSelect/MultiSelect.js",
+            "packages/react/src/components/MultiSelect/MultiSelectPropTypes.js",
+            "packages/react/src/components/MultiSelect/index.js"
+        ],
+        "explanation": "These files represent the layers of the dropdown stack used by MultiSelect. ListBox.js is the low-level component that uses Downshift to manage menu state; it must be enhanced to accept and call an onMenuChange prop. ListBoxPropTypes.js needs to declare the new prop. Dropdown.js (and its index.js) wraps ListBox for single-select dropdowns and should also support and forward the onMenuChange handler. MultiSelect.js (and its index.js and prop types file) wraps Dropdown/ListBox for multi-select use and must expose the new onMenuChange API downstream. Updating these files ensures the new event is declared, passed, and invoked at the correct level when the menu opens or closes.",
+        "bug_scenario": "The issue is that there is no built-in way to know when the MultiSelect (dropdown) menu opens or closes. The user only has access to the onChange callback for item selection, which fires on each selection/deselection. In Watson Knowledge Catalog, rows are enabled/disabled immediately based on selection, causing the dropdown menu to close prematurely when no items are selected. The user needs an onMenuChange event that fires whenever the menu\u2019s visibility changes (open \u2192 closed or closed \u2192 open) so hacks around focus/blur or tag-clicks can be removed."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/MultiSelect/MultiSelect.js",
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js",
+            "packages/react/src/components/MultiSelect/MultiSelectPropTypes.js",
+            "packages/react/src/components/MultiSelect/index.js",
+            "packages/react/src/components/MultiSelect/__tests__/MultiSelect-test.js",
+            "packages/react/src/components/MultiSelect/__tests__/FilterableMultiSelect-test.js",
+            "packages/react/src/components/ListBox/ListBox.js",
+            "packages/react/src/components/ListBox/ListBoxPropTypes.js"
+        ],
+        "explanation": "All of the files listed are where the MultiSelect (and its filterable variant) and its underlying ListBox are implemented, typed, and tested.  \n\u2022 MultiSelect.js and FilterableMultiSelect.js are the entry points that must accept the new onMenuChange prop and wire it up to Downshift\u2019s onStateChange so developers can react to menu open/close.  \n\u2022 MultiSelectPropTypes.js must be updated to declare the new onMenuChange callback type.  \n\u2022 index.js needs to re-export the prop so it\u2019s publicly available.  \n\u2022 The two test files must be extended to cover the new event.  \n\u2022 Finally, ListBox.js (and its PropTypes) is the component that actually drives the Downshift instance; adding support here ensures a consistent onMenuChange behavior across all dropdown-based components (including MultiSelect).  ",
+        "bug_scenario": "The user needs a way to know when the MultiSelect dropdown menu actually opens or closes so they can defer row\u2013disable logic until after the menu is dismissed. In the first GIF you can see selecting a role immediately fires onChange, which in their rows-enabled logic collapses and deactivates the row prematurely. The second GIF shows their workaround\u2014waiting for the menu to lose focus\u2014so the row only disables after the dropdown is closed. What they really need is a clean onMenuChange event fired by the MultiSelect (and filterable variant) whenever menu visibility toggles, without resorting to manual focus/blur hacks."
+    }
+}

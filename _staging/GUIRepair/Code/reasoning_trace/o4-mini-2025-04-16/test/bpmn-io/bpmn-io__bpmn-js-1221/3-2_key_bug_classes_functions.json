@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js//AdaptiveLabelPositioningBehavior",
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/import/BpmnImporter.js//BpmnImporter"
+        ],
+        "bug_functions": [
+            "AdaptiveLabelPositioningBehavior.postExecuted('label.create', \u2026)",
+            "AdaptiveLabelPositioningBehavior.checkLabelAdjustment",
+            "BpmnCopyPaste eventBus.on('copyPaste.pasteElement', \u2026)",
+            "BpmnImporter.prototype.addLabel"
+        ],
+        "explanation": "The class AdaptiveLabelPositioningBehavior contains the logic (checkLabelAdjustment, adjustLabelPosition, getOptimalPosition) that moves an external label into its correct side orientation. It is wired into the command interceptor only for modeling commands (connection.create, layout, updateWaypoints, label.create) but not for the copy/paste flow. The BpmnCopyPaste implementation handles pasting of business objects but never triggers a labeling command or adjustment, so AdaptiveLabelPositioningBehavior never runs. Furthermore, BpmnImporter.addLabel directly creates and adds the label shape to the canvas, bypassing the \u2018label.create\u2019 command that AdaptiveLabelPositioningBehavior listens to. To fix the bug, you need to hook into the paste pipeline (in BpmnCopyPaste.pasteElement or in BpmnImporter.addLabel) to call checkLabelAdjustment (or re-execute the label.create command) so that AdaptiveLabelPositioningBehavior can position the pasted label correctly.",
+        "bug_scenario": "When you copy\u2013paste a boundary event (with its external label) onto a vertical flow, the pasted label stays in its original orientation (horizontal) instead of snapping to the new flow orientation. In the GIF you can see: 1) create a boundary event on a vertical sequence flow, 2) its label is correctly placed to the left. 3) Copy/paste that event onto another vertical flow. 4) The pasted event appears, but its label remains in the old position (to the right) instead of re-aligning."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js//AdaptiveLabelPositioningBehavior",
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/import/BpmnImporter.js//BpmnImporter"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js//checkLabelAdjustment",
+            "lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js//adjustLabelPosition",
+            "lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js//getOptimalPosition",
+            "lib/import/BpmnImporter.js//addLabel",
+            "lib/features/copy-paste/BpmnCopyPaste.js//copyPaste.pasteElement"
+        ],
+        "explanation": "AdaptiveLabelPositioningBehavior is the core class that computes and moves external labels on element creation, move or connection updates. Its helper functions (checkLabelAdjustment, getOptimalPosition, adjustLabelPosition) determine where a label should sit around its element. However, paste operations do not trigger the commands (e.g. 'label.create', 'connection.create', 'connection.layout') that this behavior listens for. Instead, BpmnCopyPaste handles the pasteElement event to restore business objects, and BpmnImporter.addLabel actually creates and places the label from DI without invoking the reposition logic. To fix the bug, the paste path must call into (or trigger) the AdaptiveLabelPositioningBehavior routines when a label is re\u2010created, so these two components (BpmnCopyPaste/BpmnImporter and AdaptiveLabelPositioningBehavior) need to be updated.",
+        "bug_scenario": "When copying a boundary\u2010event (with an external label) from one flow and pasting it onto a vertically oriented sequence flow, the pasted event retains its original (horizontal) label position instead of re\u2013aligning (e.g. to the left side). In the provided GIF you can see the pasted boundary event land on the vertical flow but its label stays on top rather than shifting to the free side."
+    }
+}

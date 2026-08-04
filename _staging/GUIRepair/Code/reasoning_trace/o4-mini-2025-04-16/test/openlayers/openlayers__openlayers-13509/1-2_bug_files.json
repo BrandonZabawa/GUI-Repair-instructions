@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/layer/Group.js",
+            "src/ol/renderer/webgl/Layer.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/Map.js"
+        ],
+        "explanation": "\u2022 src/ol/layer/WebGLTile.js: Defines the WebGLTile layer (renderMode 'webgl'). The bug shows these layers are never hidden when their parent Group is invisible.\n\u2022 src/ol/layer/Group.js: Flattens child layer states and computes `state.visible` &= parent.visible. Group visibility works for Canvas layers but is bypassed for WebGL children.\n\u2022 src/ol/renderer/webgl/Layer.js: Base WebGL layer renderer. It does not early-exit when `layerState.visible` is false, so invisible layers still proceed to draw.\n\u2022 src/ol/renderer/webgl/TileLayer.js: Implements the WebGL tile rendering. It lacks a check on `layerState.visible` before rendering tiles, causing always-visible output regardless of group visibility.\n\u2022 src/ol/Map.js: The map rendering loop separates Canvas and WebGL passes. The WebGL pass gathers all WebGL-enabled layers without filtering out those with `visible=false`, ignoring the group-level visibility computed earlier.",
+        "bug_scenario": "When a WebGLTile layer is placed inside an ol/layer/Group and the group\u0019s visibility is toggled off, the WebGLTile remains visible. Switching the layer to a standard Tile layer hides it correctly. This indicates that the WebGL rendering path does not respect the inherited `layerState.visible` flag from the containing Group."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/Layer.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "The WebGLTile layer implementation and its renderer never check or propagate the parent Group\u2019s visibility state. WebGLTile.js defines the layer without overriding the base visibility logic, and the WebGL renderer (in renderer/webgl/Layer.js and TileLayer.js) always draws its tiles regardless of layerState.visible. In contrast, the Canvas Tile renderer relies on layerState.visible and so correctly hides when the Group visibility is set to false.",
+        "bug_scenario": "A map is set up with a single Group layer containing a single WebGLTile layer. After three seconds the Group's \u201cvisible\u201d property is switched from true to false, but the WebGLTile tiles remain drawn onscreen. Regular Tile layers respect the Group visibility toggle, so the issue appears limited to WebGLTile."
+    }
+}

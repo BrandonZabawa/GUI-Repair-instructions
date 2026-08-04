@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/draw.js",
+            "src/ol/layer/vector.js",
+            "src/ol/source/imagevector.js",
+            "src/ol/render/canvas/imagereplay.js",
+            "src/ol/render/canvas/replaygroup.js",
+            "src/ol/renderer/canvas/intermediatecanvas.js",
+            "src/ol/renderer/canvas/vectorlayer.js"
+        ],
+        "explanation": "\u2022 draw.js: handles pointer events and constantly re-renders the in-progress geometry via the new renderMode 'image' code path, magnifying any inefficiency.\n\u2022 layer/vector.js: defines and switches between 'vector' and 'image' render modes; the default change and logic here drives the slow path.\n\u2022 source/imagevector.js: the deprecated ImageVector source used to batch-draw into an offscreen canvas; its removal or change forces fallback to the generic renderMode: 'image' that is slower.\n\u2022 render/canvas/imagereplay.js & replaygroup.js: build up and replay individual canvas drawing commands into an offscreen canvas on each frame, replacing the optimized ImageVector path and causing high per-frame overhead.\n\u2022 renderer/canvas/intermediatecanvas.js: manages the offscreen canvas resizing and compositing on each render; introduced overhead at the wrong dimensions and pixel ratio.\n\u2022 renderer/canvas/vectorlayer.js: pulls together the replay group and intermediate canvas to draw the visible vector layer; this code drives the hot rendering loop and shows the worst slowdown in the new version.",
+        "bug_scenario": "After upgrading from OpenLayers 4.4.2 to 4.6.2 and switching from the old ol.source.ImageVector to the built-in renderMode: 'image' on ol.layer.Vector, interactive drawing of even a simple triangle becomes painfully slow. In 4.4.2 the ImageVector source path rendered quickly; in 4.6.2 the new image-render path (intermediate canvas + replay commands) lags dramatically on pointermove events, as shown by the user drawing a triangle against a backdrop of thousands of red point features."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/interaction/draw.js",
+            "src/ol/render/vectorcontext.js",
+            "src/ol/source/vector.js",
+            "src/ol/renderer/canvas/vectorlayer.js"
+        ],
+        "explanation": "\n\u2022 src/ol/interaction/draw.js          \u2013 Coordinates the pointer events and redraw of the sketch feature on every move; in image mode it triggers a full layer repaint rather than an incremental sketch replay.\n\u2022 src/ol/render/vectorcontext.js      \u2013 Provides the replay or immediate drawing context; contains the logic that decides whether to replay into an offscreen canvas (image mode) on each redraw.\n\u2022 src/ol/source/vector.js             \u2013 Introduces and configures the renderMode: 'image' branch; it creates and manages the internal ImageCanvas source that underpins image-mode rendering.\n\u2022 src/ol/renderer/canvas/vectorlayer.js \u2013 Implements the actual canvas drawing of vector layers in image mode; currently it rebuilds and repaints the entire feature batch for any view or feature update, which is the root cause of the performance regression.",
+        "bug_scenario": "After upgrading OpenLayers from 4.4.2 to 4.6.2 and switching to the new renderMode: 'image' (the replacement for the deprecated ol.source.ImageVector), drawing a simple triangle in a draw interaction has become unacceptably slow. In 4.4.2 the same drawing sequence (three pointer clicks at zoom level 3) feels instant, but in 4.6.2 every pointer move causes a full canvas re-render of the entire feature set, leading to janky, delayed drawing feedback."
+    }
+}

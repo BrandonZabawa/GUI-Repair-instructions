@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/dart.js"
+        ],
+        "explanation": "The file src/languages/dart.js defines Dart\u2019s comment modes, including block comments using a begin/end pattern that doesn\u2019t allow zero-length content (i.e. /**/). Because the regex requires at least one character between /** and */, an empty comment never closes correctly. That leaves the parser stuck in comment mode and prevents subsequent code from being tokenized or highlighted. Adjusting dart.js to allow empty block comments (or reusing the generic c-like comment mode) fixes the issue.",
+        "bug_scenario": "In Dart code, wrapping the entire snippet in empty block comments /**/ (for example /**/main(){print(\"Hello, World!\");}/**/) causes the highlighter to treat the first /** as the start of a block comment but never properly close it. As a result, none of the code that follows is highlighted and everything is rendered as part of the comment."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/dart.js",
+            "src/languages/c-like.js",
+            "src/lib/token_tree.js"
+        ],
+        "explanation": "\u2022 src/languages/dart.js is the Dart grammar definition. It pulls in the generic C-style comment patterns but doesn\u2019t guard against an immediate close of /**/ before any other token is seen. The faulty comment rules here are the direct cause of the highlighting hang.\n\u2022 src/languages/c-like.js defines the shared comment modes for all C-family languages (including Dart). Its block-comment begin/end rules are too permissive: they match /**/ as a valid comment but never advance the parser state correctly when the comment is zero-length.\n\u2022 src/lib/token_tree.js is the core engine handling nested/comment-tree constructs. It\u2019s where the parser actually pushes and pops comment nodes on the stack; when length is zero it fails to pop immediately, so the highlight tree remains in a comment node indefinitely.",
+        "bug_scenario": "When you feed Dart code a zero-length block comment (/**/), the highlighter enters the comment state and never exits it, so everything that follows is rendered as comment text. In the screenshots you can see \u201cmain(){\u2026}\u201d entirely in grey instead of colored Dart syntax until you close with another /**/*. In other words, an empty /**/ at the start (or end) breaks out of normal tokenization and leaves the parser stuck inside a comment mode."
+    }
+}

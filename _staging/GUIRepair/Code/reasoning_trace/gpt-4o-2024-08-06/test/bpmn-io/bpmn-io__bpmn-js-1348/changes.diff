@@ -1,0 +1,37 @@
+diff --git a/lib/features/rules/BpmnRules.js b/lib/features/rules/BpmnRules.js
+index a15966d0..618ad128 100644
+--- a/lib/features/rules/BpmnRules.js
++++ b/lib/features/rules/BpmnRules.js
+@@ -832,17 +832,22 @@ function canConnectAssociation(source, target) {
+ 
+ function canConnectMessageFlow(source, target) {
+ 
+-  // during connect user might move mouse out of canvas
+-  // https://github.com/bpmn-io/bpmn-js/issues/1033
+-  if (getRootElement(source) && !getRootElement(target)) {
+-    return false;
+-  }
++// during connect user might move mouse out of canvas
++// https://github.com/bpmn-io/bpmn-js/issues/1033
++if (getRootElement(source) && !getRootElement(target)) {
++return false;
++}
+ 
+-  return (
+-    isMessageFlowSource(source) &&
+-    isMessageFlowTarget(target) &&
+-    !isSameOrganization(source, target)
+-  );
++return (
++isMessageFlowSource(source) &&
++(isMessageFlowTarget(target) || isIntermediateMessageCatchBoundaryEvent(target)) &&
++!isSameOrganization(source, target)
++);
++}
++
++function isIntermediateMessageCatchBoundaryEvent(element) {
++return is(element, 'bpmn:BoundaryEvent') &&
++hasEventDefinition(element, 'bpmn:MessageEventDefinition');
+ }
+ 
+ function canConnectSequenceFlow(source, target) {

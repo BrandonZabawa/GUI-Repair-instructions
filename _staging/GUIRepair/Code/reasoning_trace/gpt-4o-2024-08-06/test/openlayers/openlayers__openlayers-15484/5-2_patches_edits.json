@@ -1,0 +1,401 @@
+{
+    "1/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;"
+                ],
+                "REPLACE": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;",
+                    "",
+                    "// Ensure wrapX is respected for cropping",
+                    "if (options.wrapX) {",
+                    "limitedTargetExtent[0] = Math.max(limitedTargetExtent[0], maxTargetExtent[0]);",
+                    "limitedTargetExtent[2] = Math.min(limitedTargetExtent[2], maxTargetExtent[2]);",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "@property {boolean} [wrapX=false] Render tiles beyond the tile grid extent."
+                ],
+                "REPLACE": [
+                    "@property {boolean} [wrapX=false] Crop the output to the tile grid extent on both the x and y axes."
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;",
+                    "",
+                    "if (getArea(limitedTargetExtent) === 0) {",
+                    "// Tile is completely outside range -> EMPTY",
+                    "this.state = TileState.EMPTY;",
+                    "return;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;",
+                    "",
+                    "const wrapXConfig = options.wrapX; // added line",
+                    "const wrapYConfig = options.wrapY || false; // assumption for similar for wrapY",
+                    "",
+                    "// Include logic to check tile grid extent against wrapX and crop accordingly",
+                    "const cropTargetExtent = wrapXConfig ? getIntersection(limitedTargetExtent, maxTargetExtent) : limitedTargetExtent;",
+                    "",
+                    "if (getArea(cropTargetExtent) === 0) {",
+                    "// Tile is completely outside range -> EMPTY",
+                    "this.state = TileState.EMPTY;",
+                    "return;",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "setLoader(this.loadTile_.bind(this));",
+                    "setState('ready');",
+                    "const zoom = 1;",
+                    "if (resolutions.length === 2) {",
+                    "resolutions = [resolutions[0], resolutions[1], resolutions[1] / 2];",
+                    "} else if (resolutions.length === 1) {",
+                    "resolutions = [resolutions[0] * 2, resolutions[0], resolutions[0] / 2];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "setLoader(this.loadTile_.bind(this));",
+                    "setState('ready');",
+                    "",
+                    "this.setWrap(true, true); // add logic here for wrapX and wrapY",
+                    "const zoom = 1;",
+                    "if (resolutions.length === 2) {",
+                    "resolutions = [resolutions[0], resolutions[1], resolutions[1] / 2];",
+                    "} else if (resolutions.length === 1) {",
+                    "resolutions = [resolutions[0] * 2, resolutions[0], resolutions[0] / 2];",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();",
+                    "",
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;"
+                ],
+                "REPLACE": [
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();",
+                    "if (options.wrapX) {",
+                    "// Ensuring X wrapping behavior is respected",
+                    "maxSourceExtent[0] = -Infinity;",
+                    "maxSourceExtent[2] = Infinity;",
+                    "}",
+                    "",
+                    "const limitedTargetExtent = getIntersection(targetExtent, maxTargetExtent);",
+                    "const croppedTargetExtent = options.cropToExtent ? limitedTargetExtent : targetExtent;"
+                ]
+            }
+        ],
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "wrapX: options.wrapX,"
+                ],
+                "REPLACE": [
+                    "wrapX: options.wrapX || false,",
+                    "cropToExtent: options.cropToExtent || false,"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "const targetExtent = this.targetTileGrid_.getTileCoordExtent(",
+                    "this.wrappedTileCoord_,",
+                    ");",
+                    "const maxTargetExtent = this.targetTileGrid_.getExtent();",
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();",
+                    "",
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;"
+                ],
+                "REPLACE": [
+                    "const targetExtent = this.targetTileGrid_.getTileCoordExtent(",
+                    "this.wrappedTileCoord_,",
+                    ");",
+                    "const maxTargetExtent = this.targetTileGrid_.getExtent();",
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();",
+                    "const wrapXExtent = options.wrapX ? maxTargetExtent : undefined;",
+                    "",
+                    "const limitedTargetExtent = wrapXExtent",
+                    "? getIntersection(targetExtent, wrapXExtent)",
+                    ": getIntersection(targetExtent, maxTargetExtent);"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX() && options.wrapX) {",
+                    "// Ensure correct handling for wrapped X when reprojection is occurring",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "wrapX: options.wrapX,"
+                ],
+                "REPLACE": [
+                    "// Correct interpretation of wrapX during reprojection",
+                    "wrapX: options.wrapX && (!options.targetProj || isGlobal(options.targetProj)),"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}",
+                    "",
+                    "if (!getArea(sourceExtent)) {",
+                    "this.state = TileState.EMPTY;",
+                    "} else {",
+                    "const sourceRange = this.sourceTileGrid_.getTileRangeForExtentAndZ(",
+                    "sourceExtent,",
+                    "this.sourceZ_,",
+                    ");"
+                ],
+                "REPLACE": [
+                    "if (maxSourceExtent) {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "",
+                    "if (!getArea(sourceExtent)) {",
+                    "this.state = TileState.EMPTY;",
+                    "} else {",
+                    "// Ensure that source tiles respect the tile grid extent when reprojecting",
+                    "const constrainedExtent = getIntersection(sourceExtent, limitedTargetExtent);",
+                    "const sourceRange = this.sourceTileGrid_.getTileRangeForExtentAndZ(",
+                    "constrainedExtent,",
+                    "this.sourceZ_,",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;",
+                    "",
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();",
+                    "...",
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const wrapX = options.wrapX !== false;",
+                    "let limitedTargetExtent = wrapX ? null : targetExtent;",
+                    "if (!limitedTargetExtent) {",
+                    "limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;",
+                    "}",
+                    "",
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();",
+                    "...",
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent = clampExtentToTileGrid(sourceExtent, this.sourceTileGrid_);",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}",
+                    "",
+                    "function clampExtentToTileGrid(extent, tileGrid) {",
+                    "const [minX, minY, maxX, maxY] = tileGrid.getExtent();",
+                    "return [",
+                    "Math.max(minX, extent[0]),",
+                    "Math.max(minY, extent[1]),",
+                    "Math.min(maxX, extent[2]),",
+                    "Math.min(maxY, extent[3]),",
+                    "];",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "const maxTargetExtent = this.targetTileGrid_.getExtent();",
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();",
+                    "",
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;"
+                ],
+                "REPLACE": [
+                    "const maxTargetExtent = this.targetTileGrid_.getExtent();",
+                    "let maxSourceExtent = this.sourceTileGrid_.getExtent();",
+                    "",
+                    "if (options.wrapX) {",
+                    "targetExtent[0] = Math.max(targetExtent[0], maxTargetExtent[0]);",
+                    "targetExtent[2] = Math.min(targetExtent[2], maxTargetExtent[2]);",
+                    "}",
+                    "",
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;"
+                ],
+                "REPLACE": [
+                    "// Apply wrapX consideration to limit target extent correctly",
+                    "const limitedTargetExtent = (maxTargetExtent)",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": (wrapX ? truncateOverlapExtentToTileGrid(targetExtent, this.targetTileGrid_) : targetExtent);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.tileGrid = tileGrid;",
+                    "this.setTileSizes(commonSourceTileSizes);"
+                ],
+                "REPLACE": [
+                    "this.tileGrid = new TileGrid({",
+                    "extent: wrapX ? truncateOverlapExtentToTileGrid(extent, tileGrid) : extent,",
+                    "minZoom: minZoom,",
+                    "origin: origin,",
+                    "resolutions: resolutions,",
+                    "tileSizes: commonRenderTileSizes,",
+                    "});",
+                    "this.setTileSizes(commonSourceTileSizes);"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/reproj/DataTile.js": [
+            {
+                "SEARCH": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;",
+                    "",
+                    "if (getArea(limitedTargetExtent) === 0) {",
+                    "this.state = TileState.EMPTY;",
+                    "return;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;",
+                    "",
+                    "// Ensure correct wrapping logic is applied by additional extent checks",
+                    "if (options.wrapX && sourceProj.canWrapX()) {",
+                    "targetExtent[0] = clamp(targetExtent[0], maxSourceExtent[0], maxSourceExtent[2]);",
+                    "targetExtent[2] = clamp(targetExtent[2], maxSourceExtent[0], maxSourceExtent[2]);",
+                    "}",
+                    "",
+                    "if (getArea(limitedTargetExtent) === 0) {",
+                    "this.state = TileState.EMPTY;",
+                    "return;",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

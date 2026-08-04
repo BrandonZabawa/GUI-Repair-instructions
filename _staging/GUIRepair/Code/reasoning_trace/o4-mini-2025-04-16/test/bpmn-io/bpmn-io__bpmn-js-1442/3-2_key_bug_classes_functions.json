@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//DropOnFlowBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//preExecute('shape.create')",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//postExecuted('shape.create')"
+        ],
+        "explanation": "The DropOnFlowBehavior class is responsible for intercepting shape creation and dropping on flows. Its insertShape function contains the logic to split a connection and reconnect source\u2192shape and shape\u2192target \u2013 but it only handles a single shape at a time. The preExecute and postExecuted handlers for 'shape.create' call insertShape unconditionally for each pasted shape, so when multiple shapes are pasted they each trigger a split and reconnection, leading to unexpected extra connections. Fixing the bug will require adjusting these handlers (or insertShape itself) to detect multi\u2010shape pastes and either disable the logic or implement a batched insertion that produces the correct chain of connections.",
+        "bug_scenario": "When copying two tasks and pasting them onto an existing sequence flow, the DropOnFlowBehavior splits and reconnects the flow for each shape independently, producing unintended extra connections instead of either suppressing the drop\u2010on\u2010flow logic for multi\u2010shape pastes or chaining the two tasks sensibly."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//DropOnFlowBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//preExecute('elements.move') handler",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//postExecuted('elements.move') handler",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//preExecute('shape.create') handler",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//postExecuted('shape.create') handler"
+        ],
+        "explanation": "The DropOnFlowBehavior class is responsible for intercepting move and create operations on shapes to insert them into existing flows. Its insertShape function splits the target flow and reconnects source, inserted shape, and target. However, all of its preExecute/postExecuted handlers reference only shapes[0], so when multiple shapes are pasted, only the first is processed by insertShape. The remaining shapes bypass the flow\u2010insertion logic, leading to unexpected connections. To fix the bug, these handlers and insertShape must be extended to iterate over all shapes in the context rather than handling only a single shape.",
+        "bug_scenario": "When a user copies two task shapes and pastes them onto an existing sequence flow, only the first task is spliced into the flow correctly. The second task is dropped without being inserted between the correct waypoints, resulting in unexpected or missing connections."
+    }
+}

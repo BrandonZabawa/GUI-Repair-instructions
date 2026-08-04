@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/ImageStatic.js",
+            "src/ol/source/Image.js",
+            "src/ol/layer/Image.js",
+            "src/ol/renderer/canvas/ImageLayer.js"
+        ],
+        "explanation": "The primary file for the ImageStatic source type is 'src/ol/source/ImageStatic.js', where the scaling calculation for static images fitting a given extent occurs. This file most likely contains the logic involving Math.ceil and scaling dimensions. The base class for image sources, 'src/ol/source/Image.js', may provide or interact with shared image scaling/render logic used by ImageStatic. 'src/ol/layer/Image.js' defines the image layer and may interact with the rendering logic or propagate scaling parameters. Finally, the actual rendering and scaling computations for images are usually handled close to the renderer\u2014in this case 'src/ol/renderer/canvas/ImageLayer.js'\u2014where image dimensions might be finalized or rounding decisions made. These files together encapsulate the source, layer, and render pipeline for static images, and are the most likely points for scaling and rounding issues described in the bug report.",
+        "bug_scenario": "The bug scenario concerns rendering static images (with source type ImageStatic) in OpenLayers such that a perfectly square image is supposed to fit exactly within a square tile extent. However, due to floating point rounding and the use of Math.ceil in scaling calculations, the image is sometimes stretched (scaled up more than it should be), causing detail loss and incorrectly fitting the image. The desired fix is to scale up only the dimension that needs it, round to nearest pixel, and avoid unnecessary use of Math.ceil. This relates to rendering and scaling logic, affecting user experience and image fidelity when displaying static images."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/ImageStatic.js",
+            "src/ol/source/Image.js",
+            "src/ol/renderer/canvas/ImageLayer.js"
+        ],
+        "explanation": "- src/ol/source/ImageStatic.js is the source class responsible for loading and placing static images (such as those fit to a geographic extent). The bug report and external references directly discuss ImageStatic. This is the primary location for the logic that computes how an image maps to an extent, including the scaling calculations that introduce rounding errors.\n- src/ol/source/Image.js is the base class for image sources, likely providing core methods for image loading, scaling, or resolution computation which might directly or indirectly affect how ImageStatic scales images to extents.\n- src/ol/renderer/canvas/ImageLayer.js is responsible for rendering image sources (like ImageStatic) onto the canvas. The calculations that convert source image dimensions and extent into pixel dimensions for rendering (and use of Math.ceil/rounding) may be implemented or finalized here. Any fixes to image scaling and rendering precision may also require updates in this file. Together, these files contain the scaling logic, transformation, and rendering pipeline that directly relate to the described bug scenario.",
+        "bug_scenario": "When using the ImageStatic source to display a perfectly square image in a square extent, rounding errors caused by floating point math (and possibly the use of Math.ceil) result in the image being slightly stretched, instead of fitting exactly into the extent as expected. The bug scenario occurs when the scaling logic for image rendering rounds up the image size, stretching the image unnecessarily. The expectation is that the image should be scaled so that it fits the extent, rounding to the nearest pixel when necessary, and only scaling up when required. This bug can cause a visible stretching/artifacting issue in image rendering, particularly noticeable with high-contrast or high-detail images."
+    }
+}

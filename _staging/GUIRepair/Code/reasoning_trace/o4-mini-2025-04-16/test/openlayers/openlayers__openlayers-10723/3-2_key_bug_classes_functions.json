@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Graticule.js//Graticule"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Graticule.js//updateProjectionInfo_",
+            "src/ol/layer/Graticule.js//loaderFunction",
+            "src/ol/layer/Graticule.js//createGraticule_",
+            "src/ol/layer/Graticule.js//addMeridian_",
+            "src/ol/layer/Graticule.js//addParallel_"
+        ],
+        "explanation": "All of the core logic for computing and rendering the graticule lies in Graticule.js. The private method updateProjectionInfo_ determines whether and how the layer should wrap around the X-axis (i.e. across the date line). loaderFunction invokes createGraticule_, which in turn calls addMeridian_ and addParallel_ to generate each line segment within the current extent. Because the default extent calculations and wrapping logic don\u2019t split or shift extents across the \u00b1180\u00b0 boundary, grid lines near the date line are dropped or drawn outside the visible area. To fix this you need to adjust updateProjectionInfo_ to split the world extent into two when crossing the date line, have loaderFunction iterate over both extents, and modify createGraticule_, addMeridian_, and addParallel_ to clamp or wrap longitudes so that meridians and parallels appear continuously across the anti-meridian.",
+        "bug_scenario": "When the map\u2019s view projection crosses the anti-meridian (the international date line), most meridians fail to render, and the parallels either begin exactly at the date line or extend well beyond the intended extent. In the provided US National Atlas example you can see large gaps in the orange meridians around \u00b1180\u00b0, and the latitude rings start or end abruptly at the date line. Labels also become mis-formatted or appear at the wrong positions."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/Graticule.js//Graticule"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Graticule.js//loaderFunction",
+            "src/ol/layer/Graticule.js//updateProjectionInfo_",
+            "src/ol/layer/Graticule.js//createGraticule_",
+            "src/ol/layer/Graticule.js//addMeridian_",
+            "src/ol/layer/Graticule.js//addParallel_"
+        ],
+        "explanation": "All of the geometry for the graticule is generated in the Graticule class (src/ol/layer/Graticule.js). The loaderFunction() decides, given the view extent, which lon/lat ranges to draw; updateProjectionInfo_() caches the projection\u2019s worldExtent and whether it wraps (canWrapX); createGraticule_() actually loops over longitude and latitude intervals; and addMeridian_()/addParallel_() build each line segment. None of these methods currently handle the case where the view crosses the dateline (minLon > maxLon) by splitting the extent into two segments or by unwrapping longitudes beyond \u00b1180\u00b0. Fixing this will require modifying loaderFunction (and the helper routines it calls) to detect a dateline crossing, normalize or split the extent, and correctly iterate over longitudes on both sides of the line so that all meridians and parallels are drawn within the visible area.",
+        "bug_scenario": "When the map\u2019s view projection crosses the international date line, most of the meridians never get drawn and the parallels \u201cjump\u201d to the dateline (or go past it) instead of spanning the full extent. In the screenshot you can see that longitudes west of 180\u00b0 (e.g. 160\u00b0 W, 140\u00b0 W, etc.) are missing, and the circles of latitude start at 180\u00b0 and don\u2019t terminate correctly on the opposite side.\n\nThis happens because the Graticule layer computes meridians and parallels by taking the view extent in longitude/latitude and iterating from minLon to maxLon. When the extent crosses the dateline, minLon > maxLon in traditional [-180,180] normalization, so the loops produce no lines or lines with incorrect endpoints.\n"
+    }
+}

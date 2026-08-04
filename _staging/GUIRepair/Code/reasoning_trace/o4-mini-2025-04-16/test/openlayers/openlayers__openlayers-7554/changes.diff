@@ -1,0 +1,195 @@
+diff --git a/src/ol/interaction/draw.js b/src/ol/interaction/draw.js
+index 6e596eaa64..4c1204422c 100644
+--- a/src/ol/interaction/draw.js
++++ b/src/ol/interaction/draw.js
+@@ -22,6 +22,7 @@ goog.require('ol.interaction.DrawEventType');
+ goog.require('ol.interaction.Pointer');
+ goog.require('ol.interaction.Property');
+ goog.require('ol.layer.Vector');
++goog.require('ol.layer.VectorRenderType');
+ goog.require('ol.source.Vector');
+ goog.require('ol.style.Style');
+ 
+@@ -243,19 +244,21 @@ ol.interaction.Draw = function(options) {
+    */
+   this.squaredClickTolerance_ = options.clickTolerance ?
+     options.clickTolerance * options.clickTolerance : 36;
+-
+-  /**
+-   * Draw overlay where our sketch features are drawn.
+-   * @type {ol.layer.Vector}
+-   * @private
+-   */
+-  this.overlay_ = new ol.layer.Vector({
+-    source: new ol.source.Vector({
+-      useSpatialIndex: false,
+-      wrapX: options.wrapX ? options.wrapX : false
+-    }),
+-    style: options.style ? options.style :
+-      ol.interaction.Draw.getDefaultStyleFunction()
++  /**\n \
++   * Draw overlay where our sketch features are drawn.\n \
++   * Use image‐mode for fast redraws.\n \
++   * @type {ol.layer.Vector}\n \
++   * @private\n \
++   */\n \
++  this.overlay_ = new ol.layer.Vector({\n \
++    renderMode: ol.layer.VectorRenderType.IMAGE,\n \
++    source: new ol.source.Vector({\n \
++      useSpatialIndex: false,\n \
++      wrapX: options.wrapX ? options.wrapX : false\n \
++    }),\n \
++    style: options.style ? options.style :\n \
++      ol.interaction.Draw.getDefaultStyleFunction()\n \
++  });\n
+   });
+ 
+   /**
+diff --git a/src/ol/layer/vector.js b/src/ol/layer/vector.js
+index 34674ff02a..2790d53073 100644
+--- a/src/ol/layer/vector.js
++++ b/src/ol/layer/vector.js
+@@ -62,25 +62,25 @@ ol.layer.Vector = function(opt_options) {
+ 
+   this.setStyle(options.style);
+ 
+-  /**
++  /** 
+    * @type {boolean}
+    * @private
+    */
++  this.renderMode_ = options.renderMode || ol.layer.VectorRenderType.VECTOR;
++
++  // Set updateWhileAnimating and updateWhileInteracting defaults based on renderMode
++  var defaultUpdateWhileAnimating = (this.renderMode_ === ol.layer.VectorRenderType.IMAGE);
++  var defaultUpdateWhileInteracting = (this.renderMode_ === ol.layer.VectorRenderType.IMAGE);
++
+   this.updateWhileAnimating_ = options.updateWhileAnimating !== undefined ?
+-    options.updateWhileAnimating : false;
++    options.updateWhileAnimating : defaultUpdateWhileAnimating;
+ 
+   /**
+    * @type {boolean}
+    * @private
+    */
+   this.updateWhileInteracting_ = options.updateWhileInteracting !== undefined ?
+-    options.updateWhileInteracting : false;
+-
+-  /**
+-   * @private
+-   * @type {ol.layer.VectorTileRenderType|string}
+-   */
+-  this.renderMode_ = options.renderMode || ol.layer.VectorRenderType.VECTOR;
++    options.updateWhileInteracting : defaultUpdateWhileInteracting;
+ 
+   /**
+    * The layer type.
+diff --git a/src/ol/render/canvas/imagereplay.js b/src/ol/render/canvas/imagereplay.js
+index fb021f27cc..c576c667a9 100644
+--- a/src/ol/render/canvas/imagereplay.js
++++ b/src/ol/render/canvas/imagereplay.js
+@@ -118,8 +118,21 @@ ol.inherits(ol.render.canvas.ImageReplay, ol.render.canvas.Replay);
+  * @return {number} My end.
+  */
+ ol.render.canvas.ImageReplay.prototype.drawCoordinates_ = function(flatCoordinates, offset, end, stride) {
+-  return this.appendFlatCoordinates(
+-      flatCoordinates, offset, end, stride, false, false);
++  // Batch coordinate transformation
++  var transformedCoords = new Array(end - offset);
++  var pixelRatio = this.pixelRatio;
++  var i, j;
++  for (i = offset, j = 0; i < end; i += stride, j += 2) {
++    var x = flatCoordinates[i];
++    var y = flatCoordinates[i + 1];
++    transformedCoords[j] = pixelRatio * (this.originX_ + this.scale_ * (x - this.originX_));
++    transformedCoords[j + 1] = pixelRatio * (this.originY_ + this.scale_ * (y - this.originY_));
++  }
++  
++  // Append transformed coordinates
++  var myBegin = this.coordinates.length;
++  this.coordinates.push.apply(this.coordinates, transformedCoords);
++  return this.coordinates.length;
+ };
+ 
+ 
+@@ -136,21 +149,23 @@ ol.render.canvas.ImageReplay.prototype.drawPoint = function(pointGeometry, featu
+   var myBegin = this.coordinates.length;
+   var myEnd = this.drawCoordinates_(
+       flatCoordinates, 0, flatCoordinates.length, stride);
+-  this.instructions.push([
+-    ol.render.canvas.Instruction.DRAW_IMAGE, myBegin, myEnd, this.image_,
+-    // Remaining arguments to DRAW_IMAGE are in alphabetical order
++  
++  var commonArgs = [
+     this.anchorX_, this.anchorY_, this.declutterGroup_, this.height_, this.opacity_,
+     this.originX_, this.originY_, this.rotateWithView_, this.rotation_,
+-    this.scale_ * this.pixelRatio, this.snapToPixel_, this.width_
+-  ]);
++    this.snapToPixel_, this.width_
++  ];
++  
++  this.instructions.push([
++    ol.render.canvas.Instruction.DRAW_IMAGE, myBegin, myEnd, this.image_,
++    this.scale_ * this.pixelRatio
++  ].concat(commonArgs));
++  
+   this.hitDetectionInstructions.push([
+     ol.render.canvas.Instruction.DRAW_IMAGE, myBegin, myEnd,
+-    this.hitDetectionImage_,
+-    // Remaining arguments to DRAW_IMAGE are in alphabetical order
+-    this.anchorX_, this.anchorY_, this.declutterGroup_, this.height_, this.opacity_,
+-    this.originX_, this.originY_, this.rotateWithView_, this.rotation_,
+-    this.scale_, this.snapToPixel_, this.width_
+-  ]);
++    this.hitDetectionImage_, this.scale_
++  ].concat(commonArgs));
++  
+   this.endGeometry(pointGeometry, feature);
+ };
+ 
+diff --git a/src/ol/renderer/canvas/vectorlayer.js b/src/ol/renderer/canvas/vectorlayer.js
+index 173bef5b37..e67f2befbf 100644
+--- a/src/ol/renderer/canvas/vectorlayer.js
++++ b/src/ol/renderer/canvas/vectorlayer.js
+@@ -350,10 +350,19 @@ ol.renderer.canvas.VectorLayer.prototype.prepareFrame = function(frameState, lay
+ 
+   this.dirty_ = false;
+ 
+-  var replayGroup = new ol.render.canvas.ReplayGroup(
+-      ol.renderer.vector.getTolerance(resolution, pixelRatio), extent, resolution,
+-      pixelRatio, vectorSource.getOverlaps(), this.declutterTree_, vectorLayer.getRenderBuffer());
+-  vectorSource.loadFeatures(extent, resolution, projection);
++var replayGroup = new ol.render.canvas.ReplayGroup(
++ol.renderer.vector.getTolerance(resolution, pixelRatio), extent, resolution,
++pixelRatio, vectorSource.getOverlaps(), this.declutterTree_, vectorLayer.getRenderBuffer());
++vectorSource.loadFeatures(extent, resolution, projection);
++
++// Optimize feature processing by batching
++var features = [];
++vectorSource.forEachFeatureInExtent(extent, function(feature) {
++features.push(feature);
++});
++features.forEach(function(feature) {
++renderFeature(feature);
++});
+   /**
+    * @param {ol.Feature} feature Feature.
+    * @this {ol.renderer.canvas.VectorLayer}
+@@ -432,4 +441,4 @@ ol.renderer.canvas.VectorLayer.prototype.renderFeature = function(feature, resol
+         this.handleStyleImageChange_, this);
+   }
+   return loading;
+-};
++};
+\ No newline at end of file
+diff --git a/src/ol/source/imagevector.js b/src/ol/source/imagevector.js
+index 50e690a583..b202489a30 100644
+--- a/src/ol/source/imagevector.js
++++ b/src/ol/source/imagevector.js
+@@ -313,4 +313,4 @@ ol.source.ImageVector.prototype.setStyle = function(style) {
+   this.styleFunction_ = !style ?
+     undefined : ol.style.Style.createFunction(this.style_);
+   this.changed();
+-};
++};
+\ No newline at end of file

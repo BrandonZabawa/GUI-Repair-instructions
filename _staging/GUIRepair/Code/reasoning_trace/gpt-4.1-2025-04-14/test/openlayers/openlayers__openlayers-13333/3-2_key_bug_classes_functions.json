@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/tilegrid/TileGrid.js//TileGrid"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//render",
+            "src/ol/layer/WebGLTile.js//renderSources",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles",
+            "src/ol/renderer/webgl/TileLayer.js//getRenderExtent",
+            "src/ol/tilegrid/TileGrid.js//getTileRangeForExtentAndZ"
+        ],
+        "explanation": "The bug is related to the WebGLTile layer rendering tiles outside the original image extent, causing visual artifacts. The following files and elements are critical: \n- WebGLTileLayer (src/ol/layer/WebGLTile.js) and its render/renderSources methods are responsible for fetching and drawing tiles\u2014these need to correctly respect the source extent when requesting/rendering tiles.\n- WebGLTileLayerRenderer (src/ol/renderer/webgl/TileLayer.js) handles the actual rendering process; its renderFrame and enqueueTiles are likely candidates for not properly clipping tile requests and draws to the valid extent. The getRenderExtent function should ensure that the renderable area matches the source's defined extent.\n- TileGrid (src/ol/tilegrid/TileGrid.js) defines the tiling scheme and provides functions like getTileRangeForExtentAndZ, which determines which tiles cover a given extent at a given zoom. If this logic does not limit tiles to the correct image extent, out-of-bounds tiles may be rendered.\nThese classes and functions must work together to ensure that only tiles within the GeoTIFF's actual extent are requested and rendered. The bug is likely due to a missing or incorrect check of the extent when calculating tiles to render.",
+        "bug_scenario": "The bug scenario involves rendering a GeoTIFF image using a WebGLTile layer in a web map (OpenLayers). The correct extent of the GeoTIFF is outlined by a red box. However, the WebGLTile layer renders image tiles outside of the valid extent, resulting in error images (black or empty areas) beyond the actual bounds of the data. This issue persists and is especially evident when zooming in, where the rendered area narrows but still includes invalid regions. In contrast, QGIS renders the correct extent with no such errors, confirming that the GeoTIFF's extent is well defined."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//render",
+            "src/ol/layer/WebGLTile.js//renderSources",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles"
+        ],
+        "explanation": "The root of the bug is that invalid or error image tiles are rendered outside of the valid raster extent. The key bug classes are WebGLTileLayer (which manages the layer and its extent) and WebGLTileLayerRenderer (which manages the actual rendering of tiles using WebGL). In WebGLTileLayer, the 'extent' property determines the valid bounds for rendering, and its 'render' and 'renderSources' methods are responsible for deciding what gets drawn. In WebGLTileLayerRenderer, the 'renderFrame' and 'enqueueTiles' methods are responsible for selecting which tiles to draw and preparing them for rendering. If these methods do not check the tile extent against the source/layer extent, or do not properly clip or skip tiles that fall outside, imagery outside the valid region will be drawn. Fixes should ensure that tile selection and rendering logic respects the image extent, and that no fragments appear outside the intended area.",
+        "bug_scenario": "The bug scenario involves displaying a Cloud Optimized GeoTIFF (COG) image layer using WebGLTile in a web mapping application. Although the correct extent of the image is known (and displayed correctly in QGIS), when rendered using WebGLTile, error tiles or image fragments appear outside the original raster extent, especially when zooming in. The red box in the screenshots represents the correct extent, but the rendered imagery spills outside this box, causing visual artifacts. This does not happen in QGIS, which renders only inside the valid extent. The issue is that the renderer is not properly clipping or restricting image rendering to the original data extent, especially at tile or WebGL rendering level."
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/css.js",
+            "src/languages/lib/css-shared.js"
+        ],
+        "explanation": "Both files define how CSS comments are recognized and tokenized. css.js contains the CSS language definition, including the mode lists where comments should be matched. css-shared.js contains shared routines and comment\u2010mode definitions used by css.js. A change in these comment patterns (or their order) between v10.5.0 and v10.6.0 has broken inline comment matching, so these are the files to inspect and correct.",
+        "bug_scenario": "The user is highlighting a CSS snippet containing both a normal block comment on its own line and an inline comment inside a property value (e.g. width: /* inline comment */ 50px;). In versions \u226510.6.0 (using the new highlightAll API), the inline comment is not recognized and highlighted as a comment, causing the rest of the line to render without proper comment styling. In version 10.5.0 (using initHighlighting), both types of comments are correctly identified and styled."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/lib/css-shared.js",
+            "src/languages/css.js"
+        ],
+        "explanation": "CSS comment parsing lives in the shared helper css-shared.js and the css.js language definition. css-shared.js defines the comment regexes and tokens used by css.js; css.js includes these patterns in its modes. A change introduced alongside the new highlightAll API altered how these shared patterns are applied, causing inline comments in property values to be skipped. Fixing the comment regex or its inclusion in these two files restores correct inline comment highlighting.",
+        "bug_scenario": "When using the new highlightAll API (>=10.6.0), CSS inline comments (comments placed mid-line, e.g. in a property value) are no longer recognized as comments. In the .test example, the block comment /* inline comment */ inside the width property is rendered as plain text (and the trailing 50px still picked up as a number), whereas in versions \u226410.5.0 it was correctly highlighted as a comment."
+    }
+}

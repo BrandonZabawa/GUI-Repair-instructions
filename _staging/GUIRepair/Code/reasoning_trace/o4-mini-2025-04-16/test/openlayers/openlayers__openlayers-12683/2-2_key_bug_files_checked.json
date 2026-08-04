@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/IconImage.js",
+            "src/ol/style/Icon.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "1. src/ol/style/IconImage.js: The replaceColor_ method creates a new offscreen canvas at canvas.width = image.width * pixelRatio and canvas.height = image.height * pixelRatio, but IconImage.getSize() and Icon.getOrigin() still report sizes and offsets in CSS pixels, not device pixels.  2. src/ol/style/Icon.js: getOrigin() computes the offset in CSS pixels and never multiplies by the pixelRatio, so for a tinted canvas the origin into the high-DPI canvas is wrong.  3. src/ol/render/canvas/ImageBuilder.js: setImageStyle reads originX_ and originY_ directly from Icon.getOrigin() (CSS pixels) but then draws the source canvas at device resolution (imagePixelRatio > 1), so the sub\u2010rectangle starts in the wrong place. Together these files cause sprite offsets to only work correctly when pixelRatio == 1 or no color tint is applied.",
+        "bug_scenario": "The user is styling vector features with a sprite-based icon and applies a custom tint color. On a standard (device pixel ratio = 1) display the sub\u2010image (offset and size) is extracted correctly from the sprite sheet (first image). When the display uses a high pixel ratio (e.g. 2) and no tint is applied, the correct region is still selected (second image). However, when both a non-unity pixel ratio and a color tint are in effect, the icon\u2019s offset within the sprite is wrong (third image)\u2014the tinted canvas is being generated at the higher backing-store resolution but the code that reads out the sprite sub-rectangle is still using CSS-pixel offsets."
+    }
+}

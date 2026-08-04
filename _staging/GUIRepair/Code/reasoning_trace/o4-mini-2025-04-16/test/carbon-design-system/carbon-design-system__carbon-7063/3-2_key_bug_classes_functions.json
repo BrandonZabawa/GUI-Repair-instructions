@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/OrderedList/OrderedList.js//OrderedList"
+        ],
+        "explanation": "The root of the bug lives in the OrderedList React component (OrderedList.js). In the shipped Carbon code, this component always renders an <ol> with the class bx--list--ordered, which in the stylesheet applies counter-reset: item and populates numbers via ::before. The component\u2019s signature in this snapshot no longer accepts or passes down a useNativeStyles prop (it was stripped out of the destructuring and classnames invocation), so consumers cannot opt out of Carbon\u2019s custom counter. Restoring the useNativeStyles prop, applying the bx--list--native modifier class when it\u2019s true, and updating the component\u2019s tests and stories to include this variant will allow developers to remove the custom counter and fall back to native <ol> decimal numbering in Firefox.",
+        "bug_scenario": "When using Carbon\u2019s OrderedList component in Firefox, list numbering jumps to an arbitrary start (e.g. 7) because Carbon\u2019s CSS applies a custom counter via counter-reset: item and ::before pseudo elements. Attempts to override that CSS via inline styles (counter-reset: unset/null) don\u2019t work, so the only way to restore native decimal numbering is to remove the custom counter altogether. Users need a way to opt into the browser\u2019s native ordered-list styles (decimal numbering) rather than Carbon\u2019s custom counter scheme."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/OrderedList/OrderedList.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OrderedList/OrderedList.js//OrderedList"
+        ],
+        "explanation": "The OrderedList component is where the Carbon ordered\u2010list classnames are applied. Currently it doesn\u2019t accept a prop to opt into native browser styles, so it always emits the `.bx--list--ordered` class which triggers the custom counter and pseudo\u2010element in the stylesheets. To fix the issue, OrderedList.js needs a new prop (e.g. `useNativeStyles`) that adds a modifier class (such as `.bx--list--native`) when true. The corresponding SCSS for `.bx--list--ordered` must be updated to skip `counter-reset: item` and the `::before` numbering when that modifier class is present. In addition, the test file (OrderedList-test.js) will need to be updated to assert that the new class is applied correctly.",
+        "bug_scenario": "In Firefox the custom Carbon ordered\u2010list styles use a CSS counter (`counter-reset: item`) and a `::before` pseudo\u2010element to render list numbers, but this counter is misbehaving (starting at an arbitrary value) when overriding Carbon\u2019s styles. Simply overriding `counter-reset` in user CSS doesn\u2019t work; the only way to get a correct, native-style numbered list is to remove the counter rule entirely. The user needs a way to opt into native `decimal` list styling (no counter, no pseudo element)."
+    }
+}

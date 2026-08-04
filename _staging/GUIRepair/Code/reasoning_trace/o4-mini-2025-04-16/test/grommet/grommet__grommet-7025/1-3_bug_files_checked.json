@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Data/Data.js",
+            "src/js/components/Data/filter.js",
+            "src/js/components/DataFilters/DataFilters.js",
+            "src/js/components/DataFilters/index.js"
+        ],
+        "explanation": "These files together manage filter state and render the Clear Filters control. Data.js is the high-level component that holds filter/search state and provides context. filter.js contains the logic that applies and resets filters on the data set. DataFilters/DataFilters.js is responsible for rendering the filter UI and should render the Clear Filters button when any filters are active. index.js for DataFilters just re-exports that component. A bug in this flow is causing the clear control never to be injected into the toolbar at the proper time/place.",
+        "bug_scenario": "In our Data component example we wire up DataSearch and DataFilters inside a Toolbar and expect that, as soon as the user types in the search box or opens/applies one of the filters, a \u201cClear Filters\u201d control will automatically appear alongside those controls (matching the behavior shown in the Grommet Filtering With Select and Filtering With Layer examples). Instead, no Clear Filters button shows up in the toolbar after interacting, and in some UIs we\u2019ve resorted to putting a manual top-level Button outside the Data control\u2014which is neither automatic nor positioned correctly."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/Data/Data.js",
+            "src/js/components/DataFilters/DataFilters.js",
+            "src/js/components/DataSearch/DataSearch.js",
+            "src/js/components/Data/filter.js"
+        ],
+        "explanation": "\n\u2022 Data.js: This is the root Data component that wires up context, state, and how children (Toolbar, DataSearch, DataFilters, List, etc.) interact. It contains the logic that should automatically detect active filters or search terms and inject the Clear Filters button into the toolbar\u2014this logic is broken or missing.\n\n\u2022 DataFilters.js: This file drives the filter UIs (Drop, Inline, Layer) and should notify Data.js when filters are applied or cleared. It also renders its own \u201cClear all filters\u201d button inside a layer or inline block but doesn\u2019t propagate that back to the toolbar.\n\n\u2022 DataSearch.js: The search input component applies a text filter to Data\u2019s state but does not trigger the toolbar\u2019s Clear Filters button to appear when the user types a search term.\n\n\u2022 filter.js: Contains the core filter-state management\u2014adding, removing, and clearing filters. The Clear Filters control ultimately calls into this module, so any missing calls or mis-wiring here will prevent clearing and hiding the button appropriately.",
+        "bug_scenario": "When using the Data component with DataSearch and DataFilters inside a Toolbar (e.g. in the \u201cFiltering with Select\u201d or \u201cFilters in a Center Layer\u201d templates), the \u201cClear Filters\u201d control doesn\u2019t appear automatically when the user types into the search box or opens/applies a filter. It was promoted to a top-level component in our example but never rendered alongside the built-in DataToolbar controls."
+    }
+}

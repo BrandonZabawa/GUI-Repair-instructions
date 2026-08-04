@@ -1,0 +1,51 @@
+diff --git a/lib/draw/TextRenderer.js b/lib/draw/TextRenderer.js
+index 8d1fe0d3..c8b11e02 100644
+--- a/lib/draw/TextRenderer.js
++++ b/lib/draw/TextRenderer.js
+@@ -38,6 +38,16 @@ export default function TextRenderer(config) {
+    */
+   this.getExternalLabelBounds = function(bounds, text) {
+ 
++    // If text is empty, return a default minimum size to avoid zero-size labels
++    if (!text || !text.trim()) {
++      return {
++        x: Math.round(bounds.x + bounds.width / 2 - 45),
++        y: Math.round(bounds.y),
++        width: 90,
++        height: 20
++      };
++    }
++
+     var layoutedDimensions = textUtil.getDimensions(text, {
+       box: {
+         width: 90,
+@@ -113,4 +123,4 @@ export default function TextRenderer(config) {
+ 
+ TextRenderer.$inject = [
+   'config.textRenderer'
+-];
+\ No newline at end of file
++];
+diff --git a/lib/features/label-editing/cmd/UpdateLabelHandler.js b/lib/features/label-editing/cmd/UpdateLabelHandler.js
+index 6d12a2e9..6268b7e8 100644
+--- a/lib/features/label-editing/cmd/UpdateLabelHandler.js
++++ b/lib/features/label-editing/cmd/UpdateLabelHandler.js
+@@ -104,6 +104,11 @@ export default function UpdateLabelHandler(modeling, textRenderer) {
+ 
+     var text = getLabel(label);
+ 
++    // Do not resize label if text is empty (prevents shrinking/disappearing)
++    if (isEmptyText(text)) {
++      return;
++    }
++
+     // resize element based on label _or_ pre-defined bounds
+     if (typeof newBounds === 'undefined') {
+       newBounds = textRenderer.getExternalLabelBounds(label, text);
+@@ -134,4 +139,4 @@ UpdateLabelHandler.$inject = [
+ 
+ function isEmptyText(label) {
+   return !label || !label.trim();
+-}
+\ No newline at end of file
++}

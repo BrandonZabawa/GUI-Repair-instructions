@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Triangulation.js",
+            "src/ol/webgl/TileGeometry.js",
+            "src/ol/renderer/webgl/worldUtil.js",
+            "src/ol/renderer/webgl/TileLayerBase.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "\u2022 reproj/common.js defines helper routines for split-extent and wrap-around logic used during reprojection. If antimeridian splitting is misdetected here, downstream triangulation will drop geometry.  \n\u2022 reproj/Triangulation.js is responsible for generating a triangle mesh for non-affine reprojections. A bug in its antimeridian-split logic or index generation can leave out triangles crossing the 180\u00b0 meridian.  \n\u2022 webgl/TileGeometry.js consumes the Triangulation output to build vertex buffers for WebGLTileLayer. Missing or incorrect data here will manifest as missing triangles in the rendered tile.  \n\u2022 renderer/webgl/worldUtil.js handles tiling and world-wrap offsets (shifting tiles by \u00b11 world) for continuous maps. If offsets for tiles straddling the antimeridian aren\u2019t calculated or applied, those tiles won\u2019t show.  \n\u2022 renderer/webgl/TileLayerBase.js and renderer/webgl/TileLayer.js drive the WebGL tile rendering pipeline, fetching TileGeometry, applying world shifts, and issuing draw calls. They tie together the reprojection, geometry and world-wrap logic, so any defect in antimeridian handling in the earlier modules surfaces here as black gaps.",
+        "bug_scenario": "After reprojecting a GeoTIFF tile source into a custom stereographic projection and displaying it via WebGLTileLayer, the layer fails to render the portions of tiles that cross the antimeridian. In the reprojection step the geometry for those tiles is either being clipped or not generated, so in the map view you see black gaps along the antimeridian whose width varies with zoom level and the source-tile size."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/reproj/Triangulation.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/worldUtil.js"
+        ],
+        "explanation": "1. src/ol/source/GeoTIFF.js  \n   - This module builds the tile grid and sets up extent/wrapX for a GeoTIFF source. If the tile grid never allows coordinates crossing the antimeridian in a non-standard projection, no tiles will ever be requested there.  \n2. src/ol/reproj/Tile.js  \n   - This reprojection tile wrapper fetches source tiles, \ufb01lls gaps, and stitches them into destination grid coords. A bug here can drop entire columns of reproj tiles at the edge of the source extent.  \n3. src/ol/reproj/Triangulation.js  \n   - Generates the mesh of triangles that map source imagery into the view projection. If it doesn\u2019t split or wrap triangles at  \u00b1180\u00b0, parts of the globe simply become empty.  \n4. src/ol/renderer/webgl/TileLayer.js  \n   - The WebGL tile renderer positions and draws each reproj mesh. It uses world offsets to render wrapped worlds; errors here cause tiles to never be drawn when they should be shifted by one world tile width.  \n5. src/ol/renderer/webgl/worldUtil.js  \n   - Contains the logic to compute how many worlds away a tile lies (i.e. how to wrap at the antimeridian). In a custom stereographic projection this calculation is wrong, so tiles on the \u201cother side\u201d are never drawn.",
+        "bug_scenario": "When you use a WebGLTileLayer with a GeoTIFF source in a custom stereographic projection, tiles that lie on either side of the antimeridian do not render. You get vertical \u201cblack gaps\u201d whose width varies with source\u2013tile size and zoom level. In other words, reprojection and wrapping logic fails at the 180\u00b0 meridian, so the layer never requests or never displays those tiles."
+    }
+}

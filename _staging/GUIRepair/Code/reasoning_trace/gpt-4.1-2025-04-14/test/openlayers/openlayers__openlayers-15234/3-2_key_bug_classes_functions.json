@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLPoints.js//WebGLPointsLayer",
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLPoints.js//WebGLPointsLayer.createRenderer",
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer.rebuildBuffers_",
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer.renderFrame"
+        ],
+        "explanation": "The WebGLPointsLayer class (src/ol/layer/WebGLPoints.js) is central to the creation and management of the layer that is malfunctioning. Its createRenderer method instantiates the renderer that will handle the actual rendering of the points. The WebGLPointsLayerRenderer class (src/ol/renderer/webgl/PointsLayer.js) is responsible for projecting and rendering the point data. In particular, the rebuildBuffers_ function is likely where the transformation from feature coordinates to rendering coordinates occurs, and would need to respect the correct projection (using the appropriate transform when useGeographic() is enabled). The renderFrame method is where the rendering happens each frame, so if projection or coordinate system is not handled correctly, it would appear here. These classes and functions are thus directly involved in the bug, as the failure to respect featureProjection and useGeographic must be addressed in the logic that transforms and renders the features.",
+        "bug_scenario": "The bug scenario involves the use of WebGLPointsLayer with useGeographic(), which should render points in the expected map projection (typically EPSG:4326 when useGeographic is enabled). Instead, points are rendered as if they are in EPSG:3857, causing them to appear in incorrect locations (such as near Africa), because the layer fails to respect the featureProjection set on the Vector source. The expected behavior is that points align correctly, just as with a regular VectorLayer."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLPoints.js//WebGLPointsLayer",
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLPoints.js//WebGLPointsLayer.constructor",
+            "src/ol/layer/WebGLPoints.js//WebGLPointsLayer.createRenderer",
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer.rebuildBuffers_"
+        ],
+        "explanation": "The bug relates to how coordinates are handled and projected in the WebGLPointsLayer when useGeographic() is enabled. The key class src/ol/layer/WebGLPoints.js//WebGLPointsLayer is responsible for setting up the layer and connecting it to the renderer, so changes might be required here to ensure the correct projection is passed through. The src/ol/layer/WebGLPoints.js//WebGLPointsLayer.createRenderer function constructs the renderer with style and shader information, which could be relevant if the renderer needs to know about projections. The src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer class is the actual renderer for the layer; its src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer.rebuildBuffers_ method is likely where feature coordinates are processed and transformed to screen/world coordinates, and is the most probable location for a bug involving incorrect coordinate systems. Ensuring that this method applies the correct projection transform (in line with useGeographic and featureProjection) will likely resolve the issue.",
+        "bug_scenario": "The bug scenario involves using the WebGLPointsLayer in OpenLayers with useGeographic() enabled. When providing a vector source with EPSG:4326 (geographic coordinates), the WebGLPointsLayer does not respect the featureProjection and instead processes features as if they are in EPSG:3857 (Web Mercator). This causes the points to be plotted at incorrect positions on the map (notably, points appear near Africa regardless of their actual location), whereas the standard VectorLayer displays points at the correct locations."
+    }
+}

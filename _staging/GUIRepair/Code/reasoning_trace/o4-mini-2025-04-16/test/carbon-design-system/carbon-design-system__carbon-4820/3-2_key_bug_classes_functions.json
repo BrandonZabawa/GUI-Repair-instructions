@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//render",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField"
+        ],
+        "explanation": "1) In Dropdown.js the `render` method constructs the `<label>` (title) and helper text with `--disabled` classes when the `disabled` prop is true, which lowers their contrast below WCAG AA thresholds. To fix the color contrast violation, the logic that applies `bx--label--disabled` and `bx--form__helper-text--disabled` may need adjustment or removal for the Dropdown variant. 2) In ListBoxField.js the `ListBoxField` component always sets an `aria-label` of \u201cOpen menu\u201d or \u201cClose menu\u201d based solely on expansion state, ignoring the visible label text. This causes the accessible name not to match the visible label (\u201cDropdown menu options\u201d). The ARIA labeling needs to be updated so that the button either uses `aria-labelledby` pointing to the `<label>` or computes an `aria-label` that includes the visible label text.",
+        "bug_scenario": "When the Dropdown is disabled, the label and helper text get the \u201c--disabled\u201d style modifiers and their color drops to a 1.71 contrast ratio, violating WCAG AA. In addition, the dropdown button\u2019s accessible name is hard-coded to \u201cOpen menu\u201d/\u201cClose menu\u201d (via aria-label) which does not match or contain the visible selected label text (\u201cDropdown menu options\u201d), triggering an accessible name mismatch."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown.render",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField (functional component)"
+        ],
+        "explanation": "The Dropdown.render method in Dropdown.js is responsible for outputting both the visible <label> and the <ListBox.Field> button that users interact with. It currently renders the title text without an id and does not wire up the aria-labelledby attribute on the ListBox.Field, causing the accessible name mismatch. Additionally, it applies low-contrast disabled styles to the label/helper text via titleClasses and helperClasses. The ListBoxField functional component in ListBoxField.js also explicitly sets aria-label to \u2019Open menu\u2019 or \u2019Close menu\u2019, overriding any aria-labelledby reference to the visible label text. To fix the name-matching violation, Dropdown.render must assign a stable id to the <label> (e.g. id=`${id}-label`) and pass aria-labelledby to ListBox.Field. To fix contrast violations, the CSS classes for disabled labels/helper text need darker color tokens or alternative styling in both Dropdown and ListBoxField (via titleClasses/helperClasses and defaultTranslations). These two components and their render logic are thus the key bug locations to update.",
+        "bug_scenario": "When rendering a <Dropdown> in React, DAP reports two types of accessibility violations: (1) insufficient color contrast on the disabled label/helper text (contrast of 1.71 against background fails WCAG AA), and (2) \u201cAccessible name must match or contain the visible label text\u201d on the toggle button: the aria-label output by ListBoxField (\u2018Open menu\u2019/\u2018Close menu\u2019) doesn\u2019t include or refer to the visible dropdown title (\u2018Dropdown menu options\u2019)."
+    }
+}

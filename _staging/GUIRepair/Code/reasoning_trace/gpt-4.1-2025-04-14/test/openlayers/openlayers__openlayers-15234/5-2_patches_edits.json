@@ -1,0 +1,85 @@
+{
+    "1/1": {
+        "src/ol/renderer/webgl/PointsLayer.js": [
+            {
+                "SEARCH": [
+                    "// loop on features to fill the buffer",
+                    "let featureCache, geometry;",
+                    "const tmpCoords = [];",
+                    "const tmpColor = [];",
+                    "let idx = -1;",
+                    "for (const featureUid in this.featureCache_) {",
+                    "featureCache = this.featureCache_[featureUid];",
+                    "geometry = /** @type {import(\"../../geom\").Point} */ (",
+                    "featureCache.geometry",
+                    ");",
+                    "if (!geometry || geometry.getType() !== 'Point') {",
+                    "continue;",
+                    "}",
+                    "tmpCoords[0] = geometry.getFlatCoordinates()[0];",
+                    "tmpCoords[1] = geometry.getFlatCoordinates()[1];",
+                    "applyTransform(projectionTransform, tmpCoords);",
+                    "",
+                    "this.renderInstructions_[++idx] = tmpCoords[0];",
+                    "this.renderInstructions_[++idx] = tmpCoords[1];"
+                ],
+                "REPLACE": [
+                    "    // loop on features to fill the buffer",
+                    "    let featureCache, geometry;",
+                    "    const tmpCoords = [];",
+                    "    const tmpColor = [];",
+                    "    let idx = -1;",
+                    "",
+                    "    // Get source and view projections",
+                    "    const layer = this.getLayer();",
+                    "    const vectorSource = layer.getSource();",
+                    "    const sourceProj = vectorSource.getProjection ? vectorSource.getProjection() : null;",
+                    "    const viewProj = frameState.viewState.projection;",
+                    "",
+                    "    // If sourceProj is not set, assume same as viewProj",
+                    "    const needTransform = sourceProj && sourceProj !== viewProj;",
+                    "",
+                    "    // Import getTransform if not already",
+                    "    // import {getTransform} from '../../proj.js';",
+                    "",
+                    "    // Prepare transform function if needed",
+                    "    let coordTransform = null;",
+                    "    if (needTransform) {",
+                    "      // getTransform(fromProj, toProj)",
+                    "      coordTransform = getTransform(sourceProj, viewProj);",
+                    "    }",
+                    "",
+                    "    for (const featureUid in this.featureCache_) {",
+                    "      featureCache = this.featureCache_[featureUid];",
+                    "      geometry = /** @type {import(\"../../geom\").Point} */ (",
+                    "        featureCache.geometry",
+                    "      );",
+                    "      if (!geometry || geometry.getType() !== 'Point') {",
+                    "        continue;",
+                    "      }",
+                    "      tmpCoords[0] = geometry.getFlatCoordinates()[0];",
+                    "      tmpCoords[1] = geometry.getFlatCoordinates()[1];",
+                    "      // Transform from source to view projection if needed",
+                    "      if (coordTransform) {",
+                    "        coordTransform(tmpCoords, tmpCoords, 2);",
+                    "      }",
+                    "      applyTransform(projectionTransform, tmpCoords);",
+                    "",
+                    "      this.renderInstructions_[++idx] = tmpCoords[0];",
+                    "      this.renderInstructions_[++idx] = tmpCoords[1];"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "...",
+                    "class WebGLPointsLayerRenderer extends WebGLLayerRenderer {"
+                ],
+                "REPLACE": [
+                    "import {getTransform} from '../../proj.js';",
+                    "...",
+                    "class WebGLPointsLayerRenderer extends WebGLLayerRenderer {"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,56 @@
+diff --git a/lib/linter/source-code-fixer.js b/lib/linter/source-code-fixer.js
+index 53dc1dc6b..98b047754 100644
+--- a/lib/linter/source-code-fixer.js
++++ b/lib/linter/source-code-fixer.js
+@@ -114,31 +114,28 @@ SourceCodeFixer.applyFixes = function(sourceText, messages, shouldFix) {
+         }
+     });
+ 
+-    if (fixes.length) {
+-        debug("Found fixes to apply");
+-        let fixesWereApplied = false;
+-
+-        for (const problem of fixes.sort(compareMessagesByFixRange)) {
+-            if (typeof shouldFix !== "function" || shouldFix(problem)) {
+-                attemptFix(problem);
+-
+-                /*
+-                 * The only time attemptFix will fail is if a previous fix was
+-                 * applied which conflicts with it.  So we can mark this as true.
+-                 */
+-                fixesWereApplied = true;
+-            } else {
+-                remainingMessages.push(problem);
++        if (fixes.length) {
++            debug("Found fixes to apply");
++            let fixesWereApplied = false;
++
++            // Apply fixes in the order they were reported
++            // (this allows your preferred rule-order in .eslintrc to take effect)
++            for (const problem of fixes) {
++                if (typeof shouldFix !== "function" || shouldFix(problem)) {
++                    attemptFix(problem);
++                    fixesWereApplied = true;
++                } else {
++                    remainingMessages.push(problem);
++                }
+             }
+-        }
+-        output += text.slice(Math.max(0, lastPos));
++            output += text.slice(Math.max(0, lastPos));
+ 
+-        return {
+-            fixed: fixesWereApplied,
+-            messages: remainingMessages.sort(compareMessagesByLocation),
+-            output
+-        };
+-    }
++            return {
++                fixed: fixesWereApplied,
++                messages: remainingMessages.sort(compareMessagesByLocation),
++                output
++            };
++        }
+ 
+     debug("No fixes to apply");
+     return {

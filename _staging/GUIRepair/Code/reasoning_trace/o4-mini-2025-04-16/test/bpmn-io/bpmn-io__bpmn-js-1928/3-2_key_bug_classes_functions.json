@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/space-tool/BpmnSpaceTool.js//BpmnSpaceTool",
+            "lib/features/modeling/behavior/SpaceToolBehavior.js//SpaceToolBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/space-tool/BpmnSpaceTool.js//BpmnSpaceTool.prototype.calculateAdjustments",
+            "lib/features/modeling/behavior/SpaceToolBehavior.js//getParticipantMinHeight"
+        ],
+        "explanation": "BpmnSpaceTool.calculateAdjustments is responsible for deciding which shapes the space tool should actually resize. Currently it only filters out TextAnnotations \u2013 it needs to also prevent empty pools (bpmn:Participant without child lanes) from being included in resizingShapes when the user drags vertically. SpaceToolBehavior.getParticipantMinHeight computes the minimum height of a pool, but for an empty pool it simply returns the fixed PARTICIPANT_MIN_DIMENSIONS.height. The combination of allowing the pool into calculateAdjustments and only enforcing a minimum height still permits vertical expansion. To fix the bug, calculateAdjustments should detect empty pools (e.g. via hasChildLanes or similar) and exclude them, or SpaceToolBehavior should override getParticipantMinHeight for empty pools to disallow any delta. These two areas thus must be edited to prevent vertical resizing of empty pools.",
+        "bug_scenario": "When using the space tool on an empty BPMN pool (a bpmn:Participant with no child lanes), the pool\u2019s height is incorrectly stretched vertically. The GIF shows a user dragging the space tool handle over the top edge of an empty pool and the entire pool growing taller. The expected behavior is that an empty pool retains its fixed \u201cempty\u201d height and does not resize vertically."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/space-tool/BpmnSpaceTool.js//BpmnSpaceTool",
+            "lib/features/modeling/behavior/SpaceToolBehavior.js//SpaceToolBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/space-tool/BpmnSpaceTool.js//BpmnSpaceTool.prototype.calculateAdjustments",
+            "lib/features/modeling/behavior/SpaceToolBehavior.js//getParticipantMinHeight"
+        ],
+        "explanation": "\u2022 BpmnSpaceTool.prototype.calculateAdjustments (in BpmnSpaceTool.js) is responsible for deciding which shapes get resized versus shifted when the space tool is invoked. Currently it only filters out TextAnnotation shapes. To prevent empty pools from resizing, this method must also detect a Participant with no child lanes and remove it from adjustments.resizingShapes.  \n\u2022 getParticipantMinHeight (in SpaceToolBehavior.js) is used to compute the minimal allowed height for a Participant when applying space tool adjustments. For an empty pool it always returns the default PARTICIPANT_MIN_DIMENSIONS.height, which does not guard against expansion. By detecting an empty pool (no child lanes) and returning the current pool height as both min and max, the pool\u2019s height becomes fixed and it can no longer be resized by the space tool.",
+        "bug_scenario": "An empty BPMN pool (a Participant with no child lanes) has a fixed, dedicated height to distinguish it visually from a pool with lanes. When using the space tool above an empty pool, instead of merely shifting the pool and its contents, the empty pool is being resized vertically (expanded), which violates the expected behavior. The pool should remain at its fixed height, and only its contents (if any) should be moved."
+    }
+}

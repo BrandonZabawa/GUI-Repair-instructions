@@ -1,0 +1,91 @@
+{
+    "1/1": {
+        "lib/features/modeling/behavior/UnclaimIdBehavior.js": [
+            {
+                "SEARCH": [
+                    "this.preExecute('shape.delete', function(event) {",
+                    "var context = event.context,",
+                    "shape = context.shape,",
+                    "shapeBo = shape.businessObject;",
+                    "",
+                    "if (isLabel(shape)) {",
+                    "return;",
+                    "}",
+                    "",
+                    "if (is(shape, 'bpmn:Participant') && isExpanded(shape)) {",
+                    "moddle.ids.unclaim(shapeBo.processRef.id);",
+                    "}",
+                    "",
+                    "modeling.unclaimId(shapeBo.id, shapeBo);",
+                    "});"
+                ],
+                "REPLACE": [
+                    "  this.preExecute('shape.delete', function(event) {",
+                    "    var context = event.context,",
+                    "        shape = context.shape,",
+                    "        shapeBo = shape.businessObject;",
+                    "",
+                    "    if (isLabel(shape)) {",
+                    "      return;",
+                    "    }",
+                    "",
+                    "    if (is(shape, 'bpmn:Participant') && isExpanded(shape)) {",
+                    "      // do not unclaim the process ID on participant deletion",
+                    "      // so that undo/redo can restore the original process ID",
+                    "    }",
+                    "",
+                    "    modeling.unclaimId(shapeBo.id, shapeBo);",
+                    "  });"
+                ]
+            }
+        ],
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "eventBus.on('moddleCopy.canCopyProperty', function(context) {",
+                    "var parent = context.parent,",
+                    "property = context.property,",
+                    "propertyName = context.propertyName,",
+                    "bpmnProcess;",
+                    "",
+                    "if (",
+                    "propertyName === 'processRef' &&",
+                    "is(parent, 'bpmn:Participant') &&",
+                    "is(property, 'bpmn:Process')",
+                    ") {",
+                    "bpmnProcess = bpmnFactory.create('bpmn:Process');",
+                    "",
+                    "// return copy of process",
+                    "return moddleCopy.copyElement(property, bpmnProcess);",
+                    "}",
+                    "});"
+                ],
+                "REPLACE": [
+                    "  eventBus.on('moddleCopy.canCopyProperty', function(context) {",
+                    "    var parent = context.parent,",
+                    "        property = context.property,",
+                    "        propertyName = context.propertyName,",
+                    "        bpmnProcess;",
+                    "",
+                    "    if (",
+                    "      propertyName === 'processRef' &&",
+                    "      is(parent, 'bpmn:Participant') &&",
+                    "      is(property, 'bpmn:Process')",
+                    "    ) {",
+                    "      // create a fresh process (with new ID) for the copied pool",
+                    "      bpmnProcess = bpmnFactory.create('bpmn:Process');",
+                    "",
+                    "      // copy all properties into the new process",
+                    "      var newProcess = moddleCopy.copyElement(property, bpmnProcess);",
+                    "",
+                    "      // restore the newly generated ID to avoid duplicates",
+                    "      newProcess.id = bpmnProcess.id;",
+                    "",
+                    "      return newProcess;",
+                    "    }",
+                    "  });"
+                ]
+            }
+        ]
+    }
+}

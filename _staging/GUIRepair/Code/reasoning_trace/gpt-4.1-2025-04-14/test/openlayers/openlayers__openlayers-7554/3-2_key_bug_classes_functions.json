@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/vector.js//ol.layer.Vector",
+            "src/ol/source/imagevector.js//ol.source.ImageVector"
+        ],
+        "bug_functions": [
+            "src/ol/layer/vector.js//ol.layer.Vector.prototype.setStyle",
+            "src/ol/layer/vector.js//ol.layer.Vector.prototype.getRenderMode",
+            "src/ol/source/imagevector.js//ol.source.ImageVector.prototype.canvasFunctionInternal_"
+        ],
+        "explanation": "The performance regression is directly related to the change from ol.source.ImageVector (now deprecated) to ol.layer.Vector with renderMode: 'image'. The key class ol.layer.Vector controls how vector data is rendered, and the renderMode property determines if features are drawn as images or vectors. setStyle and getRenderMode are relevant as they impact how features are styled and rendered, which can affect performance. The ol.source.ImageVector class and its canvasFunctionInternal_ method are critical to the previous (faster) behavior, as this method manages how vector features are drawn onto a canvas image. The bug likely lies in differences in how these classes/functions handle large vector datasets and drawing interactions, especially under 'image' rendering mode, causing the observed slowdown.",
+        "bug_scenario": "The scenario depicted in the image and described in the report is a drawing interaction (drawing a triangle on a world map with many vector features) that experiences significant performance degradation when using OpenLayers 4.6.2 with renderMode: 'image' (ol.layer.Vector), compared to the previous ol.source.ImageVector approach in 4.4.2. The slow performance is especially evident while interacting with the drawn feature (triangle), likely due to inefficiencies in rendering or feature iteration with large vector datasets."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/imagevector.js//ol.source.ImageVector",
+            "src/ol/layer/vector.js//ol.layer.Vector"
+        ],
+        "bug_functions": [
+            "src/ol/source/imagevector.js//ol.source.ImageVector.prototype.canvasFunctionInternal_",
+            "src/ol/source/imagevector.js//ol.source.ImageVector.prototype.renderFeature_",
+            "src/ol/layer/vector.js//ol.layer.Vector.prototype.setStyle",
+            "src/ol/layer/vector.js//ol.layer.Vector.prototype.getRenderMode"
+        ],
+        "explanation": "The bug is related to regression in rendering performance when drawing with renderMode: 'image'. The deprecated ol.source.ImageVector (src/ol/source/imagevector.js) is central to this, as it previously provided efficient image-based rendering for vector features. Its methods, especially canvasFunctionInternal_ (which creates the canvas image) and renderFeature_ (which handles rendering of each feature), are likely involved in the performance difference. In the newer version, ol.layer.Vector (src/ol/layer/vector.js) with renderMode: 'image' is the replacement, so its configuration and mode handling (setStyle and getRenderMode) are relevant. The shift from ImageVector to Vector layer with image rendering mode is where the performance regression originates. Investigation and optimization should focus on these classes and their rendering pipeline.",
+        "bug_scenario": "The scenario shows a performance regression after upgrading OpenLayers from version 4.4.2 to 4.6.2. Specifically, drawing interactions (e.g., drawing a triangle) become significantly slower when using renderMode: 'image' in the newer version, compared to the deprecated ol.source.ImageVector in the older version. The attached image demonstrates slow drawing interaction with visible lag when attempting to create a polygon feature over a world map with many features rendered (red points/lines)."
+    }
+}

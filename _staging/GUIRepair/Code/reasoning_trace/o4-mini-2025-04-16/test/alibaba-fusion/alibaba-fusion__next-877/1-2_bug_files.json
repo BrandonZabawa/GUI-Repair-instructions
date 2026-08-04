@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/overlay/main.scss",
+            "src/overlay/style.js",
+            "src/overlay/index.jsx",
+            "src/overlay/overlay.jsx"
+        ],
+        "explanation": "All of these files define or apply the Overlay wrapper that currently has no explicit width and thus collapses when its content is inline:\n\n\u2022 src/overlay/main.scss \u2013 defines the .next-overlay-wrapper and inner content styles but doesn\u2019t set width:100%, so the container shrinks to its children\u2019s inline width.\n\n\u2022 src/overlay/style.js \u2013 exports the default inline JS styles applied to the wrapper (position, top, left, etc.) but omits any width rule.\n\n\u2022 src/overlay/index.jsx \u2013 the public entry that renders the Overlay component and passes through classNames and style props to the wrapper. It needs to ensure width is either added to the style prop or CSS class.\n\n\u2022 src/overlay/overlay.jsx \u2013 implements the actual wrapper element and applies the style/className; this is where width:100% should be enforced when the content is inline. These files together control the overlay\u2019s box model and must be updated to prevent collapse.",
+        "bug_scenario": "When you render an Overlay with only inline content (for example a span or a sequence of text nodes), the overlay\u2019s container collapses to a very narrow width (just enough to hold the first few characters) because there\u2019s no width specified on the wrapper. In the screenshot you can see the white popup box is shrunk vertically into a thin line and the single column of text flows off the edge. The report notes that adding width:100% to the wrapper fixes the issue by letting the overlay expand to its parent/container width."
+    },
+    "2": {
+        "bug_files": [
+            "src/overlay/main.scss",
+            "src/overlay/style.js",
+            "src/overlay/overlay.jsx",
+            "src/overlay/popup.jsx"
+        ],
+        "explanation": "\u2022 src/overlay/main.scss defines the .next-overlay-wrapper selector (position:absolute; top/left:0) but doesn\u2019t assign any width, so when its child is inline it collapses.\\n\u2022 src/overlay/style.js generates the inline style object passed into that wrapper/popup but also omits a width, so no fallback size is applied.\\n\u2022 src/overlay/overlay.jsx renders the wrapper and delegates style props \u2013 this is where the width property could be injected.\\n\u2022 src/overlay/popup.jsx renders the actual popup content inside the wrapper; it must accept and apply the added width so children have space to render.\\nTogether these files control the wrapper\u2019s dimensions and must be updated to include a default width (e.g. width:100%).",
+        "bug_scenario": "When using the Overlay component with purely inline content (for example a small loading spinner plus text) the white popup panel collapses to its content\u2019s minimal size (often zero) because the wrapper has no explicit width. In the screenshot you can see the spinner & text jammed in a collapsed box that never expands. Adding a default width:100% (or other suitable fallback width) to the overlay wrapper/container allows the browser to allocate space and prevents the collapse."
+    }
+}

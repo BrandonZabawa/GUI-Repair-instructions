@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/computed/critical-request-chains.js",
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js"
+        ],
+        "explanation": "1) lighthouse-core/gather/computed/critical-request-chains.js: This is where the extractChain() algorithm selects any finished, \u201cHigh\u201d priority record and walks its initiator chain. No check excludes resourceType \u2018iframe\u2019 or URL schemes like data:, so those nodes end up in the CRC tree even though they aren\u2019t render-blocking. 2) lighthouse-core/audits/critical-request-chains.js: The audit simply invokes the computed artifact from above and emits the unfiltered tree as its details. Since the computed artifact includes iframes/data URIs, the audit reports them as critical. 3) lighthouse-core/report/v2/renderer/crc-details-renderer.js: This file renders the raw CRC JSON into the interactive tree in the final report. It doesn\u2019t filter out any node types, so you see the iframe and its children exactly as they were passed in. All three files participate in collecting, auditing, and displaying iframe and data-URI requests as if they were critical.",
+        "bug_scenario": "When Lighthouse computes its Critical Request Chains (CRC), it considers any resource with \u201cHigh\u201d priority as render-blocking\u2014even if it\u2019s an <iframe> or a data URI. In the reproducer you stand up three mock network records (a main document, an iframe document, and a stylesheet inside that iframe) all marked High priority. Calling CriticalRequestChains.extractChain yields a tree that includes the iframe node and its CSS child as \u201ccritical,\u201d exactly like the screenshot from PaulIrish.com. Since iframes (and data: URIs) do not block rendering, they shouldn\u2019t appear in the CRC tree."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/computed/critical-request-chains.js",
+            "lighthouse-core/audits/critical-request-chains.js",
+            "lighthouse-core/report/v2/renderer/crc-details-renderer.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/gather/computed/critical-request-chains.js is the core logic that walks the list of networkRecords and builds the CRC tree. It currently treats any record with high priority (including iframes and data URIs) as critical. To fix the bug we need to exclude records whose resourceType.category is 'iframe' (and their descendants) and requests whose URL starts with 'data:'.\n\n\u2022 lighthouse-core/audits/critical-request-chains.js invokes the computed artifact and shapes the audit\u2019s output. While it doesn\u2019t build the chain itself, it defines what gets reported; updating it ensures that any top-level filtering of frames/data URIs carries through into the final audit result.\n\n\u2022 lighthouse-core/report/v2/renderer/crc-details-renderer.js is responsible for rendering the tree in the report UI. Even after computed filtering, the renderer must gracefully handle the absence of iframe or data-uri nodes (and avoid any hard assumptions about their presence). Adjustments here will prevent visual artifacts or errors when those nodes are omitted.",
+        "bug_scenario": "When you run CriticalRequestChains.extractChain on a set of network records that include an <iframe> document (and its children), the iframe and its sub-resources end up in the \u201ccritical\u201d request chain even though iframes aren\u2019t render-blocking. Likewise, data URIs (which aren\u2019t real network requests from CRC\u2019s perspective) still show up as leaf nodes in the CRC tree. Both behaviors lead to an inflated or misleading critical-chain graph."
+    }
+}

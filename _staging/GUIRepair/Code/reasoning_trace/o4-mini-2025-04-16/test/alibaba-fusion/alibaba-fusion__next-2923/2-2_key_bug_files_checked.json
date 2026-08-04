@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/config-provider/cache.js",
+            "src/config-provider/index.jsx",
+            "types/config-provider/index.d.ts"
+        ],
+        "explanation": "1. src/config-provider/cache.js defines the Cache class whose internal Map stores every ConfigProvider instance. It does not expose any method to drop all entries (e.g. a clear method), so once entries go in they never come out in SSR.\n2. src/config-provider/index.jsx creates a singleton childContextCache (new Cache()) and relies on componentWillUnmount to call childContextCache.remove(this). In SSR, componentWillUnmount never fires, so entries are never removed; we need to add a manual clear or explicit API here to purge the cache after SSR.\n3. types/config-provider/index.d.ts must be updated to include the new static API (e.g. ConfigProvider.clearCache) so TypeScript users can call the cache clearing function. Together, these files must be edited to add a clear or reset API on the Cache and expose it on ConfigProvider to allow explicit cleanup in SSR.",
+        "bug_scenario": "The screenshot from the SSR memory profiler shows a Map data structure growing with dozens of ConfigProvider instances (e.g. ConfigProvider @428793, @3653969, etc.), indicating that our childContextCache never releases entries when doing repeated renderToString calls. Because React\u2019s SSR path does not invoke componentWillUnmount(), the Cache.remove() hook inside ConfigProvider never runs and the internal Map keeps accumulating references, causing a memory leak under high-pressure SSR scenarios."
+    }
+}

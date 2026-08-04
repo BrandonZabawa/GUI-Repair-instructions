@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes",
+            "lighthouse-core/audits/byte-efficiency/efficient-animated-content.js//EfficientAnimatedContent"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.computeWasteWithTTIGraph",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.createAuditProduct",
+            "lighthouse-core/audits/byte-efficiency/efficient-animated-content.js//EfficientAnimatedContent.audit_"
+        ],
+        "explanation": "The core of the bug lies in how byte savings are translated into a performance score. The 'UnusedBytes' class in 'byte-efficiency-audit.js' is responsible for computing and scoring byte efficiency audits, specifically via the 'computeWasteWithTTIGraph' function, which estimates the time saved based on the impact on the last long task (TTI). This method fails when there is only a single large request that does not affect long tasks. The 'createAuditProduct' function consumes this waste calculation to produce the final score and display value. The 'EfficientAnimatedContent' audit (in 'efficient-animated-content.js') uses these mechanisms to report on GIF inefficiency, but its 'audit_' method just returns the byte savings and headings, relying on the base audit class for scoring. To fix the bug, changes are needed in these base scoring mechanisms (possibly considering impact on onload or the end of the dependency graph, not just TTI) to properly reflect the savings in the audit score, especially for cases like large GIFs replaced by videos.",
+        "bug_scenario": "The bug scenario involves the Lighthouse 'ByteEfficiency' audit incorrectly reporting a perfect score (100) for animated GIFs even though there are significant savings if converted to video (nearly 5MB). The report displays the potential byte savings, but the scoring doesn't reflect the actual performance impact, because the current calculation bases savings only on Time to Interactive (TTI) and misses cases where a single large request (like a GIF) is the main issue. The image shows the audit recognizing the GIF and potential byte savings but still awarding a score of 100, indicating no performance issue detected by the scoring algorithm."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.computeWasteWithTTIGraph",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.createAuditProduct"
+        ],
+        "explanation": "The key bug is in the UnusedBytes class within byte-efficiency-audit.js, particularly in the computeWasteWithTTIGraph method, which is responsible for estimating the time savings based on the last long task in the graph. In this animated GIF case, this method returns zero when it should consider the impact at the end of the graph or onload, as discussed in the bug report. The createAuditProduct method is also involved in using this value to determine the audit score and display values. The EfficientAnimatedContent audit (efficient-animated-content.js) correctly identifies the byte savings but relies on the base audit logic for scoring. Therefore, the bug is rooted in how computeWasteWithTTIGraph calculates (or fails to calculate) savings in these specific scenarios.",
+        "bug_scenario": "The bug is that the ByteEfficiency audit reports a perfect score (100) for savings in the case of converting animated GIFs to video, even though there are significant potential byte savings (almost 5MB). The underlying cause is that computeWasteWithTTIGraph reports 0 ms savings when only one network request is affected and no long tasks are touched, leading to the misleading score, despite the end-of-graph showing a large time difference."
+    }
+}

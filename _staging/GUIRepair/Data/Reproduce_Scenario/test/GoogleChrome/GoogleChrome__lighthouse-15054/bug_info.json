@@ -1,0 +1,18 @@
+{
+    "repo": "GoogleChrome/lighthouse",
+    "instance_id": "GoogleChrome__lighthouse-15054",
+    "base_commit": "3ba11a87992fa3deaf02f867dd08515b43038998",
+    "patch": "",
+    "test_patch": "",
+    "problem_statement": "Extension unload listeners can fail the bfcache audit but be otherwise undetectable\nFrom an issue @rviscomi ran into:\r\n\r\nAn extension can inject an unload listener into the main frame and the bfcache audit will fail on this reason, but the `no-unload-listeners` audit will pass, and a user looking in the DevTools Elements panel or running `getEventListeners(window)` in the console will similarly find no `'unload'` listeners. This ends up very challenging to debug.\r\n\r\nTo repro:\r\n- `yarn chrome --port=9222 --enable-extensions`\r\n- install the LastPass extension (`https://chrome.google.com/webstore/detail/hdokiejnpimakedhajhdlcegeplioahd`), ignore the log-in screen\r\n- either\r\n  - visit `https://example.com` and run Lighthouse in DevTools\r\n  - run `node cli/index.js https://example.com --port 9222 --view` on the command line\r\n\r\n<img width=\"779\" alt=\"Failing bfcache audit in Lighthouse due to 'an unload handler in the main frame'\" src=\"https://user-images.githubusercontent.com/316891/232578805-bb4ca9e9-fe32-47ff-9050-af4281db6d1b.png\">\r\n\r\n<img width=\"780\" alt=\"Passing 'no unload event listeners' audit in Lighthouse, with no unload listeners listed\" src=\"https://user-images.githubusercontent.com/316891/232578915-0e1da09e-d91c-4d37-aeae-4345b446f344.png\">\r\n\r\n---\r\n\r\nThis is due to the `'unload'` listener being added inside a content script injected on `document_start`, which runs in an isolated execution context. Unless `no-unload-listeners` starts running `DOMDebugger.getEventListeners` on a `window` reference from the isolated context, those listeners are invisible to the user (similar to how users need to know to pick the other execution context in the DevTools console dropdown for `getEventListeners(window)` to show the injected script's `unload` listeners).\r\n\r\nLighthouse could\r\n- cycle through execution contexts for the queries for this kind of audit (probably good in general)\r\n- add a top-level extension warning to the report if there were any content scripts from extensions (possibly similar to #14651)\n",
+    "hints_text": "",
+    "created_at": "",
+    "image_assets": "{\"problem_statement\": [\"https://user-images.githubusercontent.com/316891/232578805-bb4ca9e9-fe32-47ff-9050-af4281db6d1b.png\", \"https://user-images.githubusercontent.com/316891/232578915-0e1da09e-d91c-4d37-aeae-4345b446f344.png\"]}",
+    "version": "",
+    "FAIL_TO_PASS": "",
+    "PASS_TO_PASS": "",
+    "pull_url": null,
+    "issue_url": "",
+    "reproduce_url": "",
+    "interaction": ""
+}

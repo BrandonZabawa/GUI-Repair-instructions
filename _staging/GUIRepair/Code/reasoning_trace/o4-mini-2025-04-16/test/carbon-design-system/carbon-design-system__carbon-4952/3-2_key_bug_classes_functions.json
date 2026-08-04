@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox.handleOnStateChange",
+            "packages/react/src/components/ComboBox/ComboBox.js//input’s onKeyDown handler passed into getInputProps"
+        ],
+        "explanation": "The ComboBox component in ComboBox.js is using a fully controlled input (inputValue={this.state.inputValue}) together with a custom onKeyDown handler on the <input> (which calls event.stopPropagation() on every key). This prevents the browser’s IME composition events (compositionstart, compositionupdate, compositionend) from being handled and blocks Downshift’s internal handlers. Furthermore, handleOnStateChange only responds to state changes it recognizes (newState.inputValue) and immediately sets the controlled state, wiping out the IME’s committed characters. Together, these pieces prevent a Chinese IME from ever committing final characters into the input.",
+        "bug_scenario": "When using a Zhuyin-based Chinese IME inside a ComboBox, instead of seeing the final Chinese characters after selecting from the IME candidate window, you only ever see the raw Zhuyin symbols (ㄓㄨㄥ ㄨㄣˊㄘㄜˋㄕˋ). The IME candidate selection never commits into Chinese (中文測試), because the ComboBox’s controlled input and its key-event handlers swallow or reset composition events."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//handleOnStateChange",
+            "packages/react/src/components/ComboBox/ComboBox.js//render input onKeyDown handler"
+        ],
+        "explanation": "The core ComboBox class is responsible for wiring Downshift’s state changes and key events to the <input>. Its handleOnStateChange method and the inline onKeyDown handler currently treat every key and input update as final, calling setState and stopPropagation indiscriminately. That intercepts and prematurely finalizes IME composition updates and swallows arrow-key navigation in the IME candidate list. To restore proper Chinese IME support, the component must detect compositionstart/compositionend events (e.g. ignore interim inputValue changes during composition) and avoid stopping propagation on keys used by the IME.",
+        "bug_scenario": "When typing Chinese via an IME into a Carbon ComboBox, composition events are mishandled so that the pre-converted phonetic symbols (e.g. Zhuyin or Pinyin) are inserted literally into the input instead of allowing the user to select and confirm full Chinese characters. The first screenshot shows phonetic symbols stuck in the field, and no candidate list navigation. The second screenshot shows the expected behavior: the IME candidate panel appears and converted characters (“中文測試”) can be chosen."
+    }
+}

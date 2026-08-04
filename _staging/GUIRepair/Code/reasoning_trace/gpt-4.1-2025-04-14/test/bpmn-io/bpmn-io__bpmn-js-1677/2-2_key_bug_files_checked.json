@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "explanation": "1. lib/features/label-editing/LabelEditingProvider.js: This file manages the activation and completion of direct label editing. It listens for element removal events and attempts to cancel direct editing, but may not handle the case where the element is deleted while editing is still active, leading to the illegal invocation error.\n2. lib/features/label-editing/cmd/UpdateLabelHandler.js: This file contains the command handler for updating labels. If the element is deleted during direct editing, the handler may attempt to update or revert a label on a non-existent element, causing the exception.\n3. lib/features/modeling/Modeling.js: This file is responsible for executing the 'element.updateLabel' command via the command stack. It is involved in the updateLabel workflow and may need to ensure that commands are not executed on deleted elements.\n\nThese files are key because they are directly involved in the label editing and deletion workflow, and the stack trace in the bug report points to their involvement in the error. The context pad provider (ContextPadProvider.js) is less likely to be the root cause, as it only triggers the delete action, not the label update logic.",
+        "bug_scenario": "The bug scenario involves deleting a BPMN element while direct label editing is active. When the user selects an element and deletes it via the context pad (as shown in the image, where the trash icon is about to be clicked), an 'illegal invocation' exception is thrown during the updateLabel command execution. This results in the editor crashing or becoming unstable."
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox"
+        ],
+        "explanation": "The ComboBox component in ComboBox.js is defined as a plain functional component and exported directly, so it does not receive or forward any ref argument. To enable ref support (and eliminate the warning), the ComboBox definition must be wrapped with React.forwardRef, accept a ref parameter, and merge or forward that ref down to the actual input element (using the imported mergeRefs helper). This change will allow consumers to pass refs to ComboBox as they can for TextInput, and have them correctly attached to the inner DOM node.",
+        "bug_scenario": "When a consumer passes a ref prop to the ComboBox component (now implemented as a plain functional component), React logs a warning \u201cFunction components cannot be given refs.\u201d The ref isn\u2019t forwarded to the underlying input or ListBox, so attempts to call methods on the ref fail."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/index.js (re-export of ComboBox)",
+            "packages/react/src/components/ComboBox/ComboBox.js//mergeRefs"
+        ],
+        "explanation": "The root of the issue is in ComboBox.js: the ComboBox component is declared as a plain function component so it does not receive or forward the ref argument. The index.js file simply re-exports ComboBox without wrapping it in React.forwardRef. Although mergeRefs is imported (to merge multiple refs), it is not used to forward the consumer\u2019s ref down to the internal <input>. To fix this, ComboBox should be wrapped in React.forwardRef, accept (props, ref), use mergeRefs to combine the forwarded ref with its internal inputRef, and index.js should export the forwarded version of ComboBox.",
+        "bug_scenario": "When a consumer tries to pass a ref to the ComboBox component (e.g. ref={comboBoxRef}), React prints \u201cFunction components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef( )?\u201d because ComboBox was rewritten from a class component to a plain function and never updated to forward refs. Users expect to be able to attach a ref to the underlying input, just as TextInput does."
+    }
+}

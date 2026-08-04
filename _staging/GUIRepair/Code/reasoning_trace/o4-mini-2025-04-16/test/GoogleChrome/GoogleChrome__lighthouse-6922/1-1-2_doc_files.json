@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "gather/driver-test.js",
+            "gather/devtools-log-test.js",
+            "gather/fake-driver.js",
+            "gather/gather-runner-test.js",
+            "lib/network-recorder-test.js",
+            "network-records-to-devtools-log.js"
+        ],
+        "explanation": "\u2022 gather/driver-test.js and gather/fake-driver.js simulate the low-level CDP driver and attachment/target flow. They\u2019ll reveal how the driver currently ignores \"Target.targetCreated/attachedToTarget\" events for subframes.\n\u2022 gather/devtools-log-test.js confirms how Lighthouse collects raw DevTools protocol logs, but only from the main session, so it never sees OOPIF network messages.\n\u2022 gather/gather-runner-test.js exercises the overall gather pipeline (including driver.attach and network instrumentation) and will show that only the main frame is targeted.\n\u2022 lib/network-recorder-test.js tests the module that processes incoming Network.requestWillBeSent/Network.responseReceived events\u2014without OOPIF attachment there simply aren\u2019t any events to record.\n\u2022 network-records-to-devtools-log.js demonstrates how recorded network entries are converted back into DevTools log format, so you can see how missing OOPIF entries propagate through the entire trace.\n\nTogether, these files contain the code paths that must be modified to detect new Targets, call sendMessageToTarget('Network.enable') for each, and properly capture OOPIF network events.",
+        "bug_scenario": "The reporter discovered that Lighthouse currently only instruments and listens for network events on the mainframe, and does not \u201cdiscover\u201d or attach to out-of-process iframes (OOPIFs) the way Chrome DevTools does. In the DevTools screenshot they show a sequence of CDP targets being created for an iframe (Target.targetCreated \u2192 Target.attachedToTarget) followed by calls to send Network.enable, Page.enable, and other domain-enable commands on the new sessionId. Because Lighthouse\u2019s gatherer/driver never performs this target discovery and sendMessageToTarget flow, any network requests inside OOPIFs are simply never observed or recorded. This leads to missing network data for embedded cross-origin iframes."
+    }
+}

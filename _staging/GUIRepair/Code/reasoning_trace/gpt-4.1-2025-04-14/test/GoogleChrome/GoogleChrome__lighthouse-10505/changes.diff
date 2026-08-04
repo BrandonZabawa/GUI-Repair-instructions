@@ -1,0 +1,39 @@
+diff --git a/lighthouse-core/computed/metrics/interactive.js b/lighthouse-core/computed/metrics/interactive.js
+index b534a5a5a..5daff9947 100644
+--- a/lighthouse-core/computed/metrics/interactive.js
++++ b/lighthouse-core/computed/metrics/interactive.js
+@@ -90,14 +90,30 @@ class Interactive extends ComputedMetric {
+   static findOverlappingQuietPeriods(longTasks, networkRecords, traceOfTab) {
+     const FcpTsInMs = traceOfTab.timestamps.firstContentfulPaint / 1000;
+ 
++    /**
++     * Adjust quiet periods to start no earlier than FCP.
++     * @param {Array<TimePeriod>} periods
++     * @return {Array<TimePeriod>}
++     */
++    function adjustPeriodsToFCP(periods) {
++      return periods.map(period => {
++        if (period.start < FcpTsInMs) {
++          return {start: FcpTsInMs, end: period.end};
++        }
++        return period;
++      });
++    }
++
+     /** @type {function(TimePeriod):boolean} */
+     const isLongEnoughQuietPeriod = period =>
+         period.end > FcpTsInMs + REQUIRED_QUIET_WINDOW &&
+         period.end - period.start >= REQUIRED_QUIET_WINDOW;
+-    const networkQuietPeriods = this._findNetworkQuietPeriods(networkRecords, traceOfTab)
+-        .filter(isLongEnoughQuietPeriod);
+-    const cpuQuietPeriods = this._findCPUQuietPeriods(longTasks, traceOfTab)
+-        .filter(isLongEnoughQuietPeriod);
++    const networkQuietPeriods = adjustPeriodsToFCP(
++      this._findNetworkQuietPeriods(networkRecords, traceOfTab)
++    ).filter(isLongEnoughQuietPeriod);
++    const cpuQuietPeriods = adjustPeriodsToFCP(
++      this._findCPUQuietPeriods(longTasks, traceOfTab)
++    ).filter(isLongEnoughQuietPeriod);
+ 
+     const cpuQueue = cpuQuietPeriods.slice();
+     const networkQueue = networkQuietPeriods.slice();

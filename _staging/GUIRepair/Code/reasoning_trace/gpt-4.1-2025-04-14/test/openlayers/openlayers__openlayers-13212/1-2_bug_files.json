@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/WebGLTile.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/Tile.js",
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "explanation": "- src/ol/source/GeoTIFF.js is the current GeoTIFF source implementation, which is central to the issue as it does not support a pyramid/tile grid template (it expects a direct file reference). A new or refactored implementation here is needed to support pyramid composition and template strings for tile access.\n- src/ol/source/WebGLTile.js defines the source interface for WebGL tile layers, and would be involved in the new pyramid-aware source type or in how tiles are fetched and composed from GeoTIFFs.\n- src/ol/layer/WebGLTile.js is the main WebGL-based tile rendering layer, which currently requires one WebGL context per layer. It will need changes to work with the new pyramid GeoTIFF source and to ensure one context per layer/pyramid.\n- src/ol/renderer/webgl/TileLayer.js is the renderer responsible for rendering tile layers using WebGL. Any adjustments to source pyramid support or to ensure one context per tile grid/layer would go here.\n- src/ol/source/Tile.js is the abstract base tile source class and may need to be extended or adapted for handling new pyramid source logic and grid-based fetching.\n- src/ol/tilegrid/TileGrid.js is the core definition for tile grid objects (how tiles are divided/indexed spatially), so modifications or references are needed to support composing tiles from a pyramid structure, similar to how WMTS source works.\nThese files collectively define layer behavior, interact with WebGL, fetch GeoTIFF tiles, and manage tile grids\u2014all directly relevant to the scenario described in the bug report.",
+        "bug_scenario": "When using a pyramid of WebGLTileLayers with GeoTIFF sources, the application quickly loses WebGL contexts due to too many layers (each requiring its own context). This results in unrendered tiles and poor performance. The proposed fix is to create a specialized source that can represent a GeoTIFF pyramid, similar to WMTS, using a single layer and WebGL context per renderer."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/source/Tile.js",
+            "src/ol/tilegrid/TileGrid.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "1. src/ol/source/GeoTIFF.js is directly responsible for handling GeoTIFFs as a tile source, and would need to be updated (or have a new similar source created) to allow handling of a pyramid of GeoTIFF files and accept tile grid/template parameters.\n2. src/ol/layer/WebGLTile.js is the main WebGL tile layer implementation, managing WebGL contexts and how tiles are rendered; changes could be needed to ensure only a single context per layer is used, and to integrate with the new/updated GeoTIFF source.\n3. src/ol/source/Tile.js is the base class for tile sources, possibly requiring extension or modification for the new source type.\n4. src/ol/tilegrid/TileGrid.js is involved in defining tile coordinates, extents, and resolutions; important for managing the pyramid tiling scheme for GeoTIFF sets and ensuring proper tile-grid addressing.\n5. src/ol/renderer/webgl/TileLayer.js manages how WebGLTileLayers render tiles via WebGL, and may need adjustments to ensure it handles the new source correctly without leaking/overcreating contexts. \n\nTogether, these files encompass the tile source, tiling scheme, rendering logic, and context management directly relevant for the described bug and its resolution.",
+        "bug_scenario": "The bug report discusses a WebGLTileLayer pyramid rendering scenario where multiple WebGL contexts are created for each tile layer, quickly exhausting the number of available contexts (leading to context loss, missing tiles, and bad performance). The suggestion is to instead allow a single source that accepts a tile grid and a template, composing each requested tile from the correct tile(s) of the GeoTIFF pyramid, thus maintaining only one WebGL context per layer and solving the problem."
+    }
+}

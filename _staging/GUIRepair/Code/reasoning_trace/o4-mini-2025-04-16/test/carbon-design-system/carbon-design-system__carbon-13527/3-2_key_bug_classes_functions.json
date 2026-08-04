@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/SideNav.js//SideNav",
+            "packages/react/src/components/UIShell/SideNavMenu.js//SideNavMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/SideNav.js//handleToggle",
+            "packages/react/src/components/UIShell/SideNav.js//onMouseEnter / onMouseLeave handlers",
+            "packages/react/src/components/UIShell/SideNavMenu.js//conditional isSideNavExpanded reset logic"
+        ],
+        "explanation": "The problem manifests because when the rail collapses on mouse leave, SideNav\u2019s handleToggle (and its mouse-event handlers) reset the rail expanded state, but the submenu component holds its own isExpanded state and does not reliably collapse in sync. Although SideNavMenu receives an isSideNavExpanded prop and contains in\u2010render conditional code to set isExpanded to false when isSideNavExpanded goes false, those state changes happen inside the render body (rather than inside a useEffect), leading to timing issues where the submenu remains visible. To fix the bug you need to update SideNav so that it cleanly propagates its collapsed state (expandedViaHoverState) to children, and refactor SideNavMenu\u2019s reset logic into a useEffect hook that watches isSideNavExpanded and closes any open submenu immediately when the rail retracts.",
+        "bug_scenario": "In the SideNav \"rail\" variant, when you hover over the collapsed rail it expands, you open one of its SideNavMenu submenus, and then move the mouse away, the rail collapses back to the icon-only view but the submenu list remains rendered as an open dropdown detached from the rail. The screenshot shows the rail collapsed yet the submenu\u2019s items still hanging in the page."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/SideNav.js//SideNav",
+            "packages/react/src/components/UIShell/SideNavMenu.js//SideNavMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/SideNav.js//handleToggle",
+            "packages/react/src/components/UIShell/SideNav.js//eventHandlers.onMouseEnter",
+            "packages/react/src/components/UIShell/SideNav.js//eventHandlers.onMouseLeave",
+            "packages/react/src/components/UIShell/SideNavMenu.js//(inline render logic reacting to isSideNavExpanded)"
+        ],
+        "explanation": "The bug arises from two related areas:\n\n1. In SideNav.js:\n   - The onMouseEnter and onMouseLeave handlers call handleToggle in a way that correctly changes the rail expansion state (expandedViaHoverState), but do not coordinate closing child submenus. Because the SideNavMenu only sees the top-level expansion prop change, it relies on an effect in its render to collapse, but this timing is brittle.\n   - The handleToggle function toggles the rail state but does not propagate an explicit close event to SideNavMenu.\n\n2. In SideNavMenu.js:\n   - The component maintains its own isExpanded state and attempts to sync to the parent\u2019s isSideNavExpanded prop by imperatively calling setIsExpanded inside render. While this is intended to collapse the menu when the rail collapses, the logic only runs under certain conditions and can miss the transition, leaving the menu open.\n\nTo fix the issue, the onMouseLeave handler in SideNav should explicitly signal child menus to close (for example by passing a new prop or firing a context event). In SideNavMenu, the syncing logic should be refactored into a proper useEffect that always closes the submenu immediately when isSideNavExpanded becomes false, ensuring the dropdown cannot remain open after the rail collapses.",
+        "bug_scenario": "When the SideNav is rendered as a collapsed rail (isRail), opening a submenu (SideNavMenu) and then moving the mouse off the rail correctly collapses the SideNav, but the open submenu stays visible. In the screenshot you can see the rail collapsed to icons only, yet the dropdown menu remains expanded, breaking the intended hover-to-open rail behavior."
+    }
+}

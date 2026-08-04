@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.prepareFrameInternal",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.enqueueTiles"
+        ],
+        "explanation": "The WebGLTileLayerRenderer.prepareFrameInternal method computes an initialZ value using layer.getMinZoom(), then passes it to enqueueTiles as the tile grid zoom index. However, layer.getMinZoom() reflects the view\u2019s zoom level, not the tile grid\u2019s zoom index. Tile grids use discrete resolution steps determined by tileGrid.getZForResolution or view.getResolutionForZoom. By conflating view zoom with tile grid zoom, the renderer may request tiles at a non\u2010existent zoom level, causing no tiles to load. To fix this, remove direct use of getMinZoom() or replace it with tileGrid.getZForResolution(layer.getMaxResolution()) (or getResolutionForZoom(layer.getMinZoom()) followed by getZForResolution).",
+        "bug_scenario": "When rendering a WebGL\u2010backed tile layer, the renderer uses layer.getMinZoom() directly as the tile grid \u201cz\u201d index. Because getMinZoom() returns a view zoom level (not the tile grid zoom index), in cases where the view\u2019s minZoom does not match the tile grid configuration, no tiles are enqueued or rendered\u2014resulting in missing tiles on the map."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles"
+        ],
+        "explanation": "Both prepareFrameInternal and enqueueTiles in WebGLTileLayerRenderer compute or accept an initialZ parameter based on layer.getMinZoom(). Because getMinZoom() yields a view zoom level, not a tile grid index, passing it directly into tileGrid lookup leads to requesting tiles at the wrong zoom level. To fix this, layer.getMinZoom() should be converted to a tile grid Z via tileGrid.getZForResolution(view.getResolutionForZoom(layer.getMinZoom())) (or by using layer.getMaxResolution()).",
+        "bug_scenario": "When rendering a WebGL tile layer the code uses layer.getMinZoom() directly as the tile grid zoom index (initialZ). Because getMinZoom() returns a view zoom level and not a tile\u2010grid zoom index, the renderer asks for the wrong tiles (or none at all) when the source\u2019s tile grid resolution doesn\u2019t match the view zoom. This results in missing tiles."
+    }
+}

@@ -1,0 +1,35 @@
+diff --git a/src/number-picker/index.jsx b/src/number-picker/index.jsx
+index acc589329..02e459772 100644
+--- a/src/number-picker/index.jsx
++++ b/src/number-picker/index.jsx
+@@ -304,6 +304,11 @@ class NumberPicker extends React.Component {
+         let result;
+         if (typeof val === 'number') {
+             result = (precisionFactor * val + precisionFactor * step) / precisionFactor;
++            // Fix: round to correct precision to avoid float imprecision
++            const precision = this.getPrecision();
++            if (precision > 0) {
++                result = Number(Number(result).toFixed(precision));
++            }
+         } else {
+             result = min === -Infinity ? step : min;
+         }
+@@ -358,7 +363,17 @@ class NumberPicker extends React.Component {
+     renderValue() {
+         const { value, hasFocused } = this.state;
+         const { format } = this.props;
+-        return (typeof format === 'function' && !hasFocused) ? format(value) : value;
++        if (typeof format === 'function' && !hasFocused) {
++            return format(value);
++        }
++        // Fix: always round to the correct precision for display if value is a number
++        if (typeof value === 'number' && !isNaN(value)) {
++            const precision = this.getPrecision();
++            if (precision > 0) {
++                return value.toFixed(precision);
++            }
++        }
++        return value;
+     }
+ 
+     focus() {

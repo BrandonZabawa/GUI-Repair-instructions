@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/user-timings.js",
+            "lighthouse-core/formatters/user-timings.js"
+        ],
+        "explanation": "lighthouse-core/audits/user-timings.js is where traceEvents are read, grouped into marks and measures, and returned by the audit. This is the place to add logic that ignores any timing events whose names start with \u201cad_\u201d or \u201cgoog_\u201d. Without filtering here, all injected ads timings flow downstream. The renderer, lighthouse-core/formatters/user-timings.js, consumes the audit\u2019s output to build the report UI. Although most of the heavy lifting happens in the audit, the formatter should be reviewed (and potentially adjusted) to ensure it doesn\u2019t re-include or render any events that slipped through, keeping the final report clean of irrelevant marks.",
+        "bug_scenario": "When running the Lighthouse \u201cuser-timings\u201d audit against pages that load Google Ads, every single blink.user_timing mark and measure\u2014including those injected by Google (names prefixed with \u201cad_\u201d or \u201cgoog_\u201d)\u2014ends up in the report. The screenshot shows dozens of \u201cad_slots_defined\u201d, \u201cad_requested_from_server\u201d, \u201cgoog_123_3_1_start/end\u201d, etc., cluttering the \u201cUser Timing marks and measures\u201d section. We need to filter out those irrelevant events."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/user-timings.js",
+            "lighthouse-core/formatters/user-timings.js"
+        ],
+        "explanation": "The audit logic in audits/user-timings.js currently grabs every blink.user_timing event from the trace, without excluding ad_* or goog_* marks. That\u2019s why all of the Google Ads\u2013injected user timing marks appear in the report. The formatter in formatters/user-timings.js then renders every item the audit emits. To filter out irrelevant marks you\u2019ll need to update the filtering logic in user-timings.js (e.g. drop names matching /^ad_/ or /^goog_/) and ensure the formatter still correctly displays only the remaining valid marks and measures.",
+        "bug_scenario": "When running the Lighthouse \u201cuser-timings\u201d audit against pages that load Google Ads, all of the ad-injected marks and measures (names starting with ad_* or goog_*) show up in the report\u2019s \u201cUser Timing marks and measures\u201d section, cluttering the output with irrelevant entries."
+    }
+}

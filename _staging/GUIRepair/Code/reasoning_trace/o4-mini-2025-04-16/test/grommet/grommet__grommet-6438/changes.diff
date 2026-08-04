@@ -1,0 +1,38 @@
+diff --git a/src/js/components/Calendar/Calendar.js b/src/js/components/Calendar/Calendar.js
+index 5c72ca82c..023880594 100644
+--- a/src/js/components/Calendar/Calendar.js
++++ b/src/js/components/Calendar/Calendar.js
+@@ -301,12 +301,29 @@ const Calendar = forwardRef(
+       setOutputFormat(getOutputFormat(dateProp || datesProp));
+     }, [dateProp, datesProp]);
+ 
+-    // normalize bounds
++    // normalize bounds and clamp the displayed month into them
+     const [bounds, setBounds] = useState(boundsProp);
+     useEffect(() => {
+-      if (boundsProp) setBounds(boundsProp);
+-      else setBounds(undefined);
+-    }, [boundsProp]);
++      if (boundsProp) {
++        setBounds(boundsProp);
++        // clamp the calendar's reference month to within bounds
++        const [from, to] = boundsProp;
++        const fromDate = new Date(from);
++        const toDate = to ? new Date(to) : undefined;
++        // if our current reference is before the lower bound, jump to lower bound
++        if (reference.getTime() < fromDate.getTime()) {
++          setReference(fromDate);
++          if (onReference) onReference(fromDate.toISOString());
++        // if our reference is after the upper bound, jump to upper bound
++        } else if (toDate && reference.getTime() > toDate.getTime()) {
++          setReference(toDate);
++          if (onReference) onReference(toDate.toISOString());
++        }
++      } else {
++        setBounds(undefined);
++      }
++    // include reference and onReference so that we re‐clamp if they change
++    }, [boundsProp, reference, onReference]);
+ 
+     // calculate the bounds we display based on the reference
+     const [displayBounds, setDisplayBounds] = useState(

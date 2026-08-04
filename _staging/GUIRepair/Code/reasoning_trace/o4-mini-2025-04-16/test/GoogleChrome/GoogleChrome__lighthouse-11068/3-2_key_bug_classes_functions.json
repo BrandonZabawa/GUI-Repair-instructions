@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/css-usage.js//CSSUsage",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/css-usage.js//afterPass",
+            "lighthouse-core/gather/driver.js//_handleTargetAttached",
+            "lighthouse-core/gather/driver.js//gotoURL"
+        ],
+        "explanation": "\u2022 CSSUsage.afterPass (css-usage.js): This gatherer only listens for styleSheetAdded events on the main frame and then stops listening before styles from OOPIFs arrive, so it never fetches or analyzes CSS in iframes.  \n\u2022 Driver._handleTargetAttached (driver.js): When the driver auto-attaches to an iframe target, it only enables Network; CSS domain commands (CSS.enable, startRuleUsageTracking) aren\u2019t propagated to subtargets.  \n\u2022 Driver.gotoURL (driver.js): Although it enables auto-attach for subtargets, it doesn\u2019t bootstrap CSS tracking on new iframe sessions. Modifying gotoURL to set up CSS domains for child targets is required so that CSSUsage can collect stylesheet data from OOPIFs.",
+        "bug_scenario": "In Lighthouse\u2019s \u201cAll text remains visible during webfont loads\u201d audit for a page containing out-of-process iframes (OOPIFs), multiple \u201cunable to automatically check the font-display value\u201d warnings appear for fonts loaded inside those iframes. The screenshot shows a list of .woff2 resources for which CSSUsage never detected any stylesheet references, so the font-display audit can\u2019t verify the display value."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/css-usage.js//CSSUsage",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/css-usage.js//CSSUsage.afterPass",
+            "lighthouse-core/gather/driver.js//Driver._handleTargetAttached",
+            "lighthouse-core/gather/driver.js//Driver.sendCommandToSession"
+        ],
+        "explanation": "\u2022 CSSUsage.afterPass: this is the gatherer that enables CSS rule usage tracking and listens for CSS.styleSheetAdded events. It currently only operates in the primary page context and never issues CSS.enable or startRuleUsageTracking in the iframe sessions, so fonts loaded in OOPIF frames are never collected.\n\u2022 Driver._handleTargetAttached: this driver hook is responsible for auto-attaching to new subtargets (iframes), but CSSUsage afterPass never takes advantage of its session-scoped targetIds to mirror the CSS.enable + startRuleUsageTracking calls in those iframes.\n\u2022 Driver.sendCommandToSession: CSSUsage uses driver.sendCommand (an alias for sendCommandToSession with no sessionId). To fix collection in iframes, CSSUsage must call CSS.enable and CSS.startRuleUsageTracking via sendCommandToSession(frameSessionId, \u2026) so that CSS events from each iframe are registered. Adjusting these methods will ensure CSSUsage captures stylesheets (and thus font-display) in all OOPIF contexts.",
+        "bug_scenario": "When auditing a page that loads fonts inside out-of-process iframes (OOPIFs), Lighthouse\u2019s font-display audit emits warnings like \u201cLighthouse was unable to automatically check the font-display value for the following URL: https://fonts.gstatic.com/\u2026woff2.\u201d The screenshot shows a list of .woff2 URLs coming from cross-origin iframes that never get picked up by the CSSUsage gatherer, so CSSUsage has no stylesheet entries for those fonts and the audit cannot verify their font-display declarations."
+    }
+}

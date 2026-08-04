@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-clike.js",
+            "components/prism-java.js"
+        ],
+        "explanation": "Prism\u2019s Java grammar is built on top of the generic C-like grammar (prism-clike.js), which defines the generic \"class-name\" pattern for capitalized identifiers. The Java language file (prism-java.js) extends and overrides parts of the C-like grammar, but its import-statement pattern does not include matching for class names in the import path. As a result, \"UUID\" in an import statement is left unclassified. Updating the class-name definitions or the import pattern in these two files (and re-building their minified counterparts) will allow Prism to correctly tokenize UUID as a class-name.",
+        "bug_scenario": "When using Prism to highlight Java code that contains an import statement for a class whose name is all uppercase (e.g. \u201cimport java.util.UUID;\u201d), the identifier \u201cUUID\u201d is not being tokenized as a class-name. Instead it renders as plain text. By comparison, GitHub\u2019s highlighter (and Prism\u2019s own definition for other languages) treats UUID as a class-name token."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-java.js",
+            "components/prism-java.min.js",
+            "prism.js"
+        ],
+        "explanation": "The Java-specific grammar is defined in components/prism-java.js (and its minified counterpart). In that file the import and package patterns only assign a \u2018punctuation\u2019 token to the dots, leaving all identifier segments unstyled. To highlight UUID as a class name, the inside:{ } of the import pattern needs to be extended to include a \u2018class-name\u2019 rule for the last segment. The composite prism.js bundle also contains the same Java grammar and will need updating once the component is fixed.",
+        "bug_scenario": "When Prism 1.27.0 highlights a Java import statement such as \u201cimport java.util.UUID;\u201d it only tokenizes the punctuation (the dots) as namespace separators. The actual package and class name segments (including \u201cUUID\u201d) are left as plain text instead of being marked with the \u201cclass-name\u201d token, so UUID does not receive the correct styling."
+    }
+}

@@ -1,0 +1,54 @@
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index ec0518994..ce3e695ef 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -965,12 +965,23 @@ class Driver {
+    */
+   async beginEmulation(settings) {
+     if (!settings.disableDeviceEmulation) {
++      // Store the emulated user agent for later reporting
++      this._emulatedUserAgent = emulation.NEXUS5X_UA;
+       await emulation.enableNexus5X(this);
++    } else {
++      this._emulatedUserAgent = null;
+     }
+ 
+     await this.setThrottling(settings, {useThrottling: true});
+   }
+ 
++  /**
++   * @return {string|undefined}
++   */
++  getEmulatedUserAgent() {
++    return this._emulatedUserAgent;
++  }
++
+   /**
+    * @param {LH.Config.Settings} settings
+    * @param {{useThrottling?: boolean}} passConfig
+diff --git a/lighthouse-core/gather/gather-runner.js b/lighthouse-core/gather/gather-runner.js
+index 20ae47069..9f85f7d60 100644
+--- a/lighthouse-core/gather/gather-runner.js
++++ b/lighthouse-core/gather/gather-runner.js
+@@ -375,6 +375,7 @@ class GatherRunner {
+       fetchTime: (new Date()).toJSON(),
+       LighthouseRunWarnings: [],
+       UserAgent: await options.driver.getUserAgent(),
++      EmulatedUserAgent: options.driver.getEmulatedUserAgent && options.driver.getEmulatedUserAgent(),
+       traces: {},
+       devtoolsLogs: {},
+       settings: options.settings,
+diff --git a/lighthouse-core/report/html/renderer/report-renderer.js b/lighthouse-core/report/html/renderer/report-renderer.js
+index e5b8093b5..2e4cc23de 100644
+--- a/lighthouse-core/report/html/renderer/report-renderer.js
++++ b/lighthouse-core/report/html/renderer/report-renderer.js
+@@ -115,7 +115,8 @@ class ReportRenderer {
+       {name: 'URL', description: report.finalUrl},
+       {name: 'Fetch time', description: Util.formatDateTime(report.fetchTime)},
+       ...envValues,
+-      {name: 'User agent', description: report.userAgent},
++      {name: 'User agent (browser)', description: report.userAgent},
++      ...(report.emulatedUserAgent ? [{name: 'User agent (emulated)', description: report.emulatedUserAgent}] : []),
+     ].forEach(runtime => {
+       const item = this._dom.cloneTemplate('#tmpl-lh-env__items', env);
+       this._dom.find('.lh-env__name', item).textContent = `${runtime.name}:`;

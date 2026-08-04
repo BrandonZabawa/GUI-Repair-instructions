@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/ListBox/ListBoxField.js"
+        ],
+        "explanation": "\u2022 packages/react/src/components/Dropdown/Dropdown.js: This is the entry point for the Dropdown component and defines the public API (propTypes, defaultProps, etc.). We need to accept and forward a new prop (for example renderSelectedItem) so the Dropdown can tell its ListBoxField to use itemToElement (or a dedicated callback) for the selected item.  \n\u2022 packages/react/src/components/ListBox/ListBoxField.js: This component renders the button that shows the currently selected item (content and title attribute). It currently always calls itemToString(selectedItem) for both the visible label and the title. It must be updated to use itemToElement or the new renderSelectedItem prop when present, falling back to itemToString only when rendering plain text.  \n\u2022 packages/react/src/components/Dropdown/Dropdown.mdx: The documentation for the Dropdown component must be updated to describe the new prop (e.g. renderSelectedItem) and illustrate how to use itemToElement vs. itemToString for controlling both the menu item rendering and the selected item\u2019s title/content.",
+        "bug_scenario": "The team has built an Icon-Dropdown by \u201chighjacking\u201d the Dropdown\u2019s itemToString callback to return a React element (renderIconItem) so that both the menu items and the selected item show an icon. As of version 10.43/7.43, the Dropdown\u2019s trigger button also sets a title attribute using itemToString. Because itemToString now returns a React element object, hovering over the selected item shows \u201c[object Object]\u201d instead of a human-readable label. The desired behavior is to allow the selected item to use the itemToElement function (or a new dedicated prop) for rendering both its content and its title, while still using itemToString for accessibility and plain-text values."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/ListBox/ListBoxField.js"
+        ],
+        "explanation": "\u2022 Dropdown.js: This is where the Dropdown component defines and passes through the itemToString and itemToElement props. We\u2019ll need to add a new prop or flag here (e.g. renderSelectedItem) so that the selected item can be rendered with itemToElement while still using itemToString for the title.\n\n\u2022 ListBoxField.js: This file renders the <button> that displays the selected item and sets its title attribute by calling itemToString(selectedItem). It\u2019s the place where we must branch: if a new flag is set, use a default string (itemToString) for title and render the element for display, otherwise keep existing behavior.",
+        "bug_scenario": "In our app we\u2019ve built an IconDropdown by \u201chighjacking\u201d itemToString to return a React element (the icon plus label) instead of a simple string. That let us render the icon in both the list and as the selected value. In v10.43/v7.43 the Dropdown\u2019s toggle button automatically got a title attribute set to the result of itemToString, which is now an object/element, so hovering over the selected icon shows \u201c[object Object]\u201d as the tooltip rather than a human-readable name. We need a way to render the selected item as an element while preserving a proper string for the title attribute."
+    }
+}

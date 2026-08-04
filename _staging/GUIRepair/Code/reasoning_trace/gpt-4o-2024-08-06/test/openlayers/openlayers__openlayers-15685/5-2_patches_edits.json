@@ -1,0 +1,349 @@
+{
+    "1/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const renderMode = layer.getRenderMode();",
+                    "const alpha = context.globalAlpha;",
+                    "context.globalAlpha = this.renderedOpacity_;",
+                    "const declutter = layer.getDeclutter();",
+                    "const replayTypes = declutter",
+                    "? VECTOR_REPLAYS[renderMode].filter((type) => !DECLUTTER.includes(type))",
+                    ": VECTOR_REPLAYS[renderMode];"
+                ],
+                "REPLACE": [
+                    "const renderMode = layer.getRenderMode();",
+                    "const alpha = context.globalAlpha;",
+                    "context.globalAlpha = this.renderedOpacity_;",
+                    "const declutter = layer.getDeclutter();",
+                    "const replayTypes = declutter",
+                    "? VECTOR_REPLAYS[renderMode].filter((type) => !DECLUTTER.includes(type))",
+                    ": VECTOR_REPLAYS[renderMode];",
+                    "",
+                    "// Ensure fill styles do not create additional layers",
+                    "if (renderMode === 'vector') {",
+                    "context.globalCompositeOperation = 'source-over';",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/style/Fill.js": [
+            {
+                "SEARCH": [
+                    "}",
+                    "this.color_ = color;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "}",
+                    "// Ensure no excess rendering layers due to fill settings",
+                    "if (color instanceof Fill) {",
+                    "this.patternImage_ = null;",
+                    "}",
+                    "this.color_ = color;",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "); // Determine render types based on layer settings",
+                    "return super.prepareFrame(frameState);",
+                    "}"
+                ],
+                "REPLACE": [
+                    ");",
+                    "",
+                    "// Prevent additional ghost layer rendering on tiles when applying fills",
+                    "this.context.beginPath();",
+                    "this.context.rect(0, 0, this.context.canvas.width, this.context.canvas.height);",
+                    "this.context.clip();",
+                    "",
+                    "return super.prepareFrame(frameState);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const executorGroup = executorGroups[t];",
+                    "executorGroup.execute(",
+                    "context,",
+                    "[context.canvas.width, context.canvas.height],",
+                    "transform,",
+                    "rotation,",
+                    "hifi,",
+                    "replayTypes,",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const executorGroup = executorGroups[t];",
+                    "context.save(); // Save context state",
+                    "executorGroup.execute(",
+                    "context,",
+                    "[context.canvas.width, context.canvas.height],",
+                    "transform,",
+                    "rotation,",
+                    "hifi,",
+                    "replayTypes,",
+                    ");",
+                    "// Ensure context is restored, preventing unintended layering",
+                    "context.restore();"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "context.globalAlpha = this.renderedOpacity_;",
+                    "const declutter = this.getLayer().getDeclutter();",
+                    "const replayTypes = declutter"
+                ],
+                "REPLACE": [
+                    "context.globalAlpha = layerState.opacity; // Ensure opacity respects current layer's opacity without unintended overlays",
+                    "const declutter = this.getLayer().getDeclutter();",
+                    "const replayTypes = declutter"
+                ]
+            }
+        ],
+        "src/ol/style/Fill.js": [
+            {
+                "SEARCH": [
+                    "this.color_ = color;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "this.color_ = color;",
+                    "if (this.patternImage_) {",
+                    "this.patternImage_ = null;  // Ensure patternImage is reset to avoid any unintended rendering",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/style/Fill.js": [
+            {
+                "SEARCH": [
+                    "this.color_ = color;"
+                ],
+                "REPLACE": [
+                    "// Cache previous color to prevent unwanted re-render",
+                    "if (this.color_ !== color) {",
+                    "this.color_ = color;",
+                    "// Additional logic to handle transparency changes without re-triggering render",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.ready = ready;",
+                    "this.tileClipContexts_ = tileClipContexts;"
+                ],
+                "REPLACE": [
+                    "// Ensure handlers do not redraw unless necessary to avoid unwanted overlays",
+                    "if (this.renderedOpacity_ !== frameState.layerStatesArray[frameState.layerIndex].opacity) {",
+                    "this.ready = ready;",
+                    "}",
+                    "this.tileClipContexts_ = tileClipContexts;"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "context.globalAlpha = this.renderedOpacity_;",
+                    "...",
+                    "executorGroup.execute(",
+                    "context,",
+                    "[context.canvas.width, context.canvas.height],",
+                    "transform,",
+                    "rotation,",
+                    "hifi,",
+                    "replayTypes,",
+                    ");"
+                ],
+                "REPLACE": [
+                    "context.globalAlpha = this.renderedOpacity_;",
+                    "// Ensure drawing occurs below existing layers if using transparency",
+                    "if(this.renderedOpacity_ < 1) {",
+                    "context.globalCompositeOperation = 'source-over';",
+                    "}",
+                    "",
+                    "executorGroup.execute(",
+                    "context,",
+                    "[context.canvas.width, context.canvas.height],",
+                    "transform,",
+                    "rotation,",
+                    "hifi,",
+                    "replayTypes,",
+                    ");",
+                    "",
+                    "// Reset composite operation to default to avoid artifacts in further operations",
+                    "context.globalCompositeOperation = 'source-over';"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "if (renderScale !== 1) {",
+                    "const canvasTransform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(canvasTransform, renderScale, renderScale);",
+                    "context.setTransform.apply(context, canvasTransform);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "context.globalAlpha = layerState.opacity;",
+                    "if (renderScale !== 1) {",
+                    "const canvasTransform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(canvasTransform, renderScale, renderScale);",
+                    "context.setTransform.apply(context, canvasTransform);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const renderScale = pixelRatio / renderPixelRatio;",
+                    "if (renderScale !== 1) {",
+                    "const canvasTransform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(canvasTransform, renderScale, renderScale);",
+                    "context.setTransform.apply(context, canvasTransform);",
+                    "}",
+                    "context.globalAlpha = this.renderedOpacity_;"
+                ],
+                "REPLACE": [
+                    "const renderScale = pixelRatio / renderPixelRatio;",
+                    "if (renderScale !== 1) {",
+                    "const canvasTransform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(canvasTransform, renderScale, renderScale);",
+                    "context.setTransform.apply(context, canvasTransform);",
+                    "}",
+                    "// Adjust globalAlpha to prevent excess overlay",
+                    "context.globalAlpha = this.renderedOpacity_ < 1 ? this.renderedOpacity_ : 1;"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const renderPixelRatio =",
+                    "(frameState.pixelRatio / tile.wantedResolution) * tileResolution;",
+                    "const resolution = tileGrid.getResolution(z);",
+                    "const context = tile.getContext(layer);",
+                    "",
+                    "pixelRatio = Math.round(",
+                    "Math.max(pixelRatio, renderPixelRatio / pixelRatio),",
+                    ");",
+                    "const size = source.getTilePixelSize(z, pixelRatio, projection);",
+                    "context.canvas.width = size[0];"
+                ],
+                "REPLACE": [
+                    "const renderPixelRatio =",
+                    "(frameState.pixelRatio / tile.wantedResolution) * tileResolution;",
+                    "const resolution = tileGrid.getResolution(z);",
+                    "const context = tile.getContext(layer);",
+                    "",
+                    "pixelRatio = Math.round(",
+                    "Math.max(pixelRatio, renderPixelRatio / pixelRatio),",
+                    ");",
+                    "const size = source.getTilePixelSize(z, pixelRatio, projection);",
+                    "",
+                    "// Ensure context canvas does not inherit unintended alpha values causing additional layers",
+                    "context.clearRect(0, 0, context.canvas.width, context.canvas.height);",
+                    "context.canvas.width = size[0];"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (color !== null && typeof color === 'object' && 'src' in color) {",
+                    "const patternImage = getIconImage(",
+                    "null,",
+                    "color.src,",
+                    "'anonymous',",
+                    "undefined,",
+                    "color.offset ? null : color.color ? color.color : null,",
+                    "!(color.offset && color.size),",
+                    ");",
+                    "patternImage.ready().then(() => {",
+                    "this.patternImage_ = null;",
+                    "});",
+                    "if (patternImage.getImageState() === ImageState.IDLE) {",
+                    "patternImage.load();",
+                    "}",
+                    "if (patternImage.getImageState() === ImageState.LOADING) {",
+                    "this.patternImage_ = patternImage;",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "// Check for explicit alpha blending requirement for solid colors",
+                    "if (typeof color === 'string' && color.includes('rgba')) {",
+                    "this.patternImage_ = null;",
+                    "} else if (color !== null && typeof color === 'object' && 'src' in color) {",
+                    "const patternImage = getIconImage(",
+                    "null,",
+                    "color.src,",
+                    "'anonymous',",
+                    "undefined,",
+                    "color.offset ? null : color.color ? color.color : null,",
+                    "!(color.offset && color.size),",
+                    ");",
+                    "patternImage.ready().then(() => {",
+                    "this.patternImage_ = null;",
+                    "});",
+                    "if (patternImage.getImageState() === ImageState.IDLE) {",
+                    "patternImage.load();",
+                    "}",
+                    "if (patternImage.getImageState() === ImageState.LOADING) {",
+                    "this.patternImage_ = patternImage;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const executorGroups = tile.executorGroups[getUid(layer)];",
+                    "replayState.renderedTileRevision = revision;",
+                    "",
+                    "const tileCoord = tile.wrappedTileCoord;",
+                    "const z = tileCoord[0];",
+                    "const source = layer.getSource();"
+                ],
+                "REPLACE": [
+                    "const executorGroups = tile.executorGroups[getUid(layer)].filter(",
+                    "(executorGroup) => executorGroup.someConditionForFill()) // Hypothetical fix to ensure rendering respects fill style context",
+                    "replayState.renderedTileRevision = revision;",
+                    "",
+                    "const tileCoord = tile.wrappedTileCoord;",
+                    "const z = tileCoord[0];",
+                    "const source = layer.getSource();"
+                ]
+            }
+        ]
+    }
+}

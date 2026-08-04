@@ -1,0 +1,53 @@
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index 36a618c43..07fe1b9cd 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -684,15 +684,16 @@ class Driver {
+     return this._beginNetworkStatusMonitoring(url)
+       .then(_ => this._clearIsolatedContextId())
+       .then(_ => {
+-        // These can 'race' and that's OK.
+-        // We don't want to wait for Page.navigate's resolution, as it can now
+-        // happen _after_ onload: https://crbug.com/768961
++        // We _do_ want to ensure the navigation instruction has been received
++        // before we start our onload timers.  Otherwise the onload event may
++        // fire before our timers are hooked up.
+         this.sendCommand('Page.enable');
+         this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});
+-        this.sendCommand('Page.navigate', {url});
++        // WAIT for the navigation command itself before starting the next phase.
++        return this.sendCommand('Page.navigate', {url});
+       })
+-      .then(_ => waitForLoad && this._waitForFullyLoaded(pauseAfterLoadMs,
+-          networkQuietThresholdMs, cpuQuietThresholdMs, maxWaitMs))
++      .then(_ => waitForLoad && this._waitForFullyLoaded(
++          pauseAfterLoadMs, networkQuietThresholdMs, cpuQuietThresholdMs, maxWaitMs))
+       .then(_ => this._endNetworkStatusMonitoring());
+   }
+ 
+diff --git a/lighthouse-core/gather/gather-runner.js b/lighthouse-core/gather/gather-runner.js
+index 5594409a5..e7b3316cb 100644
+--- a/lighthouse-core/gather/gather-runner.js
++++ b/lighthouse-core/gather/gather-runner.js
+@@ -235,8 +235,19 @@ class GatherRunner {
+       .then(_ => driver.beginDevtoolsLog())
+       // Begin tracing if requested by config.
+       .then(_ => recordTrace && driver.beginTrace(options.flags))
+-      // Navigate.
+-      .then(_ => GatherRunner.loadPage(driver, options))
++      // Navigate, but guard against a never-firing loadEventFired by
++      // racing against the same MAX_WAIT_FOR_FULLY_LOADED timeout (45 s).
++      .then(_ => {
++        const loadPromise = GatherRunner.loadPage(driver, options);
++        const timeoutPromise = new Promise(resolve => {
++          setTimeout(() => {
++            log.warn('GatherRunner',
++              `loadPage did not signal onload within ${Driver.MAX_WAIT_FOR_FULLY_LOADED}ms — continuing.`);
++            resolve();
++          }, Driver.MAX_WAIT_FOR_FULLY_LOADED);
++        });
++        return Promise.race([loadPromise, timeoutPromise]);
++      })
+       .then(_ => log.log('statusEnd', status));
+ 
+     return gatherers.reduce((chain, gatherer) => {

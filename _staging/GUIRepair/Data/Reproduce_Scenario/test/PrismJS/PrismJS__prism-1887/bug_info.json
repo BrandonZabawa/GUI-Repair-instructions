@@ -1,0 +1,18 @@
+{
+    "repo": "PrismJS/prism",
+    "instance_id": "PrismJS__prism-1887",
+    "base_commit": "acceb3b56f0e8362a7ef274dbd85b17611df2ec4",
+    "patch": "",
+    "test_patch": "",
+    "problem_statement": "Support separating single quotes in C++ floating point and integer literals\n**Information**\r\n- Language: C++\r\n- Plugins: none\r\n\r\nDoes the problem still occur in the latest version of Prism? Yes.\r\n\r\n**Description**\r\nC++ supports separating single quotes in its [floating point](http://eel.is/c++draft/lex.fcon) and [integer](http://eel.is/c++draft/lex.icon) literals \u2013 e.g. `1'000'000` is equivalent to `1000000`.\r\n\r\nIn this screenshot, top is current highlight and bottom is the correct highlight:\r\n![good/wrong SS](https://user-images.githubusercontent.com/6709544/57575047-635a3d80-7443-11e9-91ec-335cf7ac33b5.png).\r\n\r\nThe problem gets more exacerbated for numbers with multiple quotes (values are examples from The International Standard), current on the left and correct on the right:\r\n![good/even worse SS](https://user-images.githubusercontent.com/6709544/57575060-e085b280-7443-11e9-8361-dbc70ce965fd.png)\r\n\r\n**Code snippet**\r\n\r\n<details>\r\n<summary>The code being highlighted incorrectly.</summary>\r\n\r\n```cpp\r\nauto i = 1'048'576;\r\nauto j = 0x10'0000;\r\nauto k = 0'004'000'000;\r\nauto l = 1.602'176'565e-19;\r\n```\r\n\r\n</details>\r\n\r\n**What I tried**\r\n\r\nAdding the following to `components/prism-cpp.js`'\t`extend('c')` call:\r\n\r\n```js\r\n'number': /(?:\\b0x(?:[\\da-f']+\\.?[\\da-f']*|\\.[\\da-f']+)(?:p[+-]?[\\d']+)?|(?:\\b[\\d']+\\.?[\\d']*|\\B\\.[\\d']+)(?:e[+-]?[\\d']+)?)[ful]*/i\r\n```\r\n\r\nThe regex is a the one from `components/prism-c.js`, modified to include `'` in every place where a digit could also be matched.\r\n\r\nAnd adding `tests/languages/cpp/separating_single_quotes_feature.test`, containing:\r\n\r\n```\r\n1'048'576\r\n0x10'0000\r\n0'004'000'000\r\n1.602'176'565e-19\r\n\r\n----------------------------------------------------\r\n\r\n[\r\n\t[\"number\", \"1'048'576\"],\r\n\t[\"number\", \"0x10'0000\"],\r\n\t[\"number\", \"0'004'000'000\"],\r\n\t[\"number\", \"1.602'176'565e-19\"]\r\n]\r\n\r\n----------------------------------------------------\r\n\r\nChecks for the C++ feature of separating single quotes in literals (http://eel.is/c++draft/lex.icon and http://eel.is/c++draft/lex.fcon).\r\n```\r\n\r\nWhich, sadly, fails, due to the parts of the numbers being forcibly interpreted as strings, and I don't know how to make it not do that, hence why I'm opening an issue instead of a PR.\n",
+    "hints_text": "",
+    "created_at": "",
+    "image_assets": "{\"problem_statement\": [\"https://user-images.githubusercontent.com/6709544/57575047-635a3d80-7443-11e9-91ec-335cf7ac33b5.png\", \"https://user-images.githubusercontent.com/6709544/57575060-e085b280-7443-11e9-8361-dbc70ce965fd.png\"]}",
+    "version": "",
+    "FAIL_TO_PASS": "",
+    "PASS_TO_PASS": "",
+    "pull_url": null,
+    "issue_url": "",
+    "reproduce_url": "",
+    "interaction": ""
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableToolbarSearch.js",
+            "packages/react/src/components/DataTable/__tests__/TableToolbarSearch-test.js"
+        ],
+        "explanation": "The core of the issue lives in TableToolbarSearch.js: it creates a <div role=\"searchbox\"> wrapper that never receives a proper aria-label when labelText is not provided by the consumer. This is the element JAWS announces, so we need to ensure aria-label is set there (for example, defaulting to the translated label). The accompanying test, TableToolbarSearch-test.js, must be updated to assert the presence of that aria-label on the container so that we catch regressions in future releases.",
+        "bug_scenario": "When you render a DataTable with a <TableToolbarSearch> in the toolbar without explicitly passing a labelText prop, the component renders a <div role=\"searchbox\"> container with no accessible name. Screen readers like JAWS announce it as \u201cUnlabeled# Edit\u201d or \u201c? Edit\u201d because there is no aria-label or meaningful label associated with that role wrapper. Although the inner <input> has a placeholder and a hidden label for sighted users, JAWS focuses on the role=searchbox container, which ends up unlabeled."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableToolbarSearch.js",
+            "packages/react/src/components/DataTable/__tests__/TableToolbarSearch-test.js"
+        ],
+        "explanation": "The heart of the problem is in TableToolbarSearch.js: it renders a <div role=\"searchbox\"> but doesn\u2019t expose or wire up a real label (aria-label or aria-labelledby) from the consumer\u2019s props, so screen readers can\u2019t announce the search region\u2019s name. Any fix will live in that file. You\u2019ll also need to update the corresponding snapshot/test in __tests__/TableToolbarSearch-test.js to assert the new accessibility attributes are present.",
+        "bug_scenario": "When you add a <TableToolbarSearch> into your DataTable toolbar and give it only a placeholder (or no labelText), its wrapping <div> is given role=\"searchbox\" but ends up with no readable name for assistive technology. JAWS reports \u201c? Edit\u201d or \u201cUnlabeled# Edit\u201d because the <div role=\"searchbox\"> isn\u2019t getting a user-visible aria-label or proper association with the inner <input> label."
+    }
+}

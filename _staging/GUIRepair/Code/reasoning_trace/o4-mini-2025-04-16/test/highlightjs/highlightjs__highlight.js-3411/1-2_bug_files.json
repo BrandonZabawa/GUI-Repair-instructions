@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/typescript.js",
+            "src/languages/lib/ecmascript.js"
+        ],
+        "explanation": "All of the logic for highlighting TS generics lives in src/languages/typescript.js, which builds on the generic modes defined in src/languages/lib/ecmascript.js. In typescript.js there is a \u201ctitle\u201d mode (via hljs.TITLE_MODE or similar) that matches generic-type identifiers but only consumes the first camel-case segment (letters until the transition to a lone capital). The underlying ecmascript.js also contributes shared generic syntax rules. To fix the issue, the identifier regex in these files must be adjusted so that OutT (or any mixed-case identifier ending in a capital) is recognized as one token rather than two.",
+        "bug_scenario": "When you write a TypeScript generic type with a camel-cased type parameter\u2014e.g. OutT\u2014the highlighter only treats \u201cOut\u201d as a single title token and leaves the trailing \u201cT\u201d un-styled (or styled differently). In other words, the regex/mode that picks up type parameters in the TS grammar is splitting the camel-case identifier at the capital-letter boundary instead of consuming the entire word."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/typescript.js",
+            "src/languages/lib/ecmascript.js",
+            "src/lib/utils.js"
+        ],
+        "explanation": "1. src/languages/typescript.js: This file extends the JavaScript/ECMAScript grammar to add TypeScript\u2010specific parsing, including generic parameter lists (`<OutT, InT>`) and the rules for classifying those identifiers as type names. The broken behavior lives in the clause that detects and highlights angle-bracketed identifiers.  \n2. src/languages/lib/ecmascript.js: The TypeScript mode inherits the base identifier and keyword regexes from the ECMAScript grammar. The way ECMA\u2019s identifier rules (and keyword/title modes) are constructed here feeds into how TypeScript\u2019s generics get split. A fix often requires adjusting the base definition so it doesn\u2019t break on camel-case transitions.  \n3. src/lib/utils.js: Some of the internal utility functions (e.g. those that split or normalize identifier text for lookups) inadvertently inject a camel-case boundary split. Those helpers participate in feeding tokens to the grammar engine, so they can be responsible for splitting \u201cOutT\u201d into \u201cOut\u201d + \u201cT\u201d before the highlighter ever applies type-identifier styling.",
+        "bug_scenario": "When you write a TypeScript generic type with a multi-segment identifier like \u201cOutT\u201d or \u201cInT\u201d in a code block, highlight.js only applies your type-name styling to \u201cOut\u201d (or \u201cIn\u201d) and then treats the trailing \u201cT\u201d as a separate un-styled token. In other words, the camel-cased generic parameter name gets split into two runs \u2014 the first chunk gets the proper \u201ctype\u201d highlight, the second chunk does not."
+    }
+}

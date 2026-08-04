@@ -1,0 +1,65 @@
+{
+    "1/1": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "/** @private */",
+                    "setDrawContext_() {",
+                    "if (this.opacity_ !== 1) {",
+                    "this.targetContext_ = this.context;",
+                    "this.context = createCanvasContext2D(",
+                    "this.context.canvas.width,",
+                    "this.context.canvas.height,",
+                    "canvasPool,",
+                    ");",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  /** @private */",
+                    "  setDrawContext_() {",
+                    "    if (this.opacity_ !== 1) {",
+                    "      this.targetContext_ = this.context;",
+                    "      this.context = createCanvasContext2D(",
+                    "        this.context.canvas.width,",
+                    "        this.context.canvas.height,",
+                    "        canvasPool,",
+                    "      );",
+                    "      // clear the offscreen buffer to avoid residual pixels when opacity < 1",
+                    "      this.context.clearRect(",
+                    "        0,",
+                    "        0,",
+                    "        this.context.canvas.width,",
+                    "        this.context.canvas.height",
+                    "      );",
+                    "    }",
+                    "  }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "renderFrame(frameState, target) {",
+                    "const layerState = frameState.layerStatesArray[frameState.layerIndex];",
+                    "this.opacity_ = layerState.opacity;",
+                    "const viewState = frameState.viewState;",
+                    "",
+                    "this.prepareContainer(frameState, target);",
+                    "const context = this.context;"
+                ],
+                "REPLACE": [
+                    "  renderFrame(frameState, target) {",
+                    "    const layerState = frameState.layerStatesArray[frameState.layerIndex];",
+                    "    this.opacity_ = layerState.opacity;",
+                    "    const viewState = frameState.viewState;",
+                    "",
+                    "    this.prepareContainer(frameState, target);",
+                    "    // clear the main canvas for decluttered, translucent layers to prevent accumulation",
+                    "    const context = this.context;",
+                    "    if (this.opacity_ !== 1 && frameState.declutter) {",
+                    "      context.clearRect(0, 0, context.canvas.width, context.canvas.height);",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

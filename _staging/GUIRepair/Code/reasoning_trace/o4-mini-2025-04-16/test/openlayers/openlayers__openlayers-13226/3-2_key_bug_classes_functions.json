@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//createRenderer",
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal",
+            "src/ol/renderer/webgl/TileLayer.js//getRenderExtent",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles"
+        ],
+        "explanation": "The WebGLTileLayer class (in WebGLTile.js) and its renderer (WebGLTileLayerRenderer in TileLayer.js) are responsible for turning a tile source into WebGL textures. In particular: \u2022 WebGLTileLayer.createRenderer constructs a WebGLTileLayerRenderer, tying the layer\u2019s source and styling into the renderer. \u2022 WebGLTileLayerRenderer.prepareFrameInternal calls getRenderExtent and then enqueueTiles to compute which tile coordinates should be drawn. Both getRenderExtent and enqueueTiles assume that the source provides a TileGrid (even when wrapX is false), and they use that grid to compute tile ranges for the current view. When wrapX is disabled and the projection extent doesn\u2019t wrap, source.getTileGrid() may be undefined or return a grid that yields an empty range, so prepareFrameInternal never enqueues any tiles. By fixing prepareFrameInternal (or getRenderExtent/enqueueTiles) to fall back to a default grid or to handle sources without wrapX correctly, the WebGLTileLayer will again display non-wrapped WMS tiles just like the standard Tile layer.",
+        "bug_scenario": "In the provided Codesandbox example, a WMS tiled source with wrapX set to false renders fine when using a normal ol/layer/Tile layer, but shows no tiles (black/empty canvas) when switched to ol/layer/WebGLTile. In other words, when the view projection does not wrap the world and wrapX is false on the source, the WebGLTileLayer fails to compute or fetch any tile textures, resulting in a blank map."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles",
+            "src/ol/renderer/webgl/TileLayer.js//getRenderExtent"
+        ],
+        "explanation": "The WebGLTileLayerRenderer class (in TileLayer.js) drives tile selection and rendering by calling into methods like getRenderExtent, prepareFrameInternal, and enqueueTiles, all of which assume that the source provides a tile grid (e.g. via source.getTileGridForProjection). When wrapX is false, or when the source has no explicit tile grid (as is the case for some WMS sources), these methods cannot compute tile ranges or intersections, so no tiles are requested or drawn. The WebGLTileLayer class itself does not detect or adapt to wrapX settings, so it never instructs the renderer to fall back to a simple full-extent draw. Fixing this requires updating these methods to handle sources without a tile grid (falling back to the view extent) and respecting wrapX=false.",
+        "bug_scenario": "When a tiled WMS source uses view projection with wrapX set to false, switching from the standard Tile layer to a WebGLTile layer in OpenLayers results in no tiles rendering (or runtime errors). In the provided sandbox, replacing ol/layer/Tile with ol/layer/WebGLTile breaks because the WebGL renderer always expects the source to supply a tile grid."
+    }
+}

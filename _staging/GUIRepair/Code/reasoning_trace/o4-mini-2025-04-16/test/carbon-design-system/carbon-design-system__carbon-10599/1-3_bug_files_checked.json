@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/themes/src/g10.js",
+            "packages/themes/src/g90.js",
+            "packages/themes/src/g100.js",
+            "packages/themes/src/white.js",
+            "packages/themes/src/tokens.js",
+            "packages/themes/src/index.js",
+            "packages/themes/src/next/g10.js",
+            "packages/themes/src/next/g90.js",
+            "packages/themes/src/next/g100.js",
+            "packages/themes/src/next/white.js",
+            "packages/themes/src/next/index.js"
+        ],
+        "explanation": "All of the listed files define or export the set of CSS custom properties for each supported theme. By updating g10.js, g90.js, g100.js and white.js (and their counterparts in the next/ folder) we can inject two new properties \u2014 --cds-link-hover-inverse and --cds-link-inverse-active \u2014 with the correct color codes per theme. The tokens.js and index.js files then map our new semantic token names (link-hover-inverse, link-inverse-active) to those CSS variables so they are available in the generated theme stylesheet and consumed by the React Theme component.",
+        "bug_scenario": "When rendering a link inside an inverse container (e.g. a dark-background Tooltip, Popover, or Notification) we currently only have one inverse link token ($link-inverse) and no distinct hover/active variants. In your reproduction you attempt to use new CSS variables var(--cds-link-hover-inverse) and var(--cds-link-inverse-active) under Theme wrappers (g10 and g100), but those variables aren\u2019t defined in any theme and so no hover/active colors show up. We need to add two new interactive tokens \u2014 \u201clink-hover-inverse\u201d and \u201clink-inverse-active\u201d \u2014 with the correct color values in every theme (g10, g90, g100, white) and wire them up in our token maps so that the CSS custom properties actually exist."
+    },
+    "2": {
+        "bug_files": [
+            "packages/themes/src/white.js",
+            "packages/themes/src/g10.js",
+            "packages/themes/src/g90.js",
+            "packages/themes/src/g100.js",
+            "packages/themes/src/index.js",
+            "packages/themes/__tests__/theme-maps-test.js",
+            "packages/themes/__tests__/themes-test.js"
+        ],
+        "explanation": "All of the listed files live in the top-level themes package which drives CSS custom property output for the Theme component. The four theme definition files (white.js, g10.js, g90.js, g100.js) each export a map of design tokens \u2192 color values; we need to add entries for \u2018link-hover-inverse\u2019 and \u2018link-inverse-active\u2019 (pointing to blue-30/blue-70 on hover and gray-10/gray-100 on active per theme). The index.js file re-exports all of these maps so it needs no structural change but may need to include the two new token names in its TypeScript/Flow shapes. Finally, theme-maps-test.js and themes-test.js assert that each theme map contains the expected set of token keys \u2014 they must be updated to include the two new inverse link token names to keep tests green.",
+        "bug_scenario": "The bug occurs when using inverse link states inside high-contrast containers (tooltips, pop-overs, notifications) under both light (white, g10) and dark (g90, g100) themes. The reproducer shows two new CSS custom properties --cds-link-hover-inverse and --cds-link-inverse-active being referenced in Tooltip content via the Theme wrapper, but because those tokens haven\u2019t been added to the theme maps, the styles fall back incorrectly (no blue-30/blue-70 on hover or gray-10/gray-100 on active). The screenshots illustrate hover and active link styles on inverse backgrounds in each theme, highlighting missing or wrong colors."
+    }
+}

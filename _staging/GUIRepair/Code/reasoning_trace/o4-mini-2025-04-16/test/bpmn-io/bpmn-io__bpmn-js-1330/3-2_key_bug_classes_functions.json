@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/rules/BpmnRules.js//BpmnRules"
+        ],
+        "bug_functions": [
+            "lib/features/rules/BpmnRules.js//BpmnRules.prototype.init",
+            "lib/features/rules/BpmnRules.js//canConnectMessageFlow",
+            "lib/features/rules/BpmnRules.js//isBoundaryEvent",
+            "lib/features/rules/BpmnRules.js//isMessageFlowTarget"
+        ],
+        "explanation": "The class BpmnRules in lib/features/rules/BpmnRules.js defines modeling rules for BPMN, including connection rules. Its init() method registers listeners for connection validation. The helper isBoundaryEvent() detects boundary events by examining their businessObject, and isMessageFlowTarget() determines if a given element may legally be the target of a message flow. The rule function canConnectMessageFlow() contains the logic that decides whether a message flow may be created between a source and target. To enforce the BPMN requirement that boundary events must not be message flow targets, canConnectMessageFlow() must explicitly reject targets for which isBoundaryEvent() returns true. Those are the key points where the bug must be fixed. The ModelUtil.is() utility in lib/util/ModelUtil.js is used by these helpers to identify BPMN element types under the hood.",
+        "bug_scenario": "Two pools (participants) A and B are drawn. Within pool A there is a user task that has an attached boundary event. The user attempts to draw a message flow from participant B and connect it to the boundary event on A. According to BPMN semantics, message flows are not allowed to target boundary events. The diagram shows that this connection is currently permitted (and stays on mouse\u2010up), but it should be disallowed."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/rules/BpmnRules.js//BpmnRules"
+        ],
+        "bug_functions": [
+            "lib/features/rules/BpmnRules.js//canConnectMessageFlow",
+            "lib/features/rules/BpmnRules.js//isBoundaryEvent"
+        ],
+        "explanation": "The rule for creating message flows lives in BpmnRules (in lib/features/rules/BpmnRules.js). The function canConnectMessageFlow is responsible for approving or rejecting a new message\u2010flow connection based on source and target elements. It currently does not explicitly forbid boundary events, so the boundary event on the task is treated as a valid target. In order to enforce the BPMN constraint, canConnectMessageFlow must call isBoundaryEvent(target) (also defined in BpmnRules.js) and return false if the target is a boundary event. The isBoundaryEvent helper should detect business objects of type 'bpmn:BoundaryEvent'. By updating these two functions, any attempt to attach a message flow to a boundary event will be refused.",
+        "bug_scenario": "In the provided GIF and diagram you see two participants (A and B). In A there is a task with an attached boundary event. The bug is that the user is able to draw a BPMN message flow from participant B to that boundary event on A, even though BPMN semantics forbid message flows terminating on boundary events."
+    }
+}

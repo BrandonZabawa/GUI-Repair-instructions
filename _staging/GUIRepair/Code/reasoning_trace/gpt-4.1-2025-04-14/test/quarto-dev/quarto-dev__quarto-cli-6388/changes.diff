@@ -1,0 +1,32 @@
+diff --git a/src/command/render/render.ts b/src/command/render/render.ts
+index 31f912769..3ced389f0 100644
+--- a/src/command/render/render.ts
++++ b/src/command/render/render.ts
+@@ -145,6 +145,12 @@ export async function renderPandoc(
+   let markdownInput = notebookResult.markdown
+     ? notebookResult.markdown
+     : executeResult.markdown;
++
++  // Remove leading indentation from markdownInput to avoid nested list issues
++  if (typeof markdownInput === "string") {
++    markdownInput = markdownInput.replace(/^\s+/gm, "");
++  }
++
+   if (format.render[kInlineIncludes]) {
+     const collectIncludes = (
+       location:
+@@ -157,10 +163,12 @@ export async function renderPandoc(
+         const append = location === "include-after-body";
+         for (const include of includes) {
+           const includeMd = Deno.readTextFileSync(include);
++          // Remove leading indentation from includeMd as well
++          const cleanedIncludeMd = includeMd.replace(/^\s+/gm, "");
+           if (append) {
+-            markdownInput = `${markdownInput}\n\n${includeMd}`;
++            markdownInput = `${markdownInput}\n\n${cleanedIncludeMd}`;
+           } else {
+-            markdownInput = `${includeMd}\n\n${markdownInput}`;
++            markdownInput = `${cleanedIncludeMd}\n\n${markdownInput}`;
+           }
+         }
+         delete format.pandoc[location];

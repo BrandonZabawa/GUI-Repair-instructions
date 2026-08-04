@@ -1,0 +1,31 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index 2af3a33b3d..6eb6d0afba 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -491,13 +491,24 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     for (let j = 0, jj = zs.length; j < jj; ++j) {
+       const tileZ = zs[j];
+       const tileResolution = tileGrid.getResolution(tileZ);
+-      const tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);
++      // ---- take gutter (and DPR) into account, just like the 2D TileWMS loader ----
++      let tileSize = toSize(tileGrid.getTileSize(tileZ), this.tempSize_);
++      const gutter = tileSource.getGutter ? tileSource.getGutter() : 0;
++      if (gutter !== 0) {
++        // expand the logical pixel size by the gutter
++        tileSize = bufferSize(tileSize, gutter, this.tempSize_);
++      }
++      const pixelRatio = frameState.pixelRatio;
++      if (pixelRatio !== 1) {
++        // scale up for hi-DPI sources
++        tileSize = scaleSize(tileSize, pixelRatio, this.tempSize_);
++      }
+       const tileOrigin = tileGrid.getOrigin(tileZ);
+-
+       const centerI =
+         (centerX - tileOrigin[0]) / (tileSize[0] * tileResolution);
+       const centerJ =
+         (tileOrigin[1] - centerY) / (tileSize[1] * tileResolution);
++      const tileScale = viewState.resolution / tileResolution;
+ 
+       const tileScale = viewState.resolution / tileResolution;
+ 

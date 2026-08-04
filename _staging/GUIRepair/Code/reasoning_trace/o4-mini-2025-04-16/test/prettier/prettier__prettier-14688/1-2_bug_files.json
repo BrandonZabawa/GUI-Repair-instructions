@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/languages.evaluate.js",
+            "src/utils/infer-parser.js",
+            "src/language-js/print/type-parameters.js",
+            "src/language-js/parse/typescript.js"
+        ],
+        "explanation": "1. src/language-js/languages.evaluate.js \u2013 this file declares which file extensions the TypeScript plugin will handle. In v2.8.4 the .mts/.cts extensions aren\u2019t included in the TS language definition, so code paths that decide where to apply TS-specific printing logic (including trailing commas in type parameters) are never taken for .mts/.cts files.  \n2. src/utils/infer-parser.js \u2013 this utility infers the parser from the file extension. Because .mts/.cts weren\u2019t recognized properly, Prettier may default to the JavaScript parser or fall back to the wrong code paths, thereby stripping the comma.  \n3. src/language-js/parse/typescript.js \u2013 this parser module turns a .ts/.mts source into an AST. It should flag a trailing comma in an unconstrained generic as part of the AST, but if .mts isn\u2019t treated as TypeScript, the parser may drop that comma in the AST it hands off to the printer.  \n4. src/language-js/print/type-parameters.js \u2013 this printer is responsible for printing generic type parameter lists. It uses the AST and Prettier\u2019s trailingComma option to decide if it should emit a comma after the last parameter. Because of the extension-based mismatch above, its logic never sees the \u201c<T,>\u201d as a TS type parameter list that must preserve the comma.  \n\nTogether, these four files control how .mts and .cts files are recognized, parsed, and printed. Fixing the bug requires:  \n- adding .mts/.cts to the TypeScript language plugin (languages.evaluate.js),  \n- updating the parser inference (infer-parser.js),  \n- ensuring the TypeScript parser (typescript.js) keeps trailing commas in the AST when no constraint is present, and  \n- confirming the type-parameter printer (type-parameters.js) respects \"trailingComma: 'all'\" for unconstrained single-parameter generics in module-scope TS files.",
+        "bug_scenario": "When formatting a standalone .mts file that contains a single, unconstrained generic type parameter with a trailing comma (for example \u201c<T,>\u201d), Prettier (v2.8.4) removes the comma and rewrites it as \u201c<T>\u201d. That drop of the trailing comma in .mts/.cts files is invalid TypeScript syntax without an explicit constraint and it triggers TS7060 errors (the compiler insists on a trailing comma or constraint in .mts/.cts)."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/print/type-parameters.js"
+        ],
+        "explanation": "All of the logic that prints TypeScript generic parameter and instantiation lists lives in `type-parameters.js`. Unlike the function\u2010parameter printer (which checks `options.trailingComma === 'all'` and always emits a comma after the last parameter when possible), `type-parameters.js` simply joins the `params` array with commas between entries and never prints a trailing comma when there is exactly one parameter. As a result, `<T,>` is unconditionally turned into `<T>`. Patching this file to respect `trailingComma: 'all'` and append a comma in single\u2010item type parameter lists will preserve the required comma in `.mts`/`.cts` files.",
+        "bug_scenario": "When you run Prettier on a `.mts` file containing an unconstrained single\u2010parameter generic like:\n\n  export const unsafeCoerce = <T,>(u: unknown): T => u as T\n\nwith `trailingComma: 'all'`, Prettier\u2019s printer drops the trailing comma and rewrites it to `<T>`. In `.mts` (and `.cts`) files, the TS compiler flags `<T>` as ambiguous with JSX and requires the trailing comma (or an explicit constraint), so the formatted output no longer compiles (TS7060)."
+    }
+}

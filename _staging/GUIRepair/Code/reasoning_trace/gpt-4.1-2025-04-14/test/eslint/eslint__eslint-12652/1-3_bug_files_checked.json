@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/rules/key-spacing.js"
+        ],
+        "explanation": "The problematic behavior originates from ESLint's implementation of the `key-spacing` rule, specifically how it interprets and applies alignment inside objects. Since the bug only appears when 'key-spacing' is active and targets JSX objects (inside curly braces in JSX), the definition of this rule (in `lib/rules/key-spacing.js`) is responsible for both detecting and auto-fixing the spacing and alignment. The bug is not in the core ESLint engine or config-handling but in the rule's treatment of object expressions in JSX\u2014so only the key-spacing rule file itself needs editing to fix this scenario, such as skipping alignment inside JSXExpressionContainers. Other rule files (like object-curly-spacing, object-property-newline, etc.) do not control alignment behavior. No other files in the repo structure directly affect the implementation or auto-fixing logic of 'key-spacing' in the context of JSX.",
+        "bug_scenario": "The images and report show that when ESLint's `key-spacing` rule with the `align: 'value'` option is used together with JSX syntax (e.g., inline style objects in JSX), the auto-fixer produces formatting that is 'ugly': it aligns object values even within JSX curly braces, breaking the natural or expected formatting for style objects in JSX. This makes the code hard to read and maintain for React/JSX users. This occurs when ESLint --fix is run, as seen in the before/after screenshots and the description."
+    },
+    "2": {
+        "bug_files": [
+            "lib/rules/key-spacing.js"
+        ],
+        "explanation": "The bug is about the behavior of the 'key-spacing' rule with the 'align: value' option, specifically when formatting JS objects inside JSX curly braces. In the repository structure, rules are located under 'lib/rules/'. The file 'lib/rules/key-spacing.js' implements this rule and is directly responsible for controlling the alignment and spacing logic for object literal properties, including the auto-fix (fixer) logic that realigns keys and values. To fix the bug, this file must be updated to either (A) detect and avoid re-aligning style/object literals inside JSX, or (B) provide an option to disable aggressive realignment in such contexts. Other files may reference or test the rule, but the bug fix itself must go into 'key-spacing.js'.",
+        "bug_scenario": "The bug scenario involves ESLint's 'key-spacing' rule, specifically when used with the 'align: value' option and object literals inside JSX curly braces. When ESLint --fix is executed, it aggressively and incorrectly realigns objects within JSX style props, leading to very awkward formatting and code that is harder to read and maintain. The bug manifests visually in the provided images as the multiline alignment of objects inside JSX curly braces, which is not desired or expected for JS objects used in JSX attributes like style. The screenshots show before-and-after views and diffs where a single-line style object is forcibly broken up and realigned over multiple lines, making the JSX much harder to read."
+    }
+}

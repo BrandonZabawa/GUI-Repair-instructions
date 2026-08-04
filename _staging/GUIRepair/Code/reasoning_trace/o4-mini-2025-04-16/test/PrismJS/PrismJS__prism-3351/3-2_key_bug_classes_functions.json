@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-clike.js//'class-name' token in Prism.languages.clike",
+            "components/prism-java.js//var classNamePrefix",
+            "components/prism-java.js//var className"
+        ],
+        "bug_functions": [
+            "components/prism-java.js//Prism.languages.extend('clike', { \u2026 'class-name': [className, \u2026] })",
+            "components/prism-java.js//Prism.languages.insertBefore('java','class-name', { \u2026 })"
+        ],
+        "explanation": "All of the listed patterns and grammar definitions control how Prism detects Java class names. The clike definition\u2019s 'class-name' token and Java\u2019s classNamePrefix and className regexes determine which identifiers get tagged as class names. Currently the regex for className only matches identifiers containing at least one lowercase letter or single-letter names, so all-uppercase acronyms like UUID don\u2019t fit the pattern and aren\u2019t tokenized. Adjusting these regexes (in classNamePrefix/className and/or the class-name tokens in the extend/insertBefore calls) will allow UUID and other uppercase-only class names to be recognized and highlighted correctly.",
+        "bug_scenario": "When highlighting Java code with Prism on the HackerTalk editor, the import statement \u201cimport java.util.UUID;\u201d renders \u201cUUID\u201d as plain text instead of a class-name token. The screenshot shows that built-in types like String or Pattern are correctly highlighted, but the all-caps acronym \u201cUUID\u201d is not recognized by the Java grammar and is left unstyled."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-java.js//className"
+        ],
+        "bug_functions": [
+            "components/prism-java.js//Prism.languages.java"
+        ],
+        "explanation": "Prism\u2019s Java grammar defines a RegExp (in the variable className) that only matches class names starting with an uppercase letter followed by at least one lowercase letter. As a result, identifiers composed entirely of uppercase letters (like \u201cUUID\u201d) don\u2019t satisfy the pattern and aren\u2019t tokenized as \u201cclass-name\u201d. The key code to fix is the className pattern in components/prism-java.js (and by extension its use inside Prism.languages.java) so that it accepts all-uppercase identifiers as valid class names.",
+        "bug_scenario": "In the Java editor on HackerTalk, the import line \u201cimport java.util.UUID;\u201d renders \u201cUUID\u201d as plain text rather than as a class-name token. On GitHub\u2019s highlighter you can see \u201cUUID\u201d styled like other class names, but Prism\u2019s Java grammar fails to recognize all-uppercase acronyms (no lowercase letters) as valid class names."
+    }
+}

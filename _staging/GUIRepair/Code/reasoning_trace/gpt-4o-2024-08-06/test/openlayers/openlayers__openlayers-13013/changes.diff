@@ -1,0 +1,40 @@
+diff --git a/src/ol/webgl/TileTexture.js b/src/ol/webgl/TileTexture.js
+index 6dea0f11db..8275802ff7 100644
+--- a/src/ol/webgl/TileTexture.js
++++ b/src/ol/webgl/TileTexture.js
+@@ -73,17 +73,24 @@ function uploadDataTexture(helper, texture, data, size, bandCount) {
+     textureType = gl.UNSIGNED_BYTE;
+   }
+ 
+-  gl.texImage2D(
+-    gl.TEXTURE_2D,
+-    0,
+-    format,
+-    size[0],
+-    size[1],
+-    0,
+-    format,
+-    textureType,
+-    data
+-  );
++const expectedDataSize = size[0] * size[1] * bandCount;
++if (data.length < expectedDataSize) {
++console.warn('Data size is less than expected, filling with zeros');
++const paddedData = new (data.constructor)(expectedDataSize);
++paddedData.set(data);
++data = paddedData;
++}
++gl.texImage2D(
++gl.TEXTURE_2D,
++0,
++format,
++size[0],
++size[1],
++0,
++format,
++textureType,
++data
++);
+ }
+ 
+ /**

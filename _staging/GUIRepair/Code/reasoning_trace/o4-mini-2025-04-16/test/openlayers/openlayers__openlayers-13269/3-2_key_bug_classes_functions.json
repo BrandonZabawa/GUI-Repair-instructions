@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/TileWMS.js//TileWMS",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/source/TileWMS.js//TileWMS.tileUrlFunction",
+            "src/ol/source/TileWMS.js//TileWMS.getRequestUrl_",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.enqueueTiles",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.renderFrame"
+        ],
+        "explanation": "Two pieces of code must work together to support gutters: \u2022 In TileWMS.tileUrlFunction (and its helper getRequestUrl_), the gutter value is applied to enlarge the returned tileExtent and tileSize so the HTTP request pulls back extra pixels around each tile. \u2022 In the WebGLTileLayerRenderer (enqueueTiles and renderFrame), that extra padding must then be chopped off in the texture coordinates when drawing the quad, or the padded pixels will appear in the final output. In the WebGL renderer no such clipping logic is present\u2014enqueueTiles and renderFrame assume 0 gutter and use full [0,1] texture coordinates\u2014so the gutter remains visible and causes tile misplacement and duplication.",
+        "bug_scenario": "When using a TileWMS source with a non-zero gutter on a WebGLTile layer, the tiles that arrive include the extra padding (2 \u00d7 gutter) but the WebGL renderer never clips that padding out of the texture before drawing. On the left in the repro you can see that the extra borders of adjacent tiles \u201cbleed\u201d into each other and the tiles appear misaligned or duplicated. On a normal (non-WebGL) tile layer the gutter is clipped away by the canvas renderer, so this only happens with ol/layer/WebGLTile."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.constructor",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.enqueueTiles",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.renderFrame",
+            "src/ol/source/TileWMS.js//TileWMS.tileUrlFunction"
+        ],
+        "explanation": "The gutter option is applied by TileWMS when constructing the GetMap URL (see TileWMS.tileUrlFunction), which requests larger images. The Canvas fallback renderer clips away the extra gutter pixels before drawing (in CanvasTileLayerRenderer.drawTileImage), but the WebGLTileLayerRenderer never crops the texture coordinates or adjusts the vertex buffer to exclude the gutter.  The constructor of WebGLTileLayerRenderer unconditionally uses a 0\u21921 texture coordinate buffer, and neither enqueueTiles nor renderFrame ever factor in the gutter when laying out or drawing the quad.  To fix this, WebGLTileLayerRenderer must be modified to shrink or offset the texture coordinates by gutter/tileSize (and account for pixelRatio) so only the inner tile is sampled from the larger image.",
+        "bug_scenario": "When using a TileWMS source with a non-zero gutter on a WebGLTile layer, you see \u201cghost\u201d edges of the gutter area rendered into the tile\u2014tiles are shifted and their edges duplicated.  In the Canvas renderer the gutter is clipped before drawing (via drawTileImage\u2019s gutter parameter), but in the WebGL renderer the extra gutter pixels still end up in the GPU texture and are drawn unchanged, so you get visible seams and duplicated pixels along tile borders."
+    }
+}

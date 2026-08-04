@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/lib/stack-collector.js",
+            "lighthouse-core/lib/stack-packs.js"
+        ],
+        "explanation": "In stack-collector.js (collectStacks), we call the JS library detector twice\u2014once for the normal check and once for the Fast Path\u2014both returning a library object with id \u2018react\u2019. That yields two entries in artifacts.Stacks with the same id. Then in stack-packs.js (getStackPacks), we iterate over every stack entry and unconditionally include a pack match if its detector:id matches \u2018js:react\u2019. Because there are two identical stacks, we push the React pack twice, resulting in duplicate UI entries. To fix, we need to dedupe by id (or assign distinct ids in the detector) or alter getStackPacks to ignore repeated pack ids.",
+        "bug_scenario": "When running Lighthouse (or PageSpeed Insights) against https://abcnews.go.com/ and looking at the \u201cMinify JavaScript\u201d audit under \u201cBest Practices\u201d, you see two identical React stack-pack entries\u2014one from the original JS library detector and one from the new \u201cFast Path\u201d detector. In the JSON output lhr.stackPacks there are two entries with id \u201creact\u201d, resulting in duplicate advice cards in the report UI."
+    }
+}

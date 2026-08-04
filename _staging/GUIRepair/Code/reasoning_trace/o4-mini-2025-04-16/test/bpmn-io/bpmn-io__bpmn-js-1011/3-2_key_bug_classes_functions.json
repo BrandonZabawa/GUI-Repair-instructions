@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/ordering/BpmnOrderingProvider.js//BpmnOrderingProvider"
+        ],
+        "bug_functions": [
+            "lib/features/ordering/BpmnOrderingProvider.js//computeOrder",
+            "lib/features/ordering/BpmnOrderingProvider.js//getOrder",
+            "lib/features/ordering/BpmnOrderingProvider.js//getOrdering"
+        ],
+        "explanation": "The ordering of SVG elements in the BPMN viewer is governed by BpmnOrderingProvider. Its computeOrder and getOrder functions assign numeric levels that determine render stacking, and its getOrdering method uses these levels to insert shapes into the canvas. Currently no special rule is defined for group elements (e.g. type 'bpmn:Group'), so they receive the default level (1) and end up below newer elements with higher default or explicit levels. To ensure groups always stay on top, BpmnOrderingProvider.computeOrder/getOrder must be extended to recognize group elements and assign them a higher order level, and getOrdering will then place them above all other children.",
+        "bug_scenario": "In the provided screenshot a dashed\u2010line group (\"my group\") is rendered behind a newly created circle placed on the group\u2019s border. According to the steps, when a user adds an element on a group\u2019s boundary, the group\u2019s borders are no longer on top but get hidden behind that element. Groups should always be assigned the highest rendering order so that their frames remain visible above all other shapes."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/ordering/BpmnOrderingProvider"
+        ],
+        "bug_functions": [
+            "lib/features/ordering/BpmnOrderingProvider//computeOrder",
+            "lib/features/ordering/BpmnOrderingProvider//getOrder",
+            "lib/features/ordering/BpmnOrderingProvider//getOrdering"
+        ],
+        "explanation": "BpmnOrderingProvider is the central ordering provider that determines z\u2010index ordering of BPMN elements. It defines an internal orders array mapping types to order levels and containers, and exposes computeOrder(), getOrder() and getOrdering() to apply those rules. Because there is no entry for the BPMN Group type, groups fall back to the default level (1) and thus are drawn beneath subsequently added elements. To fix the bug, the ordering rules in BpmnOrderingProvider (the orders array and computeOrder logic) must be extended to give bpmn:Group a higher level so that group shapes are always rendered on top of other elements.",
+        "bug_scenario": "The screenshot shows a rounded-rectangle \u201cgroup\u201d (dashed border) containing the label \u201cmy group\u201d and a circle placed on the group\u2019s border. However, when a new element (the circle) is created on a group\u2019s border, the group border is rendered behind the new element instead of on top. Groups should always appear above other diagram elements but currently have no special ordering, so new elements are drawn above them."
+    }
+}

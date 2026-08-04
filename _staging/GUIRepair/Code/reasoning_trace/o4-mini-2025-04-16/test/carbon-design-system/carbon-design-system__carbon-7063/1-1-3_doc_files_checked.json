@@ -1,0 +1,11 @@
+{
+    "1": {
+        "documents": [
+            "OrderedList/OrderedList.mdx",
+            "UnorderedList/UnorderedList.mdx",
+            "OrderedList/OrderedList.js"
+        ],
+        "explanation": "1. OrderedList/OrderedList.mdx \u2014 shows how the <ol class=\u201cbx--list--ordered\u201d> markup is rendered in the docs and what the expected native decimal style should look like.\n2. UnorderedList/UnorderedList.mdx \u2014 demonstrates nested-list behavior and how nested lists opt out of the custom counter (via .bx--list--nested).\n3. node_modules/carbon-components/scss/components/list/_list.scss \u2014 the core SCSS where .bx--list--ordered:not(.bx--list--nested) { counter-reset: item; } and li::before { counter-increment: item; content: counter(item) \".\"; } live; removing this rule fixes the Firefox start-at-zero bug.\n4. packages/components-react/src/components/OrderedList/OrderedList.js \u2014 the React wrapper that applies the bx--list--ordered class, responsible for passing the right props and className into the DOM <ol>.\n5. packages/gatsby-theme-carbon/src/components/markdown/Markdown.module.scss \u2014 in the Gatsby theme this module adds an extra scope (.Markdown-module--list) on top of bx--list classes and showcases why merely overriding counter-reset in user CSS is being out-scoped by Carbon\u2019s built-in specificity.",
+        "bug_scenario": "The issue surfaces in Firefox when using the built-in Carbon ordered-list styles.  By default Carbon disables the native \u201cdecimal\u201d numbering and instead applies its own counter via:\n\n\u2022  counter-reset: item on the <ol class=\u201cbx--list--ordered:not(.bx--list--nested)\u201d>\n\u2022  li::before { content: counter(item) \".\"; counter-increment: item; }\n\nIn Firefox that custom counter isn\u2019t resetting cleanly between separate lists (or nested levels), so your first item can start at \u201c7\u201d (or any leftover count) rather than \u201c1.\u201d  Attempts to override counter-reset on the <ol> via inline or external CSS don\u2019t win because the Carbon selector is more specific.  The only surefire workaround is removing the counter-reset rule entirely from Carbon\u2019s SCSS."
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/IconButton/IconButton.js",
+            "packages/react/src/components/Button/Button.js",
+            "packages/carbon-components-react/scss/components/button/_button.scss",
+            "packages/carbon-components/scss/components/button/_button.scss"
+        ],
+        "explanation": "\u2022 IconButton.js: this React wrapper renders the underlying Button but does not override the default size \u2014 it ends up using the md padding.  It needs to pass the correct small\u2010size prop (or class) so that the right padding matches a true icon\u2010only button.\n\n\u2022 Button.js: contains the logic for when hasIconOnly is true (or when size modifiers get applied).  If IconButton isn\u2019t explicitly telling Button to use the small padding variant, Button.js will fall back to its default sizing logic.\n\n\u2022 _button.scss in carbon-components-react and carbon-components: these SCSS files define the actual CSS padding values for each button size and for icon-only buttons.  Currently the selectors for icon-only buttons are inheriting the md spacing instead of the sm spacing.  We need to correct the mixin/variable references here so that .bx--btn--icon (or .bx--btn--sm--icon) uses the proper small horizontal padding.",
+        "bug_scenario": "When rendering an icon\u2013only button via the new `<IconButton>` component, the right\u2010hand side padding is noticeably too large.  In the screenshot you can see the pencil icon sits off-center with extra space on its right, because the component is picking up the medium\u2010size button padding rather than the small padding used for icon\u2010only buttons.  This shows up in Storybook\u2019s IconButton playground and in our live usage."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/IconButton/index.js",
+            "packages/react/src/components/Button/Button.js",
+            "packages/carbon-components/scss/components/button/_button.scss"
+        ],
+        "explanation": "\n1. packages/react/src/components/IconButton/index.js: This is the React wrapper that instantiates the icon\u2010only button. It passes through props (including size or style flags) to Button and may need to enforce or correct the icon\u2010only sizing props.\n\n2. packages/react/src/components/Button/Button.js: This core Button component reads the hasIconOnly and size props and applies the appropriate CSS class or inline style. The logic here is responsible for selecting the correct padding class (sm vs md) when rendering an icon\u2010only button.\n\n3. packages/carbon-components/scss/components/button/_button.scss: In the SCSS for the button component the .bx--btn--icon-only styles live. The padding values defined here currently derive from the md button variables \u2013 they need to be adjusted to the smaller, symmetrical padding values that put the icon in the true center of the button.",
+        "bug_scenario": "In the playground (and in the screenshot) the IconButton appears to have extra space to the right of the icon \u2013 it is using the standard \u201cmd\u201d button padding on the right side instead of the smaller, symmetrical padding expected for an icon\u2010only button. The result is that the icon is not centered, and the right padding looks too large."
+    }
+}

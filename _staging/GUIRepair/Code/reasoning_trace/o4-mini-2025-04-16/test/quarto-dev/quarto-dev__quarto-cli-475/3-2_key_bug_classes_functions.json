@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/callout.lua//calloutLatex",
+            "src/resources/filters/quarto-pre/callout.lua//latexCalloutBoxDefault"
+        ],
+        "explanation": "\u2022 calloutLatex: This function drives the LaTeX rendering path for callouts. It currently calls pandoc.utils.stringify(caption), which drops Markdown structure and fails to escape special characters. Replacing this with pandoc.write(...) will process inline formatting and generate safe LaTeX code for bold, code, etc.  \n\u2022 latexCalloutBoxDefault: This helper constructs the tcolorbox options, including the title field. Because title = caption is passed unbraced, commas and percent signs are interpreted as tcolorbox options or macros, causing errors. Wrapping caption in braces ('{'..caption..'}') ensures the entire caption is treated as a single, escaped argument, preventing mis-parsing of special characters.",
+        "bug_scenario": "In PDF output of a callout-note block, captions containing Markdown formatting (e.g. **bold**, `code`) or special characters (%, commas) are not rendered or escaped correctly. The caption text appears raw (unstyled) or triggers LaTeX errors because it is passed verbatim into the tcolorbox title without Markdown processing or proper bracing."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/callout.lua//calloutLatex",
+            "src/resources/filters/quarto-pre/callout.lua//latexCalloutBoxDefault"
+        ],
+        "explanation": "\u2022 calloutLatex(div): This function extracts and stringifies the callout header for LaTeX. It currently uses pandoc.utils.stringify(), which drops markdown formatting. To preserve bold, code, etc., it should instead render the header to LaTeX via pandoc.write().\n\u2022 latexCalloutBoxDefault(caption, type, icon): This function builds the tcolorbox options, including title=caption. Without wrapping the caption in braces, LaTeX treats commas or % as option delimiters and breaks. Prepending '{' and '}' around caption ensures special characters are escaped and the entire caption is treated as a single title argument.",
+        "bug_scenario": "The screenshots show that callout captions containing markdown (e.g. **bold** text, `code`) or special characters (%<-% or commas) are not being rendered or escaped properly in the PDF output. Instead of getting formatted text or correctly escaped LaTeX arguments, the raw caption is inserted into the tcolorbox options, causing formatting to be lost or LaTeX errors due to un-escaped commas or percent signs."
+    }
+}

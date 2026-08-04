@@ -1,0 +1,116 @@
+diff --git a/packages/react/src/components/Toggle/Toggle-test.js b/packages/react/src/components/Toggle/Toggle-test.js
+index d4997cae..ed5ecc06 100644
+--- a/packages/react/src/components/Toggle/Toggle-test.js
++++ b/packages/react/src/components/Toggle/Toggle-test.js
+@@ -77,11 +77,8 @@ describe('Toggle', () => {
+       expect(
+         wrapper.container.querySelector(`.${prefix}--toggle__check`)
+       ).toBeTruthy();
+-    });
+-
+     it('supports to use top label as side label', () => {
+       wrapper.rerender(<Toggle {...props} hideLabel />);
+-
+       expect(
+         wrapper.container
+           .querySelector(`.${prefix}--toggle__label-text`)
+@@ -92,6 +89,19 @@ describe('Toggle', () => {
+           .textContent
+       ).toBe(props.labelText);
+     });
++
++    it('supports read-only state', () => {
++      wrapper.rerender(<Toggle {...props} readOnly />);
++      const toggle = wrapper.getByRole('switch');
++      // should have aria-readonly and readonly CSS class
++      expect(toggle.getAttribute('aria-readonly')).toBe('true');
++      expect(
++        wrapper.container.querySelector(`.${prefix}--toggle--readonly`)
++      ).toBeTruthy();
++    });
++          .textContent
++      ).toBe(props.labelText);
++    });
+   });
+ 
+   describe('behaves as expected', () => {
+diff --git a/packages/react/src/components/Toggle/Toggle.js b/packages/react/src/components/Toggle/Toggle.js
+index 7d47b6f5..0a21920e 100644
+--- a/packages/react/src/components/Toggle/Toggle.js
++++ b/packages/react/src/components/Toggle/Toggle.js
+@@ -15,6 +15,7 @@ export function Toggle({
+   className,
+   defaultToggled = false,
+   disabled = false,
++  readOnly = false,
+   hideLabel = false,
+   id,
+   labelA = 'Off',
+@@ -26,6 +27,7 @@ export function Toggle({
+   toggled,
+   ...other
+ }) {
++  // new readOnly prop now available
+   const prefix = usePrefix();
+   const [checked, setChecked] = useControllableState({
+     value: toggled,
+@@ -34,6 +36,14 @@ export function Toggle({
+   });
+ 
+   function handleClick(e) {
++    // if we're read-only, never flip the switch, but still forward click if desired
++    if (readOnly) {
++      if (onClick) {
++        onClick(e);
++      }
++      return;
++    }
++
+     setChecked(!checked);
+ 
+     if (onClick) {
+@@ -48,6 +58,7 @@ export function Toggle({
+     `${prefix}--toggle`,
+     {
+       [`${prefix}--toggle--disabled`]: disabled,
++      [`${prefix}--toggle--readonly`]: readOnly,
+     },
+     className
+   );
+@@ -73,6 +84,7 @@ export function Toggle({
+         role="switch"
+         type="button"
+         aria-checked={checked}
++        aria-readonly={readOnly}
+         disabled={disabled}
+         onClick={handleClick}
+       />
+@@ -160,6 +172,12 @@ Toggle.propTypes = {
+    * Specify whether the control is toggled
+    */
+   toggled: PropTypes.bool,
++
++  /**
++   * Specify whether the control is read-only.
++   * A readOnly toggle is focusable and announced by assistive tech but cannot be changed.
++   */
++  readOnly: PropTypes.bool,
+ };
+ 
+ export default Toggle;
+diff --git a/packages/react/src/components/Toggle/Toggle.stories.js b/packages/react/src/components/Toggle/Toggle.stories.js
+index e017b4e7..604fde2f 100644
+--- a/packages/react/src/components/Toggle/Toggle.stories.js
++++ b/packages/react/src/components/Toggle/Toggle.stories.js
+@@ -62,6 +62,11 @@ Playground.argTypes = {
+       type: 'boolean',
+     },
+   },
++  readOnly: {
++    control: {
++      type: 'boolean',
++    },
++  },
+   id: {
+     control: false,
+   },

@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/field/index.js//Field"
+        ],
+        "bug_functions": [
+            "src/field/index.js//constructor",
+            "src/field/index.js//init",
+            "src/field/index.js//setValue"
+        ],
+        "explanation": "All mutations originate from the Field class:\n\u2022 constructor: assigns `this.values = options.values`, so Field shares the external object reference.\n\u2022 init: when a new field is initialized, it writes the initial value into `this.values[name]`, mutating the external object.\n\u2022 setValue: updates `this.values[name]` on every call, again altering the passed-in object. \nThese functions are the root cause of unwanted external data mutation and need to clone or copy the input values rather than holding the original reference.",
+        "bug_scenario": "In the provided demo, an external object (externalValues) is passed into Field via the `values` option. When calling `init('name', { initValue: 'first' })` and `setValue('name', 'second')`, the Field internally writes into its `this.values` map\u2014which is the same reference as the external object\u2014thus mutating the user\u2019s data. The screenshot highlights line 35 in `src/field/index.js` where `this.values = options.values || {}` is set, showing that subsequent updates to `this.values` directly alter the passed\u2010in object."
+    },
+    "2": {
+        "bug_classes": [
+            "src/field/index.js//Field"
+        ],
+        "bug_functions": [
+            "src/field/index.js//constructor",
+            "src/field/index.js//init",
+            "src/field/index.js//setValue",
+            "src/field/index.js//setValues"
+        ],
+        "explanation": "All of these methods work directly against `this.values`, which in the constructor is set to the user-provided `options.values` object. That means any updates to field values (via `init`, `setValue`, or `setValues`) will mutate the original object. To avoid this, the constructor should clone or shallow-copy the passed-in values rather than holding a direct reference, ensuring field operations do not alter the caller\u2019s data.",
+        "bug_scenario": "In the demo a user passes an external object into Field via the `values` option. When calling `field.init('name', {initValue: \u2026})` or `field.setValue('name', \u2026)`, the library writes directly into `this.values`, which is a reference to the original object. As a result, the external object is mutated unexpectedly (you can see the console logs before and after calling `init`/`setValue` showing this behavior)."
+    }
+}

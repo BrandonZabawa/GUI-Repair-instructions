@@ -1,0 +1,18 @@
+{
+    "repo": "GoogleChrome/lighthouse",
+    "instance_id": "GoogleChrome__lighthouse-7356",
+    "base_commit": "5865c873776b975a2c25632bc6a17c07b3c0050b",
+    "patch": "",
+    "test_patch": "",
+    "problem_statement": "Increased failures due to 60s timeout on PSI/LR\nWe've seen an increase in our error rate on the LR backend:\r\n![image](https://user-images.githubusercontent.com/39191/52369611-efecfe00-2a05-11e9-88d0-e933dbf287d4.png)\r\n(The red line is our render error rate)\r\n\r\nIt appears to be related to our latency, which has also increased some.\r\n\r\nSince we have our .timings data available, I viewed that, which points to the major problem:\r\n![image](https://user-images.githubusercontent.com/39191/52369878-7a356200-2a06-11e9-8f0f-fbbb36cc77b1.png)\r\n\r\nThe chart here is the 95th percentile of each of these timings. `lh:runner:auditing` always remains flat, regardless of percentile. `loadPage-defaultPass` is the only timing to make a big jump. (Also this is a little tricky because any run that errors did NOT report these timings... so hypothetically a gatherer that takes 45s would never be visible to us.)\r\n\r\nThe loadPage jump is certainly happening regardless.. Here's that one timing in isolation, with the full heatmap:\r\n![image](https://user-images.githubusercontent.com/39191/52370326-735b1f00-2a07-11e9-8ac6-96f34e1da705.png)\r\n\r\n\r\nLooking at the [diff of LH changes that was in that push](https://github.com/GoogleChrome/lighthouse/compare/d3b95b2d6...965861083).. I suspect https://github.com/GoogleChrome/lighthouse/pull/6944 \"core(driver): waitForFCP when tracing\".. Plus we also know that NO_FCP is our most commonly seen LighthouseError, so I suspect more sites hitting the 35s maxWaitForLoad timeout means more hitting the 60s render timeout.\r\n\r\n-----------------\r\n\r\n**What can we do about this?**\r\n\r\n@brendankenny mentioned a potential threshold on how long we'd hold out for FCP.\r\n@patrickhulce wdyt?\n",
+    "hints_text": "",
+    "created_at": "",
+    "image_assets": "{\"problem_statement\": [\"https://user-images.githubusercontent.com/39191/52369611-efecfe00-2a05-11e9-88d0-e933dbf287d4.png\", \"https://user-images.githubusercontent.com/39191/52369878-7a356200-2a06-11e9-8f0f-fbbb36cc77b1.png\", \"https://user-images.githubusercontent.com/39191/52370326-735b1f00-2a07-11e9-8ac6-96f34e1da705.png\"]}",
+    "version": "",
+    "FAIL_TO_PASS": "",
+    "PASS_TO_PASS": "",
+    "pull_url": null,
+    "issue_url": "",
+    "reproduce_url": "",
+    "interaction": ""
+}

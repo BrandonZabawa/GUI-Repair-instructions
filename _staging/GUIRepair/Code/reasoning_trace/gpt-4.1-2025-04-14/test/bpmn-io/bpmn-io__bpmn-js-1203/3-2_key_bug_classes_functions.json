@@ -1,0 +1,35 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy",
+            "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js//CreateBoundaryEventBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//copyProperties",
+            "lib/features/copy-paste/BpmnCopyPaste.js//removeProperties",
+            "lib/features/copy-paste/BpmnCopyPaste.js//resolveReferences",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.copyElement')",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.pasteElement')",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyElement",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyProperty",
+            "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js//this.preExecute('shape.create')"
+        ],
+        "explanation": "The bug is related to the copy-paste and element creation logic for BPMN diagrams. The classes and functions identified are central to copying and pasting BPMN elements and their properties. \n\n- `BpmnCopyPaste` is responsible for handling the copying and pasting of BPMN elements and their properties, including handling references and transferring properties from old to new business objects.\n- `copyProperties` and `removeProperties` are utility functions used to transfer properties between elements during the copy-paste workflow.\n- The event handlers in `BpmnCopyPaste` (`copyElement`, `pasteElement`) directly manage what gets copied and restored when elements are duplicated or pasted.\n- `ModdleCopy` and its methods (`copyElement`, `copyProperty`) are used to perform deep copies of model elements, ensuring all properties are correctly transferred unless explicitly disallowed. If certain properties are not transferred when converting to a Boundary Event, the bug may originate here.\n- `CreateBoundaryEventBehavior` and its `preExecute('shape.create')` are involved in converting an Intermediate Event to a Boundary Event during drag-and-drop or paste operations. If the conversion does not transfer properties, the bug would be in this logic.\n\nTo fix the bug, it is necessary to ensure that all relevant properties from the Intermediate Event are preserved and copied over when creating the Boundary Event, especially during conversion and pasting operations. This likely requires coordination between the element creation (behavior), copy-paste, and moddle copying logic.",
+        "bug_scenario": "The bug scenario, as shown in the provided GIF, involves copying an Intermediate Event (circle event) that has custom properties set (like Async Continuations or Job Configurations). When this Intermediate Event is pasted as a Boundary Event (by pasting it onto a Task shape), its previously set properties are lost, which is unexpected. Properties are retained when pasting as a normal element but lost when converting to a Boundary Event."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js",
+            "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js//CreateBoundaryEventBehavior",
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyElement"
+        ],
+        "explanation": "The bug involves losing properties when copying an Intermediate Event and pasting it as a Boundary Event. The key logic for this operation spans the following elements: (1) 'CreateBoundaryEventBehavior' is responsible for replacing/interpreting an Intermediate Event as a Boundary Event during the attach operation, but it does not transfer existing properties from the original event to the new boundary event. (2) 'BpmnCopyPaste' handles the core copy-paste logic, including copying and pasting BPMN elements and their business objects, but does not account for transferring custom properties when the type conversion occurs. (3) 'ModdleCopy.prototype.copyElement' in 'ModdleCopy.js' is responsible for deep-copying the properties of model elements between business objects. The issue likely arises because the business object created for the Boundary Event does not inherit all properties from the source Intermediate Event, or the copy-paste logic doesn't bridge properties when changing element types. Fixes should ensure that relevant properties are preserved across this conversion in the above classes/functions.",
+        "bug_scenario": "The scenario shown in the animation demonstrates a user creating an Intermediate Event in a BPMN diagram, filling in its properties (such as Async Continuations and Job Configuration), copying the event, and then pasting it as a Boundary Event attached to a Task. Upon pasting, the previously filled properties are missing from the newly created Boundary Event, indicating that the properties are not properly transferred during the copy-paste operation when the event type changes from Intermediate Event to Boundary Event."
+    }
+}

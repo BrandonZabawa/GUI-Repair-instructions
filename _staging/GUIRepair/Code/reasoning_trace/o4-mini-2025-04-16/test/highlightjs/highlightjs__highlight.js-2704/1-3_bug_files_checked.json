@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/fsharp.js"
+        ],
+        "explanation": "The file src/languages/fsharp.js defines the F# grammar, including the rule that recognizes block comments via a simple \u201c(*\u201d begin pattern. Because it doesn\u2019t check for context (e.g. not preceded by a dot or identifier), the Operators.(*) function call is mistaken for the start of a comment. Adjusting the comment-regex in this file\u2014by adding a lookbehind or requiring a non-identifier boundary\u2014will prevent that false detection and restore correct highlighting.",
+        "bug_scenario": "When highlighting F# code containing the Operators.(*) call, the highlighter treats the \u201c(*\u201d inside that call as the start of an F# block comment. Everything that follows is then rendered as if it were inside a \u201c(*\u2026*)\u201d comment, until the next closing \u201c*).\u201d In other words, using Operators.(*) triggers a false-positive comment start, causing the rest of the snippet to be dimmed out in the screenshot."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/fsharp.js"
+        ],
+        "explanation": "The only place defining F# comment syntax and operator parsing lives in src/languages/fsharp.js. In that file, the regex for multiline comments simply looks for \"(*\" and doesn\u2019t guard against usages inside qualified operator calls. As a result Operators.(*) triggers the comment rule. To fix the bug, the comment regex in fsharp.js must be adjusted so that \"(*\" is only treated as a comment opener when it isn\u2019t part of an operator reference (e.g. by requiring whitespace or line boundaries before it).",
+        "bug_scenario": "When highlighting an F# code snippet that uses the built-in Operators module (e.g. Operators.(*) or Operators.(+)), the highlighter\u2019s comment rule for multiline comments\u2014delimited by \"(* ... *)\"\u2014mistakes the \"(*\" in Operators.(*) as the start of a comment. Everything after that invocation is then rendered as part of a comment block, even though it\u2019s valid code."
+    }
+}

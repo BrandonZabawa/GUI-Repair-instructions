@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/formatters/table.js"
+        ],
+        "explanation": "All of the code that decides how to render table rows and cells\u2014including the snippet column\u2014lives in table.js and its Handlebars partials under formatters/partials/. table.js is where the Markdown library is invoked (unconditionally) on each cell value, and the partials define the HTML and text templates that wrap those values. Since the bug is that snippets beginning with backticks are still run through Markdown, these are the files to update: in table.js add a check to bypass Markdown processing when a cell\u2019s string starts with a backtick, and adjust the corresponding partial templates so they emit the raw snippet instead of a Markdown-rendered SafeString.",
+        "bug_scenario": "When a code snippet value begins with a backtick (\u2018`\u2019), the table formatter still feeds it through the Markdown-to-HTML (and Markdown-to-text) pass. Any underscores (`_`) become <em>\u2026</em> tags and any bracketed link syntax (`[text](url)`) becomes <a>\u2026</a>, mangling the snippet. In both the HTML report and the plain-text (\u201cpretty\u201d) output the snippet is supposed to remain verbatim if it starts with a backtick, but currently it does not."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/formatters/table.js"
+        ],
+        "explanation": "All of the code that wraps snippets in Markdown fences and then invokes the Markdown-to\u2010HTML (or Markdown-to\u2010text) conversion lives in the TableFormatter and its templates. \u2022 table.js constructs the fenced\u2010code blocks and calls out to the Markdown parser unconditionally. \u2022 table.html and table.txt are the Handlebars templates used for HTML and pretty text output, respectively, and they render whatever the helper in table.js returns. To fix the bug we need to change table.js so that if the snippet string begins with a backtick, it bypasses the Markdown processor (and likely adjust the templates to render it raw).",
+        "bug_scenario": "When the TableFormatter renders a snippet that begins with a backtick (`` ` ``), it still runs the entire string through its Markdown pass\u2014so any underscores (`_`) become `<em>` tags and any bracketed link syntax (`[text](url)`) becomes `<a>` tags. In the provided screenshots you can see parts of the JavaScript collapsed into `<em>` elements around zeroes and `<a>` tags around link text, even though the snippet should have remained verbatim once it starts with a backtick."
+    }
+}

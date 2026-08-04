@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "core/gather/gatherers/viewport-dimensions.js//ViewportDimensions",
+            "report/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "core/gather/gatherers/viewport-dimensions.js//getViewportDimensions",
+            "report/renderer/report-renderer.js//_renderMetaBlock"
+        ],
+        "explanation": "The getViewportDimensions function and its containing ViewportDimensions gatherer are responsible for collecting the emulated screen width, height, and devicePixelRatio at runtime. Those values flow into the final Lighthouse result. The ReportRenderer class\u2019s private _renderMetaBlock method is the code that builds the tooltip content under the \u201cdevices\u201d meta item. To include the missing dimensions and deviceScaleFactor in the tooltip, we need to surface the data gathered by ViewportDimensions and then modify _renderMetaBlock (and/or the underlying Util.getEmulationDescriptions) to append innerWidth/innerHeight/devicePixelRatio into the tooltip text.",
+        "bug_scenario": "In the Lighthouse HTML report\u2019s meta\u2010information bar, the devices tooltip (e.g. \u201cEmulated Moto G4 with Lighthouse X.X.X\u201d) only shows \u201cCPU/Memory Power\u201d, \u201cCPU throttling\u201d and \u201cAxe version\u201d. The emulated screen dimensions (width\u00d7height) and the deviceScaleFactor are missing from this tooltip."
+    },
+    "2": {
+        "bug_classes": [
+            "report/renderer/report-renderer.js//ReportRenderer",
+            "report/renderer/util.js//Util",
+            "core/gather/gatherers/viewport-dimensions.js//ViewportDimensions"
+        ],
+        "bug_functions": [
+            "report/renderer/report-renderer.js//_renderMetaBlock",
+            "report/renderer/util.js//getEmulationDescriptions",
+            "core/gather/gatherers/viewport-dimensions.js//getViewportDimensions"
+        ],
+        "explanation": "The tooltip is built in ReportRenderer._renderMetaBlock, which pulls descriptions from Util.getEmulationDescriptions(report.configSettings). That helper currently omits screen dimensions and deviceScaleFactor, so the UI never displays them. To fix the bug, getEmulationDescriptions must be updated to include width, height and dpr (using the viewport artifacts gathered by ViewportDimensions / getViewportDimensions), and _renderMetaBlock must render those new values in the tooltip. The gatherer getViewportDimensions already collects window.innerWidth/innerHeight and devicePixelRatio, so it can supply the missing data to the report renderer.",
+        "bug_scenario": "When you hover over the \u201cEmulated Moto G4 with Lighthouse X.X.X\u201d item in the Lighthouse HTML report footer, the tooltip only shows CPU/Memory Power, CPU throttling and Axe version. It does not include the actual emulated screen width\u00d7height or the deviceScaleFactor that were used for mobile emulation."
+    }
+}

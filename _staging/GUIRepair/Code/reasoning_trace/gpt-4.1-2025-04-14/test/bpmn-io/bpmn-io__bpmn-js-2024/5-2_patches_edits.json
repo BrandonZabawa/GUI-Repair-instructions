@@ -1,0 +1,51 @@
+{
+    "1/1": {
+        "lib/draw/BpmnRenderer.js": [
+            {
+                "SEARCH": [
+                    "BpmnRenderer.prototype.drawShape = function(parentGfx, element, attrs = {}) {",
+                    "var { type } = element;",
+                    "",
+                    "var handler = this._renderer(type);",
+                    "",
+                    "return handler(parentGfx, element, attrs);",
+                    "};"
+                ],
+                "REPLACE": [
+                    "BpmnRenderer.prototype.drawShape = function(parentGfx, element, attrs = {}) {",
+                    "  var { type } = element;",
+                    "",
+                    "  var handler = this._renderer(type);",
+                    "",
+                    "  // Check for Pool or Lane and handle vertical label rendering",
+                    "  if ((type === 'bpmn:Participant' || type === 'bpmn:Lane') && element.di && element.di.isHorizontal === false) {",
+                    "    // Draw the shape as usual",
+                    "    var shape = handler(parentGfx, element, attrs);",
+                    "",
+                    "    // Find the label node (assuming it's the last child, or use a selector if available)",
+                    "    var label = parentGfx.lastChild;",
+                    "    if (label && label.tagName === 'text') {",
+                    "      // Get the bounding box of the pool/lane",
+                    "      var width = element.width;",
+                    "      var height = element.height;",
+                    "",
+                    "      // Rotate the label -90deg and reposition it to be centered along the vertical pool",
+                    "      label.setAttribute('transform',",
+                    "        'rotate(-90 ' + (width / 2) + ' ' + (height / 2) + ') ' +",
+                    "        'translate(' + (-(height - width) / 2) + ' ' + (height / 2 - width / 2) + ')'",
+                    "      );",
+                    "      // Optionally, adjust text-anchor and alignment-baseline for better centering",
+                    "      label.setAttribute('text-anchor', 'middle');",
+                    "      label.setAttribute('alignment-baseline', 'middle');",
+                    "    }",
+                    "",
+                    "    return shape;",
+                    "  }",
+                    "",
+                    "  return handler(parentGfx, element, attrs);",
+                    "};"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-javascript.js//'keyword' token pattern (the regex in Prism.languages.javascript['keyword'])"
+        ],
+        "explanation": "The core of the problem is the `keyword` token in the JavaScript grammar (defined in components/prism-javascript.js). Its regex uses word boundaries (`\\b`) to match keywords like `from`, but doesn\u2019t exclude cases where the keyword is part of an identifier beginning with `$`. As a result, in `$from`, the `from` segment satisfies the pattern and is highlighted as a keyword. To fix this, the `keyword` regex must be adjusted (e.g. refine the lookbehind to treat `$` as part of an identifier) so that keywords are only matched when they are standalone and not embedded in variable names like `$from`. ",
+        "bug_scenario": "When highlighting JavaScript code that destructures properties whose names include a keyword, e.g. const { $from, $to } = selection;, Prism\u2019s JS grammar misclassifies the \u201cfrom\u201d part of \u201c$from\u201d as a reserved keyword. In the screenshot, $from is rendered with keyword styling even though it\u2019s an identifier."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-javascript.js//Prism.languages.javascript",
+            "components/prism-javascript.min.js//Prism.languages.javascript"
+        ],
+        "bug_functions": [
+            "components/prism-javascript.js//Prism.languages.javascript['keyword'] (the regex pattern entry)",
+            "components/prism-javascript.min.js//Prism.languages.javascript.keyword (the minified regex)"
+        ],
+        "explanation": "The root of the problem is in the JavaScript grammar definition inside components/prism-javascript.js (and its minified counterpart). The \u2018keyword\u2019 token includes a regex that matches reserved words such as \u201cfrom\u201d and \u201cto\u201d when they appear at word boundaries. Because the pattern\u2019s lookbehind allows any non-word character (including \u201c$\u201d) before the keyword, \u201c$from\u201d is split into \u201c$\u201d + \u201cfrom\u201d, and \u201cfrom\u201d is then erroneously classified as a keyword. To fix this, the keyword regex in Prism.languages.javascript['keyword'] must be refined to exclude the \u201c$\u201d character from its lookbehind, so that dollar\u2010prefixed identifiers are not broken apart and misrecognized as keywords.",
+        "bug_scenario": "In the code snippet \u201cconst { $from, $to } = selection;\u201d the identifiers \u201c$from\u201d and \u201c$to\u201d are being highlighted as JavaScript keywords (in red) instead of as regular variables. In the screenshot you can see that the dollar\u2010prefixed names are marked as keywords, even though only \u201cfrom\u201d and \u201cto\u201d appear in the Prism \u201ckeyword\u201d regex list\u2014Prism\u2019s tokenizer is splitting \u201c$from\u201d at the \u201c$\u201d and then matching \u201cfrom\u201d as a keyword."
+    }
+}

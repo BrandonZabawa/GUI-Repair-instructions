@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/TileWMS.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/TileImage.js"
+        ],
+        "explanation": "The files are related as follows:\n\n- src/ol/source/TileWMS.js: Defines the TileWMS source and is where the 'gutter' option is managed and passed to tiles. Any processing or logic dependent on the gutter value would be implemented here or expected to affect behavior here.\n- src/ol/layer/WebGLTile.js: Implements the WebGLTile layer. Since the bug states that the gutter is not handled when using this layer type, it may be missing support or logic to process gutters in connection with sources like TileWMS that provide a gutter option.\n- src/ol/renderer/webgl/TileLayer.js: Responsible for rendering tile layers via WebGL. This is likely where the actual raster image is prepared for use as a texture and should contain logic to crop or ignore the gutter. A missing clipping step here directly leads to this bug.\n- src/ol/source/TileImage.js: TileWMS extends TileImage and often relies on its tile creation and retrieval logic, including methods that may need to account for the gutter. The gutter may be handled at this class level and thus needs inspection or fixes here to ensure compatibility downstream in the pipeline.\n\nEdits or fixes are likely needed across these files to ensure the gutter is appropriately cropped or handled for WMS sources used in WebGLTile layers.",
+        "bug_scenario": "When using the ol/source/TileWMS source with the ol/layer/WebGLTile layer, the gutter option is not correctly handled. The WebGLTile's renderer does not crop out the gutter areas from WMS images before creating WebGL textures, resulting in duplicated or misplaced map images. In contrast, the ol/layer/Tile layer does clip the gutter appropriately, leading to expected results. This bug causes tiled WMS layers rendered via WebGLTile to display incorrectly, especially around tile boundaries, due to the lack of gutter removal."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/source/TileWMS.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This file defines the WebGLTile layer. Since the problem only occurs when using this layer with TileWMS, changes to how it interacts with sources or renderers might be needed.\n2. src/ol/source/TileWMS.js: This defines the TileWMS image source, including the 'gutter' option and how tiles are requested and provided. Ensuring the gutter is respected may involve changes here, especially in how it passes gutter information or prepares images.\n3. src/ol/renderer/webgl/TileLayer.js: This file implements the WebGL renderer for tile layers (including WebGLTile). The core of the problem is that the gutter region is not clipped before creating WebGL textures, so the fix likely involves adjusting how images are sliced and textures created in this renderer.",
+        "bug_scenario": "When using a WebGLTile layer with a TileWMS source and specifying the 'gutter' option, the gutter region of the images is not clipped before being uploaded as textures to WebGL. This causes misplacement and duplication of map tiles, unlike the behavior with the (canvas-based) ol/layer/Tile, which correctly clips the gutter."
+    }
+}

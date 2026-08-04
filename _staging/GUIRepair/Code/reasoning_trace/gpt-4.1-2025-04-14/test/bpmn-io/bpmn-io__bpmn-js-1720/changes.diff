@@ -1,0 +1,58 @@
+diff --git a/lib/features/replace/BpmnReplace.js b/lib/features/replace/BpmnReplace.js
+index 612222a6..ed478e2e 100644
+--- a/lib/features/replace/BpmnReplace.js
++++ b/lib/features/replace/BpmnReplace.js
+@@ -188,27 +188,37 @@ export default function BpmnReplace(
+       }
+     }
+ 
+-    if (is(oldBusinessObject, 'bpmn:Activity')) {
++  if (is(oldBusinessObject, 'bpmn:Activity')) {
+ 
+-      if (isSubProcess(oldBusinessObject)) {
++    if (isSubProcess(oldBusinessObject)) {
+ 
+-        // no toggeling, so keep old state
+-        newElement.isExpanded = isExpanded(element);
+-      }
++      // no toggeling, so keep old state
++      newElement.isExpanded = isExpanded(element);
++    }
+ 
+-      // else if property is explicitly set, use it
+-      else if (target && has(target, 'isExpanded')) {
+-        newElement.isExpanded = target.isExpanded;
+-      }
++    // else if property is explicitly set, use it
++    else if (target && has(target, 'isExpanded')) {
++      newElement.isExpanded = target.isExpanded;
++    }
+ 
+-      // TODO: need also to respect min/max Size
+-      // copy size, from an expanded subprocess to an expanded alternative subprocess
+-      // except bpmn:Task, because Task is always expanded
+-      if ((isExpanded(element) && !is(oldBusinessObject, 'bpmn:Task')) && newElement.isExpanded) {
+-        newElement.width = element.width;
+-        newElement.height = element.height;
+-      }
++    // If converting from a non-SubProcess (e.g., Call Activity) to an expanded SubProcess,
++    // set to default SubProcess size
++    if (
++      !isSubProcess(oldBusinessObject) &&
++      is(newBusinessObject, 'bpmn:SubProcess') &&
++      newElement.isExpanded
++    ) {
++      const defaultSize = elementFactory.getDefaultSize({ type: 'bpmn:SubProcess' });
++      newElement.width = defaultSize.width;
++      newElement.height = defaultSize.height;
+     }
++    // copy size, from an expanded subprocess to an expanded alternative subprocess
++    // except bpmn:Task, because Task is always expanded
++    else if ((isExpanded(element) && !is(oldBusinessObject, 'bpmn:Task')) && newElement.isExpanded) {
++      newElement.width = element.width;
++      newElement.height = element.height;
++    }
++  }
+ 
+     // remove children if not expanding sub process
+     if (isSubProcess(oldBusinessObject) && !isSubProcess(newBusinessObject)) {

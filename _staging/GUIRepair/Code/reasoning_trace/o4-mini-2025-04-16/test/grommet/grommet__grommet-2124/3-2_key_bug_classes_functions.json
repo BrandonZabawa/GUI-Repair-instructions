@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/Calendar/StyledCalendar.js//StyledWeek",
+            "src/js/components/Calendar/StyledCalendar.js//StyledWeeksContainer",
+            "src/js/components/Calendar/StyledCalendar.js//StyledCalendar",
+            "src/js/components/Calendar/StyledCalendar.js//StyledDay"
+        ],
+        "bug_functions": [],
+        "explanation": "All of the layout problems stem from CSS in StyledCalendar.js. In particular: \n\u2022 StyledWeek uses \u201cflex-justify: between\u201d which is not a valid, cross-browser CSS property. Modern browsers ignore it gracefully, but IE11 never applies any justification, collapsing all day cells into one column. It should use \u201cjustify-content: space-between\u201d instead.  \n\u2022 StyledWeeksContainer and StyledDay rely on dimensions and flex properties that IE11 supports only when the standard unprefixed CSS properties are used. Ensuring proper flexbox syntax (e.g. display: flex; flex-direction: row; justify-content: space-between) and adding any necessary -ms- prefix or fallback will restore the grid layout in IE11.  \nBecause the issue is purely in how the weeks and day cells are styled, fixing those styled\u2010component definitions will resolve the broken calendar display in IE11.",
+        "bug_scenario": "When viewed in IE11, the Grommet Calendar\u2019s grid collapses into a single column: the days of the month stack vertically and many of the numbers do not render correctly. The flex layout that normally arranges dates in rows of weeks is not applied in IE11."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/Calendar/StyledCalendar.js//StyledWeek",
+            "src/js/components/Calendar/StyledCalendar.js//StyledDayContainer"
+        ],
+        "bug_functions": [],
+        "explanation": "The Calendar relies entirely on styled-components in StyledCalendar.js to build its grid via CSS flex.  StyledWeek uses a nonstandard \u2018flex-justify\u2019 shorthand that IE11 doesn\u2019t recognize (it needs \u2018justify-content: space-between\u2019) and StyledDayContainer declares \u2018flex: 0 0\u2019 (a two-value shorthand IE11 treats as invalid).  As a result, IE11 ignores the flex layout rules and stacks every cell in one column.  Updating StyledWeek to use the standard justify-content property and giving StyledDayContainer a valid three-value flex shorthand (e.g. flex: 0 0 auto) restores the seven-column layout in IE11.",
+        "bug_scenario": "When opening the Grommet v2 Calendar in IE11, the month grid no longer lays out in seven columns.  Instead, each day cell collapses into a single vertical stack beneath the header (you can see date numbers 8, 15, 22, 29 running down in one column).  The header text (\"July 2018\") still renders, but the grid itself is broken."
+    }
+}

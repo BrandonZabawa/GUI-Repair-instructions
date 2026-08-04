@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/components/src/globals/scss/components/pagination/_pagination.scss",
+            "packages/components/src/globals/scss/components/pagination-nav/_pagination-nav.scss",
+            "packages/react/src/components/Pagination/Pagination.js",
+            "packages/react/src/components/PaginationNav/PaginationNav.js"
+        ],
+        "explanation": "The two SCSS files enforce the overflow behavior and breakpoint at 42 rem where the pagination\u2019s overflow is set to visible; they are the root of the clipping behavior and need to be updated (for example to allow horizontal scrolling or adjust the media query). The two React component files render the markup and apply the CSS classes that those rules target, so they may also need adjustment (e.g. wrapping the controls in a scrollable container or toggling a different class) to resolve the overflow issue.",
+        "bug_scenario": "On narrower viewports (under ~42 rem) our Pagination component\u2019s right\u2010hand controls (the page dropdown and chevron arrows) spill outside their parent container and get clipped because the SCSS media query flips its overflow rules to visible and there\u2019s no scrollable fallback. In other words, instead of wrapping or scrolling the controls they simply overflow and hide behind the container edge."
+    },
+    "2": {
+        "bug_files": [
+            "packages/components/src/components/pagination/pagination.config.js",
+            "packages/react/src/components/Pagination/Pagination.js",
+            "packages/react/src/components/PaginationNav/PaginationNav.js",
+            "packages/react/src/components/Pagination/Unstable_Pagination/PageSelector.js"
+        ],
+        "explanation": "1. pagination.config.js defines the breakpoint (42rem) and overflow behavior in the generated CSS, so any change to the overflow or scroll rules at that point must originate here.  \n2. Pagination.js is the React wrapper that lays out the left\u2010hand dropdown and right\u2010hand nav; it needs a scrollable container or flex\u2010wrap logic to prevent overflow.  \n3. PaginationNav.js renders the prev/next buttons and page indicator; it contributes to the overall width and may need style hooks or wrappers for scrollability.  \n4. PageSelector.js supplies the \u201c1 of X pages\u201d control; its width and dropdown menu also overflow, so it must participate in any updated layout or style fixes.",
+        "bug_scenario": "When rendering the Carbon React Pagination inside a container narrower than 42 rem, the whole pagination bar\u2014including the \u201cItems per page\u201d dropdown and the page\u2010jump controls\u2014bleeds out of its parent instead of allowing horizontal scrolling or wrapping. In the user\u2019s sandbox and in IBM Cloud, you can see the pagination controls clipped at the container edge and overflow visible rather than scrollable."
+    }
+}

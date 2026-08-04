@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Toggle/Toggle.js//Toggle"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Toggle/Toggle.js//sideLabel computation",
+            "packages/react/src/components/Toggle/Toggle.js//renderSideLabel computation"
+        ],
+        "explanation": "The Toggle component\u2019s internal logic around hideLabel and aria-labelledby lives in Toggle.js. In particular, the sideLabel variable (which chooses whether labelText or labelA/labelB is shown) and the renderSideLabel flag (which skips rendering when hideLabel and aria-labelledby are both present) are the lines of code enforcing the two-step hiding behavior. Those two pieces of logic and the PropTypes for hideLabel/aria-labelledby are at the heart of the bug \u2014 they either need clearer documentation or a change to make hideLabel work standalone. The Storybook stories (Playground) also drive the published docs and should be updated to demonstrate or explain this interaction.",
+        "bug_scenario": "When using the new hideLabel prop on the Toggle component, simply setting hideLabel={true} does not immediately remove the on-screen label. Instead, the Toggle renders its labelText as a side label (adjacent to the switch), and only if both hideLabel={true} and an aria-labelledby value are provided will the visible label actually be hidden. The published Storybook docs for Toggle do not call out this two-part requirement (hideLabel + aria-labelledby) nor do they explain why the \u201cfor\u201d attribute on an external <label> element is not sufficient to hide the built-in label. Users expect hideLabel alone to hide the label, or for the docs to disclose the need for aria-labelledby."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Toggle/Toggle.js//Toggle"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Toggle/Toggle.js//handleClick",
+            "packages/react/src/components/Toggle/Toggle.stories.js//Playground"
+        ],
+        "explanation": "The core Toggle component (Toggle.js) contains the logic that decides when and how the label is hidden or shown (via the hideLabel, ariaLabelledby, sideLabel, renderSideLabel and LabelComponent variables). Any fix that changes hideLabel behavior or its interaction with aria-labelledby must live here. The handleClick function toggles internal state but is also wrapped in the ariaLabelledby click handler; changes to hiding logic may need adjustments here. On the documentation side, the Playground story in Toggle.stories.js powers the Storybook controls for hideLabel and aria-labelledby\u2014the descriptions and argTypes here must be updated so that consumers see clear instructions on how these props interact.",
+        "bug_scenario": "When you set hideLabel={true} on the Toggle in a plain React app, you expect the top label to disappear immediately, but instead the labelText is simply moved to the side of the toggle. Only when you also supply an aria-labelledby prop pointing at an external <label> element does the component truly hide its internal label. The Storybook controls for hideLabel and aria-labelledby give no hint that one must be used in conjunction with the other, and the documentation for both props is too terse. The ask is to improve the Storybook docs (or component behavior) so that hideLabel either works on its own or clearly states that aria-labelledby must also be provided."
+    }
+}

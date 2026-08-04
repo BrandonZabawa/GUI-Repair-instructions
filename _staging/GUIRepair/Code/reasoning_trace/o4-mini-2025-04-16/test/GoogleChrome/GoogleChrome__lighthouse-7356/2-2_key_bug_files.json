@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/config/constants.js",
+            "lighthouse-cli/cli-flags.js"
+        ],
+        "explanation": "1. lighthouse-core/gather/driver.js \u2013 This is where the driver waits for FCP (_waitForFCP) and ultimately calls Tracing.end via sendCommand with a hard 60 s timeout. To avoid hanging for the full protocol timeout, this file needs logic to cap how long we\u2019ll wait for FCP and/or to override the timeout on Tracing.end.\n\n2. lighthouse-core/gather/gather-runner.js \u2013 The loadPage method in GatherRunner calls driver.gotoURL with waitForFCP: true by default. To respect a new FCP threshold, this file must be updated to read a configurable maxWaitForFcp from settings and pass it through to the driver (e.g., setNextProtocolTimeout before starting FCP waiting, or turn off waitForFCP after the threshold).\n\n3. lighthouse-core/config/constants.js \u2013 The defaultSettings object here defines maxWaitForLoad but has no maxWaitForFcp. To make the FCP threshold configurable, we must add a new defaultSettings.maxWaitForFcp (and plumb that into the config) so users can tune how long Lighthouse will hold out for FCP.\n\n4. lighthouse-cli/cli-flags.js \u2013 The CLI flags parser only knows about --max-wait-for-load. To expose a new maxWaitForFcp configuration to end users, we need to declare and document a --max-wait-for-fcp flag here, map it to flags.maxWaitForFcp, and pass it into Lighthouse\u2019s run path so GatherRunner and driver can consume it.",
+        "bug_scenario": "After merging PR #6944 (\u201ccore(driver): waitForFCP when tracing\u201d), Lighthouse\u2019s \u201cdefaultPass\u201d now always waits for the First-Contentful-Paint (FCP) event before calling Tracing.end. On pages that never fire FCP (or fire it after the 35 s maxWaitForLoad), tracing hangs until the 60 s protocol timeout in driver.sendCommand('Tracing.end') and errors out. The production heatmaps show the 95th percentile of loadPage-defaultPass shooting from ~20 s to ~40 s then flat-lining at 60 s when no FCP arrives. The reproducer spins up a server that never writes any paintable content and confirms that Lighthouse times out at the full 60 s."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/PaletteTexture.js",
+            "src/ol/webgl/ContextEventType.js",
+            "src/ol/webgl/Helper.js"
+        ],
+        "explanation": "The bug relates specifically to how WebGLTileLayers (with palette styling) are managed when added/removed to/from the map. The main files involved are: (1) 'src/ol/layer/WebGLTile.js', the layer class whose lifecycle is affected; (2) 'src/ol/renderer/webgl/TileLayer.js', which controls rendering and manages WebGL contexts/resources; (3) 'src/ol/webgl/PaletteTexture.js', because palette styling multiplies reliance on this resource, and losing context may orphan or leak textures; (4) 'src/ol/webgl/Helper.js', which helps create/manage WebGL resources and likely is invoked to manage palette texture lifecycle; (5) 'src/ol/webgl/ContextEventType.js', as context loss or recreation events must be handled to re-create palette textures and shaders, and failing to do so would explain the bug scenario. These files must be reviewed to ensure proper texture and context clean-up and recreation when layers are toggled.",
+        "bug_scenario": "When a WebGLTileLayer using a palette style is removed from the map and then added again, its rendering fails\u2014showing a black layer\u2014instead of the styled image. JavaScript/WebGL console warnings indicate that WebGL textures or objects are from a different/lost WebGL context, implying resource clean-up or re-allocation is buggy. The scenario occurs only with palette styles, not regular ones, when toggling the layer's presence on the map."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/TileLayerBase.js",
+            "src/ol/webgl/PaletteTexture.js",
+            "src/ol/webgl/Helper.js",
+            "src/ol/webgl/ContextEventType.js"
+        ],
+        "explanation": "The primary issue involves state management of WebGL textures (specifically palette textures) across layer removal and re-addition. The likely files involved are:\n- src/ol/layer/WebGLTile.js: Defines the WebGLTileLayer, including style options, palette handling, and may manage texture lifecycle.\n- src/ol/renderer/webgl/TileLayer.js / TileLayerBase.js: These are the renderer implementations for WebGLTileLayer, responsible for (re)creating and releasing textures, listening to context loss/restoration, and orchestrating draw calls with the correct resources.\n- src/ol/webgl/PaletteTexture.js: Implements palette texture creation, binding, upload and destruction; issues can arise if these aren't re-created after a context loss or layer re-addition.\n- src/ol/webgl/Helper.js: Handles lower-level WebGL operations, buffer/texture handling, and may be responsible for allocating/de-allocating textures on context changes.\n- src/ol/webgl/ContextEventType.js: Defines/context events listened to for context loss and restoration; the system responds to these events to clean up and re-create WebGL resources. \n\nIf palette textures are tied to a previous WebGL context, but are not properly re-allocated/re-uploaded when the layer is re-added (potentially to a new context), rendering will fail with black tiles and WebGL errors about context mismatch. Therefore, the above list covers layer logic, WebGL renderer logic, and texture/context events.",
+        "bug_scenario": "When a WebGLTileLayer is removed from the map and then re-added, if the style includes a palette (i.e., an additional WebGL texture for color mapping), the layer is rendered as a black/blank tile instead of displaying the expected palette-styled imagery. The console logs WebGL context errors, e.g., bindTexture: object does not belong to this context, indicating that the palette texture becomes invalid after the context is destroyed or replaced, and is not restored when the layer is re-added."
+    }
+}

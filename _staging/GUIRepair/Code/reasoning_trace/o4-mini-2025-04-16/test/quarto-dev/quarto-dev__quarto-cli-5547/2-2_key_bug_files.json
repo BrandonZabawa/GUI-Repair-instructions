@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/common/figures.lua",
+            "src/resources/filters/quarto-post/reveal.lua",
+            "src/format/reveal/format-reveal.ts"
+        ],
+        "explanation": "1. src/resources/filters/common/figures.lua: This Lua filter detects and transforms linked images (discoverLinkedFigure), but in the process it returns only the Image element and drops the surrounding Link wrapper when converting standalone image paragraphs into figure Divs. The link is stripped before HTML generation.\n2. src/resources/filters/quarto-post/reveal.lua: The reveal.lua post-Pandoc filter applies positioning logic only to raw Image elements and does not special-case Link\u2192Image sequences. Because the link has already been removed by the generic figures filter, revealing logic never restores or preserves the hyperlink.\n3. src/format/reveal/format-reveal.ts: In the TypeScript postprocessor for RevealJS HTML, there is custom logic to redirect and rewrite anchor tags (e.g. redirect anchors to slides). That code assumes anchors wrap text or navigation IDs; it does not treat images alone as external links. As a result, any stray <a> tags around <img> may be dropped or ignored in the final output when the slide contains only an image.",
+        "bug_scenario": "In a RevealJS slide composed in Quarto, a markdown slide containing only a linked image (i.e. a standalone image wrapped in a link) fails to render the hyperlink in the output. When the image is by itself, clicking it does nothing. However, if any other text or inline content precedes the linked image on the same slide, the link is preserved and clickable. The attached image illustrates the standalone slide of a fireworks photo: it appears normally but is not wrapped in an active <a> tag in the rendered RevealJS HTML."
+    }
+}

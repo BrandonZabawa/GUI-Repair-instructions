@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "audits/byte-efficiency/render-blocking-resources.js",
+            "audits/byte-efficiency/render-blocking-resources-test.js",
+            "test-utils.js",
+            "network-records-to-devtools-log.js",
+            "create-test-trace.js",
+            "network-records-to-devtools-log-test.js"
+        ],
+        "explanation": "\u2022 audits/byte-efficiency/render-blocking-resources.js: the core audit implementation where protocol filtering is applied \u2014 this is where file:// URLs should be excluded but currently aren\u2019t.  \n\u2022 audits/byte-efficiency/render-blocking-resources-test.js: the unit tests that define expected behavior (which don\u2019t cover file:// cases today); updating these tests will ensure we handle local resources correctly.  \n\u2022 test-utils.js: provides helpers for constructing mock NetworkRecords in tests; you\u2019ll need it to simulate file:// requests.  \n\u2022 network-records-to-devtools-log.js & its test (network-records-to-devtools-log-test.js): transforms mock NetworkRecords into DevTools protocol format for the audit\u2019s artifact pipeline; useful for reproducing how a file:// record gets fed into the audit.  \n\u2022 create-test-trace.js: generates synthetic trace data used in the audit tests to build a synthetic \u201cloading\u201d environment.  \nTogether, these files cover the path from raw network/trace inputs through the render-blocking-resources audit logic, so you can write a failing test for file:// and then patch the audit to ignore those URLs.",
+        "bug_scenario": "When auditing a page with Lighthouse (v8.1.0) via the CLI, any <file://>-sourced resource shows up under \u201cEliminate render-blocking resources\u201d even though local (file:///) assets can\u2019t actually block rendering. In the attached screenshot, Lighthouse flags file:///some/local/file as a blocking resource and reports ~0.59 s of savings, which is incorrect: local resources should be skipped by this audit."
+    }
+}

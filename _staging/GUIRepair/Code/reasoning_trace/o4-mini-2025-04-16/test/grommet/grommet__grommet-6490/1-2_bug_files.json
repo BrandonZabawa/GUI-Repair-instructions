@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Box/StyledBox.js",
+            "src/js/components/Box/Box.js",
+            "src/js/utils/border.js"
+        ],
+        "explanation": "\u2022 src/js/components/Box/StyledBox.js contains the code that applies border='between' and tries to split the gap value in half. It looks up the gap in theme.global.edgeSize (which doesn\u2019t include raw '10px') and then does a .match on the returned value, causing the crash.  \n\u2022 src/js/components/Box/Box.js is the Box wrapper that collects the gap and border props and passes them into StyledBox; it would require adjustment (or validation) to accept raw metric strings.  \n\u2022 src/js/utils/border.js holds helper functions used by StyledBox to build the border styles; it assumes all edge sizes come from the theme and doesn\u2019t gracefully parse arbitrary pixel strings, so it must be updated to parse raw metrics (e.g. via a regex) before calling .match.",
+        "bug_scenario": "When you render a Grommet Box with both border=\"between\" and a gap given as a raw pixel string (e.g. gap=\"10px\"), at runtime it crashes with \u201cTypeError: Cannot read properties of undefined (reading 'match')\u201d. In other words, the code that tries to compute the half-gap around the separator line calls .match on a value that turns out to be undefined, because the theme lookup for \"10px\" fails and isn\u2019t handled as a raw metric."
+    },
+    "2": {
+        "bug_files": [
+            "src/components/Box/Box.js",
+            "src/components/Box/StyledBox.js",
+            "src/utils/border.js"
+        ],
+        "explanation": "\u2022 src/components/Box/Box.js \u2014 this file defines the Box component\u2019s API, defaultProps and forwards the border, gap and direction properties into the styled wrapper. Any special case for border=\"between\" originates here.  \n\u2022 src/components/Box/StyledBox.js \u2014 contains the styled-component logic for handling border=\"between\". It computes half the gap and injects the separator line; it also calls into the utility that parses the gap value. Because it doesn\u2019t guard against a missing or unexpected gap format, it passes undefined into the regex match.  \n\u2022 src/utils/border.js \u2014 defines helper functions (such as parsing numeric values out of strings) that use gap.match(...) to extract pixel amounts. When the passed gap is not what the code expects, match is called on undefined, triggering the error. Fixing the parsing logic (or adding a guard before calling match) here and adjusting the StyledBox logic will resolve the bug.",
+        "bug_scenario": "When a Box is rendered with border=\"between\" and a pixel\u2010based gap (for example gap=\"10px\"), the component throws a runtime TypeError: Cannot read properties of undefined (reading 'match'). In the Storybook example you see a Box with direction=\"row\", border=\"between\" and gap=\"10px\" wrapping two inner Boxes. Instead of drawing the separator line with half the pixel gap on each side, the code tries to call .match on an undefined value and blows up."
+    }
+}

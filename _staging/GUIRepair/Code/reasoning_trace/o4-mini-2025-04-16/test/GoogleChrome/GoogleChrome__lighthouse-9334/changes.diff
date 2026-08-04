@@ -1,0 +1,51 @@
+diff --git a/lighthouse-cli/run.js b/lighthouse-cli/run.js
+index cc8c717f1..875c4e60f 100644
+--- a/lighthouse-cli/run.js
++++ b/lighthouse-cli/run.js
+@@ -78,8 +78,25 @@ function printProtocolTimeoutErrorAndExit() {
+  * @param {LighthouseError} err
+  * @return {never}
+  */
++const {str_} = require('lighthouse-core/lib/i18n');  // <─ make sure this is the correct path to your `str_` export
++
+ function printRuntimeErrorAndExit(err) {
+-  console.error('Runtime error encountered:', err.friendlyMessage || err.message);
++  let messageToPrint = err.message;
++
++  // if we stashed a raw template, now is the time to format it once the i18n data is loaded
++  if (err._rawMessageTemplate) {
++    try {
++      messageToPrint = str_(
++        err._rawMessageTemplate,
++        err._rawMessageValues || {}
++      );
++    } catch (e) {
++      // fallback to the code if something went wrong
++      messageToPrint = err.message;
++    }
++  }
++
++  console.error('Runtime error encountered:', messageToPrint);
+   if (err.stack) {
+     console.error(err.stack);
+   }
+diff --git a/lighthouse-core/lib/lh-error.js b/lighthouse-core/lib/lh-error.js
+index 63804c1ac..cb070b5a9 100644
+--- a/lighthouse-core/lib/lh-error.js
++++ b/lighthouse-core/lib/lh-error.js
+@@ -65,8 +65,13 @@ class LighthouseError extends Error {
+     super(errorDefinition.code);
+     this.name = 'LHError';
+     this.code = errorDefinition.code;
+-    // Insert the i18n reference with errorCode and all additional ICU replacement properties.
+-    this.friendlyMessage = str_(errorDefinition.message, {errorCode: this.code, ...properties});
++    // Delay i18n formatting until print time:
++    // • keep the raw template key...
++    this._rawMessageTemplate = errorDefinition.message;
++    // • ...and the values to interpolate
++    this._rawMessageValues = {errorCode: this.code, ...properties};
++    // leave friendlyMessage null for now
++    this.friendlyMessage = null;
+     this.lhrRuntimeError = !!errorDefinition.lhrRuntimeError;
+     if (properties) Object.assign(this, properties);
+ 

@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy",
+            "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js//CreateBoundaryEventBehavior",
+            "lib/features/modeling/behavior/AttachEventBehavior.js//AttachEventBehavior"
+        ],
+        "bug_functions": [
+            "BpmnCopyPaste.copyProperties",
+            "BpmnCopyPaste.removeProperties",
+            "BpmnCopyPaste (eventBus.on('copyPaste.pasteElement'))",
+            "ModdleCopy.prototype.copyElement",
+            "CreateBoundaryEventBehavior preExecute('shape.create') handler",
+            "AttachEventBehavior preExecute('elements.move') handler"
+        ],
+        "explanation": "\u2022 BpmnCopyPaste.copyProperties/removeProperties and its pasteElement handler only copy a small whitelist of properties (name, isExpanded, DI styling) and explicitly strip out oldBusinessObject, so any custom Extension Elements (where async continuation and job config live) are never carried over.  \n\u2022 ModdleCopy.copyElement governs which moddle properties get deep-copied, and by default disallows certain properties or stops empty Extension Elements from being set. It never adds back any async- or job-related Extension Elements after the boundary conversion.  \n\u2022 CreateBoundaryEventBehavior\u2019s shape.create interceptor builds a fresh bpmn:BoundaryEvent businessObject with only cancelActivity and attachedToRef set \u2013 it never merges or copies any of the source event\u2019s Extension Elements.  \n\u2022 AttachEventBehavior\u2019s elements.move interceptor does a similar replace via bpmnReplace.replaceElement, only preserving the eventDefinitionType, again dropping all user-configured extensions.  \nTogether, these handlers are responsible for converting an Intermediate Event into a Boundary Event but neglect to carry over or re-apply any async/job configuration stored in Extension Elements, causing the pasted boundary event to lose all those custom properties.",
+        "bug_scenario": "When a user copies an Intermediate Throw/Catch Event that has Async Continuations or Job Configuration (stored on its Extension Elements) and pastes it onto a Task to become a Boundary Event, all of the previously configured properties disappear. The provided GIF shows an intermediate event with Job Priority set, copied and pasted as a boundary event onto a task, and the pasted boundary event\u2019s property panel no longer shows any of the job or async configuration."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/CreateBoundaryEventBehavior.js//CreateBoundaryEventBehavior",
+            "lib/features/modeling/behavior/AttachEventBehavior.js//AttachEventBehavior",
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste"
+        ],
+        "bug_functions": [
+            "CreateBoundaryEventBehavior.preExecute('shape.create') handler",
+            "AttachEventBehavior.preExecute('elements.move') handler",
+            "BpmnCopyPaste eventBus.on('copyPaste.pasteElement') handler"
+        ],
+        "explanation": "Both CreateBoundaryEventBehavior and AttachEventBehavior intercept the creation or move of an Intermediate Event onto a host and unconditionally create a fresh BoundaryEvent business object with only a minimal set of attributes (cancelActivity, attachedToRef, eventDefinitionType). They never propagate the original element\u2019s extensionElements (where Camunda async/job properties live). On top of that, the BpmnCopyPaste pasteElement handler only copies name and a few DI attributes onto a newly created businessObject of the same type, without explicitly preserving extensionElements. Together, these behaviors strip out all custom Camunda properties when converting an Intermediate Event into a Boundary Event during copy\u2013paste.",
+        "bug_scenario": "When a user copies an Intermediate Event that has custom Camunda properties (e.g. Async Continuations, Job Configuration) and then pastes it onto a Task as a Boundary Event, the pasted Boundary Event loses all of those previously configured properties. In the GIF one sees an Intermediate Event with Job Priority set, copied and then dropped on a Task; the new Boundary Event appears but its Job Priority and other extension fields are empty."
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "repo": "GoogleChrome/lighthouse",
+    "instance_id": "GoogleChrome__lighthouse-12067",
+    "base_commit": "b439bf2fd866c0c0a4d62043e959555d432d2c52",
+    "patch": "",
+    "test_patch": "",
+    "problem_statement": "minification-estimator reports incorrect results \n\r\n\r\n\r\n\r\n#### Provide the steps to reproduce\r\n\r\nUse the following javascript code and run lighthouse, it will report that javascript is not minified.\r\n\r\n```\r\nswitch(true){case/^hello!/.test(\"hello!\"):document.write(\"///<any content>\");}\r\n```\r\n  \r\n\r\n\r\n#### What is the current behavior?\r\n\r\nThe javascript is minified.\r\n\r\n#### What is the expected behavior?\r\n<img width=\"723\" alt=\"\u56fe\u7247\" src=\"https://user-images.githubusercontent.com/13579374/107198291-e309a780-6a2f-11eb-9f07-37c232294188.png\">\r\n\r\n\r\n#### Environment Information\r\n* Affected Channels:  DevTools\r\n* Lighthouse version: 87.0.4280.88\r\n\r\n#### Reason\r\n\r\nIn `lighthouse/lighthouse-core/lib/minification-estimator.js` the function named `hasPunctuatorBefore`.\r\nhttps://github.com/GoogleChrome/lighthouse/blob/master/lighthouse-core/lib/minification-estimator.js#L21-L35\r\n\r\n`hasPunctuatorBefore` function incorrectly identifies the \"/\" after \"case\" as a division, not a regular expression. Then the first \"/\" in the string as the end of the regular expression, and the next \"//\" as the beginning of the comment , causing all the code after that to be treated as a comment.\r\n\r\n#### Possible Solution\r\n\r\nAdd keyword `case` to the `PUNCTUATOR_REGEX`\r\n\r\nhttps://github.com/GoogleChrome/lighthouse/blob/master/lighthouse-core/lib/minification-estimator.js\r\n```diff\r\n// https://www.ecma-international.org/ecma-262/9.0/index.html#sec-punctuators\r\n// eslint-disable-next-line max-len\r\n- const PUNCTUATOR_REGEX = /(return|{|\\(|\\[|\\.\\.\\.|;|,|<|>|<=|>=|==|!=|===|!==|\\+|-|\\*|%|\\*\\*|\\+\\+|--|<<|>>|>>>|&|\\||\\^|!|~|&&|\\|\\||\\?|:|=|\\+=|-=|\\*=|%=|\\*\\*=|<<=|>>=|>>>=|&=|\\|=|\\^=|=>|\\/|\\/=|\\})$/;\r\n+ const PUNCTUATOR_REGEX = /(return|case|{|\\(|\\[|\\.\\.\\.|;|,|<|>|<=|>=|==|!=|===|!==|\\+|-|\\*|%|\\*\\*|\\+\\+|--|<<|>>|>>>|&|\\||\\^|!|~|&&|\\|\\||\\?|:|=|\\+=|-=|\\*=|%=|\\*\\*=|<<=|>>=|>>>=|&=|\\|=|\\^=|=>|\\/|\\/=|\\})$/;\r\nconst WHITESPACE_REGEX = /( |\\n|\\t)+$/;\r\n\r\n/**\r\n * Look backwards from `startPosition` in `content` for an ECMAScript punctuator.\r\n * This is used to differentiate a RegExp from a divide statement.\r\n * If a punctuator immediately precedes a lone `/`, the `/` must be the start of a RegExp.\r\n *\r\n * @param {string} content\r\n * @param {number} startPosition\r\n */\r\nfunction hasPunctuatorBefore(content, startPosition) {\r\n  for (let i = startPosition; i > 0; i--) {\r\n    // Try to grab at least 6 characters so we can check for `return`\r\n    const sliceStart = Math.max(0, i - 6);\r\n    const precedingCharacters = content.slice(sliceStart, i);\r\n    // Skip over any ending whitespace\r\n    if (WHITESPACE_REGEX.test(precedingCharacters)) continue;\r\n    // Check if it's a punctuator\r\n    return PUNCTUATOR_REGEX.test(precedingCharacters);\r\n  }\r\n\r\n  // The beginning of the content counts too for our purposes.\r\n  // i.e. a script can't start with a divide symbol\r\n  return true;\r\n}\r\n```\n",
+    "hints_text": "",
+    "created_at": "",
+    "image_assets": "{\"problem_statement\": [\"https://user-images.githubusercontent.com/13579374/107198291-e309a780-6a2f-11eb-9f07-37c232294188.png\"]}",
+    "version": "",
+    "FAIL_TO_PASS": "",
+    "PASS_TO_PASS": "",
+    "pull_url": null,
+    "issue_url": "",
+    "reproduce_url": "",
+    "interaction": ""
+}

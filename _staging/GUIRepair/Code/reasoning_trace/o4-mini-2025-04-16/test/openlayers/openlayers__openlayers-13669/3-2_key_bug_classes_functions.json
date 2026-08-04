@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//configure_",
+            "src/ol/source/GeoTIFF.js//loadTile_"
+        ],
+        "explanation": "All of the logic for detecting a user-specified no-data value (including NaN) and adding or setting the alpha band lives in configure_ and loadTile_. In configure_, GeoTIFFSource decides whether to add an alpha channel based on the provided nodata value or metadata. In loadTile_, it reads the raster values and must set the alpha to 0 when a pixel equals the nodata value. Since NaN !== NaN, the existing equality checks never match, so alpha remains at its default 255. Fixing these two methods to use Number.isNaN or an explicit check for NaN will ensure the alpha band is applied correctly for NaN no-data values.",
+        "bug_scenario": "The user is loading a Cloud-Optimized GeoTIFF (COG) that has its no-data value set to NaN (the string \u201cnan\u201d in GDAL metadata and Number.NaN passed in the source options). OpenLayers nevertheless returns fully opaque pixels for the no-data areas. When calling getData on a tile, the pixel values come back as [NaN, NaN, NaN, 255] instead of [NaN, NaN, NaN, 0], so the alpha channel is never set to 0 for no-data values and transparent rendering or styling based on nodata cannot work."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.configure_",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.loadTile_"
+        ],
+        "explanation": "The GeoTIFFSource class is responsible for detecting no-data values and adding an alpha band during configure_(), and for applying the no-data mask in loadTile_(). Both functions rely on strict equality checks (e.g. value === options.nodata) to decide when to add or mask pixels. Since NaN is not equal to itself, these branches are never taken. As a result, no alpha band is added for NaN and no-data masking in loadTile_() doesn\u2019t occur for NaN, leaving the alpha channel at 255.",
+        "bug_scenario": "A Cloud-Optimized GeoTIFF (COG) is loaded with its no-data value set to NaN (both via GDAL metadata and via the source options). Although an alpha band should be added to mark no-data pixels as fully transparent (alpha=0), the alpha channel remains at 255 (opaque). When calling getData(), pixels that should be transparent are returned as [NaN, NaN, NaN, 255] instead of [NaN, NaN, NaN, 0]. This is because the code doesn\u2019t correctly recognize NaN as a no-data value (NaN !== NaN), so neither the alpha band is activated nor the mask applied."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/TileCache.js//TileCache",
+            "src/ol/source/Tile.js//TileSource",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [],
+        "explanation": "1. `src/ol/TileCache.js//TileCache`: The `TileCache` class is responsible for managing cached tile textures. The bug report indicates that the cache is not properly invalidated when the source is replaced or the view projection is changed. Functions like `clear()` and `expireCache()` in this class are critical for managing the cache lifecycle and ensuring that old tiles are replaced with new ones.\n\n2. `src/ol/source/Tile.js//TileSource`: The `TileSource` class includes methods for managing tile sources, including cache expiration (`expireCache`) and clearing (`clear`). Since the bug involves incorrect texture caching, the methods in this class that interact with the cache need to be examined and potentially modified to ensure they handle source changes and projection updates correctly.\n\n3. `src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer`: The `WebGLTileLayerRenderer` class is responsible for rendering tile layers using WebGL. It manages its own cache of tile textures and interacts with the source cache. The bug report mentions that the renderer maintains its own cache, which might be interfering with the proper invalidation and updating of textures when the source or projection changes. Functions related to rendering and cache management in this class are likely candidates for investigation and modification.",
+        "bug_scenario": "The bug involves WebGL tile layers using incorrect cached textures when the source is replaced using `setSource()` or the view projection is changed. This results in invalid cached tile textures not being replaced, leading to a mix of new and old tile sources or projections when panning or zooming in and out."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/TileCache.js//TileCache.clear",
+            "src/ol/TileCache.js//TileCache.expireCache",
+            "src/ol/source/Tile.js//TileSource.clear",
+            "src/ol/source/Tile.js//TileSource.expireCache"
+        ],
+        "explanation": "1. **WebGLTileLayerRenderer (src/ol/renderer/webgl/TileLayer.js)**: This class is responsible for rendering tile layers using WebGL. Since the issue is related to incorrect cached textures being used, it is likely that the renderer is not properly invalidating or updating its cache when the source or projection changes.\n\n2. **TileCache.clear (src/ol/TileCache.js)** and **TileCache.expireCache (src/ol/TileCache.js)**: These functions manage the clearing and expiration of cached tiles. The bug report indicates that cached tile textures are not being replaced when they should be. These methods are directly involved in managing which tiles are kept in the cache and which are removed.\n\n3. **TileSource.clear (src/ol/source/Tile.js)** and **TileSource.expireCache (src/ol/source/Tile.js)**: These methods in the TileSource class handle clearing and expiring the tile cache for a given projection. The bug is related to incorrect cache usage when the source or projection changes, suggesting that these methods might not be correctly managing the cache under these conditions.",
+        "bug_scenario": "The bug scenario involves WebGL tile layers using incorrect cached textures when the source is replaced using `setSource()` or when the view projection is changed. This leads to situations where, after panning or zooming, tiles from the incorrect (old) source or projection are displayed instead of the newly updated ones."
+    }
+}

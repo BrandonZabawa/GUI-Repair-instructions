@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/featureloader.js",
+            "src/ol/source/Vector.js"
+        ],
+        "explanation": "The bug is in 'src/ol/featureloader.js', where the load function calls the 'success' callback before actually adding the newly-loaded features to the Vector source. This causes any operations depending on features (such as getExtent()) in the callback to give wrong/extreme results. The correct behavior is to first add features (source.addFeatures(features)) and then call 'success(features)'. 'src/ol/source/Vector.js' is included because the implementation of addFeatures/features management and getExtent reside there, and changes/side-effects in behavior there should also be reviewed. The fix involves editing 'src/ol/featureloader.js' to change the order of operations, and understanding the role of 'src/ol/source/Vector.js' for context and validation.",
+        "bug_scenario": "The bug occurs when trying to get the extent of a VectorSource immediately upon the 'featuresloadend' event after features are loaded from an XHR (XHR-based loader). The returned extent is [Infinity,Infinity,-Infinity,-Infinity], indicating the features haven't yet been added to the source when the event/callback fires. The code scenario image shows the relevant section in 'src/ol/featureloader.js', where the 'success' callback is triggered before features are added to the source with addFeatures(). This results in the source's internal extent not reflecting the loaded features when the callback runs."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/featureloader.js",
+            "src/ol/source/Vector.js"
+        ],
+        "explanation": "src/ol/featureloader.js is directly shown in the screenshot and is discussed in the bug report. The ordering of source.addFeatures and the success callback in this file is the crux of the issue. src/ol/source/Vector.js is included because it contains the VectorSource implementation, including the features storage and getExtent logic, and may require updating tests or documentation to reflect the fix or to ensure that features are added before callbacks are triggered.",
+        "bug_scenario": "The bug is that when trying to get the extent of a VectorSource inside the featuresloadend callback, the result is always [Infinity,Infinity,-Infinity,-Infinity], which indicates the source has no features yet. The attached image shows the relevant code in src/ol/featureloader.js where the addFeatures call (which actually populates the source) happens after the success callback. This means when the success callback runs, the source does not yet have the features, so its extent is not correctly calculated. The expected behavior is for source.getExtent() to return the real extent in the loadend event, suggesting that addFeatures should happen before the success callback, not after."
+    }
+}

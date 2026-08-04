@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "e2e/src/App.js",
+            "src/js/utils/router.js",
+            "src/js/components/DataTable/buildState.js",
+            "src/js/components/DataTable/DataTable.js",
+            "src/js/components/DataTable/Header.js",
+            "src/js/components/DataTable/Sorter.js"
+        ],
+        "explanation": "\u2022 e2e/src/App.js \u2013 This is the sample app that reads the URL\u2019s query parameters into component state and pushes new history entries on every sort. It currently only parses the URL once (on mount) and never listens for popstate, so back/forward navigation never updates its internal sort state.\n\n\u2022 src/utils/router.js \u2013 Exposes helpers for syncing React state with the browser URL and history. If you adopt these utilities in App.js, they automatically subscribe to popstate events so your component will re-render when the URL changes.\n\n\u2022 src/components/DataTable/buildState.js \u2013 Contains the logic to derive sort state from the props you pass in. On navigation you need to feed it the new sort props so it can update its internal build state.\n\n\u2022 src/components/DataTable/DataTable.js \u2013 Orchestrates overall table rendering, applies the sort built by buildState, and passes props down to the header renderer. Ensuring it re-renders on prop changes will flip the arrows.\n\n\u2022 src/components/DataTable/Header.js \u2013 Renders the column headers and injects sort controls. It relies on the sort prop; if the parent does not supply a new sort on popstate, the arrow will not update.\n\n\u2022 src/components/DataTable/Sorter.js \u2013 Draws the actual up/down arrow icon based on the current sort direction. This component is presentational but must receive new props to redraw the arrow on navigation.\n\nTogether, these files cover the full path from reading URL parameters to drawing the sort icon. The fix is two\u2010fold: (1) App.js must subscribe to history popstate (or use utils/router) so it updates its sort state when the URL changes, and (2) the DataTable components must correctly re-render their headers and arrows when the sort prop changes.",
+        "bug_scenario": "When you sort the DataTable by clicking its column headers, the URL search parameters update and the sort arrow in the header reflects that sort (e.g. \u201cproperty=a&direction=asc\u201d). However, if you then use your browser\u2019s back or forward buttons to navigate through the history of sort URLs, the address bar changes accordingly but the DataTable\u2019s header arrow icons do not. In other words, popstate events on navigation are not triggering a re\u2010read of the URL and a corresponding update of the header sort icons."
+    },
+    "2": {
+        "bug_files": [
+            "e2e/src/App.js",
+            "e2e/src/index.js"
+        ],
+        "explanation": "The heart of this issue is in the sample application code, not in Grommet itself. In e2e/src/App.js we parse the URL on initial mount and on clicks, but we never listen for the browser\u0019s popstate event, so when the user navigates back or forward the component never re-reads the query parameters or re-sets its React state. Adding a window.onpopstate handler (or using a routing library\u0019s listener) in App.js to re-parse the URL and update the sort property/direction in state will allow the DataTable header arrows to stay in sync. The e2e/src/index.js is included because it bootstraps the entire app; you could choose to install the listener there instead of in App.js.",
+        "bug_scenario": "In the sample App (e2e/src/App.js) we drive the DataTable\u0019s sort entirely from the URL query parameters (property & direction) and repaint the table when you click a column header. That works fine \u2014 the URL and arrows keep in sync on clicks. However, when you hit the browser\u0019s Back/Forward buttons, the URL in the address bar updates but the DataTable never sees the new query string, so its internal sort-state (and the little arrow in the header) never change. In other words, navigation events (popstate) aren\u0019t wired up, so the header arrow icon stays stuck on the old column instead of reflecting the new URL parameters."
+    }
+}

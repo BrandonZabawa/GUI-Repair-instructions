@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/xml.js"
+        ],
+        "explanation": "All of the XML parsing and highlighting rules live in src/languages/xml.js. In that file the regular expression for tag names with namespace prefixes was updated in v10.4.0 to require at least two characters before the colon, so single-letter prefixes no longer match. To fix this bug you need to adjust the namespace-prefix pattern in xml.js (e.g. allow `\\w` or `[A-Za-z]` of length \u22651 before the colon) so that tags like `<a:OK>` are highlighted correctly.",
+        "bug_scenario": "When using the XML mode in highlight.js (via the highlight API), multi-letter namespace prefixes (e.g. abc:OK, ab:OK) are highlighted correctly, but a single-letter prefix like a:OK is not recognized and its tag name stays un-highlighted. The screenshots show that any element with a:\u2026 prefix is rendered as plain text even when nested, whereas prefixes of length \u22652 still get proper syntax coloring."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/xml.js"
+        ],
+        "explanation": "All XML/HTML/SVG highlighting rules live in src/languages/xml.js. The regex that matches qualified (namespaced) tag names currently forces the prefix to be two or more characters, so it never recognizes single-letter prefixes. By adjusting the tag-name pattern there (e.g. allowing one-char prefixes before the colon), single-letter namespaces will once again match and be highlighted correctly.",
+        "bug_scenario": "The problem is that after upgrading to v10.4.0, XML tags with a single-letter namespace prefix no longer receive syntax highlighting. In the reproducer you can see that \u201c<abc:OK \u2026/>\u201d and \u201c<ab:OK \u2026/>\u201d still highlight correctly, but \u201c<a:FAIL xmlns:a=\u201c\u2026\u201d/>\u201d renders in plain text (no coloring for the tag or prefix). The same breakage also appears when the single-letter-prefixed tag wraps nested elements. All multi-letter prefixes and default (no-prefix) tags continue to highlight as expected."
+    }
+}

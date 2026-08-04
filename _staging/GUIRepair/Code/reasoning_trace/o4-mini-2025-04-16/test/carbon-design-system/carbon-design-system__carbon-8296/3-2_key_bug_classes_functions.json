@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/HeaderContainer.js//HeaderContainer",
+            "packages/react/src/components/UIShell/SideNav.js//SideNav",
+            "packages/react/src/internal/useOutsideClick.js//useOutsideClick"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/HeaderContainer.js//handleHeaderMenuButtonClick",
+            "packages/react/src/components/UIShell/SideNav.js//handleToggle",
+            "packages/react/src/components/UIShell/SideNav.js//overlay <div> render (missing onClick handler)",
+            "packages/react/src/internal/useOutsideClick.js//useOutsideClick"
+        ],
+        "explanation": "HeaderContainer holds the expanded/collapsed state and toggles it in handleHeaderMenuButtonClick, but it has no logic to collapse the menu when a link is clicked or when a click happens outside the nav. SideNav defines handleToggle and renders the overlay (<div className={overlayClassName} />) but never wires that overlay to call handleToggle(event, false). It also never propagates its onToggle prop (if supplied) when links inside are clicked. The useOutsideClick hook exists as a generic way to detect clicks outside of a ref, but it isn\u2019t used by HeaderContainer or SideNav. To fix the bug you need to: 1) attach an onClick to the overlay div in SideNav that calls handleToggle(event, false); 2) ensure SideNavLink clicks also invoke onToggle or onClickSideNavExpand(false); and/or 3) integrate useOutsideClick in HeaderContainer (or SideNav) to automatically collapse the panel when clicking outside the nav container.",
+        "bug_scenario": "On small and medium viewports, when the user opens the SideNav via the HeaderMenuButton, a gray overlay appears behind the menu. However:\n1. Clicking a SideNavLink (e.g. \u201cResources\u201d) loads the new content but leaves the SideNav expanded and the overlay active.\n2. Clicking anywhere on the gray overlay (or on the rest of the header) does not close the SideNav. The only way to collapse it is to click the HeaderMenuButton again.\n\nExpected behavior: any click on a SideNavLink or on the overlay/background should collapse the SideNav and remove the overlay."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/HeaderContainer.js//HeaderContainer",
+            "packages/react/src/components/UIShell/SideNav.js//SideNav",
+            "packages/react/src/internal/useOutsideClick.js//useOutsideClick"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/HeaderContainer.js//handleHeaderMenuButtonClick",
+            "packages/react/src/components/UIShell/SideNav.js//handleToggle",
+            "packages/react/src/internal/useOutsideClick.js//useOutsideClick"
+        ],
+        "explanation": "HeaderContainer manages the expanded state and exposes onClickSideNavExpand via handleHeaderMenuButtonClick, but does not respond to outside clicks. SideNav defines handleToggle to open/close the nav but never hooks it up to clicks on its overlay div or link clicks. The overlay <div> is rendered without a click handler, so clicking outside the menu does nothing. The useOutsideClick hook provides a way to detect clicks outside a referenced element, but it is not used in SideNav. To fix the bug, the SideNav component should call handleToggle (or onToggle) when the overlay is clicked or when a SideNavLink is activated. Integrating useOutsideClick within SideNav (or in HeaderContainer) would allow detecting clicks outside the nav and collapsing it automatically.",
+        "bug_scenario": "On small or medium viewports, clicking the HeaderMenuButton expands the SideNav and displays a gray overlay. However: 1) when the user clicks on a SideNavLink to navigate, the content updates but the SideNav remains open; 2) clicking anywhere on the overlay (or outside the navigation) does not close the SideNav. The expected behavior is that any click on a navigation link or on the overlay should collapse the SideNav."
+    }
+}

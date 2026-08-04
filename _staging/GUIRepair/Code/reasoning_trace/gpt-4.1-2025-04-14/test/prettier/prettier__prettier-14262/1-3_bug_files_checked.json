@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/print/object.js",
+            "src/language-js/print/property.js",
+            "src/language-js/print/comment.js",
+            "src/language-js/printer-estree.js",
+            "src/language-js/needs-parens.js"
+        ],
+        "explanation": "These files are related because:\n\n- `src/language-js/printer-estree.js`: Main printer for JS ASTs, likely where logic is implemented for removing unnecessary parentheses, and controls how expressions are output.\n- `src/language-js/print/object.js`: Handles printing object expressions, where the bug manifests (object wrapped in parentheses after JSDoc is stripped).\n- `src/language-js/print/property.js`: Related as it manages printing properties in JS objects, and might help determine property render options (such as JSDoc context).\n- `src/language-js/print/comment.js`: Responsible for handling comments, including JSDoc; relevant since the bug only occurs with JSDoc on the object literal.\n- `src/language-js/needs-parens.js`: Contains logic for determining when parentheses are necessary around expressions. The bug might stem from incorrect parenthesis logic for JSDoc with @satisfies type annotations.\n\nThese files collectively manage how Prettier prints parentheses, objects, comments, and specifically handle syntactical output for JavaScript/TypeScript scenarios that are affected by JSDoc, which is at the core of this bug.",
+        "bug_scenario": "The bug scenario shows a Prettier formatting issue: when using a JSDoc @satisfies comment with TypeScript type and parentheses (to allow TypeScript's type checking with intellisense), Prettier removes the parentheses when formatting. This breaks TypeScript's ability to recognize the type assertion, resulting in errors in editors like VSCode. The expected behavior is for Prettier to preserve the parentheses around the object literal for correct intellisense and type safety."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/print/object.js",
+            "src/language-js/print/property.js",
+            "src/language-js/print/assignment.js",
+            "src/language-js/printer-estree.js",
+            "src/language-js/embed.js",
+            "src/language-js/needs-parens.js"
+        ],
+        "explanation": "These files are most relevant to the code printing and formatting logic in Prettier for JavaScript. The bug is about Prettier stripping required parentheses from expressions with attached JSDoc, specifically with the @satisfies tag. The logic for printing and possibly removing or keeping parentheses around assignments and object literals is implemented in the print/object.js, print/assignment.js, print/property.js, and especially printer-estree.js, which orchestrates how ESTree nodes are formatted. The embed.js may handle embedding or special handling for comments or type annotations. The needs-parens.js module likely contains the logic for determining when parentheses are required for syntactic correctness, and thus is deeply involved in this bug. A fix would involve ensuring these printer and logic files correctly detect the presence of JSDoc with @satisfies and preserve parentheses in such cases.",
+        "bug_scenario": "The bug scenario concerns Prettier's handling of JSDoc comments with parentheses that ensure correct TypeScript intellisense via the @satisfies tag. When formatting the code with Prettier 2.8.3 (using the Babel parser), parentheses are wrongly stripped from expressions like 'module.exports = /** @satisfies {Record<string, string>} */ ({ ... });', resulting in invalid TypeScript intellisense in editors such as VSCode. The attached image shows VSCode highlighting a type error because the needed parentheses are missing after Prettier reformats the file, which breaks the JSDoc contract for type checking."
+    }
+}

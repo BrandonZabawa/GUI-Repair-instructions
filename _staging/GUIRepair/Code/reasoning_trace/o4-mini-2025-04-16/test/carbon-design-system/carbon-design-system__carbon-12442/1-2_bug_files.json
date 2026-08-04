@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/internals/useId.js",
+            "packages/react/src/tools/uniqueId.js",
+            "packages/react/src/components/Accordion/AccordionItem.js"
+        ],
+        "explanation": "\u2022 packages/react/src/internals/useId.js \u2013 this is the hook that allocates sequential IDs for every component that calls useId (it holds the counter and the default prefix if none is passed).\n\u2022 packages/react/src/tools/uniqueId.js \u2013 this is the low-level utility that actually increments a shared counter; it doesn\u2019t currently respect a per-package or caller context, so two separate bundles using the same prefix will collide.\n\u2022 packages/react/src/components/Accordion/AccordionItem.js \u2013 this component calls useId('accordion-item') unconditionally, which is where the hardcoded prefix lives. Footer (in @carbon/ibmdotcom-react) does something very similar, so with two different copies of the hook both using the same literal prefix, you get duplicate IDs in the final DOM.",
+        "bug_scenario": "When you render AccordionItem from carbon-components-react (v8.15) and Footer from @carbon/react (v1.39) on the same page, both components call their own useId hook with the literal prefix \u201caccordion-item\u201d. Each starts its own internal counter at 1, so both end up rendering a DOM node with id \u201caccordion-item-1\u201d, \u201caccordion-item-2\u201d, etc. in two separate trees. When those trees end up in the same document, the duplicate IDs trigger an accessibility error (\u201cThe <div> element has the id \u2018accordion\u2010item\u20101\u2019 that is already in use\u201d)."
+    },
+    "2": {
+        "bug_files": [
+            "packages/carbon-components-react/src/components/Accordion/AccordionItem.js",
+            "packages/react/src/components/Accordion/AccordionItem.js",
+            "packages/react/src/internal/useId.js"
+        ],
+        "explanation": "Both AccordionItem.js files (one in carbon-components-react and one in @carbon/react) call into the same useId hook (in packages/react/src/internal/useId.js) to auto-generate their IDs. Because the hook uses a hard-coded prefix (\u2018accordion-item-\u2019) and a shared counter scope, mixing both libraries on the same page produces identical IDs. To fix this you need to expose an ID prefix override in the hook (or in each AccordionItem) so that you can namespace one library\u2019s IDs separately from the other.",
+        "bug_scenario": "When you render a set of AccordionItem components from carbon-components-react alongside the Footer component from @carbon/react (which itself uses its own Accordion/AccordionItem under the hood for its nav groups), both libraries\u2019 AccordionItem implementations generate IDs using the same default prefix (\u201caccordion-item-<n>\u201d). As soon as you inspect the DOM you see two different nodes (one in your main accordion, one in the footer\u2019s accordion) both using id=\"accordion-item-1\", id=\"accordion-item-2\", etc., which triggers an accessibility violation for duplicate IDs."
+    }
+}

@@ -1,0 +1,494 @@
+{
+    "1/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "if (this.shouldHandle_) {",
+                    "if (!this.finishCoordinate_) {",
+                    "this.startDrawing_(event);",
+                    "if (this.mode_ === Mode.POINT) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else if (this.freehand_ || circleMode) {",
+                    "this.finishDrawing();",
+                    "} else if (this.atFinish_(event)) {",
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "} else if (this.freehand_) {",
+                    "this.finishCoordinate_ = null;",
+                    "this.abortDrawing_();",
+                    "}",
+                    "if (!pass && this.stopClick_) {",
+                    "event.stopPropagation();",
+                    "}",
+                    "return pass;"
+                ],
+                "REPLACE": [
+                    "if (this.shouldHandle_) {",
+                    "if (!this.finishCoordinate_) {",
+                    "this.startDrawing_(event);",
+                    "if (this.mode_ === Mode.POINT) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else if (this.freehand_ || circleMode) {",
+                    "this.finishDrawing();",
+                    "} else if (this.atFinish_(event)) {",
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "} else if (this.freehand_) {",
+                    "this.finishCoordinate_ = null;",
+                    "this.abortDrawing_();",
+                    "}",
+                    "if (!pass && this.stopClick_) {",
+                    "event.stopPropagation();",
+                    "}",
+                    "// Reset shouldHandle_ to allow map dragging after drawing",
+                    "this.shouldHandle_ = false;",
+                    "return pass;"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "} else if (this.freehand_) {"
+                ],
+                "REPLACE": [
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "this.updateState_();  // Re-enable interactions like dragging",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "this.updateState_();  // Ensure interactions are updated after each event",
+                    "} else if (this.freehand_) {"
+                ]
+            }
+        ],
+        "src/ol/MapBrowserEventHandler.js": [
+            {
+                "SEARCH": [
+                    "if (this.activePointers_ === 0) {",
+                    "this.dragListenerKeys_.forEach(unlistenByKey);",
+                    "this.dragListenerKeys_.length = 0;",
+                    "this.dragging_ = false;"
+                ],
+                "REPLACE": [
+                    "if (this.activePointers_ === 0) {",
+                    "this.dragListenerKeys_.forEach(unlistenByKey);",
+                    "this.dragListenerKeys_.length = 0;",
+                    "this.dragging_ = false;",
+                    "this.map_.getInteractions().forEach(interaction => {",
+                    "if (interaction instanceof ol.interaction.DragPan) {",
+                    "interaction.setActive(true);  // Re-enable dragging",
+                    "}",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "handleUpEvent(event) {",
+                    "let pass = true;",
+                    "",
+                    "if (this.downTimeout_) {",
+                    "clearTimeout(this.downTimeout_);",
+                    "this.downTimeout_ = undefined;",
+                    "}",
+                    "",
+                    "this.handlePointerMove_(event);"
+                ],
+                "REPLACE": [
+                    "handleUpEvent(event) {",
+                    "let pass = true;",
+                    "",
+                    "if (this.downTimeout_) {",
+                    "clearTimeout(this.downTimeout_);",
+                    "this.downTimeout_ = undefined;",
+                    "}",
+                    "",
+                    "this.handlePointerMove_(event);",
+                    "",
+                    "// Reset map interaction states",
+                    "if (this.getMap()) {",
+                    "this.getMap().getInteractions().forEach(interaction => {",
+                    "if (interaction instanceof this.constructor) {",
+                    "interaction.setActive(false);",
+                    "interaction.setActive(true);",
+                    "}",
+                    "});",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "pass = this.handlePointerMove_(event);",
+                    "} else if (/** @type {MapBrowserPointerEvent} */ (event).pointerEvent.pointerType == POINTER_TYPE ||",
+                    "(event.type === MapBrowserEventType.POINTERDRAG && this.downTimeout_ === undefined)) {",
+                    "this.handlePointerMove_(event);"
+                ],
+                "REPLACE": [
+                    "pass = this.handlePointerMove_(event);",
+                    "// Ensure map is draggable after drawend",
+                    "this.shouldHandle_ = false;",
+                    "} else if (/** @type {MapBrowserPointerEvent} */ (event).pointerEvent.pointerType == POINTER_TYPE ||",
+                    "(event.type === MapBrowserEventType.POINTERDRAG && this.downTimeout_ === undefined)) {",
+                    "this.handlePointerMove_(event);",
+                    "this.shouldHandle_ = false;"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "if (this.shouldHandle_) {",
+                    "if (!this.finishCoordinate_) {",
+                    "this.startDrawing_(event);",
+                    "if (this.mode_ === Mode.POINT) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else if (this.freehand_ || circleMode) {",
+                    "this.finishDrawing();",
+                    "} else if (this.atFinish_(event)) {",
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "} else if (this.freehand_) {",
+                    "this.finishCoordinate_ = null;",
+                    "this.abortDrawing_();",
+                    "}",
+                    "if (!pass && this.stopClick_) {",
+                    "event.stopPropagation();",
+                    "}",
+                    "return pass;"
+                ],
+                "REPLACE": [
+                    "if (this.shouldHandle_) {",
+                    "if (!this.finishCoordinate_) {",
+                    "this.startDrawing_(event);",
+                    "if (this.mode_ === Mode.POINT) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else if (this.freehand_ || circleMode) {",
+                    "this.finishDrawing();",
+                    "} else if (this.atFinish_(event)) {",
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "} else if (this.freehand_) {",
+                    "this.finishCoordinate_ = null;",
+                    "this.abortDrawing_();",
+                    "} else {",
+                    "// Reset shouldHandle_ to allow map drag",
+                    "this.shouldHandle_ = false;",
+                    "}",
+                    "if (!pass && this.stopClick_) {",
+                    "event.stopPropagation();",
+                    "}",
+                    "return pass;"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "this.freehand_ = this.mode_ !== Mode.POINT && this.freehandCondition_(event);",
+                    "let move = event.type === MapBrowserEventType.POINTERMOVE;",
+                    "let pass = true;",
+                    "if (!this.freehand_ && this.lastDragTime_ && event.type === MapBrowserEventType.POINTERDRAG) {",
+                    "const now = Date.now();"
+                ],
+                "REPLACE": [
+                    "this.freehand_ = this.mode_ !== Mode.POINT && this.freehandCondition_(event);",
+                    "let move = event.type === MapBrowserEventType.POINTERMOVE;",
+                    "let pass = true;",
+                    "if (!this.freehand_ && this.lastDragTime_ && event.type === MapBrowserEventType.POINTERDRAG) {",
+                    "this.shouldHandle_ = false; // Reset shouldHandle_ flag post drawing",
+                    "const now = Date.now();"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.overlay_.setMap(active ? map : null);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "this.overlay_.setMap(active ? map : null);",
+                    "",
+                    "// Ensure dragging works after drawing is complete",
+                    "if (!active) {",
+                    "this.shouldHandle_ = false;",
+                    "this.lastDragTime_ = undefined;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "let pass = true;",
+                    "",
+                    "if (this.downTimeout_) {",
+                    "clearTimeout(this.downTimeout_);",
+                    "this.downTimeout_ = undefined;",
+                    "}",
+                    "",
+                    "this.handlePointerMove_(event);"
+                ],
+                "REPLACE": [
+                    "let pass = true;",
+                    "",
+                    "if (this.downTimeout_) {",
+                    "clearTimeout(this.downTimeout_);",
+                    "this.downTimeout_ = undefined;",
+                    "}",
+                    "",
+                    "this.handlePointerMove_(event);",
+                    "",
+                    "// Reset interaction states to allow map dragging",
+                    "this.shouldHandle_ = false;",
+                    "this.freehand_ = false;"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "handleUpEvent(event) {",
+                    "let pass = true;",
+                    "",
+                    "if (this.downTimeout_) {",
+                    "clearTimeout(this.downTimeout_);",
+                    "this.downTimeout_ = undefined;",
+                    "}",
+                    "",
+                    "this.handlePointerMove_(event);",
+                    "",
+                    "const circleMode = this.mode_ === Mode.CIRCLE;",
+                    "",
+                    "if (this.shouldHandle_) {",
+                    "if (!this.finishCoordinate_) {",
+                    "this.startDrawing_(event);",
+                    "if (this.mode_ === Mode.POINT) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else if (this.freehand_ || circleMode) {",
+                    "this.finishDrawing();",
+                    "} else if (this.atFinish_(event)) {",
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "} else if (this.freehand_) {",
+                    "this.finishCoordinate_ = null;",
+                    "this.abortDrawing_();",
+                    "}",
+                    "if (!pass && this.stopClick_) {",
+                    "event.stopPropagation();",
+                    "}",
+                    "return pass;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "handleUpEvent(event) {",
+                    "let pass = true;",
+                    "",
+                    "if (this.downTimeout_) {",
+                    "clearTimeout(this.downTimeout_);",
+                    "this.downTimeout_ = undefined;",
+                    "}",
+                    "",
+                    "this.handlePointerMove_(event);",
+                    "",
+                    "const circleMode = this.mode_ === Mode.CIRCLE;",
+                    "",
+                    "if (this.shouldHandle_) {",
+                    "if (!this.finishCoordinate_) {",
+                    "this.startDrawing_(event);",
+                    "if (this.mode_ === Mode.POINT) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else if (this.freehand_ || circleMode) {",
+                    "this.finishDrawing();",
+                    "} else if (this.atFinish_(event)) {",
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "",
+                    "// Re-enable map interactions after drawing finishes",
+                    "this.getMap().getInteractions().forEach(interaction => {",
+                    "if (!(interaction instanceof Draw)) {",
+                    "interaction.setActive(true);",
+                    "}",
+                    "});",
+                    "",
+                    "} else if (this.freehand_) {",
+                    "this.finishCoordinate_ = null;",
+                    "this.abortDrawing_();",
+                    "}",
+                    "if (!pass && this.stopClick_) {",
+                    "event.stopPropagation();",
+                    "}",
+                    "return pass;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "if (this.shouldHandle_) {",
+                    "if (!this.finishCoordinate_) {",
+                    "this.startDrawing_(event);",
+                    "if (this.mode_ === Mode.POINT) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else if (this.freehand_ || circleMode) {",
+                    "this.finishDrawing();",
+                    "} else if (this.atFinish_(event)) {",
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "pass = false;",
+                    "} else if (this.freehand_) {",
+                    "this.finishCoordinate_ = null;",
+                    "this.abortDrawing_();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (this.shouldHandle_) {",
+                    "if (!this.finishCoordinate_) {",
+                    "this.startDrawing_(event);",
+                    "if (this.mode_ === Mode.POINT) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else if (this.freehand_ || circleMode) {",
+                    "this.finishDrawing();",
+                    "} else if (this.atFinish_(event)) {",
+                    "if (this.finishCondition_(event)) {",
+                    "this.finishDrawing();",
+                    "}",
+                    "} else {",
+                    "this.addToDrawing_(event);",
+                    "}",
+                    "} else if (this.freehand_) {",
+                    "this.finishCoordinate_ = null;",
+                    "this.abortDrawing_();",
+                    "}",
+                    "pass = super.handleEvent(event); // Ensure proper event handling"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/interaction/Draw.js": [
+            {
+                "SEARCH": [
+                    "finishDrawing() {",
+                    "const sketchFeature = this.abortDrawing_();",
+                    "if (!sketchFeature) {",
+                    "return;",
+                    "}",
+                    "let coordinates = this.sketchCoords_;",
+                    "const geometry = /** @type {import(\"../geom/SimpleGeometry.js\").default} */ (sketchFeature.getGeometry());"
+                ],
+                "REPLACE": [
+                    "finishDrawing() {",
+                    "const sketchFeature = this.abortDrawing_();",
+                    "if (!sketchFeature) {",
+                    "return;",
+                    "}",
+                    "this.shouldHandle_ = false; // Reset handle after drawing",
+                    "let coordinates = this.sketchCoords_;",
+                    "const geometry = /** @type {import(\"../geom/SimpleGeometry.js\").default} */ (sketchFeature.getGeometry());"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "handleUpEvent(event) {",
+                    "let pass = true;",
+                    "",
+                    "if (this.downTimeout_) {",
+                    "clearTimeout(this.downTimeout_);",
+                    "this.downTimeout_ = undefined;",
+                    "}",
+                    "",
+                    "this.handlePointerMove_(event);",
+                    "",
+                    "const circleMode = this.mode_ === Mode.CIRCLE;"
+                ],
+                "REPLACE": [
+                    "handleUpEvent(event) {",
+                    "let pass = true;",
+                    "",
+                    "if (this.downTimeout_) {",
+                    "clearTimeout(this.downTimeout_);",
+                    "this.downTimeout_ = undefined;",
+                    "}",
+                    "",
+                    "this.shouldHandle_ = false;  // Ensure handle is always reset",
+                    "this.handlePointerMove_(event);",
+                    "",
+                    "const circleMode = this.mode_ === Mode.CIRCLE;"
+                ]
+            }
+        ]
+    }
+}

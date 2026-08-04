@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/BpmnLayouter.js",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "explanation": "These files are closely related to the handling and layout of BPMN connections and their waypoints: (1) BpmnLayouter.js manages the algorithm for laying out connections, which directly determines how the connection path is created or updated when forming loops; (2) ReplaceConnectionBehavior.js contains the logic for replacing existing connections, which is triggered during reconnections and needs to properly recalculate the layout; and (3) Modeling.js orchestrates modeling operations, including connection reconnection and possibly invoking the layouter logic. Fixing the bug will likely require updating how connection waypoints are recalculated during a reconnect to ensure loop creation leads to clean paths.",
+        "bug_scenario": "The bug scenario involves a broken layout of connections when a user attempts to reconnect a complex (multi-waypoint) connection to create a loop between two flow nodes. As shown in the scenario images, upon reconnecting the end to the start node (forming a loop), the connection path is laid out incorrectly, retaining or creating excess or misplaced waypoints, rather than recomputing the path as if the loop were being drawn from scratch. This issue can be visually identified as the path does not update to a clean, optimal looped layout but instead looks tangled or misaligned."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/BpmnLayouter.js",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "explanation": "- lib/features/modeling/BpmnLayouter.js: This file is crucial because it is responsible for determining how connections (lines/edges) are laid out between shapes in the BPMN diagram. A bug in how loops or complex connections are handled likely originates here.\n- lib/features/modeling/behavior/ReplaceConnectionBehavior.js: The ReplaceConnectionBehavior deals with the logic when connections are modified\u2014including reconnections that form loops. It is likely involved with triggering or failing to trigger a fresh layout when a loop is formed.\n- lib/features/modeling/Modeling.js: As a high-level coordinator of BPMN modeling actions (including element reconnection and connection updates), this file likely integrates and calls the BpmnLayouter and manages the (re)creation of connections, making it relevant to the reported bug.\nIf additional waypoint utility or geometric calculations are involved (e.g., in util/GeometricUtil.js), they might be secondary, but the above files are directly implicated by the bug's nature and the repository structure.",
+        "bug_scenario": "The bug scenario occurs when a user attempts to reconnect the ends of a BPMN connection (with more than 2 waypoints) to itself to form a loop. Instead of re-laying out the connection as a fresh loop (as expected), the connection layout is broken and does not render a smooth or logical loop. This is clearly visible in the bug scenario images: after the user manipulates the endpoint, the connection path becomes awkwardly routed, ignoring typical routing conventions for loops."
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.constructor",
+            "src/ol/source/GeoTIFF.js//configure_",
+            "src/ol/source/GeoTIFF.js//loadTile_",
+            "src/ol/source/GeoTIFF.js//getMinForDataType",
+            "src/ol/source/GeoTIFF.js//getMaxForDataType"
+        ],
+        "explanation": "The GeoTIFFSource class is responsible for reading and normalizing raster values. Its constructor initializes `min` and `max` from user options (but ignores metadata). The `configure_` method and `loadTile_` implement the tile setup and normalization pipeline, applying bounds to scale raw pixel values. The helper functions `getMinForDataType` and `getMaxForDataType` supply fallback normalization limits based purely on the data type. To honor GDAL metadata, these parts of the code must be updated to detect and use STATISTICS_MINIMUM and STATISTICS_MAXIMUM when present before falling back to defaults.",
+        "bug_scenario": "When rendering GeoTIFFs, users expect the source to pick up STATISTICS_MINIMUM and STATISTICS_MAXIMUM values supplied by GDAL metadata and use them as the default `min`/`max` for normalization. Currently, GeoTIFFSource falls back to a fixed default (0) or computes bounds based on the data type, so images are contrast\u2010stretched incorrectly even though valid statistics are embedded in the TIFF."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//constructor",
+            "src/ol/source/GeoTIFF.js//getImagesForSource",
+            "src/ol/source/GeoTIFF.js//loadTile_"
+        ],
+        "explanation": "All normalization logic for GeoTIFF tiles lives in the GeoTIFFSource class.  The constructor records the user\u2019s min/max settings, getImagesForSource is the point at which the GeoTIFFImage objects are retrieved (and where getGDALMetadata could be called to pull STATISTICS_MINIMUM and STATISTICS_MAXIMUM), and loadTile_ is where pixel values are scaled and clamped between min and max.  To honor the embedded metadata, you must augment getImagesForSource (or the constructor/configure_ step) to call image.getGDALMetadata(), extract STATISTICS_MINIMUM/MAXIMUM, and assign them as the default source.min/source.max before loadTile_ performs the normalization.",
+        "bug_scenario": "When loading a GeoTIFF into OpenLayers, the tile data are always normalized using the user\u2010provided \u201cmin\u201d and \u201cmax\u201d options (defaulting to 0 and undefined) rather than the raster\u2019s built-in statistics.  The screenshots show a low-contrast map layer (bands rendered too dark or saturated) even though the TIFF\u2019s metadata contains STATISTICS_MINIMUM and STATISTICS_MAXIMUM values that would yield a correct full-range normalization."
+    }
+}

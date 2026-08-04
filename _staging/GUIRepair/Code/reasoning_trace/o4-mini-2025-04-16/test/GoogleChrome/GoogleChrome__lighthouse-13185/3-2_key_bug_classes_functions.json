@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/unsized-images.js//UnsizedImages",
+            "report/renderer/details-renderer.js//DetailsRenderer",
+            "report/renderer/element-screenshot-renderer.js//ElementScreenshotRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/unsized-images.js//UnsizedImages.audit",
+            "lighthouse-core/audits/unsized-images.js//UnsizedImages.meta (requiredArtifacts)",
+            "report/renderer/details-renderer.js//DetailsRenderer._renderThumbnail",
+            "report/renderer/element-screenshot-renderer.js//ElementScreenshotRenderer.installFullPageScreenshot",
+            "report/renderer/element-screenshot-renderer.js//ElementScreenshotRenderer.render"
+        ],
+        "explanation": "1. UnsizedImages (lighthouse-core/audits/unsized-images.js) is where the audit gathers failing images and builds the details table; it needs to be updated to request the FullPageScreenshot artifact (via meta.requiredArtifacts) and crop each failing element out of that screenshot rather than passing the live URL to the report.\n2. UnsizedImages.audit is where the list of `{url, node}` entries is constructed; it must be extended to accept the fpss buffer and generate base64-encoded thumbnail URIs instead of using the remote `image.src`.\n3. DetailsRenderer._renderThumbnail (report/renderer/details-renderer.js) is the hook that renders the table\u2019s thumbnail cell; it should be wired to use the data URIs produced by the audit or delegated to ElementScreenshotRenderer rather than naively creating `<img src=\"originalURL\">`.\n4. ElementScreenshotRenderer.installFullPageScreenshot (report/renderer/element-screenshot-renderer.js) injects the full-page screenshot into the report\u2019s DOM (as a CSS variable) so that individual element thumbnails can be rendered on demand.\n5. ElementScreenshotRenderer.render is the routine that, given a DOM helper, the fpss data, and an element\u2019s bounding rect, actually crops, scales, and lays out the thumbnail preview; this is the core of replacing remote hotlinks with locally generated `data:image/...` URIs.",
+        "bug_scenario": "The Lighthouse \u201cImage elements do not have explicit width and height\u201d audit currently hot-links each failing `<img>` thumbnail back to the original site (e.g. `<img src=\"https://apache.org/img/community.jpg\">`), which breaks CSP/mixed-content rules and leaks network requests. The fix is to replace those remote thumbnails with small embedded crops extracted from the full-page screenshot (fpss) and encoded as `data:image/...` URIs so that the report is self-contained and no remote requests are needed."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/unsized-images.js//UnsizedImages",
+            "report/renderer/details-renderer.js//DetailsRenderer",
+            "report/renderer/element-screenshot-renderer.js//ElementScreenshotRenderer",
+            "lighthouse-core/gather/gatherers/full-page-screenshot.js//FullPageScreenshot"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/unsized-images.js//UnsizedImages.audit",
+            "report/renderer/details-renderer.js//DetailsRenderer._renderThumbnail",
+            "report/renderer/element-screenshot-renderer.js//ElementScreenshotRenderer.render",
+            "lighthouse-core/gather/gatherers/full-page-screenshot.js//FullPageScreenshot._takeScreenshot"
+        ],
+        "explanation": "1. UnsizedImages (in audits/unsized-images.js) builds the table of failing images with an `itemType: 'thumbnail'` column that currently points at the remote `src` URL. Its static `audit()` method needs to be updated to emit, alongside the node and URL, the element\u2019s bounding rect and reference to the fpss asset rather than the raw src.  \n2. DetailsRenderer in report/renderer/details-renderer.js is the component that sees `itemType: 'thumbnail'` and invokes `_renderThumbnail()`. This method currently manufactures a simple `<img>` with a remote URL; it must be rewritten to call into ElementScreenshotRenderer instead and pass along the fpss data and rect metadata.  \n3. ElementScreenshotRenderer (in element-screenshot-renderer.js) contains the logic to crop and zoom the full-page screenshot around the element\u2019s rect and produce both the small preview and the lightbox. Its `render()` method is the heart of the thumbnail generation and should be wired up by DetailsRenderer.  \n4. FullPageScreenshot (in gatherers/full-page-screenshot.js) and specifically its `_takeScreenshot()` method produce the `data:image/jpeg;base64,\u2026` URI of the entire page. That fpss artifact must be carried through into the audit details so the renderer has the source image to crop, instead of hot-linking the original image URL.",
+        "bug_scenario": "The current \u201cImage elements do not have explicit width and height\" audit table is rendering each failing `<img>` by hot-linking the site\u2019s original `src` URL into a small `<img>` tag. This leaks remote requests, breaks CSP/mixed-content, and defeats the goal of an offline/self-contained Lighthouse report. Instead, the report should use the full-page screenshot (fpss) collected by the FullPageScreenshot gatherer, crop out each failing image\u2019s bounding rect, resize it, and embed it as a `data:image/...` URI."
+    }
+}

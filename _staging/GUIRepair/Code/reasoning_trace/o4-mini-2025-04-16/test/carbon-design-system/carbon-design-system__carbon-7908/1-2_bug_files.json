@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/react/src/components/ListBox/ListBoxSelection.js",
+            "packages/react/src/components/MultiSelect/MultiSelect.js",
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js",
+            "packages/react/src/components/Tag/Tag.js"
+        ],
+        "explanation": "All of these files participate in rendering the MultiSelect\u2019s outer field and its interactive children:\n\u2022 ListBoxField.js is the component that renders the selection container as a <button> (with role=\"button\"). \n\u2022 ListBoxSelection.js drives how each selected item is turned into an interactive pill by wrapping the Tag component. \n\u2022 MultiSelect.js (and FilterableMultiSelect.js) instantiate ListBoxField/ListBoxSelection to manage the selected items and the clear\u2010selection UI. \n\u2022 Tag.js (the \u201cfilter\u201d tag variant) renders its own <button> (or role=\u201cbutton\u201d) for each pill\u2019s close icon. \nTogether, this nesting of interactive containers leads to a <button> element containing other interactive descendants, which directly causes the reported accessibility violation and must be refactored (for example, by not using a <button> for the parent ListBoxField in multi\u2010select mode or by rendering selection pills with non-<button> wrappers).",
+        "bug_scenario": "When one or more items are selected in the MultiSelect dropdown, the component renders the entire selection\u2010display area using an interactive container (a \u201cbutton\u201d element via ListBoxField). Inside of that container it then injects the selected\u2013item pills (ListBoxSelection) which themselves are interactive (they use Tag filter variant that renders its own <button> or role=\u201cbutton\u201d). In effect you end up with a nested button (or a button with interactive descendants), which both a) produces accessibility errors (screen readers/keyboard users see confusing nested controls) and b) violates the HTML5 spec requirement that \u201cthere must be no interactive content descendant\u201d inside a <button>. The two screenshots in the bug report highlight the nested controls (a button with inner role=button/filter tags) and the visual pills in the UI."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/react/src/components/ListBox/ListBoxSelection.js",
+            "packages/react/src/components/MultiSelect/MultiSelect.js"
+        ],
+        "explanation": "\u2022 ListBoxField.js: Renders the outer wrapper of the dropdown as a native <button type=\"button\">. Changing this to a non-button element (e.g. <div role=\"button\">) or conditionally dropping \u2018type=\"button\"\u2019 for the multiselect prevents nested <button>s.\n\n\u2022 ListBoxSelection.js: Inside the list-box field the selected-item tags are rendered via <button> (the Tag\u2019s remove control). That inner <button> is the interactive descendant of the ListBoxField\u2019s <button>.\n\n\u2022 MultiSelect.js: References ListBoxField/ListBoxSelection via the ListBox API; adjustments here (or in the FilterableMultiSelect wrapper) ensure that for the multiselect variant the outer container is not a <button> when tags are present.\n\nBy updating ListBoxField.js (and, as needed, the MultiSelect wrapper) to use a non-button container for the field, or switching the tag-remove control to a non-<button> element, we eliminate the nested interactive content violation.",
+        "bug_scenario": "When one or more items are selected in the Carbon MultiSelect, the control renders its root list-box field as a <button> and each selected item as a tag with its own remove <button>. This results in a <button> containing interactive descendants (other <button>s), which violates the W3C spec \u201cthere must be no interactive content descendant\u201d and creates accessibility errors."
+    }
+}

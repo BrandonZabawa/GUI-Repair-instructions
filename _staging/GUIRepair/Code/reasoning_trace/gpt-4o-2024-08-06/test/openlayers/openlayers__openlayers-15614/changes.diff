@@ -1,0 +1,58 @@
+diff --git a/src/ol/renderer/canvas/VectorLayer.js b/src/ol/renderer/canvas/VectorLayer.js
+index 169bf87786..8d73f2ab95 100644
+--- a/src/ol/renderer/canvas/VectorLayer.js
++++ b/src/ol/renderer/canvas/VectorLayer.js
+@@ -223,30 +223,30 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+     } while (++world < endWorld);
+   }
+ 
+-  setupCompositionContext_() {
+-    if (this.opacity_ !== 1) {
+-      const compositionContext = createCanvasContext2D(
+-        this.context.canvas.width,
+-        this.context.canvas.height,
+-        canvasPool,
+-      );
+-      this.compositionContext_ = compositionContext;
+-    } else {
+-      this.compositionContext_ = this.context;
+-    }
+-  }
++setupCompositionContext_() {
++if (this.opacity_ !== 1 || this.getLayer().getDeclutter()) {
++const compositionContext = createCanvasContext2D(
++this.context.canvas.width,
++this.context.canvas.height,
++canvasPool,
++);
++this.compositionContext_ = compositionContext;
++} else {
++this.compositionContext_ = this.context;
++}
++}
+ 
+-  releaseCompositionContext_() {
+-    if (this.opacity_ !== 1) {
+-      const alpha = this.context.globalAlpha;
+-      this.context.globalAlpha = this.opacity_;
+-      this.context.drawImage(this.compositionContext_.canvas, 0, 0);
+-      this.context.globalAlpha = alpha;
+-      releaseCanvas(this.compositionContext_);
+-      canvasPool.push(this.compositionContext_.canvas);
+-      this.compositionContext_ = null;
+-    }
+-  }
++releaseCompositionContext_() {
++if (this.opacity_ !== 1 || this.getLayer().getDeclutter()) {
++const alpha = this.context.globalAlpha;
++this.context.globalAlpha = this.opacity_;
++this.context.drawImage(this.compositionContext_.canvas, 0, 0);
++this.context.globalAlpha = alpha;
++releaseCanvas(this.compositionContext_);
++canvasPool.push(this.compositionContext_.canvas);
++this.compositionContext_ = null;
++}
++}
+ 
+   /**
+    * Render declutter items for this layer

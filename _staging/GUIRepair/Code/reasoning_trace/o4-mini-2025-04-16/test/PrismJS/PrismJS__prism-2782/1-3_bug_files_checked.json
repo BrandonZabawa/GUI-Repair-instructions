@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-basic.js",
+            "components/prism-basic.min.js",
+            "components/prism-vbnet.js",
+            "components/prism-vbnet.min.js"
+        ],
+        "explanation": "Both the core BASIC highlighter (prism-basic.js/.min.js) and the VB.NET extension (prism-vbnet.js/.min.js) rely on a regular-expression that defines which characters are allowed inside a quoted string. Currently that pattern does not include the '@' character, so any string containing '@' won\u2019t match and the opening quote is lost. To fix the bug, the string-matching regex in prism-basic.js (and its minified counterpart) must be updated to include '@', and the same change should be applied in prism-vbnet.js (and its minified file) if it overrides or extends the BASIC string pattern for VB.NET.",
+        "bug_scenario": "In VB.NET code blocks, string literals that contain the '@' character (for example \"Select * from test Where Code=@Code\") are not being picked up as strings by the Prism highlighter. As a result the opening quote isn\u2019t recognized and the rest of the line is highlighted incorrectly. Strings without '@' (e.g. \"Select * from test Where Code=Code\") still highlight correctly."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-basic.js",
+            "components/prism-basic.min.js",
+            "components/prism-vbnet.js",
+            "components/prism-vbnet.min.js"
+        ],
+        "explanation": "prism-basic.js defines the core BASIC string-matching regex that VB.NET ends up inheriting (or building on), but its character class doesn\u2019t permit the \u201c@\u201d character, so any VB.NET string containing @ is not recognized properly. prism-vbnet.js registers the VB.NET language and either inherits that broken pattern or overrides it without adding @. To fix the bug you must update the string pattern in prism-basic.js (and rebuild its .min.js) or explicitly override it in prism-vbnet.js (and rebuild its .min.js) so that \u2018@\u2019 is allowed inside quoted strings.",
+        "bug_scenario": "In the VB.NET grammar, any string literal that contains an \u201c@\u201d symbol in its text isn\u2019t being recognized as a string. On the test page you can see that:\n\n  bob = new SqlCommand(\"Select * from test Where Code=@Code\");\n\nbreaks the highlighting (the opening quote is not picked up), while a similar string without \u201c@\u201d works. Under the hood VB.NET\u2019s grammar either inherits or re-defines a string pattern that doesn\u2019t allow the \u201c@\u201d character, so the regex for matching double-quoted strings fails as soon as it sees \u201c@.\u201d"
+    }
+}

@@ -1,0 +1,104 @@
+diff --git a/packages/react/src/components/Dropdown/Dropdown.js b/packages/react/src/components/Dropdown/Dropdown.js
+index c56c6bfc..47cc0846 100644
+--- a/packages/react/src/components/Dropdown/Dropdown.js
++++ b/packages/react/src/components/Dropdown/Dropdown.js
+@@ -5,7 +5,7 @@
+  * LICENSE file in the root directory of this source tree.
+  */
+ 
+-import React from 'react';
++import React, { useEffect } from 'react';
+ import { useSelect } from 'downshift';
+ import { settings } from 'carbon-components';
+ import cx from 'classnames';
+@@ -42,6 +42,7 @@ const Dropdown = React.forwardRef(function Dropdown(
+     type,
+     size,
+     onChange,
++    onMenuChange,
+     id,
+     titleText,
+     helperText,
+@@ -81,6 +82,13 @@ const Dropdown = React.forwardRef(function Dropdown(
+     highlightedIndex,
+     selectedItem,
+   } = useSelect(selectProps);
++
++  // watch menu open/close and notify consumer
++  useEffect(() => {
++    if (onMenuChange) {
++      onMenuChange({ isOpen });
++    }
++  }, [isOpen, onMenuChange]);
+   const inline = type === 'inline';
+   const showWarning = !invalid && warn;
+ 
+@@ -300,6 +308,9 @@ Dropdown.propTypes = {
+    */
+   onChange: PropTypes.func,
+ 
++  /** Callback invoked when the menu opens or closes */
++  onMenuChange: PropTypes.func,
++
+   /**
+    * In the case you want to control the dropdown selection entirely.
+    */
+@@ -346,6 +357,11 @@ Dropdown.defaultProps = {
+   titleText: '',
+   helperText: '',
+   direction: 'bottom',
++
++  /**
++   * Callback when the menu opens or closes.
++   */
++  onMenuChange: () => {},
+ };
+ 
+ export default Dropdown;
+diff --git a/packages/react/src/components/MultiSelect/MultiSelect.js b/packages/react/src/components/MultiSelect/MultiSelect.js
+index ea39860f..846fd6d0 100644
+--- a/packages/react/src/components/MultiSelect/MultiSelect.js
++++ b/packages/react/src/components/MultiSelect/MultiSelect.js
+@@ -60,6 +60,7 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+     open,
+     selectionFeedback,
+     onChange,
++    onMenuChange,
+     direction,
+   },
+   ref
+@@ -171,10 +172,12 @@ const MultiSelect = React.forwardRef(function MultiSelect(
+       case MenuKeyDownEscape:
+         setIsOpen(false);
+         setHighlightedIndex(changes.highlightedIndex);
++        onMenuChange({ isOpen: false });
+         break;
+       case ToggleButtonClick:
+         setIsOpen(changes.isOpen || false);
+         setHighlightedIndex(changes.highlightedIndex);
++        onMenuChange({ isOpen: changes.isOpen || false });
+         break;
+     }
+   }
+@@ -342,6 +345,9 @@ MultiSelect.propTypes = {
+    */
+   onChange: PropTypes.func,
+ 
++  /** Callback invoked when the menu opens or closes */
++  onMenuChange: PropTypes.func,
++
+   /**
+    * Initialize the component with an open(`true`)/closed(`false`) menu.
+    */
+@@ -405,6 +411,11 @@ MultiSelect.defaultProps = {
+   open: false,
+   selectionFeedback: 'top-after-reopen',
+   direction: 'bottom',
++
++  /**
++   * Called whenever the open/closed state of the menu changes.
++   */
++  onMenuChange: noop,
+ };
+ 
+ export default MultiSelect;

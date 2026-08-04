@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/CodeSnippet/CodeSnippet.js",
+            "packages/react/src/components/CopyButton/CopyButton.js"
+        ],
+        "explanation": "\u2022 CodeSnippet.js: in React this is where the inline style for single-mode (`position: 'absolute', top: '1rem', right: '1rem'`) is applied to the CopyButton\u2014if that style is being overridden it points at a CSS ordering issue.\n\u2022 CopyButton.js: defines the `.bx--copy-btn` class, which the stylesheet for the copy button uses to set `position: relative`\u2014this must be adjusted (or the selector scoped) so it doesn\u2019t override the CodeSnippet rule.\n\u2022 code-snippet.scss: contains the rules that position the copy button absolutely within the snippet.  It currently emits a generic `.bx--copy-btn` rule (imported first) that is being trumped by the later copy-button stylesheet.\n\u2022 copy-button.scss: defines the global `.bx--copy-btn { position: relative; }` rule, imported after code-snippet.scss, thus negating the absolute positioning.  The fix will require changing one or both of these SCSS files (or their import order) so the snippet\u2019s absolute positioning wins.",
+        "bug_scenario": "In \u201csingle\u201d mode the CodeSnippet\u2019s copy button, which should sit at the top-right corner of the snippet, is instead pushed down into the snippet\u2019s content area (see screenshot).  The underlying problem is that the `.bx--copy-btn` rule from the CopyButton stylesheet (imported after the CodeSnippet stylesheet) is resetting the button\u2019s `position` back to `relative`, so the absolute positioning applied by the CodeSnippet styles no longer takes effect."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/CodeSnippet/CodeSnippet.js",
+            "packages/react/src/components/CopyButton/CopyButton.js"
+        ],
+        "explanation": "\u2022 copy-button.scss: This is where the .bx--copy-btn class now defines position: relative. That is the root cause \u2013 the button\u2019s base stylesheet is forcing relative positioning, which defeats the absolute layout that CodeSnippet expects.\n\n\u2022 code-snippet.scss: The CodeSnippet styles for the single\u2010mode wrapper (.bx--snippet--single .bx--snippet-button) assume that nothing is overriding the button\u2019s positioning rules. We may need to add or strengthen a rule here (for example setting .bx--snippet-button { position: absolute !important } or otherwise remove any accidental overrides).\n\n\u2022 CodeSnippet.js (React): This is the component that injects the inline style ({ position: 'absolute', top: '1rem', right: '1rem' }) onto the CopyButton in single mode. It must remain correct (or be updated to include !important, a wrapper with position: relative, etc.) to re-establish the intended layout.\n\n\u2022 CopyButton.js (React): This component is the conduit for the style prop down to the <button> element. We need to verify that it correctly spreads the style prop (and possibly reinforce it) so that the inline absolute positioning actually makes it through to the rendered element.",
+        "bug_scenario": "In \u201csingle\u201d mode the little copy\u2010to\u2010clipboard button inside a CodeSnippet is no longer floating in the top-right corner of the snippet. Instead it sits inline (or near the left edge) because the general copy-button stylesheet (.bx--copy-btn) now applies position: relative by default, which overrides the absolute positioning that CodeSnippet was relying on. Visually the button has slid out of its intended corner and is rendered inside the code block rather than overlaid on it."
+    }
+}

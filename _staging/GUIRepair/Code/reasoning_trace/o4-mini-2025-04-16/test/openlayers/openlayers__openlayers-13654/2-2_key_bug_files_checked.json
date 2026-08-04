@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/GeoTIFF.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js \u2013 This defines the WebGLTileLayer class and its options but does not surface or apply any source projection setting. The layer constructor and its renderer factory ignore the tile source\u2019s projection, so tiles never get reprojected for display.\n2. src/ol/renderer/webgl/TileLayer.js \u2013 The WebGLTileLayerRenderer imports ReprojTile (the reprojection logic) but never instantiates or uses it. All tile requests assume the view and source share a projection, so reprojection paths are never taken, and UTM-projected tiles aren\u2019t transformed into the view CRS.\n3. src/ol/source/GeoTIFF.js \u2013 Although the example shows passing a `projection: cogProj` option, the GeoTIFFSource constructor does not define or honor a `projection` property in its Options type. As a result, the source remains unaware of its true CRS, preventing any reprojection support from downstream renderers.",
+        "bug_scenario": "The user is attempting to display a Cloud-Optimized GeoTIFF (COG) in UTM zone 36N (EPSG:32636) on a map whose view projection is EPSG:4326 (or EPSG:3857). They have defined the EPSG:32636 projection via proj4 and registered it, created an ol.source.GeoTIFF for the COG, and added it as a WebGLTile layer beneath an OSM base layer. The OSM layer renders and the map view can fit the COG\u2019s extent, but the COG layer itself remains blank. This indicates that the WebGLTile layer is not reprojecting the source tiles from EPSG:32636 into the view projection."
+    }
+}

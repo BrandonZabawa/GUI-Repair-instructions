@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/properties.js"
+        ],
+        "explanation": "The only place in the repo that defines the syntax and escape-sequence handling for .properties files is src/languages/properties.js. It contains the rules for interpreting a trailing '\\' as a line continuation and for recognizing escape sequences. Because the misbehavior occurs when the parser confuses an escaped backslash at end-of-line with a continuation marker, the fix must be made in the grammar definitions in this file.",
+        "bug_scenario": "In a .properties file, values can span lines if the line ends with a single backslash (\u201c\\\u201d). However, when the very last character of a value is itself an escaped backslash (i.e. \u201c\\\\\u201d in the source), the grammar in properties.js still treats that final backslash as a line-continuation marker. The result is that the trailing backslash is swallowed, the next line\u2019s text is merged into the value, and both the value and following lines are mis-highlighted."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/properties.js"
+        ],
+        "explanation": "The only place where the Properties mode is defined is in `src/languages/properties.js`. That file contains the logic (regex and mode definitions) that recognize backslash escapes and line continuations. Because it does not properly distinguish a single backslash at end-of-line (true continuation) from an escaped backslash (`\\\\`), it always assumes continuation. Fixing this file so it only treats an unescaped backslash as a continuation marker will resolve the issue.",
+        "bug_scenario": "In the Properties highlighter, a backslash at end of a line is always treated as a line-continuation marker. When the intended value really ends in an escaped backslash (`\\\\`), the parser still thinks there\u2019s a continuation and so it swallows the next line (merging the next property into the previous value). This shows up when highlighting something like:\n\na = a1\\\n    a2\nb = b\\\\\nc = c\n\nInstead of treating `b = b\\\\` as a complete value of `b\\\\`, it treats the trailing `\\\\` as `\\` + continuation and merges `c = c` into `b`\u2019s value."
+    }
+}

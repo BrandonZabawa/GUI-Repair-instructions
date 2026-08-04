@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/BaseVector.js//BaseVectorLayer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/BaseVector.js//renderDeclutter",
+            "src/ol/renderer/canvas/VectorLayer.js//renderDeclutter",
+            "src/ol/renderer/canvas/VectorLayer.js//setupCompositionContext_",
+            "src/ol/renderer/canvas/VectorLayer.js//releaseCompositionContext_"
+        ],
+        "explanation": "The disappearance only occurs when decluttering is active because BaseVectorLayer.renderDeclutter delegates drawing to the renderer\u2019s `renderDeclutter` path instead of the normal `renderFrame` call. In the normal path, CanvasLayerRenderer.setupCompositionContext_ / releaseCompositionContext_ wrap drawing and apply the layer\u2019s current opacity to the canvas via `globalAlpha`. However, CanvasVectorLayerRenderer.renderDeclutter never invokes those composition-context methods, so when setOpacity changes the layer opacity, the declutter pass does not pick up or reapply the new alpha, effectively clearing or skipping the drawing of features. Fixing this requires integrating the composition-context setup / release (and thus applying `layerState.opacity`) into the declutter rendering path.",
+        "bug_scenario": "When a VectorLayer is created with the `declutter` option enabled and its opacity is later changed via `setOpacity()`, the entire layer vanishes from view instead of simply fading to the new opacity. In the example, enabling `declutter: true` on the vector\u2010points layer and then calling `vectorPoints.setOpacity(0.5)` after 2 seconds causes all point features to disappear."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/BaseVector.js//BaseVectorLayer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/BaseVector.js//getDeclutter",
+            "src/ol/layer/BaseVector.js//renderDeclutter",
+            "src/ol/renderer/canvas/VectorLayer.js//renderDeclutter",
+            "src/ol/renderer/canvas/VectorLayer.js//setupCompositionContext_",
+            "src/ol/renderer/canvas/VectorLayer.js//releaseCompositionContext_",
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame"
+        ],
+        "explanation": "The disappearance only occurs when declutter\u2009=\u2009true, so the problem lives where decluttering is handled. BaseVectorLayer stores the declutter group (getDeclutter) and invokes renderDeclutter on its renderer whenever the layer changes (e.g. after setOpacity). CanvasVectorLayerRenderer carries out the actual drawing of declutterable items in a separate pass, using setupCompositionContext_ and releaseCompositionContext_ to isolate them into their own canvas group. Because opacity changes trigger a full re-render (renderFrame), the offscreen composition steps for declutter are never composited back into the map canvas. Fixing this requires adjusting renderDeclutter (and its composition setup/release) so that, when layerOpacity\u22601, the declutter canvas is correctly merged into the output rather than discarded.",
+        "bug_scenario": "In the vector-labels example with decluttering enabled, point labels render normally at first but as soon as setOpacity(0.5) is called on the VectorLayer, the entire layer (all labels and symbols) vanishes. Only layers without declutter\u2009=\u2009true keep showing their features when opacity is changed."
+    }
+}

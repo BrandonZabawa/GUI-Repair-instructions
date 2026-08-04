@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-ruby.js",
+            "components/prism-ruby.min.js"
+        ],
+        "explanation": "Both the unminified and minified Ruby language definition files are responsible for tokenizing Ruby source, including regex literals and interpolation. The bug stems from the regex pattern in prism-ruby.js that matches `/\u2026/` literals without embedding the interpolation sub-grammar (`#{\u2026}`). The `%r{\u2026}` pattern is defined separately (and does include interpolation), but the slash-delimited regex rule doesn\u2019t pull in the interpolation tokens. Fixing the issue requires updating the slash-regex definition in prism-ruby.js so that it uses the same look-around and inside grammar as `%r{\u2026}`, which will also propagate to the minified version.",
+        "bug_scenario": "When highlighting Ruby code with Prism, regex literals written with slashes\u2014e.g. `/foo#{bar}/`\u2014do not recognize and highlight the `#{bar}` interpolation. The same interpolation is correctly highlighted when the `%r{\u2026}` syntax is used. In the test page, the tokens for the interpolation inside `/\u2026/` are not separated out and styled as interpolation."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-ruby.js",
+            "components/prism-ruby.min.js"
+        ],
+        "explanation": "The Ruby language grammar is defined in `prism-ruby.js` (and its minified counterpart). That definition includes patterns for string interpolation and for regex literals, but the slash-delimited regex pattern does not incorporate the interpolation subpattern. As a result, any `#{\u2026}` inside `/\u2026/` is never matched as interpolation. Adjusting the regex literal grammar in these files to include the existing interpolation token will fix the highlighting issue.",
+        "bug_scenario": "When highlighting Ruby code, interpolation inside slash-delimited regex literals (for example `/foo#{bar}/`) is not tokenized as interpolation \u2013 the `#{bar}` remains plain text. By contrast, the alternate `%r{foo#{bar}}` form is correctly highlighted with the interpolation token."
+    }
+}

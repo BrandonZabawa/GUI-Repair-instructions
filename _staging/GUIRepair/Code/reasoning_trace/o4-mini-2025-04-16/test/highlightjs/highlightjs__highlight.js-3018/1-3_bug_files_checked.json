@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/lib/ecmascript.js",
+            "src/languages/javascript.js",
+            "src/languages/typescript.js"
+        ],
+        "explanation": "The shared ECMA-Script helper (src/languages/lib/ecmascript.js) maintains the list of built-in globals and types for JS/TS. BigInt, BigInt64Array and BigUint64Array are currently missing from that list, so the grammar never tags them as built_in. Both the JavaScript (javascript.js) and the TypeScript (typescript.js) language definitions pull in this shared list, so updating ecmascript.js (and ensuring the patches flow through in the JS and TS modules) will restore the correct highlighting.",
+        "bug_scenario": "When highlighting the JS snippet\n\n    let bi = BigInt('1');\n\nthe highlighter does not recognize \u201cBigInt\u201d (nor \u201cBigInt64Array\u201d/\u201cBigUint64Array\u201d) as a built-in type, so it falls back to generic identifier styling. In the expected view, BigInt and the two array types should all appear under the \u201cbuilt_in\u201d token class (in green in the examples)."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/lib/ecmascript.js",
+            "src/languages/javascript.js",
+            "src/languages/typescript.js"
+        ],
+        "explanation": "1. src/languages/lib/ecmascript.js \u2013 This is the core built-in keyword list for ECMAScript. It currently lists Number, String, Boolean, Symbol, Object, Function, etc., but omits BigInt, BigInt64Array, and BigUint64Array. Those identifiers need to be added to the built_in keyword group here.  \n2. src/languages/javascript.js \u2013 This file imports and re-exports the ECMAScript definition, so it must remain in sync with any additions made in lib/ecmascript.js.  \n3. src/languages/typescript.js \u2013 TypeScript mode extends the ECMAScript core keywords, including typed arrays and global objects. It should likewise include the new BigInt-related built-ins so that TS highlighting also picks them up.",
+        "bug_scenario": "When writing JavaScript (ECMAScript) code that uses the BigInt built-in type (for example, let bi = BigInt('1');), highlight.js fails to recognize and highlight \u201cBigInt\u201d (and similarly \u201cBigInt64Array\u201d and \u201cBigUint64Array\u201d) as built-in types. The screenshots show \u201cBigInt\u201d remaining unstyled in the actual output, whereas it should receive the same built-in type styling applied to \u201cNumber\u201d and other globals."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-json.js",
+            "components/prism-json.min.js",
+            "prism.js"
+        ],
+        "explanation": "Prism\u2019s JSON definition currently extends the JavaScript grammar, which brings in C-style comment tokens (the /* \u2026 */ pattern). Because the JSON \u2018string\u2019 token is not marked greedy or ordered to run before the comment tokens, the sequence \u201c/*\u201d in a JSON string triggers the JavaScript comment rule. The fix must remove or override the comment patterns from the JSON grammar (in components/prism-json.js and its minified counterpart) and then rebuild prism.js so the core bundle no longer mis-tokenizes \u201c/*\u201d inside JSON strings.",
+        "bug_scenario": "When Prism highlights JSON (with the language-json class) any occurrence of \u201c/*\u201d inside a JSON string is being interpreted as the start of a C-style comment. In the screenshot you can see a JSON object where the first property\u2019s value is the two-character string \u201c/*\u201d. Instead of treating it as part of a string, Prism\u2019s tokenizer drops into a comment mode and leaves the rest of the JSON un-highlighted."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-json.js",
+            "components/prism-json.min.js"
+        ],
+        "explanation": "The bug stems from the JSON syntax definition in prism-json.js (and its minified counterpart). In that file, Prism inherits the JavaScript comment patterns and does not prevent the comment\u2010start sequence \u201c/*\u201d from matching inside JSON string literals. As a result, the tokenizer treats \u201c/*\u201d inside a string as the beginning of a comment. To fix the issue, the JSON definition (prism-json.js) must be changed to disable or override the comment pattern so that \u201c/*\u201d inside quoted strings is not recognized as a comment delimiter.",
+        "bug_scenario": "When Prism is used to highlight JSON, a JSON string value that contains the characters \u201c/*\u201d (for example, {\"A\": \"/*\", \"B\": \"B\", \"C\": \"C\"}) is tokenized as the start of a comment. Everything after that point is treated as comment text, causing the closing quote and the rest of the JSON to be mis-highlighted. This happens with an HTTP response whose Accept header is \u201c*/*\u201d (so the JSON is highlighted with the JSON grammar) and still occurs in the latest version of Prism."
+    }
+}

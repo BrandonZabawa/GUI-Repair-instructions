@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/reproj/DataTile.js//ReprojDataTile",
+            "src/ol/reproj/Image.js//ReprojImage",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/DataTile.js//ReprojDataTile.reproject_",
+            "src/ol/reproj/Image.js//ReprojImage.reproject_",
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_"
+        ],
+        "explanation": "The bug is rooted in how raster reprojection is handled. The core of this process is done in the 'ReprojDataTile', 'ReprojImage', and 'ReprojTile' classes, each encapsulating the logic for reprojecting raster data, images, or tiles, respectively. Their 'reproject_' methods specifically handle the transformation of raster data from the source to the target projection. The bug report describes that the output always assumes square pixels in the target, which is a logic likely implemented or enforced in these reproject_ methods. These methods compute the width and height (in pixels) of the reprojected image or tile\u2014currently, they may always use the target resolution equally for both axes, resulting in square pixels. To fix the bug, the logic in these methods would need to be changed to allow for non-square (rectangular) projected pixels, so the number of output pixels matches the number of source pixels after reprojection, regardless of whether the projected area is square. Therefore, these classes and functions are the key bug-related elements.",
+        "bug_scenario": "The bug scenario involves reprojection of raster images where the source pixels are not necessarily square in the target projection, but the current implementation always tries to create square pixels in the target image. This leads to pixel misalignment, most notably visible as repeated columns or stretched images, as shown in the bug image. The desired behavior is that the projected (destination) pixels should be stretched or shaped such that the number of pixels in the result matches the number of source pixels, even if they are not perfect squares after reprojection."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/reproj/DataTile.js//ReprojDataTile",
+            "src/ol/reproj/Image.js//ReprojImage",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/DataTile.js//ReprojDataTile.reproject_",
+            "src/ol/reproj/Image.js//ReprojImage.reproject_",
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_"
+        ],
+        "explanation": "The core of the bug is in how pixel geometry is handled during reprojection\u2014specifically, the system assumes square destination pixels regardless of the shape of source pixels in their native projection. The three classes ReprojDataTile, ReprojImage, and ReprojTile are responsible for handling reprojection of data tiles, images, and tiles, respectively. Their reproject_ methods are where the pixel mapping between source and destination occurs. Any fix to ensure correct pixel geometry and alignment when the source pixels are not square must be made in these classes/functions, which currently impose the square pixel assumption. Changing the logic in these reproject_ methods to account for non-square source pixel dimensions and to stretch or compress the output pixels accordingly is necessary to resolve the bug.",
+        "bug_scenario": "The bug scenario involves reprojection of raster images in OpenLayers where the destination pixels are always assumed to be square, even if the source pixels are rectangular in their projection. This leads to misalignment: horizontally, source pixels are duplicated or stretched incorrectly, causing a 5x5 source image to look like a 7x5 image after reprojection. The bug is visible in the provided image, where expected pixel centers (blue circles) do not match the actual placement, especially along the horizontal axis."
+    }
+}

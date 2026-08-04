@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/TooltipIcon/TooltipIcon.js",
+            "packages/components/src/components/tooltip/tooltip--simple.js"
+        ],
+        "explanation": "1. packages/react/src/components/TooltipIcon/TooltipIcon.js: In the React implementation of the icon tooltip, the component only shows the tooltip on focus (onFocus handler) or hover (onMouseEnter) and never hides it on blur or onMouseLeave (except for the Esc key). That means if one icon is focused and you hover a second, both components remain visible. This is the heart of the overlapping tooltip issue for icon-only buttons in React. 2. packages/components/src/components/tooltip/tooltip--simple.js: In the core (non-React) simple tooltip implementation, the focusin handler shows the tooltip and mouseleave only triggers the fade-out for hover. There is no logic to hide a focused tooltip when another trigger is hovered. Although the simple tooltip lives outside React, it follows the same event patterns and will exhibit the same overlapping behavior in non-React contexts. Both of these modules need updating to add a hide (or blur) behavior when a different tooltip is shown (or on mouseleave) or to remove the focus-triggered tooltip entirely for icon-only buttons.",
+        "bug_scenario": "In a toolbar of icon-only buttons, when you click (or keyboard-focus) on one button its tooltip appears (via the focus handler), and then, without moving focus away, you hover a neighboring icon-only button. That hover handler also makes its tooltip visible. Because neither tooltip ever hides itself in response to the other button\u2019s hover or blur, you end up with two tooltips simultaneously visible and overlapping."
+    }
+}

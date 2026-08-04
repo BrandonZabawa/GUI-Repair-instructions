@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/search/Search.jsx//class Search",
+            "src/select/auto-complete.jsx//class AutoComplete"
+        ],
+        "bug_functions": [
+            "src/search/Search.jsx//onPressEnter",
+            "src/search/Search.jsx//onKeyDown",
+            "src/select/auto-complete.jsx//handleTriggerKeyDown",
+            "src/select/auto-complete.jsx//chooseHighlightItem"
+        ],
+        "explanation": "The root of this issue is that pressing Enter on the input immediately calls Search.onSearch (bound via onPressEnter) before the AutoComplete selection logic has a chance to update the input’s state to the highlighted suggestion. In Search.jsx the onPressEnter prop directly invokes Search.onSearch, and Search.onKeyDown is only wired to the button/icon. Meanwhile in auto-complete.jsx the handleTriggerKeyDown and chooseHighlightItem methods correctly intercept Enter to select the highlighted item, but their state update happens asynchronously, so by the time Search.onSearch reads this.state.value it is still the old user-typed text. To fix the bug you need to coordinate these two flows—either delay or re-dispatch onSearch until after chooseHighlightItem has updated state, or move the Enter‐key handling entirely into the AutoComplete class so that the selection is applied before Search.onSearch is called.",
+        "bug_scenario": "In the first screenshot the user types “r” into the Search box and the AutoComplete dropdown appears with “Recent” highlighted. In the second screenshot, when the user presses Enter, instead of selecting “Recent” and using it as the search term, the input remains “r” and onSearch is called with the stale value “r”. The expected behavior is that hitting Enter should choose the highlighted suggestion (“Recent”) and then trigger onSearch with that value."
+    },
+    "2": {
+        "bug_classes": [
+            "src/search/Search.jsx//class Search",
+            "src/select/auto-complete.jsx//class AutoComplete"
+        ],
+        "bug_functions": [
+            "src/search/Search.jsx//render",
+            "src/search/Search.jsx//onKeyDown",
+            "src/search/Search.jsx//onSearch",
+            "src/select/auto-complete.jsx//handleTriggerKeyDown",
+            "src/select/auto-complete.jsx//chooseHighlightItem"
+        ],
+        "explanation": "本次问题的核心在于 Enter 键的处理顺序。Search.jsx 中将 AutoComplete 的 onPressEnter 直接绑定到 Search.onSearch，回车时立即触发搜索逻辑，绕过了 AutoComplete 内部对高亮项的选择流程；而 AutoComplete.handleTriggerKeyDown 在用户按下 Enter 时先执行 chooseHighlightItem 但并不会再向上冒泡到 Search 的 onKeyDown，从而 Search.state.value 一直保留原始输入。要修复此问题，需要在 Search.jsx 的 render 里把 AutoComplete 的 onPressEnter 改为 onKeyDown，并且保证 Search.onKeyDown 能接收到经过 AutoComplete.handleTriggerKeyDown 选中高亮项后的新值；或者在 AutoComplete.handleTriggerKeyDown 的 Enter 支持链路中，执行完 chooseHighlightItem 后调用一次绑定的 onPressEnter，从而先选中联想词再触发 Search.onSearch，从而让搜索参数与高亮词保持一致。",
+        "bug_scenario": "在 Search 组件中，当输入“r”触发联想列表并高亮第一个选项“Recent”后，直接按回车，控制台打印的却是输入框当前的值“r”，而不是高亮的联想词“Recent”，导致搜索词和用户意图不一致。"
+    }
+}

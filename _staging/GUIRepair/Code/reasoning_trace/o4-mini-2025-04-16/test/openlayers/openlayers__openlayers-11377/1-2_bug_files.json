@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/MapBrowserEventHandler.js",
+            "src/ol/PluggableMap.js",
+            "src/ol/render/canvas/hitdetect.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "\n1. src/ol/MapBrowserEventHandler.js \u2013 this module was updated in v6.4.0 to throttle pointer events via requestAnimationFrame and to perform additional checks before firing pointermove. The new logic introduces extra per\u2010frame overhead.\n\n2. src/ol/PluggableMap.js \u2013 the public forEachFeatureAtPixel API used by typical pointermove handlers now delegates deeper into the renderer on each event, and changes here can multiply the cost of every hit test.\n\n3. src/ol/render/canvas/hitdetect.js \u2013 this file implements the low\u2010level hit\u2010detection used by canvas vector layers. Any changes here (for example to geometry intersection tests or caching) will directly affect the speed of feature lookup during pointermove.\n\n4. src/ol/renderer/canvas/VectorLayer.js \u2013 this renderer invokes the hitdetect routines and manages style function calls. Since our demo uses non\u2010cached styles, every pointermove triggers fresh style computations and image lookups here, making the slowdown more pronounced after the v6.4.0 restructuring.",
+        "bug_scenario": "In our app upgrading from OL v6.3.1 to v6.4.0 causes \u201cpointermove\u201d\u2010driven interactions (like cursor changes on feature hover, pan, zoom, etc.) to become noticeably sluggish when many styled vector features are on the map. In the supplied GIFs you can see that moving the cursor over 1000 circle features fires a pointermove listener which in v6.3.1 updates the cursor almost instantly, but in v6.4.0 the same listener lags significantly behind the mouse. The regression is due to internal changes to how pointermove events are throttled and how hit\u2013detection and style lookups are performed on each move."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/MapBrowserEventHandler.js",
+            "src/ol/interaction/Pointer.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/style/IconImageCache.js"
+        ],
+        "explanation": "\u2022 MapBrowserEventHandler.js sets up and dispatches all low\u2010level pointer events.  In 6.4.0 its pointermove path now walks through every feature on each move, triggering hit detection and style evaluation.  \n\u2022 interaction/Pointer.js drives the high\u2010level pointermove callback logic \u2013 it now ends up calling into style and hit\u2010testing routines far more often than before.  \n\u2022 layer/Vector.js contains the vector hit\u2010testing code that loops over every feature and invokes the style function on each one; with uncached styles it recomputes symbolizers repeatedly.  \n\u2022 style/IconImageCache.js used to cache icon images effectively.  A change in 6.4.0 prevents reuse of previously built images for dynamic styles, forcing repeated image construction on every move.  \nTogether these changes make pointermove handling much heavier and explain the observed slowdown in 6.4.0 versus 6.3.1.",
+        "bug_scenario": "In 6.4.0 the handling of \u201cpointermove\u201d has become dramatically slower when you have many (e.g. 1000) features with uncached styles.  On every mouse\u2010move the library now reconstructs or re\u2010evaluates styles, re\u2010runs hit detection over all of the vector features, and recreates icon images instead of hitting previously built caches.  The net result is that moving the cursor (or panning/zooming) feels sluggish compared to 6.3.1, where style evaluation and icon image lookup were cached more aggressively."
+    }
+}

@@ -1,0 +1,37 @@
+diff --git a/src/core/handlers/embed.ts b/src/core/handlers/embed.ts
+index e417d973d..09b8cdf96 100644
+--- a/src/core/handlers/embed.ts
++++ b/src/core/handlers/embed.ts
+@@ -69,6 +69,32 @@ const kHandlers: EmbedHandler[] = [
+       }
+     },
+   },
++  {
++    name: "Local File Embed",
++    async handle(
++      filename: string,
++      params: Record<string, unknown>,
++      handlerContext: LanguageCellHandlerContext,
++    ) {
++      // Read the local file from disk
++      // handlerContext.resolvePath should turn relative names into a full path
++      const path = handlerContext.resolvePath(filename);
++      const text = await Deno.readTextFile(path);
++
++      // Optional language for the code fence
++      const lang = (params.lang as string) || "";
++      const fenceStart = "```" + lang + "\n";
++      const fenceEnd = "\n```";
++
++      return {
++        handled: true,
++        // Emit a single fenced‐code fragment containing the file contents
++        markdownFragments: [fenceStart + text + fenceEnd],
++        // Allow resource‐tracking (e.g. for watching)
++        resources: [path],
++      };
++    },
++  },
+ ];
+ 
+ const embedHandler: LanguageHandler = {

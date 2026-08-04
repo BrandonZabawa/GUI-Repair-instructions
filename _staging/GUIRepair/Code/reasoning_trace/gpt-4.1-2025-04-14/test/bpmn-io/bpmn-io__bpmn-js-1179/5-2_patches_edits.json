@@ -1,0 +1,80 @@
+{
+    "1/1": {
+        "lib/features/modeling/behavior/DropOnFlowBehavior.js": [
+            {
+                "SEARCH": [
+                    "// if last waypointBefore is inside shape's bounds, ignore docking point",
+                    "if (!isPointInsideBBox(shape, waypointsBefore[waypointsBefore.length-1])) {",
+                    "waypointsBefore.push(copy(dockingPoint));",
+                    "}",
+                    "",
+                    "// if first waypointAfter is inside shape's bounds, ignore docking point",
+                    "if (!isPointInsideBBox(shape, waypointsAfter[0])) {",
+                    "waypointsAfter.unshift(copy(dockingPoint));",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "      // if last waypointBefore is inside shape's bounds, ignore docking point",
+                    "      if (!isPointInsideBBox(shape, waypointsBefore[waypointsBefore.length-1])) {",
+                    "        waypointsBefore.push(copy(dockingPoint));",
+                    "      }",
+                    "",
+                    "      // if first waypointAfter is inside shape's bounds, ignore docking point",
+                    "      if (!isPointInsideBBox(shape, waypointsAfter[0])) {",
+                    "        waypointsAfter.unshift(copy(dockingPoint));",
+                    "      }",
+                    "",
+                    "      // Ensure the docking point is stored for later use",
+                    "      // This will be used as the docking for the new connection to the shape",
+                    "      shape._dropOnFlowDocking = copy(dockingPoint);",
+                    "    }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (bpmnRules.canConnect(source, shape, targetFlow)) {",
+                    "",
+                    "// reconnect source -> inserted shape",
+                    "modeling.reconnectEnd(targetFlow, shape, waypointsBefore || position);",
+                    "",
+                    "incomingConnection = targetFlow;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    if (bpmnRules.canConnect(source, shape, targetFlow)) {",
+                    "",
+                    "      // reconnect source -> inserted shape",
+                    "      // Use the calculated docking point if available",
+                    "      var docking = shape._dropOnFlowDocking || (waypointsBefore ? waypointsBefore[waypointsBefore.length - 1] : position);",
+                    "      modeling.reconnectEnd(targetFlow, shape, waypointsBefore || position, docking);",
+                    "",
+                    "      incomingConnection = targetFlow;",
+                    "    }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (!incomingConnection) {",
+                    "",
+                    "// reconnect inserted shape -> end",
+                    "modeling.reconnectStart(targetFlow, shape, waypointsAfter || position);",
+                    "",
+                    "outgoingConnection = targetFlow;",
+                    "} else {"
+                ],
+                "REPLACE": [
+                    "      if (!incomingConnection) {",
+                    "",
+                    "        // reconnect inserted shape -> end",
+                    "        // Use the calculated docking point if available",
+                    "        var docking = shape._dropOnFlowDocking || (waypointsAfter ? waypointsAfter[0] : position);",
+                    "        modeling.reconnectStart(targetFlow, shape, waypointsAfter || position, docking);",
+                    "",
+                    "        outgoingConnection = targetFlow;",
+                    "      } else {"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Search/Search.js",
+            "packages/react/src/components/TextInput/TextInput.js",
+            "packages/styles/scss/components/text-input/_text-input.scss"
+        ],
+        "explanation": "\u2022 Search.js is the React wrapper for the Search component \u2013 it forwards a style prop (including height) directly to the outer container/input, but it doesn\u2019t guard against overly small heights. \n\u2022 TextInput.js is the underlying input implementation used by Search \u2013 it defines how heights, padding, and line-heights should be applied. It should either ignore inline style.height or enforce a minimum. \n\u2022 _text-input.scss is where the default height and min-height for .bx--text-input is defined in the CSS. Because there is currently no min-height rule, a consumer\u2019s inline height of 16px is honored. Adding a CSS min-height (e.g. 2.5rem/40px) or updating the React code to clamp small heights will prevent the input from shrinking below the design spec.",
+        "bug_scenario": "When a consumer uses the Carbon React Search component inside a Form and explicitly sets its inline style.height to a small value (e.g. 16px), the input shrinks to that tiny height (16px) instead of retaining the expected 40\u201348px minimum height. In the latest release there is no CSS-based min-height or JavaScript-side clamp on the Search (or underlying TextInput) component, so inline style.height wins and the field becomes too short, chopping off padding, icon alignment, and placeholder text vertically."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Search/Search.js",
+            "packages/react/src/components/TextInput/TextInput.js"
+        ],
+        "explanation": "Search.js is the React entry point for the Search component\u2014it composes TextInput and spreads any style props onto the outer wrapper, which causes an explicit height override on the wrong element. TextInput.js is responsible for rendering the <input> with the correct default heights, padding, and line-height; it also accepts a style prop. Because Search forwards style.height to the wrapper instead of to the input (and there\u2019s no min-height enforcement), giving it a small height collapses the whole control. Both files must be updated so height overrides are handled correctly (e.g. ignored, clamped to a minimum, or applied only to the inner <input>).",
+        "bug_scenario": "When placing the Carbon Search component into a Form (or passing an inline style height), the rendered field collapses down to ~16 px tall instead of the expected 40 px or 48 px. In the screenshot you can see the input bar and search icon squeezed into a tiny row. We reproduced it by explicitly setting style={{height: '16px'}} on <Search> and seeing the entire wrapper and inner input shrink. This indicates that the Search component (and its underlying TextInput) is incorrectly applying or propagating any height style directly to the layout container rather than enforcing the design\u2010system default min-height or applying it to the actual input element."
+    }
+}

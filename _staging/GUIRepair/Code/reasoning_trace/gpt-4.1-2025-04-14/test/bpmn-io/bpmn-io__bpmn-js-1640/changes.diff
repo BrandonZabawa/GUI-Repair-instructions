@@ -1,0 +1,38 @@
+diff --git a/lib/features/replace/BpmnReplace.js b/lib/features/replace/BpmnReplace.js
+index 612222a6..670f7154 100644
+--- a/lib/features/replace/BpmnReplace.js
++++ b/lib/features/replace/BpmnReplace.js
+@@ -176,6 +176,33 @@ export default function BpmnReplace(
+       properties
+     );
+ 
++    // Special handling for loopCharacteristics: copy properties if type changes (parallel <-> sequential)
++    if (
++      has(oldBusinessObject, 'loopCharacteristics') &&
++      has(newBusinessObject, 'loopCharacteristics') &&
++      oldBusinessObject.loopCharacteristics &&
++      newBusinessObject.loopCharacteristics &&
++      oldBusinessObject.loopCharacteristics.$type !== newBusinessObject.loopCharacteristics.$type
++    ) {
++      // Copy relevant properties from old to new loopCharacteristics
++      var oldLoop = oldBusinessObject.loopCharacteristics;
++      var newLoop = newBusinessObject.loopCharacteristics;
++      var loopProps = [
++        'loopCardinality',
++        'loopDataInputRef',
++        'loopDataOutputRef',
++        'inputDataItem',
++        'outputDataItem',
++        'completionCondition',
++        'elementVariable'
++      ];
++      loopProps.forEach(function(prop) {
++        if (oldLoop[prop] !== undefined) {
++          newLoop[prop] = oldLoop[prop];
++        }
++      });
++    }
++
+     // initialize custom BPMN extensions
+     if (target.eventDefinitionType) {
+ 

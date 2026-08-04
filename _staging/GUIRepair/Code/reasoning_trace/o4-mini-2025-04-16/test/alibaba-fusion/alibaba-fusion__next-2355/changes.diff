@@ -1,0 +1,32 @@
+diff --git a/src/table/util.js b/src/table/util.js
+index 47ed8a116..8b79e1b52 100644
+--- a/src/table/util.js
++++ b/src/table/util.js
+@@ -22,6 +22,27 @@ export const fetchDataByPath = (object, path) => {
+         return false;
+     }
+     path = path.toString();
++
++    // ───────────────────────────────────────────────────────────────────────────────
++    // New: support bracket-array notation, e.g. "['range','start','end']"
++    if (path.startsWith('[') && path.endsWith(']')) {
++        // strip outer [ ]
++        const inner   = path.slice(1, -1);
++        // split on commas, trim and strip quotes
++        const parts   = inner.split(',').map(p => p.trim().replace(/^['"]|['"]$/g, ''));
++        let result    = object;
++        for (let i = 0; i < parts.length; i++) {
++            // bail out if any intermediate is null/undefined
++            if (result == null) {
++                result = undefined;
++                break;
++            }
++            result = result[parts[i]];
++        }
++        return result;
++    }
++    // ───────────────────────────────────────────────────────────────────────────────
++
+     const field = path.split('.');
+     let val, key;
+     if (field.length) {

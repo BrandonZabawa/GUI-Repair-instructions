@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Circle.js",
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "\u2022 src/ol/style/Circle.js defines how circle symbols are drawn (size, anchor, canvas generator). Without proper fractional\u2010pixel offsets here the circle will land on integer pixels and appear jittery.  \n\u2022 src/ol/renderer/canvas/Layer.js contains the base logic that decides when to snap transforms to integer pixels (it checks viewState.hints for ANIMATING/INTERACTING). The removal of snapToPixel means this code must be tweaked to avoid snapping while the animation is running.  \n\u2022 src/ol/renderer/canvas/VectorLayer.js applies those transforms when drawing vector features (including our circles). It is responsible for computing and setting the pixel\u2010aligning transform on the canvas context. Adjusting or bypassing the snap logic here during an active circle animation will eliminate the jitter.",
+        "bug_scenario": "The user upgraded OpenLayers from 4.6.5 to 6.5 and is animating ol.style.Circle symbols on a vector layer. In v4.6.5 they relied on the removed snapToPixel:false option to disable integer\u2010pixel snapping during animation. In v6.5 the internal snapping logic in the canvas renderer still snaps coordinates when animations end, causing the circle\u2019s position to jump by half or whole pixels frame\u2010to\u2010frame\u2014most visible when the symbol is large at the end of the animation."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Circle.js",
+            "src/ol/style/Image.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/render/canvas/ExecutorGroup.js",
+            "src/ol/render/canvas/Executor.js"
+        ],
+        "explanation": "1. src/ol/style/Circle.js  \n   \u2022 This is the class for ol.style.Circle. In v4 it accepted a snapToPixel option to disable rounding during animation; that option was removed, so it no longer lets users control pixel snapping on circle\u2010style images.  \n2. src/ol/style/Image.js  \n   \u2022 The base class for all image\u2010based styles. It previously honoured a snapToPixel flag on render; the code around image placement (rounding x/y) has been removed or simplified. To restore smooth animation this file needs to reintroduce a per\u2010image snapToPixel parameter and propagate it into the executor.  \n3. src/ol/renderer/canvas/VectorLayer.js  \n   \u2022 Determines whether to snap to pixel based on viewHints (animating or interacting). It passes a snapToPixel boolean into the canvas executor pipeline; if this logic is reversed or incomplete, circles will still be rounded at the wrong time.  \n4. src/ol/render/canvas/ExecutorGroup.js  \n   \u2022 Accepts the snapToPixel flag and is responsible for rounding or not rounding all coordinates during instruction execution. Any missing checks here (especially for arc/circle instructions) will lead to jitter.  \n5. src/ol/render/canvas/Executor.js  \n   \u2022 Implements the actual drawing (for example, context.arc for circle geometry). It currently uses raw x/y/radius values and doesn\u2019t round the center or adjust the path when snapToPixel is true. Fixing jitter requires adding conditional Math.round logic around arc coordinates based on the passed flag.",
+        "bug_scenario": "After upgrading OpenLayers from v4.6.5 to v6.5, the user\u2019s expanding circle animation (using ol.style.Circle) now jitters noticeably, especially toward the end of the animation when the diameter is largest. In v4 we could pass snapToPixel:false to the Circle style to disable integer\u2010pixel rounding during animation and get a perfectly smooth growth, but that option was removed in v5.2.0. The repo\u2019s canvas renderer still snaps to integer pixels when no interaction or animation is running, and disables snapping while animating, but without a way to opt out at the style/image level the circle still jitters."
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer#setStyle",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer#setFillStrokeStyle",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer#setContextStrokeState_"
+        ],
+        "explanation": "CanvasImmediateRenderer is the class that drives immediate rendering of geometries to a 2D canvas context. Its setStyle method installs a StrokeStyle from the ol.style.Stroke, which under the hood invokes setFillStrokeStyle. That, in turn, calls setContextStrokeState_, where context.lineDash is set directly from the style\u2019s lineDash array. Although the renderer\u2019s constructor accepts a pixelRatio, none of these methods multiply dash or gap values by pixelRatio. As a result, at DPR>1 the dashes shrink proportionally while the map\u2010based replay renderer correctly scales them. To fix this bug, setContextStrokeState_ (or setFillStrokeStyle) must clone and scale the lineDash values by this.pixelRatio before calling context.setLineDash.",
+        "bug_scenario": "When drawing a dashed LineString with ol.render.toContext at a high device pixel ratio, the raw lineDash array from the style is applied unchanged. On a DPR > 1 canvas the dashes become proportionally much shorter, blending into a near\u2010continuous line. In contrast, the same style on a map canvas (which uses the replay renderer) multiplies dash/gap lengths by the pixelRatio, preserving the visual pattern."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer.setContextStrokeState_",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer.setFillStrokeStyle",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer.setImageStyle"
+        ],
+        "explanation": "All of these methods in CanvasImmediateRenderer are responsible for configuring the CanvasRenderingContext2D before drawing strokes or images. setContextStrokeState_ applies the style.lineDash array directly to the context without scaling by this.pixelRatio, so dashes and gaps remain in device\u2010independent pixels. Similarly, setFillStrokeStyle delegates to the same stroke state and setImageStyle even notes a \"FIXME pixel ratio\" comment. Because the pixelRatio only affects the initial context.scale, these unscaled dash values produce visually incorrect dashed lines on high-DPI screens. Multiplying each entry in lineDash (and lineDashOffset if used) by the pixelRatio in these methods will correct the dash length.",
+        "bug_scenario": "When rendering geometries immediately to a canvas via ol.render.toContext with a >1 device pixelRatio, the stroke.style.lineDash array is not multiplied by the pixelRatio. Coordinates are scaled correctly (via context.scale(pixelRatio)), but the unscaled dash and gap values end up too small and render as nearly continuous lines on high-DPI displays."
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/Tile.js",
+            "src/ol/source/DataTile.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/extent.js"
+        ],
+        "explanation": "The files are identified as follows: 1) 'src/ol/layer/WebGLTile.js' is the layer where the rendering and extent control for WebGL tiles happens. 2) 'src/ol/renderer/webgl/TileLayer.js' handles the actual WebGL rendering logic and may incorrectly render tiles outside the supplied extent. 3) 'src/ol/source/GeoTIFF.js' implements GeoTIFF (COG) reading, including the parsing of extent and nodata logic. 4) 'src/ol/source/Tile.js' and 5) 'src/ol/source/DataTile.js' control general tile data queries and extent logic, which may be failing to clip or query tiles appropriately. 6) 'src/ol/render/canvas/TileLayer.js' is included in case the bug lies in the shared tile layer rendering logic, as sometimes tile visibility/extents are computed here before being handed off to the renderer. 7) 'src/ol/extent.js' is included because extent intersection and clipping methods that are frequently invoked could have a bug or missing check for tiles outside the valid region. The bug is most likely distributed across source reading, tile compositing, and rendering extent logic.",
+        "bug_scenario": "The bug report describes a scenario in which a tiled GeoTIFF image (COG) is rendered using a WebGLTile layer, and the image appears outside of its original/expected extent. The provided bug scenario images show that tiles are rendered beyond their true data extent, with a red box outlining the correct extent, but image data bleeds outside this area (rendering 'black fill' or error data). The issue narrows on zoom but persists. A comparison with QGIS shows the correct extent being visualized there, suggesting a problem in how the rendering library (likely OpenLayers) processes the extent and tile boundaries for 'WebGLTile' layers using GeoTIFF sources. The problem likely lies in layer, source, reprojection, or rendering logic."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/Tile.js",
+            "src/ol/source/TileImage.js",
+            "src/ol/source/UrlTile.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/tilegrid/TileGrid.js",
+            "src/ol/extent.js"
+        ],
+        "explanation": "These files are identified as bug-related because: 1) The error is with the rendering of WebGLTile layers, so 'src/ol/layer/WebGLTile.js' and its corresponding WebGL tile renderer 'src/ol/renderer/webgl/TileLayer.js' are directly involved in how the imagery is displayed and clipped. 2) The source is a GeoTIFF, thus 'src/ol/source/GeoTIFF.js' is critical for providing imagery data and likely the image's declared extent. 3) 'src/ol/source/Tile.js', 'src/ol/source/TileImage.js', and 'src/ol/source/UrlTile.js' are part of the tile source hierarchy, and frequently mediate tiling, extents, and boundaries, making them potential touchpoints for bugs where tiles are not masked or stopped at boundaries. 4) Reprojection artifacts or extent mismatch could also stem from 'src/ol/reproj/Tile.js'. 5) 'src/ol/tilegrid/TileGrid.js' manages tiling based on extent and resolution, so improper grid calculation can cause out of bounds rendering. 6) 'src/ol/extent.js' is a utility involved in extent math across the library. All these files either directly or indirectly control how tiles are created, fetched, transformed, and culled according to the source raster's declared extent, especially via WebGL pipelines, and thus are strong candidates for investigation and fixing the problem.",
+        "bug_scenario": "The images and bug report describe an issue where a WebGLTile layer using a GeoTIFF source is rendering imagery outside its correct geographical extent, resulting in areas filled with black error pixels outside the dataset bounds. The problem is clearly visible when comparing with the correct display (e.g., QGIS), where the extent is respected. In the OpenLayers-based map, the imagery spills outside the defined red box (the true extent), and the erroneous region's size changes with zoom, suggesting the extent handling or mask isn't being respected in rendering via WebGLTile."
+    }
+}

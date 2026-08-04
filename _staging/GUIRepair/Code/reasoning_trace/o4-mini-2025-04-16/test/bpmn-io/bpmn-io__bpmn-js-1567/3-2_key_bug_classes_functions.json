@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/drilldown/DrilldownBreadcrumbs.js//DrilldownBreadcrumbs",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//DrilldownOverlayBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/drilldown/DrilldownBreadcrumbs.js//updateBreadcrumbs",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//addOverlay"
+        ],
+        "explanation": "Both DrilldownBreadcrumbs.updateBreadcrumbs and DrilldownOverlayBehavior.addOverlay install click handlers that call canvas.setRootElement(canvas.findRoot(\u2026)). After drilling into a subprocess (i.e. changing the canvas root), canvas.findRoot(planeId(..)) may return undefined. Calling setRootElement without a valid Element triggers the \u201crootElement required\u201d error. These functions need to be updated to handle missing roots (e.g. fallback to the correct parent, or listen to root.set events in the overlay behavior) before invoking setRootElement.",
+        "bug_scenario": "The GIF shows a BPMN diagram with a collapsed subprocess (inside a pool). The user clicks the drill-down arrow overlay on the subprocess to navigate into it (changing the canvas root). Then, when clicking the breadcrumb link to move back up to the parent process, an \u201cUncaught Error: rootElement required\u201d is thrown. This indicates that, after the root change, the breadcrumb and overlay click handlers invoke canvas.setRootElement without a valid root element, leading to the error."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/drilldown/DrilldownBreadcrumbs.js//DrilldownBreadcrumbs",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//DrilldownOverlayBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/drilldown/DrilldownBreadcrumbs.js//updateBreadcrumbs",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js//addOverlay"
+        ],
+        "explanation": "Both DrilldownBreadcrumbs.updateBreadcrumbs and DrilldownOverlayBehavior.addOverlay attach click handlers that call canvas.setRootElement using canvas.findRoot(planeId(\u2026)). When the process is moved into a sub-process (wrapped by a pool), planeId or findRoot returns undefined for the parent, so setRootElement is called without a valid rootElement and throws the error. Fixing the bug requires these two functions to correctly resolve (or fallback to) the appropriate root element when drilling back up.",
+        "bug_scenario": "The attached GIF shows a collapsed subprocess (inside a pooled lane) with a drill-down arrow overlay. Clicking the arrow correctly navigates into that subprocess (the canvas root changes). A breadcrumb bar appears at the top showing the current path. However, when clicking on the breadcrumb to \u201cdrill up\u201d back to the parent process, an uncaught error is thrown in the console: \u201cUncaught Error: rootElement required\u201d (originating from Canvas.setRootElement). In other words, after changing the root to the subprocess, the breadcrumb click handler is not computing or passing a valid root element when attempting to navigate back."
+    }
+}

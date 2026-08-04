@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown (React.forwardRef)",
+            "packages/react/src/components/Dropdown/Dropdown.js//getToggleButtonProps",
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown.propTypes",
+            "packages/react/src/components/Dropdown/Dropdown-test.js",
+            "e2e/components/Dropdown/Dropdown-test.e2e.js",
+            "packages/react/src/components/Dropdown/Dropdown-test.e2e.js"
+        ],
+        "explanation": "1. packages/react/src/components/Dropdown/Dropdown.js \u2013 the core component: the forwardRef `Dropdown` function must be updated to accept and handle a new `readOnly` prop (destructure it, pass it into className generation, and prevent opening the menu when true).  \n2. getToggleButtonProps \u2013 this Downshift helper supplies the onClick handler that toggles the menu; it needs to be overridden or wrapped so that clicks do nothing if `readOnly` is true.  \n3. Dropdown.propTypes \u2013 the `readOnly` prop must be declared here (with an appropriate PropType) and added to `defaultProps` if needed.  \n4. packages/react/src/components/Dropdown/Dropdown-test.js \u2013 the React Testing Library unit tests must include a test asserting that when `readOnly` is true, the dropdown renders with a `--readonly` CSS class and does not open on click.  \n5. e2e/components/Dropdown/Dropdown-test.e2e.js and packages/react/src/components/Dropdown/Dropdown-test.e2e.js \u2013 the visual (Playwright) and Cypress E2E tests should each gain a scenario to verify the read-only state: proper styling and prevented menu interaction.",
+        "bug_scenario": "The user has added a new `readOnly` prop to the `<Dropdown>` component in order to render a read-only variant of the dropdown (with specific styling and no interactive menu opening), but currently the component ignores this prop. When `readOnly={true}` is passed, the dropdown still opens on click, lacks the proper CSS class, and doesn\u2019t render with the correct read-only appearance shown in the design artifacts."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//getToggleButtonProps",
+            "packages/react/src/components/Dropdown/Dropdown.js//onSelectedItemChange"
+        ],
+        "explanation": "The core of the bug lives in the `Dropdown` component in Dropdown.js: it neither declares nor handles a `readOnly` prop, so passing `readOnly={true}` has no effect. The two key code locations to update are:\n\n1. getToggleButtonProps (used to spread props on the dropdown\u2019s `<button>`): this needs to take `readOnly` into account alongside `disabled` (e.g. setting `disabled={disabled || readOnly}`, adding `aria-readonly={readOnly}`, and applying a new CSS class like `${prefix}--dropdown--readonly`).\n\n2. onSelectedItemChange (and/or other Downshift callbacks): these should early-exit when `readOnly` is true so that the menu can\u2019t open and selections can\u2019t change.\n\nBy updating the `Dropdown` component to declare `readOnly` in its propTypes/defaultProps, injecting read-only logic into `getToggleButtonProps`, and guarding selection handlers like `onSelectedItemChange`, you will implement the requested read-only behavior and satisfy the design and accessibility acceptance criteria.",
+        "bug_scenario": "The user wants to introduce a new `readOnly` prop on the React `Dropdown` component so that when `readOnly={true}`: 1) the dropdown cannot be opened or changed, 2) it renders with a distinct \u201cread-only\u201d style (spacing and color matches the design images), and 3) appropriate ARIA attributes are added (e.g. `aria-readonly`). The provided screenshots show the intended spacing, color, and typography for normal, error, and inactive states, and the code snippet demonstrates consuming a `readOnly` prop that currently has no effect."
+    }
+}

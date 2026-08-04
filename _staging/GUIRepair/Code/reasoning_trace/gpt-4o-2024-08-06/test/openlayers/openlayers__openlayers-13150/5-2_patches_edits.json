@@ -1,0 +1,447 @@
+{
+    "1/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "fragmentShader: `",
+                    "precision mediump float;",
+                    "uniform float u_blurSlope;",
+                    "",
+                    "varying vec2 v_texCoord;",
+                    "varying float v_weight;",
+                    "",
+                    "void main(void) {",
+                    "vec2 texCoord = v_texCoord * 2.0 - vec2(1.0, 1.0);",
+                    "float sqRadius = texCoord.x * texCoord.x + texCoord.y * texCoord.y;",
+                    "float value = (1.0 - sqrt(sqRadius)) * u_blurSlope;",
+                    "float alpha = smoothstep(0.0, 1.0, value) * v_weight;",
+                    "gl_FragColor = vec4(alpha, alpha, alpha, alpha);",
+                    "}`,"
+                ],
+                "REPLACE": [
+                    "fragmentShader: `",
+                    "precision mediump float;",
+                    "uniform float u_blurSlope;",
+                    "uniform float u_opacity;",
+                    "",
+                    "varying vec2 v_texCoord;",
+                    "varying float v_weight;",
+                    "",
+                    "void main(void) {",
+                    "vec2 texCoord = v_texCoord * 2.0 - vec2(1.0, 1.0);",
+                    "float sqRadius = texCoord.x * texCoord.x + texCoord.y * texCoord.y;",
+                    "float value = (1.0 - sqrt(sqRadius)) * u_blurSlope;",
+                    "float alpha = smoothstep(0.0, 1.0, value) * v_weight * u_opacity;",
+                    "gl_FragColor = vec4(alpha, alpha, alpha, alpha);",
+                    "}`,"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "uniforms: {",
+                    "u_size: function () {",
+                    "return (this.get(Property.RADIUS) + this.get(Property.BLUR)) * 2;",
+                    "}.bind(this),",
+                    "u_blurSlope: function () {",
+                    "return (",
+                    "this.get(Property.RADIUS) / Math.max(1, this.get(Property.BLUR))",
+                    ");",
+                    "}.bind(this),",
+                    "},"
+                ],
+                "REPLACE": [
+                    "uniforms: {",
+                    "u_size: function () {",
+                    "return (this.get(Property.RADIUS) + this.get(Property.BLUR)) * 2;",
+                    "}.bind(this),",
+                    "u_blurSlope: function () {",
+                    "return (",
+                    "this.get(Property.RADIUS) / Math.max(1, this.get(Property.BLUR))",
+                    ");",
+                    "}.bind(this),",
+                    "u_opacity: function () {",
+                    "return this.get('opacity') !== undefined ? this.get('opacity') : 1.0;",
+                    "}.bind(this),",
+                    "},"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "super(baseOptions);",
+                    "",
+                    "/**",
+                    "* @private",
+                    "* @type {HTMLCanvasElement}",
+                    "*/",
+                    "this.gradient_ = null;",
+                    "",
+                    "this.addChangeListener(Property.GRADIENT, this.handleGradientChanged_);"
+                ],
+                "REPLACE": [
+                    "if (options.opacity !== undefined) {",
+                    "this.setOpacity(options.opacity);",
+                    "}",
+                    "super(baseOptions);",
+                    "",
+                    "/**",
+                    "* @private",
+                    "* @type {HTMLCanvasElement}",
+                    "*/",
+                    "this.gradient_ = null;",
+                    "",
+                    "this.addChangeListener(Property.GRADIENT, this.handleGradientChanged_);"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "gl_FragColor.rgb *= gl_FragColor.a;",
+                    "}`,",
+                    "uniforms: {",
+                    "u_gradientTexture: function () {",
+                    "return this.gradient_;",
+                    "}.bind(this),"
+                ],
+                "REPLACE": [
+                    "gl_FragColor.rgb *= gl_FragColor.a;",
+                    "gl_FragColor.a *= u_opacity; // Apply opacity",
+                    "}`,",
+                    "uniforms: {",
+                    "u_gradientTexture: function () {",
+                    "return this.gradient_;",
+                    "}.bind(this),",
+                    "u_opacity: function () {",
+                    "return this.getOpacity(); // Retrieve the opacity set for the heatmap",
+                    "}.bind(this),"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "super(baseOptions);",
+                    "",
+                    "/**",
+                    "* @private",
+                    "* @type {HTMLCanvasElement}",
+                    "*/",
+                    "this.gradient_ = null;"
+                ],
+                "REPLACE": [
+                    "// Ensure the opacity is considered in rendering",
+                    "this.opacity_ = options.opacity !== undefined ? options.opacity : 1;",
+                    "",
+                    "super(baseOptions);",
+                    "",
+                    "/**",
+                    "* @private",
+                    "* @type {HTMLCanvasElement}",
+                    "*/",
+                    "this.gradient_ = null;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "},"
+                ],
+                "REPLACE": [
+                    "},",
+                    "fragmentShader: `",
+                    "precision mediump float;",
+                    "uniform sampler2D u_image;",
+                    "uniform sampler2D u_gradientTexture;",
+                    "uniform float u_opacity; // New uniform for opacity",
+                    "",
+                    "varying vec2 v_texCoord;",
+                    "",
+                    "void main() {",
+                    "vec4 color = texture2D(u_image, v_texCoord);",
+                    "gl_FragColor.a = color.a * u_opacity; // Apply opacity",
+                    "gl_FragColor.rgb = texture2D(u_gradientTexture, vec2(0.5, color.a)).rgb;",
+                    "gl_FragColor.rgb *= gl_FragColor.a;",
+                    "}`,",
+                    "uniforms: {",
+                    "u_gradientTexture: function () {",
+                    "return this.gradient_;",
+                    "}.bind(this),",
+                    "u_opacity: () => {",
+                    "return this.opacity_; // Pass opacity to shader",
+                    "}",
+                    "},"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "void main() {",
+                    "vec4 color = texture2D(u_image, v_texCoord);",
+                    "gl_FragColor.a = color.a;",
+                    "gl_FragColor.rgb = texture2D(u_gradientTexture, vec2(0.5, color.a)).rgb;",
+                    "gl_FragColor.rgb *= gl_FragColor.a;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "void main() {",
+                    "vec4 color = texture2D(u_image, v_texCoord);",
+                    "gl_FragColor.a = color.a * u_opacity;    // Adjust alpha with the opacity uniform",
+                    "gl_FragColor.rgb = texture2D(u_gradientTexture, vec2(0.5, color.a)).rgb;",
+                    "gl_FragColor.rgb *= gl_FragColor.a;",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "},",
+                    "postProcesses: ["
+                ],
+                "REPLACE": [
+                    "},",
+                    "uniforms: {",
+                    "u_opacity: function () {",
+                    "return this.get('opacity') !== undefined ? this.get('opacity') : 1;",
+                    "}.bind(this),",
+                    "},",
+                    "postProcesses: ["
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "gl_FragColor.a = color.a;",
+                    "gl_FragColor.rgb = texture2D(u_gradientTexture, vec2(0.5, color.a)).rgb;",
+                    "gl_FragColor.rgb *= gl_FragColor.a;"
+                ],
+                "REPLACE": [
+                    "float opacity = float(options.opacity !== undefined ? options.opacity : 1.0);",
+                    "gl_FragColor.a = color.a * opacity;",
+                    "gl_FragColor.rgb = texture2D(u_gradientTexture, vec2(0.5, gl_FragColor.a)).rgb;",
+                    "gl_FragColor.rgb *= gl_FragColor.a;"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "// For performance reasons, don't sort the features before rendering.",
+                    "// The render order is not relevant for a heatmap representation.",
+                    "this.setRenderOrder(null);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* Set the opacity of the heatmap.",
+                    "* @param {number} opacity Opacity.",
+                    "* @private",
+                    "*/",
+                    "this.setOpacity(options.opacity !== undefined ? options.opacity : 1);",
+                    "",
+                    "// For performance reasons, don't sort the features before rendering.",
+                    "// The render order is not relevant for a heatmap representation.",
+                    "this.setRenderOrder(null);",
+                    "}",
+                    "",
+                    "/**",
+                    "* Set the opacity of the heatmap.",
+                    "* @param {number} opacity Opacity.",
+                    "* @api",
+                    "* @observable",
+                    "*/",
+                    "setOpacity(opacity) {",
+                    "this.set('opacity', opacity);",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "gl_FragColor.rgb *= gl_FragColor.a;"
+                ],
+                "REPLACE": [
+                    "gl_FragColor.a *= this.get('opacity');",
+                    "gl_FragColor.rgb *= gl_FragColor.a;"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "createRenderer() {",
+                    "return new WebGLPointsLayerRenderer(this, {",
+                    "className: this.getClassName(),"
+                ],
+                "REPLACE": [
+                    "createRenderer() {",
+                    "const opacity = this.getOpacity(); // Retrieve the opacity property",
+                    "return new WebGLPointsLayerRenderer(this, {",
+                    "className: this.getClassName(),"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "attribute float a_weight;",
+                    "",
+                    "varying vec2 v_texCoord;",
+                    "varying float v_weight;",
+                    "",
+                    "void main(void) {"
+                ],
+                "REPLACE": [
+                    "attribute float a_weight;",
+                    "",
+                    "uniform float u_opacity; // Add uniform for opacity",
+                    "",
+                    "varying vec2 v_texCoord;",
+                    "varying float v_weight;",
+                    "",
+                    "void main(void) {"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "varying float v_weight;",
+                    "",
+                    "void main(void) {",
+                    "vec2 texCoord = v_texCoord * 2.0 - vec2(1.0, 1.0);",
+                    "float sqRadius = texCoord.x * texCoord.x + texCoord.y * texCoord.y;",
+                    "float value = (1.0 - sqrt(sqRadius)) * u_blurSlope;",
+                    "float alpha = smoothstep(0.0, 1.0, value) * v_weight;",
+                    "gl_FragColor = vec4(alpha, alpha, alpha, alpha);"
+                ],
+                "REPLACE": [
+                    "varying float v_weight;",
+                    "",
+                    "void main(void) {",
+                    "vec2 texCoord = v_texCoord * 2.0 - vec2(1.0, 1.0);",
+                    "float sqRadius = texCoord.x * texCoord.x + texCoord.y * texCoord.y;",
+                    "float value = (1.0 - sqrt(sqRadius)) * u_blurSlope;",
+                    "float alpha = smoothstep(0.0, 1.0, value) * v_weight;",
+                    "gl_FragColor = vec4(alpha * u_opacity, alpha * u_opacity, alpha * u_opacity, alpha * u_opacity);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "uniforms: {"
+                ],
+                "REPLACE": [
+                    "uniforms: {",
+                    "u_opacity: function () {",
+                    "return this.getOpacity(); // Pass opacity to the shader",
+                    "}.bind(this),"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "uniforms: {",
+                    "u_size: function () {",
+                    "return (this.get(Property.RADIUS) + this.get(Property.BLUR)) * 2;",
+                    "}.bind(this),",
+                    "u_blurSlope: function () {",
+                    "return (",
+                    "this.get(Property.RADIUS) / Math.max(1, this.get(Property.BLUR))",
+                    ");",
+                    "}.bind(this),",
+                    "},"
+                ],
+                "REPLACE": [
+                    "uniforms: {",
+                    "u_size: function () {",
+                    "return (this.get(Property.RADIUS) + this.get(Property.BLUR)) * 2;",
+                    "}.bind(this),",
+                    "u_blurSlope: function () {",
+                    "return (",
+                    "this.get(Property.RADIUS) / Math.max(1, this.get(Property.BLUR))",
+                    ");",
+                    "}.bind(this),",
+                    "u_opacity: function () {",
+                    "return this.get('opacity') !== undefined ? this.get('opacity') : 1.0;",
+                    "}.bind(this),",
+                    "},"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "uniforms: {",
+                    "u_gradientTexture: function () {",
+                    "return this.gradient_;",
+                    "}.bind(this),",
+                    "},"
+                ],
+                "REPLACE": [
+                    "uniforms: {",
+                    "u_gradientTexture: function () {",
+                    "return this.gradient_;",
+                    "}.bind(this),",
+                    "u_opacity: function () {",
+                    "return this.get('opacity') !== undefined ? this.get('opacity') : 1.0;",
+                    "}.bind(this),",
+                    "},"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "gl_FragColor.a = color.a;"
+                ],
+                "REPLACE": [
+                    "gl_FragColor.a = color.a * u_opacity;"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/layer/Heatmap.js": [
+            {
+                "SEARCH": [
+                    "import BaseVector from './BaseVector.js';",
+                    "import WebGLPointsLayerRenderer from '../renderer/webgl/PointsLayer.js';",
+                    "import {assign} from '../obj.js';"
+                ],
+                "REPLACE": [
+                    "import BaseVector from './BaseVector.js';",
+                    "import WebGLPointsLayerRenderer from '../renderer/webgl/PointsLayer.js';",
+                    "import {assign} from '../obj.js';",
+                    "import {clamp} from '../math.js';  // Ensure clamp is imported for opacity range adjustment"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "super(baseOptions);"
+                ],
+                "REPLACE": [
+                    "const opacity = options.opacity !== undefined ? clamp(options.opacity, 0, 1) : 1;",
+                    "super(assign(baseOptions, {opacity}));"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "gl_FragColor.rgb *= gl_FragColor.a;"
+                ],
+                "REPLACE": [
+                    "gl_FragColor.rgb *= gl_FragColor.a;",
+                    "gl_FragColor.a *= this.get('opacity');  // Apply opacity to final fragment color"
+                ]
+            }
+        ]
+    }
+}

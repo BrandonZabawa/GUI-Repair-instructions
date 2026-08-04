@@ -1,0 +1,71 @@
+diff --git a/src/ol/style/IconImage.js b/src/ol/style/IconImage.js
+index 689d252046..05202688ba 100644
+--- a/src/ol/style/IconImage.js
++++ b/src/ol/style/IconImage.js
+@@ -231,34 +231,31 @@ class IconImage extends EventTarget {
+ 
+     const ctx = canvas.getContext('2d');
+     ctx.scale(pixelRatio, pixelRatio);
+-    ctx.drawImage(this.image_, 0, 0);
+-
+-    ctx.globalCompositeOperation = 'multiply';
+-    // Internet Explorer 11 does not support the multiply operation.
+-    // If the canvas is tainted in Internet Explorer this still produces
+-    // a solid color image with the shape of the icon.
+-    if (ctx.globalCompositeOperation === 'multiply' || this.isTainted_()) {
+-      ctx.fillStyle = asString(this.color_);
+-      ctx.fillRect(0, 0, canvas.width / pixelRatio, canvas.height / pixelRatio);
+-
+-      ctx.globalCompositeOperation = 'destination-in';
+-      ctx.drawImage(this.image_, 0, 0);
+-    } else {
+-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+-      const data = imgData.data;
+-      const r = this.color_[0] / 255.0;
+-      const g = this.color_[1] / 255.0;
+-      const b = this.color_[2] / 255.0;
+-      const a = this.color_[3];
+-
+-      for (let i = 0, ii = data.length; i < ii; i += 4) {
+-        data[i] *= r;
+-        data[i + 1] *= g;
+-        data[i + 2] *= b;
+-        data[i + 3] *= a;
+-      }
+-      ctx.putImageData(imgData, 0, 0);
+-    }
++ctx.drawImage(this.image_, 0, 0, this.image_.width, this.image_.height);
++
++ctx.globalCompositeOperation = 'multiply';
++if (ctx.globalCompositeOperation === 'multiply' || this.isTainted_()) {
++ctx.fillStyle = asString(this.color_);
++ctx.fillRect(0, 0, this.image_.width, this.image_.height);
++
++ctx.globalCompositeOperation = 'destination-in';
++ctx.drawImage(this.image_, 0, 0, this.image_.width, this.image_.height);
++} else {
++const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
++const data = imgData.data;
++const r = this.color_[0] / 255.0;
++const g = this.color_[1] / 255.0;
++const b = this.color_[2] / 255.0;
++const a = this.color_[3];
++
++for (let i = 0, ii = data.length; i < ii; i += 4) {
++data[i] *= r;
++data[i + 1] *= g;
++data[i + 2] *= b;
++data[i + 3] *= a;
++}
++ctx.putImageData(imgData, 0, 0);
++}
+   }
+ 
+   /**
+@@ -292,4 +289,4 @@ export function get(image, src, size, crossOrigin, imageState, color) {
+   return iconImage;
+ }
+ 
+-export default IconImage;
++export default IconImage;
+\ No newline at end of file

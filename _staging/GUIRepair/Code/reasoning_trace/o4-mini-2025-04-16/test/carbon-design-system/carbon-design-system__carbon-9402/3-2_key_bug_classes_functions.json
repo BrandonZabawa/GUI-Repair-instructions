@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox",
+            "packages/react/src/internal/ClickListener.js//ClickListener"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//internal mouseUp handler (stops propagation)",
+            "packages/react/src/internal/ClickListener.js//handleDocumentClick"
+        ],
+        "explanation": "ComboBox wraps its toggle button with a mouseUp handler that calls event.stopPropagation() to prevent Downshift from resetting its state, but that also blocks the global click listener in ClickListener.handleDocumentClick. ClickListener is what fires on clicks outside a given ComboBox to close its menu. Because the stopPropagation on the toggle chevron prevents ClickListener.handleDocumentClick from seeing the click, the previously open ComboBox never gets its onClickOutside callback and remains open. Fixing this requires adjusting the ComboBox mouseUp logic (or ClickListener event handling) so clicks on other ComboBox toggles still propagate to the document listener and close any open menus.",
+        "bug_scenario": "The screenshots show two ComboBox components side-by-side. When you open the first ComboBox and then click the chevron on the second ComboBox to open it, the first ComboBox\u2019s menu stays open instead of closing. By contrast, clicking a DropDown successfully closes any open ComboBox, so opening a new ComboBox should likewise dismiss any other open menus."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox",
+            "packages/react/src/internal/ClickListener.js//ClickListener"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//onToggleClick",
+            "packages/react/src/components/ComboBox/ComboBox.js//handleOnOuterClick",
+            "packages/react/src/internal/ClickListener.js//handleDocumentClick"
+        ],
+        "explanation": "The ComboBox class in ComboBox.js is responsible for managing its open/closed state via Downshift; its onToggleClick method opens or closes its own menu, and handleOnOuterClick (the callback passed into the ClickListener) should close it when clicking outside. The ClickListener class\u2019s handleDocumentClick is the generic listener that invokes onClickOutside for each ComboBox instance. Currently, when you click another ComboBox\u2019s toggle, that click is not treated as an \u201coutside\u201d click for the first ComboBox\u2014so handleDocumentClick never tells the first ComboBox to close. To fix this, onToggleClick or handleOnOuterClick in ComboBox.js must broadcast a close event (or directly call the other instances\u2019 onClickOutside) before opening, and/or ClickListener.handleDocumentClick must treat clicks on any other ComboBox toggle as outside clicks for all others.",
+        "bug_scenario": "On a page with multiple ComboBox and DropDown components, opening one ComboBox does not close any other ComboBox that is already open. In the screenshots you can see two ComboBoxes (\u201cDatabase\u201d and \u201cProcess\u201d) side by side: opening the \u201cDatabase\u201d list leaves the \u201cProcess\u201d list open when you click its chevron. By contrast, opening a DropDown correctly dismisses any open ComboBox. The expected behavior is that opening any ComboBox should first close (dismiss) all other open menus."
+    }
+}

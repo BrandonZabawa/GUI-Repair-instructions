@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/Layer.js//WebGLLayerRenderer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "WebGLLayerRenderer.prepareFrame",
+            "WebGLLayerRenderer.removeHelper",
+            "WebGLLayerRenderer.afterHelperCreated",
+            "WebGLTileLayerRenderer.renderFrame"
+        ],
+        "explanation": "The WebGLLayerRenderer class is responsible for creating and caching a dedicated WebGL canvas (via WebGLHelper) for each layer. It sets up that helper once in prepareFrame and never tears it down when only the layer\u2019s visibility (inherited from its parent group) changes. Its removeHelper() is only bound to MAP changes, so toggling group visibility does not clear or hide the existing WebGL canvas. The WebGLTileLayerRenderer.renderFrame method then continues drawing into that orphaned canvas even though the parent group is now invisible. To fix the bug, WebGLLayerRenderer.prepareFrame (or afterHelperCreated) must listen for visibility changes (not just MAP changes) and call removeHelper()/hide the canvas when the layer (or its group) becomes invisible.",
+        "bug_scenario": "In the Codesandbox example the map has a single Group layer containing one WebGlTile layer. After 3 seconds the Group\u2019s visibility is set from true to false, but the WebGlTile remains rendered on the map instead of disappearing along with the group. Normal Tile layers respect group visibility, so the issue is unique to WebGlTile."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/Layer.js//class WebGLLayerRenderer",
+            "src/ol/renderer/webgl/TileLayer.js//class WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/Layer.js//prepareFrame",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal"
+        ],
+        "explanation": "Both WebGLLayerRenderer.prepareFrame and the WebGLTileLayerRenderer methods bypass or ignore the layer visibility state when deciding to draw. In the base WebGL renderer (WebGLLayerRenderer) prepareFrame never checks layerState.visible or layerState.renderedVisible before creating or using the WebGLHelper, so off\u2010screen or hidden layers will still generate GL output. Likewise WebGLTileLayerRenderer.renderFrame and its prepareFrameInternal do not early\u2010exit on an invisible layer. In contrast, the canvas-tile renderer path does respect the visibility flags. To fix the issue, these WebGL renderer methods must test the layer state (e.g. frameState.layerStatesArray entry .renderedVisible) and return null or skip drawing when visibility is false.",
+        "bug_scenario": "A WebGL\u2010based tile layer inside an ol/layer/Group never hides when the group\u2019s visibility switches to false. In the codesandbox example the group contains a single WebGlTile layer. After three seconds the group visibility is set from true to false, but the WebGlTile remains visible on screen. In contrast, if the layer type is changed to a normal ol/layer/Tile, hiding the group correctly hides its child tiles. This indicates that the WebGL renderer path for tile layers never respects the group or layer visible flag."
+    }
+}

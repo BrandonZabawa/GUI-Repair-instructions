@@ -1,0 +1,44 @@
+diff --git a/src/languages/perl.js b/src/languages/perl.js
+index 346899e4..b706c9aa 100644
+--- a/src/languages/perl.js
++++ b/src/languages/perl.js
+@@ -163,16 +163,29 @@ export default function(hljs) {
+           ),
+           relevance: 10
+         },
+-        {
+-          className: 'regexp',
+-          begin: /(m|qr)?\//,
+-          end: regex.concat(
+-            /\//,
+-            REGEX_MODIFIERS
+-          ),
+-          contains: [ hljs.BACKSLASH_ESCAPE ],
+-          relevance: 0 // allows empty "//" which is a common comment delimiter in other languages
+-        }
++{
++className: 'regexp',
++// Match m, qr, or nothing, followed by a non-alphanumeric, non-whitespace delimiter
++// and match until the same delimiter (with proper escaping for paired delimiters)
++begin: [
++/(m|qr)?/,
++/([^\w\s])/, // capture the delimiter
++],
++// Use a function to dynamically build the end pattern based on the matched delimiter
++end: function(match) {
++// match[2] is the delimiter
++const delim = match[2];
++// Handle paired delimiters
++const pairs = { '(': ')', '{': '}', '[': ']', '<': '>' };
++const endDelim = pairs[delim] || delim;
++// Allow for modifiers after the closing delimiter
++return new RegExp(
++regex.escape(endDelim) + REGEX_MODIFIERS.source
++);
++},
++contains: [ hljs.BACKSLASH_ESCAPE ],
++relevance: 0 // allows empty "//" which is a common comment delimiter in other languages
++}
+       ]
+     },
+     {

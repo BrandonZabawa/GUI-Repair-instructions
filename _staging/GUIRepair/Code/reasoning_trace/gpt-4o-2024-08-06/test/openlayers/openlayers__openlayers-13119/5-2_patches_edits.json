@@ -1,0 +1,766 @@
+{
+    "1/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "prepareDraw(frameState, opt_disableAlphaBlend) {",
+                    "const gl = this.getGL();",
+                    "...",
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "prepareDraw(frameState, opt_disableAlphaBlend, customBlendFunc) {",
+                    "const gl = this.getGL();",
+                    "...",
+                    "gl.enable(gl.BLEND);",
+                    "if (customBlendFunc) {",
+                    "gl.blendFunc(gl.ONE, gl.ONE);",
+                    "} else {",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.helper.prepareDraw(frameState, !blend);"
+                ],
+                "REPLACE": [
+                    "const customBlendFunc = this.getLayer().getCustomBlendFunc();",
+                    "this.helper.prepareDraw(frameState, !blend, customBlendFunc);"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "super(options);"
+                ],
+                "REPLACE": [
+                    "super(options);",
+                    "this.customBlendFunc_ = !!options.customBlendFunc;"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "gl.enable(gl.BLEND);",
+                    "if (frameState.blendFunctionOptions) {",
+                    "gl.blendFunc(",
+                    "frameState.blendFunctionOptions.src || gl.ONE,",
+                    "frameState.blendFunctionOptions.dst || (opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA)",
+                    ");",
+                    "} else {",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "super(options);"
+                ],
+                "REPLACE": [
+                    "const blendFunctionOptions = options.blendFunctionOptions || null;",
+                    "delete options.blendFunctionOptions;",
+                    "super(options);",
+                    "",
+                    "this.blendFunctionOptions_ = blendFunctionOptions;"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.helper.prepareDraw(frameState, !blend);"
+                ],
+                "REPLACE": [
+                    "frameState.blendFunctionOptions = this.getLayer().blendFunctionOptions_;",
+                    "this.helper.prepareDraw(frameState, !blend);"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "gl.enable(gl.BLEND);",
+                    "const tileLayer = frameState.layerStatesArray.find(layerState => layerState.layer instanceof WebGLTileLayer);",
+                    "if (tileLayer && tileLayer.layer.getStyle().useCustomBlendFunc) {",
+                    "gl.blendFunc(gl.ONE, gl.ONE);",
+                    "} else {",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "/**",
+                    "* @param {Options} opt_options Tile layer options.",
+                    "*/",
+                    "constructor(opt_options) {",
+                    "const options = opt_options ? assign({}, opt_options) : {};",
+                    "",
+                    "const style = options.style || {};",
+                    "delete options.style;",
+                    "",
+                    "const cacheSize = options.cacheSize;",
+                    "delete options.cacheSize;"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "/**",
+                    "* @param {Options} opt_options Tile layer options.",
+                    "*/",
+                    "constructor(opt_options) {",
+                    "const options = opt_options ? assign({}, opt_options) : {};",
+                    "",
+                    "const style = options.style || {};",
+                    "style.useCustomBlendFunc = Boolean(style.useCustomBlendFunc);",
+                    "delete options.style;",
+                    "",
+                    "const cacheSize = options.cacheSize;",
+                    "delete options.cacheSize;"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "/**",
+                    "* @param {LayerType} tileLayer Tile layer.",
+                    "* @param {Options} options Options.",
+                    "*/",
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "/**",
+                    "* @param {LayerType} tileLayer Tile layer.",
+                    "* @param {Options} options Options.",
+                    "*/",
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "blendFunc: options.blendFunc // add blendFunc to options"
+                ]
+            }
+        ],
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "prepareDraw(frameState, opt_disableAlphaBlend) {",
+                    "const gl = this.getGL();",
+                    "const canvas = this.getCanvas();",
+                    "const size = frameState.size;",
+                    "const pixelRatio = frameState.pixelRatio;",
+                    "",
+                    "canvas.width = size[0] * pixelRatio;",
+                    "canvas.height = size[1] * pixelRatio;",
+                    "canvas.style.width = size[0] + 'px';",
+                    "canvas.style.height = size[1] + 'px';",
+                    "",
+                    "gl.useProgram(this.currentProgram_);",
+                    "",
+                    "// loop backwards in post processes list",
+                    "for (let i = this.postProcessPasses_.length - 1; i >= 0; i--) {",
+                    "this.postProcessPasses_[i].init(frameState);",
+                    "}",
+                    "",
+                    "gl.bindTexture(gl.TEXTURE_2D, null);",
+                    "",
+                    "gl.clearColor(0.0, 0.0, 0.0, 0.0);",
+                    "gl.clear(gl.COLOR_BUFFER_BIT);",
+                    "",
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "prepareDraw(frameState, opt_disableAlphaBlend) {",
+                    "const gl = this.getGL();",
+                    "const canvas = this.getCanvas();",
+                    "const size = frameState.size;",
+                    "const pixelRatio = frameState.pixelRatio;",
+                    "",
+                    "const blendFunc = frameState.layerOptions.blendFunc || [gl.ONE, gl.ONE_MINUS_SRC_ALPHA];",
+                    "",
+                    "canvas.width = size[0] * pixelRatio;",
+                    "canvas.height = size[1] * pixelRatio;",
+                    "canvas.style.width = size[0] + 'px';",
+                    "canvas.style.height = size[1] + 'px';",
+                    "",
+                    "gl.useProgram(this.currentProgram_);",
+                    "",
+                    "// loop backwards in post processes list",
+                    "for (let i = this.postProcessPasses_.length - 1; i >= 0; i--) {",
+                    "this.postProcessPasses_[i].init(frameState);",
+                    "}",
+                    "",
+                    "gl.bindTexture(gl.TEXTURE_2D, null);",
+                    "",
+                    "gl.clearColor(0.0, 0.0, 0.0, 0.0);",
+                    "gl.clear(gl.COLOR_BUFFER_BIT);",
+                    "",
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "blendFunc[0],",
+                    "opt_disableAlphaBlend ? gl.ZERO : blendFunc[1]",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "/**",
+                    "* @param {Options} opt_options Tile layer options.",
+                    "*/",
+                    "constructor(opt_options) {",
+                    "const options = opt_options ? assign({}, opt_options) : {};",
+                    "",
+                    "const style = options.style || {};",
+                    "delete options.style;",
+                    "",
+                    "const cacheSize = options.cacheSize;",
+                    "delete options.cacheSize;",
+                    "",
+                    "super(options);",
+                    "",
+                    "/**",
+                    "* @type {Style}",
+                    "* @private",
+                    "*/",
+                    "this.style_ = style;",
+                    "",
+                    "/**",
+                    "* @type {number}",
+                    "* @private",
+                    "*/",
+                    "this.cacheSize_ = cacheSize;",
+                    "",
+                    "/**",
+                    "* @type {Object<string, (string|number)>}",
+                    "* @private",
+                    "*/",
+                    "this.styleVariables_ = this.style_.variables || {};",
+                    "}",
+                    "",
+                    "createRenderer() {",
+                    "const source = this.getSource();",
+                    "const parsedStyle = parseStyle(",
+                    "this.style_,",
+                    "'bandCount' in source ? source.bandCount : 4",
+                    ");",
+                    "",
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "/**",
+                    "* @param {Options} opt_options Tile layer options.",
+                    "*/",
+                    "constructor(opt_options) {",
+                    "const options = opt_options ? assign({}, opt_options) : {};",
+                    "",
+                    "const style = options.style || {};",
+                    "delete options.style;",
+                    "",
+                    "const cacheSize = options.cacheSize;",
+                    "delete options.cacheSize;",
+                    "",
+                    "const blendFunc = options.blendFunc || [gl.ONE, gl.ONE_MINUS_SRC_ALPHA];",
+                    "delete options.blendFunc;",
+                    "",
+                    "super(options);",
+                    "",
+                    "/**",
+                    "* @type {Style}",
+                    "* @private",
+                    "*/",
+                    "this.style_ = style;",
+                    "",
+                    "/**",
+                    "* @type {number}",
+                    "* @private",
+                    "*/",
+                    "this.cacheSize_ = cacheSize;",
+                    "",
+                    "/**",
+                    "* @type {Object<string, (string|number)>}",
+                    "* @private",
+                    "*/",
+                    "this.styleVariables_ = this.style_.variables || {};",
+                    "}",
+                    "",
+                    "createRenderer() {",
+                    "const source = this.getSource();",
+                    "const parsedStyle = parseStyle(",
+                    "this.style_,",
+                    "'bandCount' in source ? source.bandCount : 4",
+                    ");",
+                    "",
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "blendFunc: this.blendFunc_ // pass blendFunc to renderer"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : (frameState.webGLTileLayerCustomBlend ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA)",
+                    ");"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : (frameState.webGLTileLayerCustomBlend ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA)",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "super(options);"
+                ],
+                "REPLACE": [
+                    "super(options);",
+                    "/** @type {boolean} Indicates if this layer should use custom WebGL blend function */",
+                    "this.customBlend_ = !!options.customBlend;"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.prepareDraw(frameState);"
+                ],
+                "REPLACE": [
+                    "frameState.webGLTileLayerCustomBlend = layer.customBlend_;",
+                    "this.prepareDraw(frameState);"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "",
+                    "/** @private */",
+                    "this.boundHandleWebGLContextLost_ = this.handleWebGLContextLost.bind(this);",
+                    "",
+                    "/** @private */",
+                    "this.boundHandleWebGLContextRestored_ =",
+                    "this.handleWebGLContextRestored.bind(this);"
+                ],
+                "REPLACE": [
+                    "constructor(opt_options) {",
+                    "super();",
+                    "const options = opt_options || {};",
+                    "",
+                    "/** @type {string|null} */",
+                    "this.blendMode_ = options.blendMode || 'default';",
+                    "",
+                    "/** @private */",
+                    "this.boundHandleWebGLContextLost_ = this.handleWebGLContextLost.bind(this);",
+                    "",
+                    "/** @private */",
+                    "this.boundHandleWebGLContextRestored_ =",
+                    "this.handleWebGLContextRestored.bind(this);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "gl.enable(gl.BLEND);",
+                    "if (this.blendMode_ === 'custom') {",
+                    "gl.blendFunc(gl.ONE, gl.ONE);",
+                    "} else {",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "gl.enable(gl.BLEND);",
+                    "if (this.blendMode_ === 'custom') {",
+                    "gl.blendFunc(gl.ONE, gl.ONE);",
+                    "} else {",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "...",
+                    "super(options);",
+                    "",
+                    "/**",
+                    "* @type {Style}",
+                    "* @private",
+                    "*/",
+                    "this.style_ = style;"
+                ],
+                "REPLACE": [
+                    "super(options);",
+                    "",
+                    "/**",
+                    "* @type {Style}",
+                    "* @private",
+                    "*/",
+                    "this.style_ = style;",
+                    "",
+                    "/**",
+                    "* @type {Array<number>|null}",
+                    "* @private",
+                    "*/",
+                    "this.blendFunc_ = options.blendFunc || null;"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "constructor(tileLayer, options) {",
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "blendFunc: tileLayer.blendFunc_,  // Pass the blendFunc to the renderer",
+                    "});"
+                ]
+            }
+        ],
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "prepareDraw(frameState, opt_disableAlphaBlend) {",
+                    "const gl = this.getGL();",
+                    "...",
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "prepareDraw(frameState, opt_disableAlphaBlend) {",
+                    "const gl = this.getGL();",
+                    "...",
+                    "gl.enable(gl.BLEND);",
+                    "",
+                    "const blendFunc = frameState.layer.getBlendFunc();  // Get the custom blend function",
+                    "if (blendFunc) {",
+                    "gl.blendFunc(blendFunc[0], blendFunc[1]);  // Use custom blending if specified",
+                    "} else {",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "prepareDrawToRenderTarget(frameState, renderTarget, opt_disableAlphaBlend) {",
+                    "const gl = this.getGL();",
+                    "...",
+                    "gl.enable(gl.BLEND);",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "prepareDrawToRenderTarget(frameState, renderTarget, opt_disableAlphaBlend) {",
+                    "const gl = this.getGL();",
+                    "...",
+                    "gl.enable(gl.BLEND);",
+                    "",
+                    "const blendFunc = frameState.layer.getBlendFunc();  // Get the custom blend function",
+                    "if (blendFunc) {",
+                    "gl.blendFunc(blendFunc[0], blendFunc[1]);  // Use custom blending if specified",
+                    "} else {",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "...",
+                    "constructor(opt_options) {",
+                    "const options = opt_options ? assign({}, opt_options) : {};"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "...",
+                    "constructor(opt_options) {",
+                    "const options = opt_options ? assign({}, opt_options) : {};",
+                    "this.blendingFunction_ = options.blendingFunction || \"default\";"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "blendingFunction: this.blendingFunction_,",
+                    "});"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "renderFrame(frameState) {",
+                    "const gl = this.helper.getGL();",
+                    "...",
+                    "this.helper.prepareDraw(frameState, !blend);"
+                ],
+                "REPLACE": [
+                    "renderFrame(frameState, blendingFunction) {",
+                    "const gl = this.helper.getGL();",
+                    "...",
+                    "this.helper.prepareDraw(frameState, !blend, blendingFunction);"
+                ]
+            }
+        ],
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "prepareDraw(frameState, opt_disableAlphaBlend) {",
+                    "...",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "prepareDraw(frameState, opt_disableAlphaBlend, blendingFunction) {",
+                    "...",
+                    "const blendSrc = gl.ONE;",
+                    "const blendDst = (blendingFunction === \"additive\") ? gl.ONE : (opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA);",
+                    "gl.blendFunc(blendSrc, blendDst);"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const shouldUseCustomBlend = frameState.useCustomBlend || false;",
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "shouldUseCustomBlend ? gl.ONE : (opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA)",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.helper.prepareDraw(frameState, !blend);"
+                ],
+                "REPLACE": [
+                    "frameState.useCustomBlend = this.getLayer().getStyle().useCustomBlend || false;",
+                    "this.helper.prepareDraw(frameState, !blend);"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "this.style_ = style;"
+                ],
+                "REPLACE": [
+                    "this.style_ = {",
+                    "...style,",
+                    "useCustomBlend: style.useCustomBlend || false",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/webgl/Helper.js": [
+            {
+                "SEARCH": [
+                    "gl.blendFunc(",
+                    "gl.ONE,",
+                    "opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA",
+                    ");"
+                ],
+                "REPLACE": [
+                    "gl.blendFunc(",
+                    "this.useCustomBlend ? gl.ONE : gl.ONE,",
+                    "this.useCustomBlend ? gl.ONE : (opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA)",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "super(tileLayer, {",
+                    "uniforms: options.uniforms,",
+                    "useCustomBlend: options.useCustomBlend || false,",
+                    "});"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "return new WebGLTileLayerRenderer(this, {",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "cacheSize: this.cacheSize_,",
+                    "useCustomBlend: !!this.style_.useCustomBlend,",
+                    "});"
+                ]
+            }
+        ]
+    }
+}

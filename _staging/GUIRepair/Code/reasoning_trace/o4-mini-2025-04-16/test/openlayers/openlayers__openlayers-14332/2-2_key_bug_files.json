@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "The TileLayer renderer (CanvasTileLayerRenderer) sets up a vector context and applies pixel transforms for rotated views, but its transform calculations differ from the VectorLayer renderer, so at 90\u00b0/270\u00b0 rotations the context scale and rotation aren\u2019t correctly inverted. The CanvasImmediateRenderer (in ol/render/canvas/Immediate.js) consumes that wrong transform, producing variable stroke widths and text scales. Comparing to CanvasVectorLayerRenderer (in VectorLayer.js), which computes forward and inverse transforms correctly, reveals the discrepancy. Fixing the TileLayer transform logic in TileLayer.js to match VectorLayer.js resolves the stroke, text and geometry precision errors.",
+        "bug_scenario": "When you rotate the map close to 90\u00b0 or 270\u00b0 and draw features on a TileLayer using its vector context (for example animating flight paths on a raster tile base), strokes become too thick or thin, text labels scale incorrectly and line geometry snaps to imprecise positions. By contrast, doing the same on a VectorLayer (with its own vector context) produces consistent stroke widths, text scales and geometry precision at all rotations."
+    }
+}

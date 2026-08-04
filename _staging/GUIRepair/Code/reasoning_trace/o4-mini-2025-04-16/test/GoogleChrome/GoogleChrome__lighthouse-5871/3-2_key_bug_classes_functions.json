@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/lib/emulation.js//enableNexus5X",
+            "lighthouse-core/gather/driver.js//getUserAgent"
+        ],
+        "bug_functions": [
+            "enableNexus5X",
+            "getUserAgent"
+        ],
+        "explanation": "In lib/emulation.js the function enableNexus5X explicitly calls Network.setUserAgentOverride with the Nexus 5X UA, so the actual HTTP requests use that mobile UA. However in gather/driver.js the method getUserAgent (used to populate artifacts.UserAgent and subsequently lhr.userAgent/runtimeSettings.userAgent) still returns the browser\u2019s default UA (e.g. the CrOS UA) because it never queries or reflects the override. To fix the mismatch, getUserAgent must be updated to return the overridden UA (for example by reading back the value passed to Network.setUserAgentOverride or via a CDP Network.getUserAgentOverride call), so that the report\u2019s displayed UA matches the actual header sent.",
+        "bug_scenario": "When you run Lighthouse in mobile emulation (for example \u201cEmulated Nexus 5X\u201d), the network requests sent by Chrome actually carry the mobile User-Agent string defined in emulation.js (the Android/Nexus UA), but the Lighthouse report\u2019s \u201cRuntime settings \u2192 User agent\u201d line is still showing the original desktop CrOS UA. In other words, network logs show one UA (the override), while the report header shows another (the default)."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/lib/emulation.js//(module)",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/emulation.js//enableNexus5X",
+            "lighthouse-core/lib/emulation.js//NEXUS5X_USERAGENT",
+            "lighthouse-core/gather/driver.js//getUserAgent",
+            "lighthouse-core/gather/driver.js//beginEmulation"
+        ],
+        "explanation": "\u2022 In lib/emulation.js the constant NEXUS5X_USERAGENT and function enableNexus5X are responsible for telling Chrome DevTools to override the network UA header when emulating a Nexus 5X. That part is working correctly, so your server sees the Mobile UA.  \n\u2022 However, in gather/driver.js the Driver.getUserAgent method (called during artifact collection) is still using the browser\u2019s original UA (via the un-implemented stub that never picks up the override), and Driver.beginEmulation doesn\u2019t update how getUserAgent behaves after the override.  \n\u2022 Because the report prints runtimeSettings.userAgent based on Driver.getUserAgent (not on the active Network.setUserAgentOverride), the report shows the wrong UA string.  \nTo fix this you need to have Driver.getUserAgent return the same UA string that emulation.js passes to Network.setUserAgentOverride (or to read it back from the DevTools protocol), and ensure beginEmulation wires up that override before getUserAgent is called.",
+        "bug_scenario": "When Lighthouse runs in mobile emulation (for example, Nexus 5X) it correctly overrides the network\u2010level User-Agent header (so your server sees the Mobile UA), but the \u201cRuntime settings \u2192 User agent\u201d string printed in the HTML report still shows the browser\u2019s original desktop UA. In the screenshots you can see two different UAs (the emulated Mobile UA in the access.log vs. the CrOS/Linux UA in the report), which is confusing and incorrect \u2014 the report should reflect the actual UA override used on the network."
+    }
+}

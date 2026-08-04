@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/TableSelectRow.tsx//TableSelectRow",
+            "packages/react/src/components/InlineCheckbox/InlineCheckbox.js//InlineCheckbox",
+            "packages/react/src/components/DataTable/TableSelectAll.tsx//TableSelectAll",
+            "packages/react/src/components/DataTable/TableExpandRow.tsx//TableExpandRow"
+        ],
+        "bug_functions": [],
+        "explanation": "Each of these components currently declares and consumes a prop named `ariaLabel` (camelCase) and applies it either as `ariaLabel` (in InlineCheckbox) or via the `labelText` and `ariaLabel` props on subcomponents. To achieve consistency with React\u2019s requirement for hyphenated ARIA attributes and to match the Modal API, each component must be updated to:\n\n- Deprecate the `ariaLabel` prop via a `deprecate()` helper.\n- Add support for a new prop key (`aria-label`) in the PropTypes or TypeScript interface.\n- Change internal usage to prefer the hyphenated `aria-label` prop when passed, falling back to the old `ariaLabel` for backward compatibility.\n\nBy updating these four components, we cover key interactive controls (table row selectors, inline checkboxes, table \u201cselect all\u201d, and expandable rows) that currently only support `ariaLabel`. This ensures a consistent and semantically correct ARIA API across Carbon React components.",
+        "bug_scenario": "The screenshots show that the Modal component in carbon-react@1.17.0 accepts a hyphenated prop (`aria-label`) for its accessibility label, whereas other components such as ComboBox still use the camel-cased prop (`ariaLabel`). This inconsistency means some components only support one naming style, leading to confusion and lack of backward/forward compatibility. The goal is to refactor all components that currently accept `ariaLabel` to also accept (and prefer) `aria-label` while deprecating `ariaLabel`."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/TableSelectRow.tsx//TableSelectRow",
+            "packages/react/src/components/InlineCheckbox/InlineCheckbox.js//InlineCheckbox",
+            "packages/react/src/components/DataTable/TableSelectAll.tsx//TableSelectAll",
+            "packages/react/src/components/DataTable/TableExpandRow.tsx//TableExpandRow"
+        ],
+        "bug_functions": [],
+        "explanation": "All four components define and document a prop named ariaLabel (camelCase) and use it when rendering the underlying control (input, checkbox, radio, button) as either an aria-label attribute or a label property. To align with React\u2019s kebab-case convention for aria-* attributes and to provide a single consistent prop name, these components need to deprecate the ariaLabel prop, add support for an explicit 'aria-label' prop, and update their prop destructuring and PropTypes definitions accordingly.",
+        "bug_scenario": "The screenshots illustrate an inconsistency between how different Carbon React components accept WAI-ARIA labels in their Storybook controls. In the Modal component (v1.17.0) the control is named \u201caria-label\u201d (kebab-case) but in components like ComboBox the control is named \u201cariaLabel\u201d (camelCase). Internally many components still define and consume a prop called ariaLabel and render it as an aria-label attribute, leading to confusion and lack of consistency across the library."
+    }
+}

@@ -1,0 +1,55 @@
+diff --git a/lib/features/label-editing/LabelEditingProvider.js b/lib/features/label-editing/LabelEditingProvider.js
+index c0520ad8..5baeb35b 100644
+--- a/lib/features/label-editing/LabelEditingProvider.js
++++ b/lib/features/label-editing/LabelEditingProvider.js
+@@ -414,11 +414,14 @@ LabelEditingProvider.prototype.update = function(
+ 
+   }
+ 
+-  if (isEmptyText(newLabel)) {
+-    newLabel = null;
+-  }
++if (isEmptyText(newLabel)) {
++newLabel = null;
++}
+ 
+-  this._modeling.updateLabel(element, newLabel, newBounds);
++// Check if element is still part of the diagram
++if (this._canvas.getGraphics(element)) {
++this._modeling.updateLabel(element, newLabel, newBounds);
++}
+ };
+ 
+ 
+diff --git a/lib/features/label-editing/cmd/UpdateLabelHandler.js b/lib/features/label-editing/cmd/UpdateLabelHandler.js
+index 692da3d1..7852f714 100644
+--- a/lib/features/label-editing/cmd/UpdateLabelHandler.js
++++ b/lib/features/label-editing/cmd/UpdateLabelHandler.js
+@@ -99,14 +99,20 @@ export default function UpdateLabelHandler(modeling, textRenderer, bpmnFactory)
+     }
+   }
+ 
+-  function execute(ctx) {
+-    ctx.oldLabel = getLabel(ctx.element);
+-    return setText(ctx.element, ctx.newLabel);
+-  }
++function execute(ctx) {
++if (!ctx.element.parent) {
++return;
++}
++ctx.oldLabel = getLabel(ctx.element);
++return setText(ctx.element, ctx.newLabel);
++}
+ 
+-  function revert(ctx) {
+-    return setText(ctx.element, ctx.oldLabel);
+-  }
++function revert(ctx) {
++if (!ctx.element.parent) {
++return;
++}
++return setText(ctx.element, ctx.oldLabel);
++}
+ 
+   function postExecute(ctx) {
+     var element = ctx.element,

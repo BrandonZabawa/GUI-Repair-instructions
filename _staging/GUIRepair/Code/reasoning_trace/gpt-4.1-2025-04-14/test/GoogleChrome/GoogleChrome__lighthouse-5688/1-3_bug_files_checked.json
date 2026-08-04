@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js",
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js",
+            "lighthouse-core/gather/gatherers/image-usage.js"
+        ],
+        "explanation": "These files are relevant because:\n- 'lighthouse-core/audits/byte-efficiency/uses-optimized-images.js' implements the audit logic for flagging images not served in next-gen formats (such as JPEG 2000, JPEG XR, WebP) and likely has the MIME type/format checks that would need to include BMP (x-ms-bmp, image/bmp).\n- 'lighthouse-core/audits/byte-efficiency/uses-webp-images.js' is closely related and may have special casing or helpers for image format detection and report inclusion.\n- 'lighthouse-core/gather/computed/image-usage.js' gathers information about image resources and is likely where format/MIME type information is extracted and provided to the audits\u2014support for BMP may need to be ensured here so it is available for the audits.\nThese files represent the typical flow of gathering image metadata, deciding which formats are legacy, and flagging them in the report, which is exactly where the bug would be fixed.",
+        "bug_scenario": "The bug is that Lighthouse does not flag BMP images (such as x-ms-bmp) under the 'Serve images in next-gen formats' audit, even though BMP is a legacy image format. The expected behavior is that such images should be flagged and included in the audit results, warning developers to serve these images in more efficient, next-gen formats. The issue is illustrated by the audit's report screenshot, which shows only JPEG images flagged and not the BMP image that should be flagged."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js",
+            "lighthouse-core/audits/byte-efficiency/uses-webp-images.js",
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js"
+        ],
+        "explanation": "These files are related to the detection and audit of optimized (and next-gen) image formats in Lighthouse. Specifically: 1) 'lighthouse-core/audits/byte-efficiency/uses-optimized-images.js' runs the actual audit about which images can be optimized and flags them; 2) 'lighthouse-core/audits/byte-efficiency/uses-webp-images.js' handles next-gen image format recommendation, and may need to include BMP in its set of legacy formats; 3) 'lighthouse-core/gather/computed/optimized-images.js' processes and analyzes which images are eligible for optimization\u2014including by determining file types and extensions. These files need updating to ensure BMP images (including x-ms-bmp) are recognized as legacy and flagged accordingly.",
+        "bug_scenario": "The bug is that BMP image formats, such as x-ms-bmp, are not being correctly flagged or recommended for conversion under the \"Serve images in next-gen formats\" audit in Lighthouse. The screenshot shows that only JPEG images are listed in this audit's results and BMP images are skipped, even though BMP is a legacy format. The audit should also flag BMP images and recommend next-gen formats (JPEG 2000, JPEG XR, WebP)."
+    }
+}

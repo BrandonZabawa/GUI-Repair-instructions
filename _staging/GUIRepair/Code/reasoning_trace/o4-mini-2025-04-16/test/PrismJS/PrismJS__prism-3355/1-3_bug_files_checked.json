@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-cshtml.js",
+            "components/prism-cshtml.min.js",
+            "components/prism-markup-templating.js",
+            "components/prism-markup-templating.min.js",
+            "components/prism-csharp.js",
+            "components/prism-uorazor.js",
+            "components/prism-uorazor.min.js"
+        ],
+        "explanation": "All of these files participate in the Razor/CSHTML grammar and must be updated to fix the incorrect highlighting.  \n\n\u2022 prism-cshtml.js (and its minified counterpart) define the CSHTML language in Prism: they extend markup, inject Razor-specific patterns (for @\u2026 expressions in text and attributes), and configure the host language (C#). The broken attribute-value pattern and missing @helper keyword live here.  \n\n\u2022 prism-markup-templating.js (and .min.js) provide the core machinery for embedding templating languages (like Razor) inside markup. They supply the regex that splits on quotes, braces, etc. They need to be adjusted to allow nested quoted strings inside Razor expressions in attributes.  \n\n\u2022 prism-csharp.js supplies the C# grammar that CSHTML reuses for code inside @\u2026 blocks. If new Razor directives (e.g. @helper) introduce syntax that Prism currently treats as plain text, that grammar must be updated to mark @helper as a keyword or directive.  \n\n\u2022 prism-uorazor.js (and .min.js) is an auxiliary Razor variant (used by Umbraco/etc.) which contains overlapping patterns for Razor syntax; it should be kept in sync with the main cshtml grammar. Any fix to handle @helper or nested quotes must also be reflected here to avoid divergent behavior.",
+        "bug_scenario": "When highlighting Razor/CSHTML snippets Prism is failing to correctly parse two common Razor constructs: 1) inline expressions inside HTML attributes (e.g. placeholder=\"@Localize.GetLabelHtml(\\\"PLACEHOLDER\\\")\"), where embedded quotes break out of the attribute value and the remainder of the page falls into the C# grammar; and 2) the @helper directive, which Prism doesn\u2019t recognize as a Razor keyword/context so it treats the entire block that follows as plain markup or C#.  As a result, attributes end unexpectedly, string literals inside the Razor expression aren\u2019t respected, and @helper blocks aren\u2019t tokenized properly."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-cshtml.js",
+            "components/prism-cshtml.min.js",
+            "components/prism-csharp.js",
+            "components/prism-markup-templating.js"
+        ],
+        "explanation": "1. components/prism-cshtml.js (+ .min.js)\n   - This is where the Razor (cshtml) grammar is defined. It contains the patterns that detect <html> tags mixed with C# code via @. The regex for attribute values and directives needs to be updated to allow nested quotes in attributes (so @Localize.GetLabelHtml(\"\u2026\") isn\u2019t split) and to recognize the full @helper signature as a Razor block start, not plain text.\n\n2. components/prism-csharp.js\n   - The cshtml grammar delegates parsing of C# code inside Razor blocks to the C# language definition. Right now, \u2018helper\u2019 isn\u2019t listed as a C# keyword, so the @helper directive isn\u2019t tokenized correctly. Adding \u2018helper\u2019 to the keyword list (and possibly adjusting the directive-block pattern) fixes the block helper highlighting.\n\n3. components/prism-markup-templating.js\n   - Prism\u2019s templating plugin handles injection of non-HTML code inside markup attributes and elements. The cshtml component uses this to embed C#. Its attribute-value tokenizer must accept nested quotes and Razor expressions. Tweaking the templating injection here ensures that the entire @Localize.GetLabelHtml(\u2026) call is treated as code, not broken by the outer quote delimiter.",
+        "bug_scenario": "When highlighting a cshtml file containing Razor inline expressions and block helpers, Prism mis-parses several constructs. In particular:\n\n\u2022 Inline Razor in attributes fails on nested quotes, e.g. placeholder=\"@Localize.GetLabelHtml(\"PLACEHOLDER\")\" is chopped up incorrectly.\n\u2022 The @helper directive is not recognized as a Razor block and is highlighted as plain text.\n\nAs a result, calls like @Localize.GetLabelHtml(\"TITLE\") inside <h1> tags and the @helper TrialHelper(...) block are all wrongly tokenized and styled."
+    }
+}

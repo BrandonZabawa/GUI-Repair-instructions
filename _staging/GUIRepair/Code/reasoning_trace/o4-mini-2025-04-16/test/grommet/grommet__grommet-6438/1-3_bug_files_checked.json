@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Calendar/Calendar.js",
+            "src/js/components/Calendar/utils.js",
+            "src/js/components/DateInput/DateInput.js"
+        ],
+        "explanation": "1. src/js/components/Calendar/Calendar.js \u2013 This is where the calendar grid is generated and each day\u2019s disabled state is determined. The bounds logic here only applies to days in the current month; it needs to be extended so that days rendered from adjacent months also respect the calendarProps.bounds and are marked disabled.  \n2. src/js/components/Calendar/utils.js \u2013 Utility functions here compute the array of days (including adjacent\u2010month days) and compare them against bounds. Adjusting or adding a check in these helpers will ensure that any day outside the given bounds\u2014regardless of month\u2014gets disabled.  \n3. src/js/components/DateInput/DateInput.js \u2013 The DateInput wraps Calendar and passes along calendarProps. It may need to set or override Calendar\u2019s showAdjacentDays or disabledDays behavior when bounds are provided so that the Calendar component enforces disabling adjacent\u2010month days outside those bounds.",
+        "bug_scenario": "In the DateInput example with calendarProps.bounds set to ['2020-07-01','2020-07-31'], the calendar still renders the trailing days from June (e.g. June 30) as selectable. Although these \u201cadjacent days\u201d should be visible, they must be disabled when they fall outside of the specified bounds. Currently the Calendar component does not apply the bounds check to days rendered from the previous or next month, allowing the user to select June 30 even though it precedes the July 1 lower bound."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/Calendar/Calendar.js",
+            "src/js/components/Calendar/utils.js",
+            "src/js/components/DateInput/DateInput.js",
+            "src/js/components/DateInput/utils.js"
+        ],
+        "explanation": "\u2022 Calendar.js contains the logic that renders each day cell and should disable any date outside the specified bounds but currently does not properly disable adjacent\u2010month days.^ \n\u2022 utils.js under Calendar provides the helper functions that compare a candidate day against the bounds; if those comparisons are incorrect or ignore the month context, days like June 30 slip through.^ \n\u2022 DateInput.js is responsible for accepting the bounds prop, normalizing the string dates, and passing them into Calendar; if the timezone conversion or parsing here is off, the Calendar may never receive the correct threshold.^ \n\u2022 DateInput/utils.js includes the routines that parse ISO vs. local dates and hand that data off; any mismatch here between UTC and local midnight can shift a boundary by one day and result in an out\u2010of\u2010bounds date being treated as in\u2010bounds.",
+        "bug_scenario": "In the DateInput example the developer has given calendarProps.bounds of [\"2020-07-01\",\"2020-07-31\"], yet the user is still able to select June 30\u2014an adjacent\u2010month day that falls outside of the July bounds. In other words, the calendar is rendering and enabling the last day of the previous month when it should be disabled per the bounds."
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy"
+        ],
+        "bug_functions": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.copyElement', \u2026)",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.pasteElement', \u2026)",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyElement"
+        ],
+        "explanation": "The boundary-event attachment is a reference (attachedToRef) on the BPMN business object. In BpmnCopyPaste.js the copyElement listener copies only name, DI, default flow, etc., but ignores attachedToRef. On paste, the pasteElement listener creates a fresh business object via moddleCopy.copyElement and wiring up only the descriptor properties it has (name, DI, default), so the new boundary event never gets its attachedToRef remapped to the new task. Under the hood, ModdleCopy.prototype.copyElement also skips reference properties by default (isReference descriptors), so attachedToRef is dropped entirely. To fix this bug one must extend BpmnCopyPaste to capture and carry the original attachedToRef in the descriptor during copy, then on paste look up the new host in the cache and reassign newBusinessObject.attachedToRef (and update the shape via modeling.attachBoundaryEvent). This restores the intended automatic reattachment of the boundary event to the copied task.",
+        "bug_scenario": "When a BPMN task and its attached boundary event are copied and pasted, the new boundary event appears independently instead of being attached to the new task. In the provided gif the user selects a task with a boundary event, copies both, pastes them side-by-side, but the pasted boundary event is not clipped to the pasted task \u2013 it floats unattached."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy"
+        ],
+        "bug_functions": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.copyElement')",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.pasteElement')",
+            "lib/features/copy-paste/BpmnCopyPaste.js//resolveReferences",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyElement"
+        ],
+        "explanation": "The copyPaste.copyElement and copyPaste.pasteElement handlers in BpmnCopyPaste.js are responsible for capturing and re-instantiating BPMN elements when copying and pasting. However, they never copy or reattach the \u2018attachedToRef\u2019 reference for boundary events. The resolveReferences helper only handles default sequence flow references and ignores attachment references. Additionally, ModdleCopy.prototype.copyElement in ModdleCopy.js skips copying reference properties (like attachedToRef) because reference properties are filtered out by default. To fix the bug, these functions must be extended to include the attachedToRef property in both the descriptor during copy and in the reference resolution phase during paste, so that boundary events remain attached to their new parent task.",
+        "bug_scenario": "When a BPMN task with a boundary event is copied and pasted, the new boundary event is not automatically attached to the copied task. In the reproduced scenario both the task and its boundary event are selected and copied together, but after paste the boundary event appears detached and floating instead of remaining bound to the new task."
+    }
+}

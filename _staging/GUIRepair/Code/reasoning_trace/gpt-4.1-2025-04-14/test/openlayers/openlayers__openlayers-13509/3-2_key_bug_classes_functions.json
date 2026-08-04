@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Group.js//LayerGroup",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Group.js//getLayerStatesArray",
+            "src/ol/layer/WebGLTile.js//getLayerState",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame"
+        ],
+        "explanation": "The core of the issue is that the visibility state set on the parent Group layer is not properly propagated or respected by the WebGLTile layer. \n\n- src/ol/layer/Group.js//LayerGroup: This class manages collections of layers and is responsible for aggregating/propagating properties like visibility. The function getLayerStatesArray is especially relevant because it computes the visible state for child layers, combining the group's and children's visibility flags. This is critical for ensuring that when the group is hidden, its child layers (including WebGLTile) are hidden as well. \n\n- src/ol/layer/WebGLTile.js//WebGLTileLayer: This class defines the WebGL tile layer, and its getLayerState method determines the state (including visibility) that is used by the renderer. If this does not account for the effective visibility as computed by the group, the renderer may incorrectly display the layer.\n\n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: The renderFrame function is responsible for rendering the tiles. It should respect the visibility flag provided by the layer state (which should reflect both the group and the layer's own visibility). If it ignores this or if the state is incorrect, tiles may be rendered when they should not be.\n\nThese classes/functions are bug-related because the incorrect visibility behavior results from a breakdown in the propagation and honoring of the visibility property from group to child, and from the state computation to the renderer.",
+        "bug_scenario": "When a WebGLTile layer (ol/layer/WebGlTile) is placed inside a Group layer (ol/layer/Group), toggling the visibility of the group to 'false' fails to hide the WebGLTile layer: the tiles remain visible on the map. In contrast, using a standard Tile layer works as expected, hiding the tiles when the group is hidden. This indicates that WebGLTile does not correctly inherit or respond to the visibility state of its parent group layer."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/Group.js//LayerGroup",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Group.js//LayerGroup.getLayerStatesArray",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.render",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer.renderFrame"
+        ],
+        "explanation": "The bug is related to how visibility is computed and respected for nested layers. The LayerGroup class, specifically its getLayerStatesArray method, is responsible for propagating visibility and other properties from the group layer to its child layers. If WebGLTileLayer or its renderer (WebGLTileLayerRenderer) does not properly check the computed visibility in their render/renderFrame methods, the child layer may be rendered even when the group is hidden. Therefore, LayerGroup.getLayerStatesArray is crucial for propagating the visibility, while WebGLTileLayer and WebGLTileLayerRenderer must respect this state during rendering. The bug likely lies in either the state propagation or the renderer's respect for the composed visibility flag.",
+        "bug_scenario": "When a WebGLTile layer is placed inside a Group layer and the Group's visibility is set to false, the WebGLTile remains visible on the map. In contrast, a standard Tile layer inside a Group will correctly hide when the Group's visibility is set to false. The issue demonstrates that WebGLTile incorrectly ignores the Group's visibility settings, leading to rendering when it should not be visible."
+    }
+}

@@ -1,0 +1,242 @@
+{
+    "1/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const config = require('./webpack.config');"
+                ],
+                "REPLACE": [
+                    "const config = require('../test/rendering/webpack.config');"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const entries = Object.keys(config.entry).map(key => config.entry[key]);"
+                ],
+                "REPLACE": [
+                    "const testEntries = require('../test/rendering/entries.js'); // Presuming entries.js is the unified module for rendering test cases",
+                    "const entries = Object.keys(testEntries).map(key => testEntries[key]);"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const path = require('path');",
+                    "const png = require('pngjs');",
+                    "const fs = require('fs');"
+                ],
+                "REPLACE": [
+                    "const path = require('path');",
+                    "const png = require('pngjs');",
+                    "const fs = require('fs');",
+                    "const unifiedTestLogic = require('../test/rendering/unifiedTestLogic');"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (require.main === module) {",
+                    "",
+                    "const options = yargs.",
+                    "...",
+                    "}).parse();"
+                ],
+                "REPLACE": [
+                    "if (require.main === module) {",
+                    "",
+                    "// Here we unify by using unifiedTestLogic from test/rendering for any common logic",
+                    "const options = unifiedTestLogic.configureOptions(yargs).",
+                    "...",
+                    "}).parse();"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const entries = Object.keys(config.entry).map(key => config.entry[key]);",
+                    "...",
+                    "main(entries, options).catch(err => {"
+                ],
+                "REPLACE": [
+                    "const { additionalEntries } = require('../test/rendering/entry');",
+                    "",
+                    "// Append additionalEntries to unified entries",
+                    "const entries = [",
+                    "...Object.keys(config.entry).map(key => config.entry[key]),",
+                    "...Object.keys(additionalEntries).map(key => additionalEntries[key])",
+                    "];",
+                    "...",
+                    "main(entries, options).catch(err => {"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const config = require('./webpack.config');",
+                    "const path = require('path');"
+                ],
+                "REPLACE": [
+                    "const config = require('./webpack.config.js');",
+                    "",
+                    "// Ensure all test entries come from the `test/rendering` directory",
+                    "const testDirectory = path.join(__dirname, 'test/rendering');",
+                    "",
+                    "// Update the entry configuration to point to consolidated test paths",
+                    "config.entry = globby.sync(`${testDirectory}/**/*.js`).reduce((entries, testFilePath) => {",
+                    "const testName = path.relative(testDirectory, testFilePath).replace('.js', '');",
+                    "entries[testName] = testFilePath;",
+                    "return entries;",
+                    "}, {});"
+                ]
+            }
+        ]
+    },
+    "6/10": {},
+    "7/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "if (require.main === module) {",
+                    "",
+                    "const options = yargs.",
+                    "option('fix', {",
+                    "describe: 'Accept all screenshots as accepted',",
+                    "default: false",
+                    "}).",
+                    "option('host', {",
+                    "describe: 'The host for serving rendering cases',",
+                    "default: '127.0.0.1'",
+                    "}).",
+                    "// Other existing options..."
+                ],
+                "REPLACE": [
+                    "if (require.main === module) {",
+                    "",
+                    "const options = yargs.",
+                    "option('fix', {",
+                    "describe: 'Accept all screenshots as accepted',",
+                    "default: false",
+                    "}).",
+                    "option('host', {",
+                    "describe: 'Unified host for serving rendering cases across unified tests',",
+                    "default: '127.0.0.1'",
+                    "}).",
+                    ".option('strategy', {",
+                    "describe: 'Choose unified test execution strategy',",
+                    "choices: ['default', 'alternate'], // assuming an alternate unified strategy existed in test/rendering",
+                    "default: 'default'",
+                    "}).",
+                    "// Other existing options potentially merged..."
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "rendering/test.js": []
+    },
+    "9/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "if (require.main === module) {",
+                    "",
+                    "const options = yargs.",
+                    "option('fix', {",
+                    "describe: 'Accept all screenshots as accepted',",
+                    "default: false",
+                    "}).",
+                    "...",
+                    "...",
+                    "parse();",
+                    "",
+                    "const entries = Object.keys(config.entry).map(key => config.entry[key]);",
+                    "",
+                    "options.log = log.create({name: 'rendering', level: options.logLevel});",
+                    "",
+                    "main(entries, options).catch(err => {",
+                    "options.log.error(err.message);",
+                    "process.exit(1);",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "...",
+                    "",
+                    "// Unified testing invocation logic for rendering tests",
+                    "function runUnifiedRenderingTests() {",
+                    "const options = yargs.",
+                    "option('fix', {",
+                    "describe: 'Accept all screenshots as accepted',",
+                    "default: false",
+                    "}).",
+                    "...",
+                    "...",
+                    "parse();",
+                    "",
+                    "const entries = Object.keys(config.entry).map(key => config.entry[key]);",
+                    "",
+                    "options.log = log.create({name: 'rendering', level: options.logLevel});",
+                    "",
+                    "main(entries, options).catch(err => {",
+                    "options.log.error(err.message);",
+                    "process.exit(1);",
+                    "});",
+                    "}",
+                    "",
+                    "// Original call to execute rendering script if it's directly executed",
+                    "if (require.main === module) {",
+                    "runUnifiedRenderingTests();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "async function render(entries, options) {",
+                    "const browser = await puppeteer.launch({",
+                    "args: options.puppeteerArgs,",
+                    "headless: options.headless",
+                    "});",
+                    "",
+                    "let fail = false;",
+                    "",
+                    "try {",
+                    "const page = await browser.newPage();",
+                    "page.on('error', err => {",
+                    "options.log.error('page crash', err);",
+                    "});"
+                ],
+                "REPLACE": [
+                    "async function unifiedRender(entries, options) {",
+                    "const browser = await puppeteer.launch({",
+                    "args: options.puppeteerArgs,",
+                    "headless: options.headless",
+                    "});",
+                    "",
+                    "let fail = false;",
+                    "",
+                    "try {",
+                    "const page = await browser.newPage();",
+                    "page.on('error', err => {",
+                    "options.log.error('page crash', err);",
+                    "});"
+                ]
+            }
+        ]
+    }
+}

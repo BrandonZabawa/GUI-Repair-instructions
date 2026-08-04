@@ -1,0 +1,114 @@
+diff --git a/src/number-picker/number-picker.jsx b/src/number-picker/number-picker.jsx
+index 69b9e938c..f8313b45b 100644
+--- a/src/number-picker/number-picker.jsx
++++ b/src/number-picker/number-picker.jsx
+@@ -175,8 +175,11 @@ class NumberPicker extends React.Component {
+         this.state = {
+             value: value === undefined || value === null ? '' : value,
+             hasFocused: false,
++            focusWithin: false, // Track focus within the component
+             reRender: true,
+         };
++
++        this.focusWithinCount = 0; // To handle nested focus/blur
+     }
+ 
+     static getDerivedStateFromProps(nextProps, prevState) {
+@@ -291,6 +294,7 @@ class NumberPicker extends React.Component {
+     onFocus(e, ...args) {
+         const { onFocus } = this.props;
+         this.setFocus(true);
++        this.handleFocusWithin(true);
+         onFocus && onFocus(e, ...args);
+     }
+ 
+@@ -303,6 +307,7 @@ class NumberPicker extends React.Component {
+             this.setValue(value, e);
+         }
+         this.setFocus(false);
++        this.handleFocusWithin(false);
+         const { onBlur } = this.props;
+         onBlur && onBlur(e, ...args);
+     }
+@@ -501,6 +506,24 @@ class NumberPicker extends React.Component {
+         e.preventDefault();
+     }
+ 
++    // Add focusWithin handler
++    handleFocusWithin(focused) {
++        if (focused) {
++            this.focusWithinCount += 1;
++            if (!this.state.focusWithin) {
++                this.setState({ focusWithin: true });
++            }
++        } else {
++            this.focusWithinCount -= 1;
++            if (this.focusWithinCount <= 0) {
++                this.focusWithinCount = 0;
++                if (this.state.focusWithin) {
++                    this.setState({ focusWithin: false });
++                }
++            }
++        }
++    }
++
+     render() {
+         const {
+             device,
+@@ -528,13 +551,15 @@ class NumberPicker extends React.Component {
+ 
+         const prefixCls = `${prefix}number-picker`;
+ 
++        // Add focus style if focusWithin is true
+         const cls = classNames({
+             [prefixCls]: true,
+             [`${prefixCls}-${type}`]: type,
+             [`${prefix}${size}`]: true,
+-            [`${prefixCls}-show-trigger`]: alwaysShowTrigger,
++            [`${prefixCls}-show-trigger`]: alwaysShowTrigger || this.state.focusWithin,
+             [`${prefixCls}-no-trigger`]: !hasTrigger,
+             [`${prefix}disabled`]: disabled,
++            [`${prefixCls}-focus`]: this.state.focusWithin, // Add focus class
+             [className]: className,
+         });
+ 
+@@ -564,6 +589,9 @@ class NumberPicker extends React.Component {
+                         disabled={disabled}
+                         className={`${upBtnProps.className || ''} ${upDisabled ? 'disabled' : ''}`}
+                         onClick={this.up.bind(this, upDisabled)}
++                        onFocus={() => this.handleFocusWithin(true)}
++                        onBlur={() => this.handleFocusWithin(false)}
++                        tabIndex={0}
+                     >
+                         <Icon type="arrow-up" className={`${prefixCls}-up-icon`} />
+                     </Button>
+@@ -573,6 +601,9 @@ class NumberPicker extends React.Component {
+                         disabled={disabled}
+                         className={`${downBtnProps.className || ''} ${downDisabled ? 'disabled' : ''}`}
+                         onClick={this.down.bind(this, downDisabled)}
++                        onFocus={() => this.handleFocusWithin(true)}
++                        onBlur={() => this.handleFocusWithin(false)}
++                        tabIndex={0}
+                     >
+                         <Icon type="arrow-down" className={`${prefixCls}-down-icon`} />
+                     </Button>
+@@ -586,6 +617,9 @@ class NumberPicker extends React.Component {
+                     disabled={disabled}
+                     className={`${downBtnProps.className || ''} ${downDisabled ? 'disabled' : ''}`}
+                     onClick={this.down.bind(this, downDisabled)}
++                    onFocus={() => this.handleFocusWithin(true)}
++                    onBlur={() => this.handleFocusWithin(false)}
++                    tabIndex={0}
+                 >
+                     <Icon type="minus" className={`${prefixCls}-minus-icon`} />
+                 </Button>
+@@ -597,6 +631,9 @@ class NumberPicker extends React.Component {
+                     disabled={disabled}
+                     className={`${upBtnProps.className || ''} ${upDisabled ? 'disabled' : ''}`}
+                     onClick={this.up.bind(this, upDisabled)}
++                    onFocus={() => this.handleFocusWithin(true)}
++                    onBlur={() => this.handleFocusWithin(false)}
++                    tabIndex={0}
+                 >
+                     <Icon type="add" className={`${prefixCls}-add-icon`} />
+                 </Button>

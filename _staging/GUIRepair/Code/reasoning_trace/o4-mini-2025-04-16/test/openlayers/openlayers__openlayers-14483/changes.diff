@@ -1,0 +1,65 @@
+diff --git a/src/ol/render/canvas/Executor.js b/src/ol/render/canvas/Executor.js
+index 3da9d5f7fc..faa5d29116 100644
+--- a/src/ol/render/canvas/Executor.js
++++ b/src/ol/render/canvas/Executor.js
+@@ -535,19 +535,47 @@ class Executor {
+           /** @type {Array<*>} */ (strokeInstruction)
+         );
+       }
+-      drawImageOrLabel(
+-        context,
+-        dimensions.canvasTransform,
+-        opacity,
+-        imageOrLabel,
+-        dimensions.originX,
+-        dimensions.originY,
+-        dimensions.drawImageW,
+-        dimensions.drawImageH,
+-        dimensions.drawImageX,
+-        dimensions.drawImageY,
+-        dimensions.scale
+-      );
++      // If we have a rotation matrix, apply it on top of the existing
++      // translate (from clipping/prerender), draw, then restore.
++      const m = dimensions.canvasTransform;
++      if (m) {
++        context.save();
++        context.transform(
++          m[0], m[1],
++          m[2], m[3],
++          m[4], m[5]
++        );
++        // pass undefined (or null) so drawImageOrLabel does not setTransform()
++        drawImageOrLabel(
++          context,
++          undefined,
++          opacity,
++          imageOrLabel,
++          dimensions.originX,
++          dimensions.originY,
++          dimensions.drawImageW,
++          dimensions.drawImageH,
++          dimensions.drawImageX,
++          dimensions.drawImageY,
++          dimensions.scale
++        );
++        context.restore();
++      } else {
++        // no rotation → just draw in the translated/clipped context
++        drawImageOrLabel(
++          context,
++          undefined,
++          opacity,
++          imageOrLabel,
++          dimensions.originX,
++          dimensions.originY,
++          dimensions.drawImageW,
++          dimensions.drawImageH,
++          dimensions.drawImageX,
++          dimensions.drawImageY,
++          dimensions.scale
++        );
++      }
+     }
+     return true;
+   }

@@ -1,0 +1,151 @@
+{
+    "1/5": {
+        "src/resources/filters/crossref/figures.lua": [
+            {
+                "SEARCH": [
+                    "-- determine order, parent, and displayed caption",
+                    "local order",
+                    "local parent = float.parent_id",
+                    "if (parent) then",
+                    "order = nextSubrefOrder()",
+                    "else",
+                    "order = indexNextOrder(kind)",
+                    "end",
+                    "",
+                    "float.order = order",
+                    "-- update the index",
+                    "indexAddEntry(float.identifier, parent, order, {float.caption_long})",
+                    "return float"
+                ],
+                "REPLACE": [
+                    "      -- determine order, parent, and displayed caption",
+                    "      local order",
+                    "      local parent = float.parent_id",
+                    "      if (parent) then",
+                    "        order = nextSubrefOrder()",
+                    "        float.caption_long = \"\\\\subcaption{\" .. float.caption_long .. \"}\"",
+                    "      else",
+                    "        order = indexNextOrder(kind)",
+                    "      end",
+                    "    ",
+                    "      float.order = order",
+                    "      -- update the index",
+                    "      indexAddEntry(float.identifier, parent, order, {float.caption_long})",
+                    "      return float"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/resources/filters/crossref/figures.lua": [
+            {
+                "SEARCH": [
+                    "-- if figure is unlabeled, do not process",
+                    "if is_unlabeled_float(float) then",
+                    "return nil",
+                    "end",
+                    "-- get label and base caption",
+                    "-- local label = el.attr.identifier",
+                    "local kind = refType(float.identifier)",
+                    "if kind == nil then",
+                    "-- luacov: disable",
+                    "warn(\"Could not determine float type for \" .. float.identifier)",
+                    "return nil"
+                ],
+                "REPLACE": [
+                    "  -- Attempt to assign labels to subfigures if they are part of a group",
+                    "  local subkind = refType(float.identifier)",
+                    "  if is_unlabeled_float(float) and float.parent_id then",
+                    "    subkind = 'subfloat'",
+                    "    float.identifier = generateSubfloatLabel(float.parent_id)",
+                    "  end",
+                    "  ",
+                    "  if subkind == nil then",
+                    "    -- luacov: disable",
+                    "    warn(\"Could not determine float type for \" .. float.identifier)"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/resources/filters/crossref/figures.lua": [
+            {
+                "SEARCH": [
+                    "-- determine order, parent, and displayed caption",
+                    "local order",
+                    "local parent = float.parent_id",
+                    "if (parent) then",
+                    "order = nextSubrefOrder()",
+                    "else",
+                    "order = indexNextOrder(kind)",
+                    "end"
+                ],
+                "REPLACE": [
+                    "      -- determine order, parent, and displayed caption",
+                    "      local order",
+                    "      local parent = float.parent_id",
+                    "      if (parent and float.subfigure == true) then",
+                    "        order = nextSubrefOrder()",
+                    "        float.caption_long = pandoc.RawBlock('latex', '\\\\subcaption{' .. float.caption_long .. '}')",
+                    "      else",
+                    "        order = indexNextOrder(kind)",
+                    "      end"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/resources/filters/crossref/figures.lua": [
+            {
+                "SEARCH": [
+                    "-- if figure is unlabeled, do not process",
+                    "if is_unlabeled_float(float) then",
+                    "return nil",
+                    "end",
+                    "",
+                    "-- get label and base caption",
+                    "-- local label = el.attr.identifier",
+                    "local kind = refType(float.identifier)"
+                ],
+                "REPLACE": [
+                    "      -- process figure labels, including subfigures",
+                    "      if is_unlabeled_float(float) then",
+                    "        if not float.is_subfloat then",
+                    "          return nil",
+                    "        end",
+                    "      else",
+                    "        if float.is_subfloat then",
+                    "          apply_subfigure_labels(float)",
+                    "        end",
+                    "      end",
+                    "",
+                    "      -- get label and base caption",
+                    "      local kind = refType(float.identifier)"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/resources/filters/crossref/figures.lua": [
+            {
+                "SEARCH": [
+                    "-- determine order, parent, and displayed caption",
+                    "local order",
+                    "local parent = float.parent_id"
+                ],
+                "REPLACE": [
+                    "      -- determine order, parent, and displayed caption",
+                    "      local order",
+                    "      local parent = float.parent_id",
+                    "      ",
+                    "      -- Add label for subfigures if present",
+                    "      if parent and float.caption then",
+                    "        float.caption_long = pandoc.Inlines{",
+                    "          pandoc.Str(\"@subfloat{\" .. (float.identifier or \"\") .. \"} \")",
+                    "        } .. float.caption_long",
+                    "      end"
+                ]
+            }
+        ]
+    }
+}

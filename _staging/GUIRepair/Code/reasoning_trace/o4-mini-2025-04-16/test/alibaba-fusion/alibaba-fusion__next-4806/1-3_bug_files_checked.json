@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/cascader-select/cascader-select.tsx",
+            "components/cascader-select/__tests__/issue-spec.tsx"
+        ],
+        "explanation": "1. cascader-select.tsx：\n   - handleChange 中确实有清除 searchValue 的逻辑，但文件里定义了两次 renderPopupContent，后面的实现覆盖了前面带清除按钮的版本，导致 UI 层面既不渲染“Clear Search”按钮，也没有正确触发 input/列表的重置。  \n   - 需要移除或合并重复的 renderPopupContent，并在正确位置调用 this.handleSearch('')／this.setState({searchValue: ''}) 以清除搜索值。  \n2. __tests__/issue-spec.tsx：\n   - 包含对该 Bug 场景的测试用例，应新增或修正测试，验证当多选并选中所有搜索结果后，组件的搜索状态被自动清空并且列表恢复到完整数据。",
+        "bug_scenario": "用户在 CascaderSelect 组件中开启多选（multiple）+ 搜索（showSearch）后：\n1. 用户在搜索框中输入关键字（如「厦门」），列表只展示匹配路径；\n2. 在搜索结果页将所有选项都选中后，组件的 handleChange 虽然尝试清空 state.searchValue，但由于渲染逻辑中真正调用的 renderPopupContent 已经覆盖掉了带有“清除搜索”按钮的版本，导致搜索框依旧保留输入内容、列表仍停留在筛选结果，用户无法自动或手动清除搜索状态并回到完整列表。"
+    },
+    "2": {
+        "bug_files": [
+            "components/cascader-select/cascader-select.tsx",
+            "components/cascader-select/__tests__/issue-spec.tsx"
+        ],
+        "explanation": "All of the UI and state-clearing logic lives in cascader-select.tsx. That file contains two definitions of renderPopupContent: the first renders a ‘Clear Search’ button when searchValue is non-empty, but the second (lower in the file) overrides it and never shows the button. The handleChange method does attempt to reset searchValue when all items are selected, but without the clear UI and with the duplicate render method, users never get feedback or control to reset the filter. The issue-spec.tsx test file will also need updating to cover this scenario and prevent regressions.",
+        "bug_scenario": "In multiple‐select mode with showSearch enabled, when the user types to filter the list (e.g. “厦门”) and then selects every matching item, the dropdown stays in “search results” mode rather than clearing the search. There is no obvious way to clear the filter (you must close and re-open the popup). The built-in ‘clear search’ button code exists but is never rendered because the component’s renderPopupContent method is defined twice—an earlier version includes the clear button, but a later override removes it—and the logic in handleChange never sees the clear-button UI."
+    }
+}

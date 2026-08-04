@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/code-annotation.lua"
+        ],
+        "bug_functions": [
+            "annoteProvider",
+            "resolveCellAnnotes",
+            "processAnnotation"
+        ],
+        "explanation": "All of the annotation logic for different languages lives in code-annotation.lua. The annoteProvider() function looks up the comment delimiters for each language (e.g. \u201c--\u201d for VHDL, \u201c//\u201d for C++), builds the patterns to find and strip inline \u201c<n>\u201d markers, and provides replace/strip functions. resolveCellAnnotes() walks each code-block line, uses annotationProvider.annotationNumber() to detect markers, and annotationProvider.stripAnnotation() to remove them from the source. processAnnotation() is then responsible for reinserting the annotation in the output (as a circle or HTML span). Because the C/C++ and VHDL branches share the same generic processAnnotation() path but the mapping or replace logic isn\u2019t generating the replacement token, those languages never get the circle numbering injected. Fixing these three functions (adjusting their language mappings or the replaceAnnotation/createComment logic) will restore proper annotation output for C/C++ and VHDL.",
+        "bug_scenario": "The user is writing Quarto documents with code blocks in VHDL and C/C++ containing inline annotations (e.g. \u201c-- <1>\u201d in VHDL or \u201c// <1>\u201d in C++). In HTML output the R and Python annotations are correctly stripped from the source and rendered as circled numbers beneath the code, but for VHDL and C/C++ the inline annotation comments are detected yet never replaced with the circular labels \u2014 they simply remain in-line as ordinary comments."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/code-annotation.lua//annoteProvider",
+            "src/resources/filters/quarto-pre/code-annotation.lua//resolveCellAnnotes",
+            "src/resources/filters/quarto-pre/code-annotation.lua//processAnnotation"
+        ],
+        "explanation": "All of the logic for recognizing comment-style callouts, stripping them from the source, and inserting placeholders lives in code-annotation.lua.  \u2022 annoteProvider is responsible for building the regex patterns for each language\u2019s comment syntax (including VHDL \u201c--\u201d and C++ \u201c//\u201d).  \u2022 resolveCellAnnotes walks each code block line-by-line, uses annoteProvider to detect annotation numbers, and strips them out of the text.  \u2022 processAnnotation is the default replacement routine used in HTML and simply removes the comment rather than injecting the circled markup.  Because HTML output never invokes replaceAnnotation and always calls processAnnotation (which only strips), C/C++ & VHDL callouts are detected but never rendered as circles.  Fixing this requires updating processAnnotation (or the code() dispatcher) so that for non-LaTeX formats it uses replaceAnnotation to insert the proper HTML (e.g. a <span> with a circled number) instead of blindly stripping the comment.",
+        "bug_scenario": "In the HTML preview of a Quarto document with \u201ccode-annotations: below,\u201d the inline callout comments in VHDL (\"-- <1>\", \"-- <2>\") and C++ (\"// <1>\", \"// <2>\") are being detected but not replaced with the expected circled annotation numbers. Instead of rendering circles inline or below the code, the markers remain as plain comment text and the ordered list items appear to the side rather than styled as circular callouts."
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/link-elements.js//LinkElements",
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/link-elements.js//LinkElements.afterPass",
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.audit"
+        ],
+        "explanation": "The LinkElements gatherer (link-elements.js) is responsible for finding all <link> elements (including rel=\"preconnect\") in both the document and response headers and normalizing their URLs. Its afterPass method (and its helpers getLinkElementsInDOM/getLinkElementsInHeaders) builds the artifacts.LinkElements array that the audit uses to know which origins the developer has already preconnected to. The UsesRelPreconnectAudit class (uses-rel-preconnect.js), specifically its static audit() method, reads those artifacts, extracts preconnectOrigins via URL.getOrigin(link.href), and then filters out any origins already hinted. If LinkElements.afterPass fails to detect the developer\u2019s preconnect tags (for example due to attribute normalization or crossorigin handling), preconnectOrigins remains missing those entries, and audit() will continue to list them as missing. Fixing the gatherer\u2019s logic for harvesting/link normalizing or the audit\u2019s origin-matching logic will prevent repeated suggestions for origins that already have preconnect hints.",
+        "bug_scenario": "When running the \u201cPreconnect to required origins\u201d audit in Lighthouse against a page that already includes <link rel=\"preconnect\"> hints for the originally flagged hosts, the audit still recommends those same origins (and shows six new ones) as if no preconnects were present. In the screenshot, origins like acquisition-1-qa.americanexpress.com, origin-pqgemapp.americanexpress.com, etc. continue to appear under \u201cPotential Savings,\u201d even though the matching <link rel=\"preconnect\" href=\"\u2026\"> tags have been added to the page."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/link-elements.js//LinkElements",
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/link-elements.js//normalizeUrlOrNull",
+            "lighthouse-core/gather/gatherers/link-elements.js//getLinkElementsInDOM",
+            "lighthouse-core/gather/gatherers/link-elements.js//getLinkElementsInHeaders",
+            "lighthouse-core/gather/gatherers/link-elements.js//afterPass",
+            "lighthouse-core/audits/uses-rel-preconnect.js//hasValidTiming",
+            "lighthouse-core/audits/uses-rel-preconnect.js//hasAlreadyConnectedToOrigin",
+            "lighthouse-core/audits/uses-rel-preconnect.js//socketStartTimeIsBelowThreshold",
+            "lighthouse-core/audits/uses-rel-preconnect.js//audit"
+        ],
+        "explanation": "The LinkElements gatherer (link-elements.js) is responsible for collecting all <link rel=\"preconnect\"> hints from both the DOM and resource headers and normalizing their URLs. The UsesRelPreconnectAudit class (uses-rel-preconnect.js) then takes those artifacts and compares them against network records to filter out origins already covered by preconnect hints. Its helper methods (hasValidTiming, hasAlreadyConnectedToOrigin, socketStartTimeIsBelowThreshold) determine which network requests are eligible for preconnect, and the audit() method assembles the final list of suggested origins by excluding any origin found in the preconnectArtifacts. If existing hints aren\u2019t being detected (due to mis-normalization, missing crossorigin attributes, or URL origin mismatches), the audit will continue to recommend them. These classes and functions therefore represent the key code paths to inspect and correct so that Lighthouse no longer flags origins once valid <link rel=\"preconnect\"> tags have been added.",
+        "bug_scenario": "In the \u201cPreconnect to required origins\u201d audit, Lighthouse continues to recommend new third-party origins\u2014even after you\u2019ve added <link rel=\"preconnect\"> tags for the originally flagged hosts. After preconnecting to nexus.ensighten.com, aexp-static.com, cdaas.americanexpress.com, aug.americanexpress.com and aexp.demdex.net, the audit still shows six additional origins (acquisition-1-qa.americanexpress.com, origin-pqgemapp.americanexpress.com, qicm.americanexpress.com, ds-aksb-a.akamaiedge.net, cx.atdmt.com, bat.bing.com) with potential savings."
+    }
+}

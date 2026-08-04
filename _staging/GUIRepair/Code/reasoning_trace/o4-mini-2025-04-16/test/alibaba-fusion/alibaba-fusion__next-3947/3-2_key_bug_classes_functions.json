@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/form/form.jsx//Form",
+            "src/form/item.jsx//Item",
+            "types/form/index.d.ts//ItemProps"
+        ],
+        "bug_functions": [
+            "src/form/form.jsx//getChildContext",
+            "src/form/item.jsx//getLabelForErrorMessage",
+            "src/form/item.jsx//render"
+        ],
+        "explanation": "1. src/form/form.jsx//Form: This class controls overall form context, including whether to use labels for error messages via the useLabelForErrorMessage prop. Its getChildContext method currently only passes _formLabelForErrorMessage to child Form.Item instances. We will need to extend this to propagate any new errorMessageLabel at the form level (or allow per-item labels) so that Form.Item can read it.\n\n2. src/form/item.jsx//Item: This is the component responsible for rendering each <Form.Item> and for retrieving the label used in the error display. The methods getLabelForErrorMessage and render are where the logic lives that decides whether to replace the field name with the label in error messages. Because getLabelForErrorMessage is currently empty and render only handles the default path, we must inject support for props.errorMessageLabel here (falling back to useLabelForErrorMessage context and normal label lookup).\n\n3. types/form/index.d.ts//ItemProps: The TypeScript definitions for Form.Item properties. Currently there is no errorMessageLabel field defined. We need to add an errorMessageLabel?: ReactNode type here so that consumers get type support for the new API.\n\nBy updating getChildContext to pass through an errorMessageLabel value, extending Item.getLabelForErrorMessage to read props.errorMessageLabel, and adjusting the render method to use that label in place of the field name on errors, we can restore useLabelForErrorMessage behavior even when extra DOM is injected around the child input.",
+        "bug_scenario": "In our business code we wrap <Form.Item> in a custom BizFormItem that injects extra DOM around the actual input. We set <Form useLabelForErrorMessage> at the root and pass an errorMessageLabel prop to the Form.Item. However because our wrapper adds a <span> around the label and the input is no longer the immediate child of Form.Item, the built-in useLabelForErrorMessage logic in Form.Item cannot find the right label to use for error messages. We need to add a new errorMessageLabel API on Form.Item that explicitly provides the label text to the internal label-for-error logic."
+    },
+    "2": {
+        "bug_classes": [
+            "src/form/item.jsx//Item",
+            "src/form/form.jsx//Form",
+            "types/form/index.d.ts//ItemProps"
+        ],
+        "bug_functions": [
+            "src/form/item.jsx//getLabelForErrorMessage",
+            "src/form/item.jsx//render",
+            "src/form/form.jsx//getChildContext"
+        ],
+        "explanation": "1. src/form/item.jsx::Item \u2014 this is the core Form.Item component. It already defines a stub getLabelForErrorMessage() and a render() method but never actually wires up a new errorMessageLabel prop or consumes the form context flag (_formLabelForErrorMessage). To implement the feature the Item component must read both its own errorMessageLabel prop and the context flag, and then in render() choose the right label to pass into the Field error system.\n\n2. src/form/item.jsx::getLabelForErrorMessage \u2014 this empty method is intended to produce the label text when useLabelForErrorMessage is enabled. It needs to be implemented to check for an errorMessageLabel prop first (falling back to the existing label prop) and return its text or ReactNode accordingly.\n\n3. src/form/item.jsx::render \u2014 the render function must be updated to include the logic for errorMessageLabel. It should inject the result of getLabelForErrorMessage into the child Field initialization (via data-meta or similar) so that the error display component can pick it up.\n\n4. src/form/form.jsx::getChildContext \u2014 this method already places useLabelForErrorMessage into context under _formLabelForErrorMessage. Form.Item needs to declare corresponding contextTypes to receive this flag and decide whether to call its own getLabelForErrorMessage.\n\n5. types/form/index.d.ts::ItemProps \u2014 the TypeScript definitions for Form.Item do not include an errorMessageLabel prop. To expose the new API in TS builds, ItemProps must be extended to accept errorMessageLabel: ReactNode (or string) alongside the existing label and useLabelForErrorMessage flags.",
+        "bug_scenario": "In the screenshot the user has wrapped <Form.Item> inside a BizFormItem component that injects additional DOM (a <span> around the label and extra Icon markup) and also passes an errorMessageLabel prop. Because Form.Item today only looks at its own label prop and doesn\u2019t expose any way to override \u201cwhat gets used as the error message name,\u201d useLabelForErrorMessage (which falls back to the label\u2018s text for the error messages) is not picking up the custom label. The user wants to add a new errorMessageLabel API on Form.Item (and a corresponding getLabel API inside the component) so that their wrapped DOM structure and custom prop can be used as the name in error messages, even when the internal children structure has extra wrappers."
+    }
+}

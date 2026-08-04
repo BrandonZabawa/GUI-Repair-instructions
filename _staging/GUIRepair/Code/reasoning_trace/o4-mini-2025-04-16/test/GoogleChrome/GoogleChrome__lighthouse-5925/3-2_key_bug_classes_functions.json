@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//UnminifiedJavaScript"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//UnminifiedJavaScript.computeWaste",
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//UnminifiedJavaScript.audit_"
+        ],
+        "explanation": "UnminifiedJavaScript is the core audit class that estimates wasted bytes. Its static computeWaste() method calls esprima.tokenize() and throws on parse errors (e.g. from CRLF in license comments). Because computeWaste() throws, audit_() catches the error and conservatively marks the entire transferSize as wasted. Fixing this bug requires modifying computeWaste() (or its error handling in audit_()) to gracefully handle Esprima errors (for example by stripping or normalizing license headers) rather than over-crediting the entire file as unminified.",
+        "bug_scenario": "The screenshot shows Lighthouse\u2019s \u201cOpportunities\u201d panel flagging /v0/amp-date-picker-0.1.js (144 KB) as unminified, with ~139 KB of \u201cPotential Savings.\u201d In reality the script body is already minified, but its hard-coded multi-line license header uses CRLFs (\r\n) that cause Esprima.tokenize() to fail. When Esprima fails, the audit falls back to treating the entire transfer size as wasted, leading to a massive over-estimation of unminified code."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//UnminifiedJavaScript"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//computeWaste",
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js//audit_"
+        ],
+        "explanation": "The UnminifiedJavaScript.computeWaste method calls esprima.tokenize on the script content and throws if Esprima reports errors (e.g. due to a license block with CRLF). That exception bubbles up into UnminifiedJavaScript.audit_, which catches it, emits a warning, and then flags the entire file size as wasted. To fix the overestimation, computeWaste (or audit_) must handle Esprima tokenization errors more gracefully (for example by normalizing line breaks, stripping the license header, or falling back to a lighter parse) instead of throwing, so that already-minified files don\u2019t get marked as wholly unminified.",
+        "bug_scenario": "The screenshot shows Lighthouse\u2019s \u201cOpportunities\u201d panel reporting a \u201cMinify JavaScript\u201d opportunity for the AMP script /v0/amp-date-picker-0.1.js, claiming ~139 KB of savings (1.29 s parse time) on a 144 KB file. In reality that file is already minified except for a multi-line license comment with CRLF line breaks, which causes Esprima to fail parsing. The audit then treats the whole transfer size as wasted, grossly overestimating savings."
+    }
+}

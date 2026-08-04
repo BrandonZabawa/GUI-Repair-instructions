@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js"
+        ],
+        "explanation": "1. ReplaceConnectionBehavior.js: This is where the message-to-sequence flow swap happens. It simply calls modeling.connect(source, target, \u2026) but never adjusts the BPMN/DI parent of the newly created flow. As a result, the replacement flow is created under the same diagram container as the original message flow (the first participant).\n\n2. BpmnUpdater.js: This module is responsible for updating BPMN semantic and DI parents when new elements (including connections) are created or reconnected. Its skeleton does not include handling for reparenting newly created sequence flows when the source and target live in different process containers. The missing logic in updateParent / updateConnection means that the new flow stays in the wrong container.\n\n3. UpdateSemanticParentHandler.js: This handler is wired into the command stack to invoke BpmnUpdater.updateSemanticParent for certain elements. It does not currently handle connections (only data stores), so when a new sequence flow is created via reconnection, no semantic parent update is performed. Fixing this handler (or extending the updater) to reparent flows will resolve the issue.",
+        "bug_scenario": "In the broken interaction, when you reconnect a message flow from Participant A into Participant B and the replacement type becomes a sequence flow, the new sequence flow is created but remains in the original (upper) participant\u2019s diagram layer instead of being moved into Participant B\u2019s process. As a result it is not rendered as part of Participant B and can even crash the modeler when its parent container no longer contains the connection\u2019s source or target.\n\nLooking at the two screenshots:\n- The first (with blue highlight) shows the new sequence flow (dashed arrow) still attached to A\u2019s pool.\n- The second (with red highlight) shows that the connection did not reparent into B\u2019s pool.\n\nExpected: as soon as the message-flow is replaced by a sequence-flow, the new flow should be added under the target participant\u2019s process and drawn within its pool."
+    }
+}

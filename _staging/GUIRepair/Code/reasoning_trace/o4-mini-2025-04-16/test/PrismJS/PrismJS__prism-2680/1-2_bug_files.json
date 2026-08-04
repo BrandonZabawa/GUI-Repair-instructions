@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "plugins/file-highlight/prism-file-highlight.js",
+            "components.js",
+            "gulpfile.js/docs.js",
+            "components/index.js"
+        ],
+        "explanation": "1. plugins/file-highlight/prism-file-highlight.js: The file-highlight plugin is responsible for fetching external source files and injecting their raw contents into the demo\u2019s <pre> blocks. It currently writes unescaped content (including back-ticks) directly as innerHTML, so any back-tick closes the injected string and wrecks the markup. \n\n2. components.js: This module defines which components, languages, and plugins get bundled for the homepage demo. Because file-highlight is used here, any change to the plugin must be reflected or shimmed in this loader so that injected code is properly escaped. \n\n3. gulpfile.js/docs.js: This is the build task that generates the index.html page and wires up Prism + plugins. It inlines or concatenates the file-highlight plugin and the highlighted code. We need to adjust the template or pipeline here so that file-highlight output is post-processed (e.g. escaped) before insertion. \n\n4. components/index.js: This is the runtime loader on the homepage that actually triggers Prism.highlightAll and the loading of any language extras/plugins. If we switch to textContent injection or add a post-injection fix (escaping back-ticks), it must be applied here so the broken snippet never reaches the browser raw.",
+        "bug_scenario": "On the live demo at https://prismjs.com/index.html the self-hosted Prism source code example (the one that shows \u201cPrism\u2019s own source highlighted by Prism\u201d) fails partway through: as soon as the highlighter hits a back\u2010tick inside the example code the entire rest of the snippet falls out of the code block. You can see in the screenshot that the lines defining the SELECTOR and the lang regex render as plain text rather than highlighted code, because an unescaped back-tick in the HTML/JS snippet prematurely closes the string or breaks the markup."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-javascript.js",
+            "components/prism-javascript.min.js",
+            "prism.js",
+            "plugins/file-highlight/prism-file-highlight.js",
+            "plugins/file-highlight/prism-file-highlight.min.js"
+        ],
+        "explanation": "The root cause is that our JS language definition (components/prism-javascript.js) has no rule for ES6 template literals (strings delimited by back-ticks). When the file-highlight plugin fetches prism.js (which contains back-ticks in comments and code), it hands that text to Prism.highlightElement. Because back-ticks aren\u2019t recognized, the tokenization breaks at the first back-tick and the rest of the code snippet loses its styling. To fix the demo you must update components/prism-javascript.js to support template-string patterns, rebuild the minified version (prism-javascript.min.js) and then regenerate the standalone build (prism.js). The file-highlight plugin files are listed because they are responsible for loading the external code into the demo; once the grammar is fixed, they will correctly display the back-ticked content without breaking.",
+        "bug_scenario": "On the project homepage\u2019s \u201cExamples\u201d section, we use the file-highlight plugin to load and render Prism\u2019s own source (prism.js) in a live demo. As soon as the loaded source contains a back-tick (for example in ES6 template literals or inline back-ticked identifiers in comments like `language-xxxx`), Prism\u2019s JavaScript grammar doesn\u2019t treat \u201c`\u201d as part of a valid string token. The highlighter then loses its place and everything that follows that back-tick is no longer highlighted correctly."
+    }
+}

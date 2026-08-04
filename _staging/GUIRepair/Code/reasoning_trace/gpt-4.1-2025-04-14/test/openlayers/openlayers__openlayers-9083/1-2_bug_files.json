@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/Draw.js",
+            "src/ol/interaction/DragPan.js",
+            "src/ol/interaction/Interaction.js",
+            "src/ol/events/condition.js",
+            "src/ol/MapBrowserEventHandler.js",
+            "src/ol/PluggableMap.js"
+        ],
+        "explanation": "These files are related for the following reasons:\n\n- src/ol/interaction/Draw.js: Implements drawing interactions and manages their state, event handlers, and drawend logic.\n- src/ol/interaction/DragPan.js: Implements panning (drag-to-move) interactions, which are affected by conditions like 'altKeyOnly' and may be disabled/blocked while drawing.\n- src/ol/interaction/Interaction.js: The base class for map interactions; could impact interaction enabling/disabling and event propagation when switching from drawing to dragging.\n- src/ol/events/condition.js: Implements event conditions like altKeyOnly to determine when interactions (like Draw or Pan) are active or should respond to input. Misbehavior here can cause the bug.\n- src/ol/MapBrowserEventHandler.js: Responsible for handling browser input events and distributing them to map interactions; bugs here might cause interactions to not resume properly after drawend.\n- src/ol/PluggableMap.js: Core file for managing map state and interactions; coordinates managing multiple interactions, including enabling/disabling after events like drawend.\n\nFixing the bug will likely involve changes or investigations in these files, especially around the state management and event sequence when finishing a Draw interaction and allowing DragPan to resume.",
+        "bug_scenario": "The reported bug is that after completing (drawend) a polygon drawing using the OpenLayers 5.3.0 Draw interaction (with a special condition: altKeyOnly), the map sometimes cannot be dragged. The bug is intermittent, happening only after finishing a drawing, not while drawing or otherwise. The scenario image shows a typical setup with a map, vector layer, and a Draw interaction to create polygons.\n\nFrom the repository structure and the code shown, this relates to how interactions (Draw and DragPan) are coordinated, events are handled, and map state transitions after drawing ends. The bug likely involves not properly re-enabling or managing map panning interactivity after finishing the drawing interaction, possibly due to event/condition mismanagement or Draw not cleaning up properly."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/interaction/Draw.js",
+            "src/ol/interaction/DragPan.js",
+            "src/ol/interaction/Interaction.js",
+            "src/ol/events/condition.js",
+            "src/ol/Map.js",
+            "src/ol/MapBrowserEventHandler.js"
+        ],
+        "explanation": "These files are closely tied to the reported problem: (1) src/ol/interaction/Draw.js manages draw interactions and drawend logic, which is directly relevant; (2) src/ol/interaction/DragPan.js is responsible for map dragging; (3) src/ol/interaction/Interaction.js is the base for all map interactions and may be involved in interaction state transitions; (4) src/ol/events/condition.js implements key conditions like 'altKeyOnly', which could contribute to conflicting input handling; (5) src/ol/Map.js handles the map view and adds/removes interactions, so issues with state reset after drawend could originate there; (6) src/ol/MapBrowserEventHandler.js routes and manages browser events, which may be relevant for event handling bugs after interactions complete. Changes in OpenLayers 5+ to draw interaction cleanup or event propagation could make these files bug related.",
+        "bug_scenario": "The bug scenario is that after completing a polygon drawing action (drawend) on an OpenLayers 5.3.0 map, the map sometimes cannot be dragged anymore. The drag functionality for the map intermittently breaks after drawend\u2014the issue does not occur if the drawing action isn't finished. The image shows an OpenLayers setup with a Draw interaction (with an altKeyOnly condition), and the map controls appear to work at first, but after drawing, dragging the map fails as shown by the unmoving viewport despite mouse input."
+    }
+}

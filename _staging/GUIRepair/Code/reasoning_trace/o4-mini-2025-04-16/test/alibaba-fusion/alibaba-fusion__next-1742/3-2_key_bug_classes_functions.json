@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/cascader/cascader.jsx//Cascader",
+            "src/cascader/item.jsx//CascaderMenuItem",
+            "types/cascader/index.d.ts//CascaderProps"
+        ],
+        "bug_functions": [
+            "src/cascader/cascader.jsx//renderMenu",
+            "src/cascader/item.jsx//render"
+        ],
+        "explanation": "The tooltip is coming from the title attribute automatically applied on each menu item. CascaderMenuItem (in item.jsx) is the component rendering individual items \u2013 its render() method should be updated to conditionally omit or override the title attribute when a new prop (e.g. showItemTitle=false) is passed. The top-level Cascader class needs to accept and forward this new prop down to CascaderMenuItem via its renderMenu function. The type definition in types/cascader/index.d.ts must also declare the new API flag in CascaderProps so consumers get correct TS support.",
+        "bug_scenario": "In the Cascader dropdown each menu cell shows a native browser tooltip (the title attribute) on hover \u2013 displaying the full path text \u2013 but there is no API to disable it. The screenshot shows that even with a custom itemRender, the browser still pops up the title. The request is to add a prop so that consumers can turn off these hover tooltips (title attributes)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/cascader/item.jsx//CascaderMenuItem",
+            "src/cascader/cascader.jsx//Cascader"
+        ],
+        "bug_functions": [
+            "src/cascader/item.jsx//render",
+            "src/cascader/cascader.jsx//renderMenu",
+            "src/cascader/cascader.jsx//renderMenus"
+        ],
+        "explanation": "The unwanted title attribute is coming from the CascaderMenuItem component\u2019s render method (it passes through all unknown props, including title, into the Menu.Item DOM). To provide a public API to disable titles you need to extend the Cascader component (in src/cascader/cascader.jsx) to accept a new prop (for example `showItemTitle` or similar), propagate that option down into CascaderMenuItem, and then in CascaderMenuItem.render conditionally omit or override the title on the wrapper element. The renderMenu and renderMenus methods in the top-level Cascader class are responsible for creating CascaderMenuItem instances, so they will need to be updated to pass the new flag. Modifying the type definition (types/cascader/index.d.ts) to include the new prop completes the API contract.",
+        "bug_scenario": "In the Cascader menu, when you hover over an item it shows the full label as a browser-native title\u2010tooltip. The user wants an API/property to disable or remove that title attribute so no tooltip ever appears, especially when they provide their own custom itemRender."
+    }
+}

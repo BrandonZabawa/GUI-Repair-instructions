@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/render/VectorContext.js"
+        ],
+        "explanation": "All of the offending logic lives in VectorContext.js: \u2022 drawFeature(): does an initial extent intersection check that is redundant (drawGeometry repeats the same check) and incorrectly filters out geographic coordinates when the feature\u2019s raw extent doesn\u2019t overlap the view\u2019s unwrapped extent. \u2022 drawGeometry(): repeats the extent check immediately after drawFeature, making the first test unnecessary. \u2022 drawCircle(): contains its own, incorrect test of the circle\u2019s computed extent that must be corrected (or removed) so point styles continue drawing outside the Null Island envelope. Modifying or removing these checks in VectorContext.js will restore proper rendering of animated features in EPSG:4326.",
+        "bug_scenario": "When animating a feature in EPSG:4326 (geographic) coordinates, drawFeature() silently skips rendering as soon as the view is panned so that the geometry\u2019s \u201cNull Island\u201d corner (0,0) lies outside the view extent. Internally, VectorContext.drawFeature and its helper drawGeometry both perform an extent\u2013intersection test against the frame\u2010state extent, and a separate, incorrect extent check in drawCircle for point symbols further suppresses rendering. As a result, markers moving along a line that spans 0\u00b0 can disappear once the map is moved off Null Island, even though drawGeometry or setStyle() calls (which only test extent once or use a correct test) continue to render them."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/render/VectorContext.js"
+        ],
+        "explanation": "All of the erroneous extent tests live in VectorContext.js. The drawFeature() method makes an unnecessary geometry-extent comparison that prevents rendering when the feature\u2019s world coordinates fall outside the current viewport origin. That check duplicates the one in drawGeometry() and can be removed. The drawCircle() method in the same file also uses a faulty extent test and needs to be corrected there.",
+        "bug_scenario": "When animating a feature in a geographic (EPSG:4326) view, once the map is panned so that the origin (Null Island at [0,0]) is outside the viewport, VectorContext.drawFeature() no longer renders the feature. Replacing drawFeature() with setStyle()/drawGeometry() keeps the feature visible. This points to an incorrect extent\u2010intersection check early in drawFeature(), which is in fact redundant given the later drawGeometry() call, and a similar flawed check in drawCircle()."
+    }
+}

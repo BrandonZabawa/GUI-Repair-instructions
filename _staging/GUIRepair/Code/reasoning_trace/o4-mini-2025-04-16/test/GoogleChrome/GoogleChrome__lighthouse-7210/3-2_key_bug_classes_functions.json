@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/css-usage.js//CSSUsage",
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js//UnusedCSSRules",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes"
+        ],
+        "bug_functions": [
+            "CSSUsage.afterPass",
+            "UnusedCSSRules.indexStylesheetsById",
+            "UnusedCSSRules.computeUsage",
+            "UnusedBytes.estimateTransferSize"
+        ],
+        "explanation": "\n\u2022 CSSUsage.afterPass: collects all stylesheets added to the page (including dynamically injected <style> tags), but does not record an associated network record for CSS fetched via XHR/JSON, so downstream logic cannot compute the true transfer size.\n\n\u2022 UnusedCSSRules.indexStylesheetsById: matches each gathered stylesheet to a network record by URL; injected styles use the page or JSON URL and often miss the mapping, causing them to be treated as inline with no dedicated transfer size.\n\n\u2022 UnusedCSSRules.computeUsage: calculates wasted bytes by comparing raw in-DOM bytes against used rule offsets, then multiplies by the estimated transfer size. Because the sheet is treated as inline or has the wrong network record, it overestimates the bytes on the wire.\n\n\u2022 UnusedBytes.estimateTransferSize: when no networkRecord is found or the resourceType mismatches, defaults to a 0.5 compression ratio of uncompressed CSS. This pessimistic default further inflates the reported savings and does not reflect the actual gzip ratio of the JSON payload.\n\nTogether these methods drive the unused-CSS audit\u2019s byte calculations. To fix the bug, the gatherer must attach the real JSON fetch networkRecord (with its actual transferSize and resourceSize) to the dynamic stylesheet, and estimateTransferSize should use that record (or a more accurate ratio) instead of falling back to a generic 50% multiplier.",
+        "bug_scenario": "When a third-party script fetches its styles as a gzipped JSON payload (~20 KB over the wire) and then injects the full CSS text into a <style> tag (~80 KB uncompressed), Lighthouse\u2019s \u201cDefer unused CSS\u201d audit measures the raw in-DOM CSS size and applies a pessimistic compression ratio. It reports ~70 KB of wasted CSS, even though only ~20 KB was transferred."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes",
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js//UnusedCSSRules"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.estimateTransferSize",
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js//UnusedCSSRules.computeUsage"
+        ],
+        "explanation": "The core of the over-estimation is in estimateTransferSize (in byte-efficiency-audit.js): when CSS is injected via JSON, networkRecord.resourceType doesn\u2019t match 'Stylesheet', so it falls back to computing a 100% compression ratio (transferSize/resourceSize = 1) and multiplies that by the uncompressed CSS length (80 KB). That produces an inflated transfer size. computeUsage (in unused-css-rules.js) calls estimateTransferSize on the full raw stylesheet length, and then computes wastedBytes based on that inflated size. To fix this bug, estimateTransferSize must be updated (or overridden for CSS) to use the true gzip ratio of the JSON response (or the actual networkRecord.transferSize) rather than assuming a 1:1 ratio for injected styles.",
+        "bug_scenario": "The screenshot shows Lighthouse\u2019s \u201cDefer unused CSS\u201d audit reporting an 80 KB stylesheet and ~70 KB potential savings for a CSS rule that was actually fetched as a gzipped JSON payload of only ~20 KB. Because the page injects raw CSS into a <style> tag, the audit measures the uncompressed DOM size (80 KB) and applies an incorrect 1:1 compression ratio (treating it as an inline stylesheet), rather than using the true transfer size of the gzipped JSON."
+    }
+}

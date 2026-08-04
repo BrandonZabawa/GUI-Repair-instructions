@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements",
+            "lighthouse-core/audits/metrics.js//Metrics",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js//collectIFrameElements",
+            "lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements.afterPass",
+            "lighthouse-core/audits/metrics.js//Metrics.audit"
+        ],
+        "explanation": "1. 'lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements' and its methods (especially 'collectIFrameElements' and 'IFrameElements.afterPass') are responsible for gathering information about iframes on the page. However, this gatherer only collects metadata and does not trigger performance audits on the iframe contents nor aggregate them into the parent report. Modifications here would be needed to collect iframe performance data.\n2. 'lighthouse-core/audits/metrics.js//Metrics' and its 'audit' method are responsible for calculating and reporting the page's performance metrics. To fix the bug, this class/function would need to aggregate metrics from any discovered iframes into the main performance calculation, instead of reporting only the main frame\u2019s metrics.\n3. 'lighthouse-core/gather/gather-runner.js//GatherRunner' orchestrates the page load, gatherer execution, and artifact collection. To properly include iframe performance, this runner would need to be extended to perform gather and audit phases for iframe contents and incorporate those results into the overall report. This likely involves changes to how passes are run or how artifacts are collected and merged.",
+        "bug_scenario": "The provided image shows two Lighthouse performance reports side-by-side: one for a parent page containing an iframe (left, score: 71), and one for just the iframe content (right, score: 39). The bug is that the parent page's performance score is much higher than the iframe's\u2014even though the parent loads the slow iframe\u2014because Lighthouse does not include the iframe's performance in the parent's metrics. This is misleading for users relying on Lighthouse to assess real-world performance impacts of iframes."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements",
+            "lighthouse-core/audits/metrics.js//Metrics",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/iframe-elements.js//collectIFrameElements",
+            "lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements.afterPass",
+            "lighthouse-core/audits/metrics.js//Metrics.audit",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.runPass"
+        ],
+        "explanation": "1. 'lighthouse-core/gather/gatherers/iframe-elements.js//IFrameElements' and its methods (especially 'collectIFrameElements' and 'afterPass') are responsible for collecting and reporting iframe details. To fix the bug, this class needs to be enhanced to gather and expose iframe performance data, not just DOM details.\n\n2. 'lighthouse-core/audits/metrics.js//Metrics' and its 'audit' method are responsible for calculating the performance metrics shown in the report. Currently, it only considers the main document's metrics. To address the bug, this class/function needs to be modified to aggregate metrics from both the parent document and any embedded iframes.\n\n3. 'lighthouse-core/gather/gather-runner.js//GatherRunner' and its 'runPass' function orchestrate the gathering and auditing process. Changes here may be needed to ensure iframes are gathered and their metrics are included in the overall artifact collection and audit pipeline, so that metrics from iframes are considered during the report generation for the parent page.\n\nThese elements are key because they are directly responsible for collecting iframe information, computing performance metrics, and running the Lighthouse gather/audit workflow where iframe performance data needs to be integrated into the parent page's final metrics and report.",
+        "bug_scenario": "The bug scenario involves Lighthouse not accurately reflecting the performance impact of slow iframes in its reports. The provided image shows two Lighthouse performance reports: one for a parent page containing a slow iframe ('Parent report') and one for just the iframe content ('child report'). Despite the iframe being much slower, the parent's performance score is significantly higher and key metrics look much better, which is misleading. The parent's Lighthouse report does not reflect the poor performance of its embedded iframe, which should be considered in overall page metrics."
+    }
+}

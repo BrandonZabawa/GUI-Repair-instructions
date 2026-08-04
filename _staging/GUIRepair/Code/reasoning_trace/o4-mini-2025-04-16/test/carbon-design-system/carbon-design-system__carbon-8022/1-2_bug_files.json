@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/components/src/components/tooltip/tooltip.js",
+            "packages/react/src/components/Tooltip/Tooltip.js",
+            "packages/react/src/components/TooltipIcon/TooltipIcon.js"
+        ],
+        "explanation": "All of the tooltip display logic flows through the core tooltip implementation and the React wrappers around it. 1) tooltip.js (in components) defines the low-level show/hide events for focus and hover; it currently enables the tooltip on both focus and hover without coordination. 2) Tooltip.js (React) is the primary React component that subscribes to focus and mouse events and renders the portal; it doesn\u2019t suppress a focus tooltip when a hover tooltip appears elsewhere. 3) TooltipIcon.js wraps a single icon button with Tooltip.js, adding focus behavior for icon-only buttons. Because the overlapping tooltips occur only on icon-only buttons, adjusting or augmenting the show/hide logic in these three files will let you hide the focused tooltip when another icon-only button is hovered (or remove the focus-trigger rule altogether for icon-only scenarios).",
+        "bug_scenario": "When you have two icon-only buttons side-by-side, the first button\u2019s tooltip remains visible once it has focus, and when you hover over the second button its tooltip also appears. You end up with two overlapping tooltips \u2013 one for the focused button and one for the hovered button. The desired behavior is that once you hover a different icon-only button, the first (focused) button\u2019s tooltip should hide."
+    },
+    "2": {
+        "bug_files": [
+            "packages/components/src/components/tooltip/tooltip--simple.js",
+            "packages/components/src/components/tooltip/tooltip.js",
+            "packages/components/src/components/tooltip/tooltip.config.js"
+        ],
+        "explanation": "All three files live in the vanilla-JS tooltip module, which is responsible for wiring up show/hide events on icon-only buttons. \n\n\u2022 tooltip--simple.js implements the behavior for the small, arrow-tipped tooltips used on icon-only triggers. It listens for focus and mouseenter, showing a tooltip without hiding any others.\n\n\u2022 tooltip.js is the more general tooltip engine (used by programmatic tooltips) and contains similar focus/hover logic for its widgets.\n\n\u2022 tooltip.config.js defines the selectors and event hooks for initializing both tooltip systems. Because focus-triggered tooltips aren\u2019t automatically torn down when you hover a new trigger, you end up with two active tooltips. Adjusting the focus/hover handlers in these files (for example, hiding any open tooltip before showing a new one, or disabling focus-triggered show on icon-only buttons) will resolve the overlap issue.",
+        "bug_scenario": "After clicking (or keyboard-focusing) an icon-only button, its tooltip is shown on focus. Then when you hover over a neighboring icon-only button, its tooltip also appears\u2014but the first tooltip (still \u201cfocused\u201d) isn\u2019t hidden. The two tooltips now overlap, which is confusing to users and breaks the one-tooltip-at-a-time expectation."
+    }
+}

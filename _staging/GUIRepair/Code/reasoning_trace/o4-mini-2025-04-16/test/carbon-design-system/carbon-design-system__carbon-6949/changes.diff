@@ -1,0 +1,66 @@
+diff --git a/packages/react/src/components/Pagination/Pagination.js b/packages/react/src/components/Pagination/Pagination.js
+index 130fbc3b..99f53737 100644
+--- a/packages/react/src/components/Pagination/Pagination.js
++++ b/packages/react/src/components/Pagination/Pagination.js
+@@ -23,14 +23,21 @@ let instanceId = 0;
+ export default class Pagination extends Component {
+   constructor(props) {
+     super(props);
+-    const { pageSizes, page, pageSize } = this.props;
++    // Normalize pageSizes into an array of values so we can default properly
++    const { pageSizes, page, pageSize: propPageSize } = this.props;
++    const normalizedPageSizeValues = pageSizes.map(size =>
++      typeof size === 'object' ? size.value : size
++    );
++    const initialPageSize = normalizedPageSizeValues.includes(propPageSize)
++      ? propPageSize
++      : normalizedPageSizeValues[0];
++
+     this.state = {
+       page: page,
+-      pageSize:
+-        pageSize && pageSizes.includes(pageSize) ? pageSize : pageSizes[0],
++      pageSize: initialPageSize,
+       prevPageSizes: pageSizes,
+       prevPage: page,
+-      prevPageSize: pageSize,
++      prevPageSize: propPageSize,
+     };
+     this.uniqueId = ++instanceId;
+   }
+@@ -159,8 +166,12 @@ export default class Pagination extends Component {
+       pageSize: currentPageSize,
+     } = state;
+     const pageSizesChanged = !equals(pageSizes, prevPageSizes);
+-    if (pageSizesChanged && !pageSizes.includes(pageSize)) {
+-      pageSize = pageSizes[0];
++    // Normalize incoming sizes so we only compare the numeric values
++    const normalizedValues = pageSizes.map(size =>
++      typeof size === 'object' ? size.value : size
++    );
++    if (pageSizesChanged && !normalizedValues.includes(pageSize)) {
++      pageSize = normalizedValues[0];
+     }
+     const pageChanged = page !== prevPage;
+     const pageSizeChanged = pageSize !== prevPageSize;
+@@ -288,9 +299,17 @@ export default class Pagination extends Component {
+             onChange={this.handleSizeChange}
+             disabled={pageInputDisabled || disabled}
+             value={statePageSize}>
+-            {pageSizes.map((size) => (
+-              <SelectItem key={size} value={size} text={String(size)} />
+-            ))}
++            {pageSizes.map((size) => {
++              const optionValue = typeof size === 'object' ? size.value : size;
++              const optionText = typeof size === 'object' ? size.text : String(size);
++              return (
++                <SelectItem
++                  key={optionValue}
++                  value={optionValue}
++                  text={optionText}
++                />
++              );
++            })}
+           </Select>
+           <span
+             className={`${prefix}--pagination__text ${prefix}--pagination__items-count`}>

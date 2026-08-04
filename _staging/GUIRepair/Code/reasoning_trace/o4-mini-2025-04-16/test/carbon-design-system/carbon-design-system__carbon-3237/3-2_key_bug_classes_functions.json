@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Modal/Modal.js//Modal",
+            "packages/components/src/components/modal/modal.js//Modal"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Modal/Modal.js//componentDidUpdate",
+            "packages/components/src/components/modal/modal.js//_changeState"
+        ],
+        "explanation": "In the React Modal (Modal.js), the componentDidUpdate method only toggles an internal flag (beingOpen) but never adds or removes the `no-scroll` CSS class on the document body, so background scroll remains enabled. In the vanilla JS Modal (modal.js), the `_changeState` method toggles visibility via the `classVisible` class but never applies the `classNoScroll` option to the `<body>`, so the scroll lock class is never used. Both methods are responsible for showing/hiding the modal and are the correct places to add or remove a scroll-locker class on the body element.",
+        "bug_scenario": "When the modal opens, the page\u2019s background is still scrollable (as shown in the GIF). In Carbon\u2019s React Modal implementation there is no \u201cno\u2010scroll\u201d class being added to or removed from the `<body>` when the modal opens or closes, and in the vanilla JS Modal component the `classNoScroll` option is never applied to the body, so the underlying content continues to scroll instead of being locked."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Modal/Modal.js//Modal",
+            "packages/react/src/components/ComposedModal/ComposedModal.js//ComposedModal",
+            "packages/components/src/components/modal/modal.js//Modal"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Modal/Modal.js//componentDidUpdate",
+            "packages/react/src/components/ComposedModal/ComposedModal.js//componentDidUpdate",
+            "packages/components/src/components/modal/modal.js//_changeState"
+        ],
+        "explanation": "All three classes implement the core open/close behavior of modals but lack or have lost the logic to block background scrolling. In the React Modal (Modal.js), componentDidUpdate should add and remove a no\u2010scroll class on document.body when open toggles, but the compressed version has stripped out that code. The ComposedModal class similarly needs to hook into its componentDidUpdate to toggle a body scroll lock. In the vanilla JS Modal (modal.js), _changeState controls the shown/hidden state but never applies or removes the options.classNoScroll on the <body>. Fixing the bug requires restoring or implementing the body\u2010scroll locking logic in these methods.",
+        "bug_scenario": "When a Transactional or Passive modal opens, the page behind the modal remains scrollable. In the demo (GIF), the user opens the modal and then drags or scrolls the background content\u2014rather than locking the page behind the modal, it continues to scroll. The desired behavior is that opening the modal should disable body (or parent element) scrolling (e.g. by adding a \u201cno\u2010scroll\u201d class to <body>), similar to how Bootstrap\u2019s .modal\u2010open class works."
+    }
+}

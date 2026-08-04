@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLPoints.js",
+            "src/ol/renderer/webgl/PointsLayer.js",
+            "src/ol/source/Vector.js",
+            "src/ol/proj/projections.js",
+            "src/ol/transform.js"
+        ],
+        "explanation": "These files are most relevant to the bug: 1) src/ol/layer/WebGLPoints.js implements the WebGLPointsLayer itself\u2014any issue with projection handling must be traced here. 2) src/ol/renderer/webgl/PointsLayer.js contains the rendering logic for WebGLPointsLayer, including where and how geometries are converted and projected for display; projection misinterpretation often happens here. 3) src/ol/source/Vector.js manages features and their projections; if featureProjection isn't properly recognized here, the wrong coordinates will be passed downstream. 4) src/ol/proj/projections.js manages the active projections\u2014including setting 'useGeographic' and handling the map/view projections. 5) src/ol/proj/transform.js carries out actual coordinate transformations between projections; if this layer (or renderer) fails to transform points to the current view, they appear at incorrect locations. These files would be the primary suspects and places for changes needed to ensure that WebGLPointsLayer handles projections (specifically the useGeographic and EPSG:4326) the same way regular VectorLayer does.",
+        "bug_scenario": "The bug is that WebGLPointsLayer (a layer for rendering point features using WebGL) does not plot point data correctly when the useGeographic() function is enabled. Instead of plotting features according to their source's featureProjection (e.g., EPSG:4326), it treats geometries as if they are in EPSG:3857, resulting in points being plotted at incorrect locations (notably 'somewhere near Africa'). This contrasts with the expected result, where points should plot in sync with regular VectorLayer and the current map projection, respecting useGeographic and featureProjection settings."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLPoints.js",
+            "src/ol/renderer/webgl/PointsLayer.js",
+            "src/ol/source/Vector.js",
+            "src/ol/proj/projections.js",
+            "src/ol/transform.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLPoints.js: This is the main entry point for the WebGLPointsLayer. It is responsible for creating and configuring the rendering, and may contain logic about how it reads geometries from the source and passes them to the renderer.\n2. src/ol/renderer/webgl/PointsLayer.js: This is the WebGL renderer implementation for points layers. It determines how geometries are processed and sent to the GPU, including any required coordinate transformations. If projections are not respected here, points will be rendered incorrectly.\n3. src/ol/source/Vector.js: The vector source is where features are read from, and this file may contain logic for featureProjection and how the coordinates are interpreted or converted when fetched. If WebGLPointsLayer is bypassing or mishandling this, the bug manifests.\n4. src/ol/proj/projections.js: Handles registered projections, including EPSG:4326 and EPSG:3857. Issues may arise if proper projections are not selected or used.\n5. src/ol/proj/transform.js: Implements actual coordinate transformations between projections. If this is not called or called incorrectly for features sent to the WebGL layer, points will be rendered at wrong locations.\n\nAll these files are involved in the workflow that converts feature geometry to the right coordinates for rendering. The core of the problem is a missing or incorrect transformation between feature's projection (possibly EPSG:4326) and the map view projection when useGeographic() is enabled, which must be handled in these files.",
+        "bug_scenario": "When using Ol's useGeographic() feature (which sets the map projection to EPSG:4326), the WebGLPointsLayer draws vector features as if they are in EPSG:3857 (Web Mercator). As a result, the points are plotted in the wrong locations because their coordinates are not reprojected to match the map's geographic (longitude/latitude) coordinates. A typical VectorLayer correctly interprets the featureProjection and reprojects coordinates, but WebGLPointsLayer does not, leading to rendering errors when useGeographic is enabled."
+    }
+}

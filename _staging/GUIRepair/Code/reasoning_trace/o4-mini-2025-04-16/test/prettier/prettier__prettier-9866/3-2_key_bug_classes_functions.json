@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-js/clean.js//clean",
+            "src/language-js/print/jsx.js//printJsxElementInternal",
+            "src/language-js/print/jsx.js//printJSXChildren"
+        ],
+        "explanation": "1. clean (in clean.js): This function strips out JSXText nodes and removes expression containers whose literal value is exactly an ASCII space. It does not handle the ideographic space U+3000, so those nodes remain in the AST and are treated inconsistently.\n\n2. printJsxElementInternal (in print/jsx.js): This function is responsible for converting explicit `{\" \"}` JSX expression containers into internal whitespace nodes (`jsxWhitespace`) but only handles ASCII spaces. U+3000 never goes through this normalized path, so its surrounding logic applies different trimming or grouping rules.\n\n3. printJSXChildren (in print/jsx.js): When reconstructing the children of a JSX element, this function filters and identifies \"whitespace-only\" nodes using ASCII-based tests (e.g. `/^\\s*$/`). Since `\\s` does not match U+3000 by default, the ideographic space slips through these filters and ends up in different sequences of doc primitives on each run, causing the alternating layout.\n\nTo fix the instability, all of these routines need to be extended to recognize U+3000 as whitespace\u2014e.g., by adjusting the literal-value checks in `clean`, by expanding the converter in `printJsxElementInternal` to include ideographic spaces, and by amending the whitespace-detection regex in `printJSXChildren` to treat `\\u3000` as whitespace.",
+        "bug_scenario": "When formatting JSX that contains the Unicode ideographic space (U+3000) on either side of an expression\u2014e.g.\n\n  <span />\u3000{this.props.data.title}\u3000<span />\n\nrunning Prettier multiple times produces two different outputs, alternating the placement of that ideographic space. It never stabilizes, because U+3000 is not being treated as a regular JSX whitespace the way ASCII spaces are, so it drifts between different formatting code paths on each run."
+    },
+    "2": {
+        "bug_classes": [
+            "src/language-js/clean.js",
+            "src/language-js/print/jsx.js"
+        ],
+        "bug_functions": [
+            "src/language-js/clean.js//clean",
+            "src/language-js/print/jsx.js//printJsxElementInternal",
+            "src/language-js/print/jsx.js//printJSXChildren"
+        ],
+        "explanation": "1. clean (in clean.js): This function strips out JSXText nodes and literal space expressions only when they are exactly \" \". It doesn\u2019t account for IDEOGRAPHIC SPACE (\\u3000), so those characters slip through the cleaning phase and are not normalized into the internal jsxWhitespace representation. 2. printJsxElementInternal (in print/jsx.js): Responsible for converting literal {\" \"} into specialized whitespace doc nodes but only matches the ASCII space. IDEOGRAPHIC SPACE lands in the children array unrecognized and without the shouldBreak flags needed for stable grouping. 3. printJSXChildren (in print/jsx.js): Handles the actual line-breaking and grouping of whitespace and non-whitespace nodes, expecting whitespace nodes of type jsxWhitespace. Since \\u3000 isn\u2019t wrapped into that form, it sometimes prints inline and sometimes as a standalone indent, leading to the alternating output. Adjusting both clean() to treat \\u3000 like regular JSX whitespace and extending printJsxElementInternal/printJSXChildren to detect and normalize IDEOGRAPHIC SPACE will stabilize formatting.",
+        "bug_scenario": "When formatting a JSX fragment that contains IDEOGRAPHIC SPACE characters (\\u3000) between JSX nodes, Prettier\u2019s output alternates across runs. In the animation the wide\u2010space is either moved to its own indented line or kept inline, vacillating each invocation of prettier.format. In other words, the whitespace around the IDEOGRAPHIC SPACE isn\u2019t recognized as stable JSX whitespace and sometimes gets treated as a regular text node, producing inconsistent breaks."
+    }
+}

@@ -1,0 +1,62 @@
+{
+    "1/1": {
+        "lighthouse-core/lib/lh-error.js": [
+            {
+                "SEARCH": [
+                    "// Insert the i18n reference with errorCode and all additional ICU replacement properties.",
+                    "this.friendlyMessage = str_(errorDefinition.message, {errorCode: this.code, ...properties});",
+                    "this.lhrRuntimeError = !!errorDefinition.lhrRuntimeError;"
+                ],
+                "REPLACE": [
+                    "    // Delay i18n formatting until print time:",
+                    "    // \u2022 keep the raw template key...",
+                    "    this._rawMessageTemplate = errorDefinition.message;",
+                    "    // \u2022 ...and the values to interpolate",
+                    "    this._rawMessageValues = {errorCode: this.code, ...properties};",
+                    "    // leave friendlyMessage null for now",
+                    "    this.friendlyMessage = null;",
+                    "    this.lhrRuntimeError = !!errorDefinition.lhrRuntimeError;"
+                ]
+            }
+        ],
+        "lighthouse-cli/run.js": [
+            {
+                "SEARCH": [
+                    "function printRuntimeErrorAndExit(err) {",
+                    "console.error('Runtime error encountered:', err.friendlyMessage || err.message);",
+                    "if (err.stack) {",
+                    "console.error(err.stack);",
+                    "}",
+                    "return process.exit(_RUNTIME_ERROR_CODE);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const {str_} = require('lighthouse-core/lib/i18n');  // <\u2500 make sure this is the correct path to your `str_` export",
+                    "",
+                    "function printRuntimeErrorAndExit(err) {",
+                    "  let messageToPrint = err.message;",
+                    "",
+                    "  // if we stashed a raw template, now is the time to format it once the i18n data is loaded",
+                    "  if (err._rawMessageTemplate) {",
+                    "    try {",
+                    "      messageToPrint = str_(",
+                    "        err._rawMessageTemplate,",
+                    "        err._rawMessageValues || {}",
+                    "      );",
+                    "    } catch (e) {",
+                    "      // fallback to the code if something went wrong",
+                    "      messageToPrint = err.message;",
+                    "    }",
+                    "  }",
+                    "",
+                    "  console.error('Runtime error encountered:', messageToPrint);",
+                    "  if (err.stack) {",
+                    "    console.error(err.stack);",
+                    "  }",
+                    "  return process.exit(_RUNTIME_ERROR_CODE);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/snapping/BpmnConnectSnapping.js"
+        ],
+        "explanation": "1) lib/features/rules/BpmnRules.js: This file contains the connection rules for BPMN elements, including the logic for when a bpmn:MessageFlow may start and end. The existing rule disallows message flows targeting any boundary event; it needs to be extended to allow boundary events that have an attached MessageEventDefinition (intermediate message catch).  2) lib/features/snapping/BpmnConnectSnapping.js: This file implements the visual feedback/snapping behavior when creating connections. It filters valid target shapes for connectors. Currently it excludes boundary events from message flow targets. It must be updated to detect message catch boundary events and include them as valid targets for message flows, so the user sees a valid connection preview.",
+        "bug_scenario": "When attempting to draw a BPMN message flow from an activity in one participant (pool) to a Message Catch Boundary Event (an intermediate boundary event with a message icon) on an activity in another participant, the Camunda Modeler disallows the connection. According to the BPMN 2.0 spec (tables 10.90/7.4), message flows targeting intermediate message catch boundary events should be permitted, but the current implementation blocks them (the connector preview shows a forbidden cursor)."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/rules/index.js"
+        ],
+        "explanation": "All connection\u2010validation logic for BPMN elements lives in lib/features/rules/BpmnRules.js (and is registered via its index.js). Within BpmnRules.js, the canConnect/canCreate rules for message flows currently reject boundary events as valid targets. To fix the bug, the logic in BpmnRules.js must be updated to detect when a boundary event has a MessageEventDefinition and allow a message flow onto it, in line with the BPMN 2.0 tables 7.4 and 10.90.",
+        "bug_scenario": "When a user tries to draw a message flow from an activity in one participant pool to an intermediate, message\u2010catching boundary event attached to an activity in another pool, the connection is refused. According to the BPMN 2.0 spec (table 7.4 & 10.90), message flows _must_ be permitted to target intermediate message catch boundary events, but the current Camunda Modeler rules disallow it."
+    }
+}

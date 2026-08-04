@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/options.js",
+            "src/language-js/parser-babel.js",
+            "src/common/internal-plugins.js"
+        ],
+        "explanation": "All of the pipeline\u2010proposal plumbing lives in these three files:\n\n\u2022 src/language-js/options.js  defines and validates the `pipelineProposal` CLI/API option (names, default, allowed values).\n\u2022 src/language-js/parser-babel.js  actually injects Babel\u2019s `pipelineOperator` plugin into @babel/parser \u2014 it must take the user\u2019s `pipelineProposal` option (`minimal`, `smart`, `fsharp`) and pass it into the plugin configuration.\n\u2022 src/common/internal-plugins.js  is where built-in syntax plugins (like `@babel/plugin-syntax-pipeline-operator`) are resolved and loaded; it currently doesn\u2019t propagate the proposal setting when instantiating the plugin.\n\nBecause none of these files correctly wires the `smart` (or the planned `fsharp`) proposal into the parser, the `#` placeholder is never recognized and triggers a syntax error. Fixing this requires updating the option definitions to include `smart`/`fsharp`, and then passing that option into the plugin instantiation in both the internal\u2010plugin loader and the Babel parser setup.",
+        "bug_scenario": "When formatting JavaScript that uses the \u201csmart\u201d pipeline\u2010operator proposal (the `#` placeholder) Prettier throws a syntax error on the `#` token. For example, running\n\n  5 |> # * 2\n\nwith\n\n  pipelineProposal: \"smart\"\n\nends up as:\n\n  SyntaxError: Unexpected character '#' (1:6)\n\nMinimal pipeline (`5 |> double`) still works, but the code that wires up Babel\u2019s pipelineOperator plugin is only handling the default (minimal) proposal and never passes the `smart` or upcoming `fsharp` option through."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/options.js",
+            "src/language-js/parser-babel.js",
+            "src/main/options-normalizer.js"
+        ],
+        "explanation": "1. src/language-js/options.js defines the language-specific option list for JavaScript, including pipelineProposal. It needs to declare and document \u2018smart\u2019 as a valid choice. \n2. src/language-js/parser-babel.js is where Prettier calls @babel/parser with plugins. It currently only passes pipelineProposal: \"minimal\" (or default) for the pipelineOperator plugin \u2013 it must be extended to forward pipelineProposal: \"smart\" (and later \"fsharp\"). \n3. src/main/options-normalizer.js enforces and normalizes the shape of options. It needs to include \"smart\" in the allowed enum for pipelineProposal so that option parsing and validation will accept it without error.",
+        "bug_scenario": "In Prettier v1.17.1 the \u201csmart\u201d pipeline-operator proposal (\u201c5 |> # * 2\u201d) isn\u2019t recognized. When you pass pipelineProposal: \"smart\" to prettier.format, the Babel parser still isn\u2019t configured to accept the \u201c#\u201d placeholder and throws SyntaxError on the \u201c#\u201d token. Only the \u201cminimal\u201d proposal (no placeholder) works today, but the code paths for recognizing and passing \u201csmart\u201d haven\u2019t been wired up."
+    }
+}

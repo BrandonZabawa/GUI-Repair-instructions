@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js"
+        ],
+        "bug_functions": [
+            "LabelEditingProvider (eventBus.on('create.end', 500, \u2026) handler)",
+            "LabelEditingProvider.activateDirectEdit"
+        ],
+        "explanation": "The LabelEditingProvider wires up a listener on the 'create.end' event and calls activateDirectEdit(element) for any bpmn:Task. Pasting elements fires create.end for each new shape, so the first pasted Task matches the isAny(element, ['bpmn:Task', \u2026]) check and invokes directEditing.activate. To prevent unwanted editing after paste, this handler or the activateDirectEdit logic must be adjusted (for example, ignore create-end events during copy/paste).",
+        "bug_scenario": "When pasting a set of BPMN elements that include a Task in first position, the pasted Task immediately enters label \"direct editing\" mode (blinking text cursor) instead of remaining inert. The GIF shows three rectangular tasks being pasted and the first one unexpectedly opening its inline label editor."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/LabelEditingProvider.js//activateDirectEdit",
+            "lib/features/label-editing/LabelEditingProvider.js//eventBus.on('create.end', 500, \u2026)",
+            "lib/features/label-editing/LabelEditingProvider.js//eventBus.on('autoPlace.end', 500, \u2026)",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.pasteElements', \u2026)",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.pasteElement', \u2026)"
+        ],
+        "explanation": "The unexpected direct\u2010edit activation is coming from LabelEditingProvider: it listens for both the \u2018create.end\u2019 and \u2018autoPlace.end\u2019 events and calls its internal activateDirectEdit when a Task (or other eligible element) appears. Pasting via BpmnCopyPaste ultimately fires those same events (via its copyPaste.pasteElements and pasteElement handlers), so a pasted Task in first position immediately triggers the direct editing stack. To prevent editing on paste, either the paste logic in BpmnCopyPaste must suppress or delay direct editing or the LabelEditingProvider handlers must detect and ignore paste\u2010driven creations.",
+        "bug_scenario": "After copying and pasting a set of BPMN elements where the first element is a Task, that Task immediately enters \u201cdirect editing\u201d mode (i.e. its label becomes editable) as soon as the paste completes. This only happens if a Task is the first element in the pasted selection; otherwise no direct\u2010edit popup appears."
+    }
+}

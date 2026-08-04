@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/tree/view/tree.jsx"
+        ],
+        "explanation": "The core of the bug lives in src/tree/view/tree.jsx, in the preHandleData/drill implementation.  That function walks your dataSource array and directly mutates each `item` by assigning additional properties (pos, level, illegalFlag, etc.) onto the original object.  If your dataSource is immutable (frozen, sealed, or an Immutable.js object) you get an immediate TypeError adding a new property.  Furthermore, if any items bypass that logic (e.g. filtered out), downstream code still expects a `pos` field and throws reading undefined.  To fix, this file must stop mutating the input \u2014 clone each item before augmentation or compute pos/level on the fly \u2014 so you don\u2019t write to a non-extensible object.",
+        "bug_scenario": "After upgrading the @alifd/next Tree component from v1.19.x to v1.20.x, any frozen or immutable dataSource (for example, Immutable.js objects or Object.freeze-ed arrays) will throw at runtime inside Tree\u2019s internal drill/preHandleData function.  In the reproduction above the Tree renders an in-memory JS array, but in a real app freezes data or uses Immutable.js and then Tree\u2019s code at src/tree/view/tree.jsx line ~159 tries to mutate each item by adding `item.pos = \u2026` and `item.level = \u2026`.  When the item is not extensible or when the code later reads `item.pos` on an un-augmented object, you get either \u201cCannot add property pos, object is not extensible\u201d or \u201cCannot read property 'pos' of undefined.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "src/tree/view/tree.jsx"
+        ],
+        "explanation": "The core of the problem lives in the preHandleData (aka drill) routine inside tree.jsx. That code iterates over the dataSource array and directly mutates each data item by adding pos and level properties. With plain JS objects this worked before, but when users pass in frozen/immutable records or sealed objects, item.pos = pos throws (object not extensible) and item.pos remains undefined, so getNodeProps later blows up. The fix is to stop mutating the original item: clone the item into a new object (e.g. use spread or Object.assign) before injecting pos/level and children, so that Tree no longer depends on mutating user data.",
+        "bug_scenario": "After upgrading @alifd/next Tree from 1.19.x to 1.20.23, rendering a dataSource\u2010driven Tree that uses immutable or sealed objects now fails. The stack trace shows errors in next/es/tree/view/tree.js around the preHandleData/drill function: item.pos is undefined and then the code tries to assign item.pos = pos on an object that is not extensible. Later getNodeProps reads item.pos and throws Cannot read property 'pos' of undefined."
+    }
+}

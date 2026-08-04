@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/manifest-short-name-length.js",
+            "lighthouse-core/lib/manifest-parser.js"
+        ],
+        "explanation": "1. lighthouse-core/audits/manifest-short-name-length.js is where the audit reads the artifact\u2019s short_name and checks its length against the maximum. It currently assumes short_name is always present (or falls back to an empty string), so when short_name is missing the audit fails. The fix should be here: skip the length check or fall back to name when short_name is undefined.  \n2. lighthouse-core/lib/manifest-parser.js is responsible for parsing the raw manifest JSON into the artifact passed to the audit. It normalizes undefined properties (including short_name) to empty strings, which feeds the length-check audit with a 0-length string instead of allowing the audit to detect the field\u2019s absence. Adjusting the parser to preserve the distinction between a missing short_name and an empty string (or to forward the name field) is required to avoid the false positive.",
+        "bug_scenario": "When a web app manifest omits the \u201cshort_name\u201d field\u2014even if it has a valid \u201cname\u201d\u2014the manifest-short-name-length audit treats the missing short_name as an empty string, computes its length as 0, and throws a \u201cFound: 0 chars\u201d failure (a false positive) reporting that it\u2019s below the suggested maximum of 12 characters."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/manifest-short-name-length.js",
+            "lighthouse-core/lib/manifest-parser.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/audits/manifest-short-name-length.js: This is the audit that measures the length of the manifest\u2019s short_name and currently doesn\u2019t guard against the field being missing. It treats an empty string as a failure rather than skipping the check when short_name is undefined.\n\u2022 lighthouse-core/lib/manifest-parser.js: The manifest-parser normalizes missing manifest properties but defaults short_name to an empty string. That forces the length audit to see \u201c\u201d instead of undefined. To fix the bug, the parser should leave short_name undefined when absent (or the audit should explicitly ignore empty/missing short_name).",
+        "bug_scenario": "When a web app manifest omits the \u201cshort_name\u201d field (even if it does define a valid \u201cname\u201d), the manifest-short-name-length audit treats the missing field as an empty string and computes its length as 0. The audit then fails with \u201cFound: 0 chars\u201d and reports a false positive against the 12-character maximum."
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/XYZ.js//XYZ",
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//render",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame"
+        ],
+        "explanation": "The classes XYZ and DataTileSource define the behavior for their respective tile sources, but currently do not support a gutter/buffer option, leading to the described tile edge effects. WebGLTileLayer and WebGLTileLayerRenderer are responsible for rendering these tiles, and their current approach to gutter handling (removing the gutter before creating the texture) is inadequate. The render and renderFrame functions in WebGLTileLayer and WebGLTileLayerRenderer are directly involved in the rendering process where the gutter should be properly handled, such as by cropping after texture creation rather than before. These are the critical classes and functions that need modification to extend gutter support and revise its handling for WebGL tile rendering, addressing the edge artifact problem described in the report and shown in the image.",
+        "bug_scenario": "The bug scenario shown in the image depicts visible edge effects or seams between map tiles when using certain tile sources. This occurs due to inadequate gutter (buffer) handling, which fails to prevent interpolation artifacts at tile boundaries. The bug report notes that, while TileWMS supports a gutter option, other sources like XYZ and DataTile do not, leading to visible joins or seams. Additionally, the WebGL tile rendering logic currently removes the gutter before creating the texture, which does not prevent these artifacts, especially noticeable when zooming or panning across tile boundaries."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/XYZ.js//XYZ",
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//render",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame"
+        ],
+        "explanation": "The key classes and functions are identified as follows: \n- src/ol/source/XYZ.js//XYZ: The XYZ tile source class needs to be updated to support gutter options just like TileWMS, enabling it to request and manage buffered tiles.\n- src/ol/source/DataTile.js//DataTileSource: The DataTile source class also needs support for gutter options to avoid edge artifacts when rendering its tiles.\n- src/ol/layer/WebGLTile.js//WebGLTileLayer: The WebGL tile layer may need to propagate the gutter option and ensure it is handled during rendering.\n- src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer: This renderer class is responsible for converting tiles to textures in WebGL. It currently crops the gutter before the texture is created, which does not prevent edge effects. It needs to be revised to handle gutters like layer extents, ensuring seamless tile rendering.\n- src/ol/layer/WebGLTile.js//render and src/ol/renderer/webgl/TileLayer.js//renderFrame: These render functions are directly involved in the process of drawing the tiles to the screen and would need to handle gutter-aware rendering to prevent the edge effects seen in the bug scenario image.",
+        "bug_scenario": "The bug scenario is about visible tile edge artifacts (seams) where pre-rendered tiles meet, especially when using non-WMS tile sources (such as XYZ or DataTile) with a buffer/gutter. This happens because only TileWMS supports the 'gutter' option, whereas other tile sources and their rendering (especially via WebGL) do not properly support or handle gutters, resulting in visible interpolation or edge effects at tile boundaries. The attached image shows clear seams at the edges of tiles, highlighting the visual artifact caused by the lack of gutter support."
+    }
+}

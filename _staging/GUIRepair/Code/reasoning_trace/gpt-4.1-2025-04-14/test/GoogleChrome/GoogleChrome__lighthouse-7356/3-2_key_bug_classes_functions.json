@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//_waitForFCP",
+            "lighthouse-core/gather/driver.js//_waitForFullyLoaded",
+            "lighthouse-core/gather/driver.js//gotoURL",
+            "lighthouse-core/gather/gather-runner.js//loadPage"
+        ],
+        "explanation": "The error is fundamentally about waiting for FCP during page load and handling the timeout logic. The 'Driver' class in driver.js is responsible for all page load and event waiting logic, including methods like _waitForFCP (waits for FCP event), _waitForFullyLoaded (coordinates all load, network, and FCP waits), and gotoURL (navigates and triggers waits). The 'GatherRunner' class in gather-runner.js orchestrates the overall load and gather process, with loadPage being the central method that triggers the problematic waits. These classes and methods encapsulate the logic for waiting for FCP, handling max wait timeouts, and would need to be adjusted to implement a more reasonable or configurable FCP wait threshold, as suggested in the bug report.",
+        "bug_scenario": "The bug scenario is that there is a significant increase in Lighthouse render error rates, coinciding with increased latency and much longer 'loadPage-defaultPass' timings. The provided charts show a sharp jump in page load timing percentiles, which corresponds to the time when a code change was rolled out that made Lighthouse wait for First Contentful Paint (FCP) when tracing. This new behavior means that in cases where FCP doesn't occur within the max wait for load, the process hits a 60-second timeout, resulting in more errors, especially for pages that never reach FCP or are simply slow to load."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//_waitForFCP",
+            "lighthouse-core/gather/driver.js//_waitForFullyLoaded",
+            "lighthouse-core/gather/driver.js//gotoURL",
+            "lighthouse-core/gather/gather-runner.js//loadPage"
+        ],
+        "explanation": "The root cause of the bug is excessive waiting for the First Contentful Paint (FCP) or for the page to be considered 'fully loaded', leading to timeouts and increased error rates. The relevant logic for waiting on FCP is implemented in Driver._waitForFCP, and the overall wait-for-load logic is centralized in Driver._waitForFullyLoaded. The gotoURL method in Driver orchestrates navigation and waiting for load/FCP based on options. The GatherRunner.loadPage method is responsible for initiating the page load and coordinating these waits, as evidenced by its use in the bug timing graphs and its key role in pass execution. Thus, the classes Driver and GatherRunner, and the listed functions, are directly related to the bug because they implement and control the waiting logic that is causing increased timeouts and errors. Adjusting thresholds or improving their logic will be necessary to address the problem.",
+        "bug_scenario": "The bug scenario involves an increased error rate in the Lighthouse LR (Lighthouse Runner) backend, particularly correlated with a spike in latency and timeouts. The images show a dramatic increase in page load time percentiles (especially the 75th and 95th), with the 'loadPage-defaultPass' timing showing a sharp jump and remaining high. This correlates with a rise in errors, likely because more sites are now hitting the maximum wait-for-load timeout (35s) and consequently the render timeout (60s). The bug report also suspects recent changes to FCP (First Contentful Paint) waiting logic and the lack of a threshold for how long to wait for FCP, resulting in long waits and timeouts for pages that do not report FCP within the timeout window."
+    }
+}

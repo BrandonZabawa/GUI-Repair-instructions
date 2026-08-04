@@ -1,0 +1,61 @@
+diff --git a/core/gather/gatherers/global-listeners.js b/core/gather/gatherers/global-listeners.js
+index 38f5eb4ca..09ed5f973 100644
+--- a/core/gather/gatherers/global-listeners.js
++++ b/core/gather/gatherers/global-listeners.js
+@@ -70,21 +70,42 @@ class GlobalListeners extends FRGatherer {
+       throw new Error('Error fetching information about the global object');
+     }
+ 
+-    // And get all its listeners of interest.
+-    const {listeners} = await session.sendCommand('DOMDebugger.getEventListeners', {objectId});
+-    const filteredListeners = listeners.filter(GlobalListeners._filterForAllowlistedTypes)
+-    .map(listener => {
+-      const {type, scriptId, lineNumber, columnNumber} = listener;
+-      return {
+-        type,
+-        scriptId,
+-        lineNumber,
+-        columnNumber,
+-      };
+-    });
++    // And get all its listeners of interest in the default context.
++    const {listeners: defaultListeners} =
++      await session.sendCommand('DOMDebugger.getEventListeners', {objectId});
++    const filteredDefault = defaultListeners
++      .filter(GlobalListeners._filterForAllowlistedTypes)
++      .map(listener => {
++        const {type, scriptId, lineNumber, columnNumber} = listener;
++        return {type, scriptId, lineNumber, columnNumber};
++      });
++
++    // Also collect listeners from the isolated execution context (e.g. extensions/content scripts).
++    const executionContext = passContext.driver.executionContext;
++    // Create or retrieve the isolated context for the main frame.
++    const isolatedContextId = await executionContext._getOrCreateIsolatedContextId();
++
++    // Get a handle to `window` in that isolated context.
++    const {result: {objectId: isolatedObjectId}} =
++      await session.sendCommand('Runtime.evaluate', {
++        expression: 'window',
++        returnByValue: false,
++        contextId: isolatedContextId,
++      });
++
++    // Fetch its event listeners as well.
++    const {listeners: isolatedListeners} =
++      await session.sendCommand('DOMDebugger.getEventListeners', {objectId: isolatedObjectId});
++    const filteredIsolated = isolatedListeners
++      .filter(GlobalListeners._filterForAllowlistedTypes)
++      .map(listener => {
++        const {type, scriptId, lineNumber, columnNumber} = listener;
++        return {type, scriptId, lineNumber, columnNumber};
++      });
+ 
+-    // Dedupe listeners with same underlying data.
+-    return this.dedupeListeners(filteredListeners);
++    // Merge and dedupe listeners from both contexts.
++    const allListeners = filteredDefault.concat(filteredIsolated);
++    return this.dedupeListeners(allListeners);
+   }
+ }
+ 

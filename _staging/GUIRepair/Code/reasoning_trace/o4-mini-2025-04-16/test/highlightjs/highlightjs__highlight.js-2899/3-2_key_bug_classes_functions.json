@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/dart.js//export default function"
+        ],
+        "bug_functions": [
+            "src/languages/dart.js//hljs.COMMENT('/\\\\*\\\\*', '\\\\*/', {...})",
+            "src/languages/dart.js//hljs.C_BLOCK_COMMENT_MODE"
+        ],
+        "explanation": "The Dart highlighter registers two comment patterns in this order: first a doc-comment mode (hljs.COMMENT('/**', '*/')) and then the generic C-style block comment mode (hljs.C_BLOCK_COMMENT_MODE). The doc-comment begin pattern '/**' also matches the start of an empty comment '/**/'. As a result, the empty comment is consumed by the doc-comment rule, and because it wraps a zero-length payload, the highlighter never drops back into normal code mode. This prevents subsequent tokens (like identifiers and braces) from being recognized and highlighted. To fix it, the doc-comment rule should be adjusted (for example by requiring at least one non-slash character inside) or reordered so that empty comments are handled by the generic C_BLOCK_COMMENT_MODE and do not disrupt the normal parsing flow.",
+        "bug_scenario": "In Dart code, placing an empty block comment (/**/) before or after a code fragment breaks the syntax highlighting for the code that follows or precedes it. For example:\n\n    /**/main(){print(\"Hello, World!\");}/**/\n\nHere the leading /**/ causes \u201cmain\u201d and its body to remain un-highlighted. The empty block comment is being consumed by the doc-comment rule and never properly closed in the general comment rule, so the parser never re-enters the normal Dart mode to highlight the function."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/dart.js//export default function(hljs)",
+            "src/languages/dart.js//hljs.COMMENT('/\\\\*\\\\*','\\\\*/', {...})",
+            "src/languages/dart.js//hljs.C_BLOCK_COMMENT_MODE"
+        ],
+        "explanation": "The broken highlighting traces back to the Dart language definition in src/languages/dart.js. The module\u2019s exported function installs two comment modes for /**\u2026*/ and generic /*\u2026*/. The empty doc-comment mode (hljs.COMMENT('/**','*/',\u2026)) matches /**/ but immediately closes, which disrupts the internal parser state and prevents subsequent tokens from being processed. The fallback C_BLOCK_COMMENT_MODE also overlaps this pattern but is never reached in the empty-comment case. Fixing or reordering these comment definitions in the exported function will restore proper tokenization after /**/. ",
+        "bug_scenario": "When a Dart source snippet begins and ends with an empty block comment (/**/main(){\u2026}/**/), the highlighter consumes the empty comment in such a way that no further Dart tokens (keywords, punctuation, etc.) are highlighted after that comment. Instead of seeing \u201cmain\u201d in keyword or function-name styling and the parentheses, strings, etc., all the remaining text is rendered as plain text."
+    }
+}

@@ -1,0 +1,123 @@
+diff --git a/packages/react/src/components/TimePicker/TimePicker-test.js b/packages/react/src/components/TimePicker/TimePicker-test.js
+index 7aec125b..11244dda 100644
+--- a/packages/react/src/components/TimePicker/TimePicker-test.js
++++ b/packages/react/src/components/TimePicker/TimePicker-test.js
+@@ -44,6 +44,13 @@ describe('TimePicker', () => {
+       render(<TimePicker id="time-picker" placeholder="🧸" />);
+       expect(screen.getByPlaceholderText('🧸')).toBeInTheDocument();
+     });
++
++    it('should set readOnly as expected', () => {
++      render(<TimePicker id="time-picker" readOnly />);
++      const input = screen.getByRole('textbox');
++      // DOM property readOnly should be true
++      expect(input).toHaveProperty('readOnly', true);
++    });
+   });
+ 
+   describe('label', () => {
+diff --git a/packages/react/src/components/TimePicker/TimePicker.js b/packages/react/src/components/TimePicker/TimePicker.js
+index 9d71c96c..ddb6ab9a 100644
+--- a/packages/react/src/components/TimePicker/TimePicker.js
++++ b/packages/react/src/components/TimePicker/TimePicker.js
+@@ -11,30 +11,31 @@ import cx from 'classnames';
+ import { usePrefix } from '../../internal/usePrefix';
+ import deprecate from '../../prop-types/deprecate';
+ 
+-const TimePicker = React.forwardRef(function TimePicker(
+-  {
+-    children,
+-    className,
+-    disabled = false,
+-    hideLabel,
+-    id,
+-    invalidText = 'Invalid time format.',
+-    invalid = false,
+-    labelText,
+-    light = false,
+-    maxLength = 5,
+-    onChange = () => {},
+-    onClick = () => {},
+-    onBlur = () => {},
+-    pattern = '(1[012]|[1-9]):[0-5][0-9](\\s)?',
+-    placeholder = 'hh:mm',
+-    size = 'md',
+-    type = 'text',
+-    value,
+-    ...rest
+-  },
+-  ref
+-) {
++  const TimePicker = React.forwardRef(function TimePicker(
++    {
++      children,
++      className,
++      disabled = false,
++      readOnly = false,
++      hideLabel,
++      id,
++      invalidText = 'Invalid time format.',
++      invalid = false,
++      labelText,
++      light = false,
++      maxLength = 5,
++      onChange = () => {},
++      onClick = () => {},
++      onBlur = () => {},
++      pattern = '(1[012]|[1-9]):[0-5][0-9](\\\\s)?',
++      placeholder = 'hh:mm',
++      size = 'md',
++      type = 'text',
++      value,
++      ...rest
++    },
++    ref
++  ) {
+   const prefix = usePrefix();
+ 
+   const [isValue, setValue] = React.useState(value);
+@@ -80,6 +81,7 @@ const TimePicker = React.forwardRef(function TimePicker(
+     [`${prefix}--time-picker--light`]: light,
+     [`${prefix}--time-picker--invalid`]: invalid,
+     [`${prefix}--time-picker--${size}`]: size,
++    [`${prefix}--time-picker--readonly`]: readOnly,
+     [className]: className,
+   });
+ 
+@@ -107,6 +109,7 @@ const TimePicker = React.forwardRef(function TimePicker(
+             className={timePickerInputClasses}
+             data-invalid={invalid ? invalid : undefined}
+             disabled={disabled}
++            readOnly={readOnly}
+             id={id}
+             maxLength={maxLength}
+             onClick={handleOnClick}
+@@ -143,6 +146,11 @@ TimePicker.propTypes = {
+    */
+   disabled: PropTypes.bool,
+ 
++  /**
++   * Specify whether the `<input>` should be read-only
++   */
++  readOnly: PropTypes.bool,
++
+   /**
+    * Specify whether you want the underlying label to be visually hidden
+    */
+diff --git a/packages/react/src/components/TimePicker/TimePicker.stories.js b/packages/react/src/components/TimePicker/TimePicker.stories.js
+index 4640171a..91f8b800 100644
+--- a/packages/react/src/components/TimePicker/TimePicker.stories.js
++++ b/packages/react/src/components/TimePicker/TimePicker.stories.js
+@@ -119,6 +119,12 @@ Playground.argTypes = {
+     },
+     defaultValue: false,
+   },
++  readOnly: {
++    control: {
++      type: 'boolean',
++    },
++    defaultValue: false,
++  },
+   hideLabel: {
+     control: {
+       type: 'boolean',

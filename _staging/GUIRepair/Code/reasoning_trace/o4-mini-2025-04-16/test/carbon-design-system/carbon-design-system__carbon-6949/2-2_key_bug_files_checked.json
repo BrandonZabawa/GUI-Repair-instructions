@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Pagination/Pagination.js",
+            "packages/react/src/components/Pagination/Pagination-test.js",
+            "packages/react/src/components/Pagination/Pagination-story.js"
+        ],
+        "explanation": "1. Pagination.js (React): This is where the `pageSizes` prop is declared as `arrayOf(number)`, the dropdown is built via `pageSizes.map(size => <SelectItem value={size} text={String(size)} />)`, and the selected size is parsed via `Number(evt.target.value)`. To support objects with separate `value` and `text`, this file needs to accept a new shape in propTypes, branch on object vs. number, render `<SelectItem value={size.value} text={size.text} />` when appropriate, and stop coercing to Number incorrectly.\n2. Pagination-test.js: All existing tests assume `pageSizes` is an array of numbers and that the text of each `SelectItem` is `String(size)`. These tests will need to be updated (or new tests added) to verify that passing objects with `{value,text}` renders the custom label and preserves correct range calculations.\n3. Pagination-story.js: The Storybook knobs currently treat `pageSizes` as a simple array of numbers. To demo the new feature, the story definition must be updated to accept and display an array of objects, e.g. via a JSON knob or a custom control shape, so that authors can supply `{value: 100, text: 'All'}` entries in the live Playground.",
+        "bug_scenario": "The screenshots show that when a developer adds a custom \u201cAll\u201d option to `pageSizes` (e.g. `{value: totalItems, text: 'All'}`), the pagination UI renders \u201cItems per page All\u201d but the item-range and page-count labels break: \u201cNaN\u2013NaN of 200 items\u201d and \u201cof NaN pages.\u201d Because the component only ever treated `pageSizes` as numbers (mapping each size to `String(size)` and coercing `evt.target.value` to `Number`), passing an object leads to arithmetic on an object (\u2192 NaN) and the wrong `text` in the dropdown."
+    }
+}

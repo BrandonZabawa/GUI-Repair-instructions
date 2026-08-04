@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/modeling/BpmnFactory.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js"
+        ],
+        "explanation": "\u2022 ReplaceOptions.js defines the available \u2018parallel\u2019 and \u2018sequential\u2019 replacement options (including which moddle properties to add or remove), but does not carry over existing loopCharacteristics across types.\n\u2022 BpmnReplace.js invokes the replacement behavior (via modeling), and currently applies a fresh loopCharacteristics (or removes it) rather than preserving the old values when toggling.\n\u2022 BpmnFactory.js is responsible for instantiating loopCharacteristics on create/replace; if it always creates a new, empty loopCharacteristics it will drop existing cardinality expressions.\n\u2022 BpmnUpdater.js applies semantic updates after replacement and may clear or overwrite existing properties not explicitly carried forward.\n\u2022 UpdateModdlePropertiesHandler.js is used when setting multi-instance properties in the panel; it governs how loopCharacteristics are written and removed. When replacement triggers removals, this handler currently discards previous properties.\n\nTogether these files control how multi-instance loopCharacteristics are created, updated and replaced. A fix would need to ensure that ReplaceOptions and BpmnReplace carry existing loopCharacteristics values through the replace operation rather than dropping them, and that the factory/updater reuse those values rather than reinitializing or removing them.",
+        "bug_scenario": "When you turn a sub-process into a parallel multi-instance, set a loop cardinality expression (e.g. ${nrOfInstances}), then switch the multi-instance type to sequential, the loop cardinality property disappears altogether. In other words, changing from parallel to sequential (and vice versa) does not preserve the existing loopCharacteristics (cardinality or completionCondition)."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js"
+        ],
+        "explanation": "\u2022 lib/features/replace/ReplaceOptions.js  \n  Defines the \u2018toggle parallel\u2019 and \u2018toggle sequential\u2019 replace options for subprocess and tasks. It specifies which target element to swap in but does not carry over existing multiInstanceLoopCharacteristics properties (loopCardinality, completionCondition, etc.).\n\n\u2022 lib/features/replace/BpmnReplace.js  \n  Implements replaceElement and the low\u2010level logic for swapping BPMN elements. When the replace is executed it constructs a fresh businessObject of the new type rather than merging or reusing the old multiInstanceLoopCharacteristics, causing all custom loop settings to be lost.\n\n\u2022 lib/features/modeling/BpmnUpdater.js  \n  Synchronizes the diagram after underlying businessObject changes. Because replaceElement creates a brand-new element with no loop characteristics, BpmnUpdater prunes out any leftover moddle child (e.g. loopCardinality) and updates the DI, reinforcing the loss of multi-instance data.\n\n\u2022 lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js  \n  Handles committing changes to moddle properties. The replace operation does not invoke this handler to copy existing multiInstanceLoopCharacteristics into the new businessObject; instead no handler is called for loop properties, so they never get persisted on the replaced element.",
+        "bug_scenario": "When editing a BPMN subprocess the user applies a parallel multi\u2010instance marker, sets a loop cardinality expression, then toggles the subprocess to sequential multi\u2010instance. As soon as that switch is made the existing multiInstanceLoopCharacteristics (including the loopCardinality) is completely removed and the properties panel is cleared. In other words, changing between parallel and sequential multi\u2010instance replaces the element without preserving its loop configuration."
+    }
+}

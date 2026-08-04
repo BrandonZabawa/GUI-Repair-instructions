@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-css.js//Prism.languages.css['important']",
+            "components/prism-css.min.js//Prism.languages.css['important']"
+        ],
+        "explanation": "The heart of the issue is the regex assigned to the \u201cimportant\u201d token in Prism.languages.css: /\\B!important\\b/i. Because \\B (non-word-boundary) does not match the boundary between a word character (the end of the property value, e.g. \u201ce\u201d in \u201cabsolute\u201d) and the \u201c!\u201d character, the pattern fails when \u201c!important\u201d is written immediately after the value with no intervening whitespace. Fixing or replacing this regex (for example using /!important\\b/i or a lookbehind to allow either start-of-string or whitespace before the \u201c!\u201d) will correctly classify \u201c!important\u201d as its own token in all contexts.",
+        "bug_scenario": "In the provided screenshots of the CSS highlighter, declarations that combine the value and the !important flag without any space (e.g. \u201cposition:absolute!important;\u201d or inline style \u201cposition:relative!important;\u201d) are being treated as a single token (often as part of a string or selector), rather than the value plus a separate \u201c!important\u201d token. As a result the special CSS keyword !important is not being highlighted correctly when it is written immediately after the value."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-css.js",
+            "components/prism-css.min.js"
+        ],
+        "bug_functions": [],
+        "explanation": "The bug lives in the CSS grammar definition in components/prism-css.js (and its minified counterpart). The line:\n    'important': /\\B!important\\b/i\nuses the \\B (non-word-boundary) assertion before the \u201c!\u201d. That prevents matching \u201c!important\u201d when it follows a word character without a space (because that is a word-boundary, not a non-word-boundary). To fix this, the regex should allow a word boundary before \u201c!\u201d (for example using \\b!important\\b or a lookbehind) so that !important is always tokenized, even when no space is present.",
+        "bug_scenario": "When Prism highlights CSS code it fails to recognize and wrap the \u201c!important\u201d token if it is stuck directly onto the property value (for example \u201cposition:absolute!important\u201d). The current regex for the \u201cimportant\u201d token requires a non-word boundary before the \u201c!\u201d so it only matches when there is whitespace (or another non-word boundary) before \u201c!important\u201d. In these screenshots you can see that \u201c!important\u201d never receives the \u201ctoken important\u201d span when it is written immediately after the value."
+    }
+}

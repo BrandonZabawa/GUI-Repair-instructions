@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/context-pad/ContextPadProvider.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "explanation": "1) LabelEditingProvider.js: This provider drives the lifecycle of direct editing and only cancels on the \u201cshape.remove\u201d event. However, the delete command is triggered via context-pad before the remove event fires, so direct editing isn\u2019t shut down early enough, and later still tries to complete/update the old element.  \n2) UpdateLabelHandler.js: This is the handler bound to the \u2018element.updateLabel\u2019 command. When it runs against a removed element it ends up calling DOM/Model APIs with the wrong \u201cthis\u201d context, giving an illegal invocation.  \n3) ContextPadProvider.js: This file defines how the delete action is wired up in the context pad. Because it fires the delete command directly, it needs to include a guard or pre\u2010hook to cancel any active direct editing before calling remove.  \n4) Modeling.js: The updateLabel helper here invokes the command stack without checking if editing is still valid. Any fix in the provider/handler probably also needs to be coordinated here (e.g. skip updateLabel when an element is pending removal).",
+        "bug_scenario": "As shown in the GIF, a shape is opened in \u201cdirect edit\u201d mode (blue\u2010dashed box around its label). While the user is still editing the label, they hit the trash can on the context pad to delete the shape. Instead of quietly cancelling the edit, the editor throws \u201cError: illegal invocation in <execute> or <revert> phase (action: element.updateLabel)\u201d. In other words, after the delete command the direct\u2010editing machinery still tries to execute or revert an updateLabel on an element that no longer exists."
+    }
+}

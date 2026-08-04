@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/perl.js"
+        ],
+        "explanation": "The file src/languages/perl.js contains the Perl language definition for highlight.js, including the rules that detect regex literals and the match operator variants (m//, qr//, etc.). Since the bug is about arbitrary delimiters for m// and qr// not being recognized, this is the primary file where the regex\u2010parsing modes need to be enhanced to accept any non-alphanumeric delimiter. No other language files are involved, as this is specific to Perl\u2019s syntax.  \n\nIf highlight.js\u2019s generic regex handling were insufficient, one might also look at src/lib/regex.js, but in this case all of Perl\u2019s delimiter logic lives in perl.js and should be updated there.",
+        "bug_scenario": "In Perl code the \u201cm\u201d regex match operator with custom delimiters (e.g. m(/$/)) isn\u2019t being recognized correctly by the highlighter. In the snippet\n\n    $d .= '/' if $d !~ m(/$/);\n\nonly the literal \"/\" before the dollar\u2010anchor is highlighted as a regex, and the rest is treated as plain text. The parser currently only looks for \u201c/\u2026/\u201d after the \u201cm\u201d or \u201cqr\u201d operator, so constructs like m|/$|, m#\u2026#, m{\u2026}, or qr(/$/) are not detected as regexes."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/perl.js"
+        ],
+        "explanation": "All of Perl\u2019s custom regex\u2010parsing logic lives in src/languages/perl.js. That file defines how the m//, qr//, qq//, etc., operators are detected and highlighted. Currently it only handles simple slash-delimited regexes and doesn\u2019t implement the full set of arbitrary delimiters (|, #, {, (, <, etc.). To fix the bug, perl.js needs to be updated to parse and highlight m and qr operators with any valid Perl delimiter.",
+        "bug_scenario": "In Perl code the \u201cm\u201d match operator with arbitrary delimiters (for example m(/$); or m|/$|, m{/$}, m#/$#) is not being recognized as a regex by highlight.js. In the screenshot you see that $d !~ m(/$); fails to highlight \u201c/$\u201d as a regex; highlight.js treats the slash literally rather than parsing the m operator with its delimiters. The same gap occurs for qr(...) and other Regexp Quote Like Operators."
+    }
+}

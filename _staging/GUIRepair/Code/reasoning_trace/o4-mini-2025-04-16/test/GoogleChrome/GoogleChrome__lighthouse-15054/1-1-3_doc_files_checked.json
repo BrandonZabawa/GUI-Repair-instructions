@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "headless-chrome.md",
+            "puppeteer.md",
+            "configuration.md",
+            "new-audits.md",
+            "understanding-results.md",
+            "hacking-tips.md"
+        ],
+        "explanation": "1. headless-chrome.md \u2014 shows how to launch Chrome with extensions enabled (`--enable-extensions`) and the remote debugging port for reproducing via `yarn chrome`.\n2. puppeteer.md \u2014 explains how the CLI (`cli/index.js`) uses Puppeteer under the hood to drive Lighthouse and how to pass flags like `--port=9222` and `--view`.\n3. configuration.md \u2014 details how Lighthouse configurations and flags are set, which is needed to reproduce different audit runs (DevTools vs. CLI).\n4. new-audits.md \u2014 describes how audits are structured in Lighthouse, including how they gather data (and what execution contexts they inspect), so you can understand why the no-unload-listeners audit misses isolated-context listeners.\n5. understanding-results.md \u2014 walks through how audit results render in the report UI (tables, failure reasons, links) to correlate the Markdown output with the screenshots.\n6. hacking-tips.md \u2014 provides guidance on debugging Lighthouse itself (e.g. cycling execution contexts in DevTools, using `getEventListeners` in different contexts), which is crucial to diagnose this isolated-context listener issue.",
+        "bug_scenario": "When Lighthouse runs its back/forward cache (bfcache) audit on a page with the LastPass extension loaded, the audit reports a failure \u201cThe page has an unload handler in the main frame\u201d (image 1). Yet immediately after, the separate \u201cAvoids unload event listeners\u201d audit shows a green pass and lists no unload listeners at all (image 2). In other words, the bfcache audit detects an unload listener injected by the extension\u2019s content script, but the no-unload-listeners audit\u2014and even manual calls to getEventListeners(window) in DevTools\u2014see nothing. This mismatch stems from that listener living in an isolated execution context the audit doesn\u2019t inspect.\n\nKey UI elements:\n- The red bfcache audit banner and its \u201cFailure reason\u201d table row\n- The message text describing \u201cunload handler in the main frame\u201d\n- The green \u201cAvoids unload event listeners\u201d audit banner with no listeners listed\n- The link targets (\u201cLearn more about the bfcache\u201d / \u201cunload event listeners\u201d)"
+    }
+}

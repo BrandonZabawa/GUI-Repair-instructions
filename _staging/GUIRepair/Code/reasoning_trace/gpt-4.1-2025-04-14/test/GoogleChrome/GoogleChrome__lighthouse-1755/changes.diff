@@ -1,0 +1,59 @@
+diff --git a/lighthouse-core/aggregator/aggregate.js b/lighthouse-core/aggregator/aggregate.js
+index 845f310bb..a0186c60b 100644
+--- a/lighthouse-core/aggregator/aggregate.js
++++ b/lighthouse-core/aggregator/aggregate.js
+@@ -163,6 +163,7 @@ class Aggregate {
+       const subItems = [];
+       let overallScore = 0;
+       let maxScore = 1;
++      let anyFailed = false;
+ 
+       // Step through each item in the expected results, and add them
+       // to the overall score and add each to the subItems list.
+@@ -173,10 +174,17 @@ class Aggregate {
+ 
+         subItems.push(filteredAndRemappedResults[e].name);
+ 
+-        overallScore += Aggregate._convertToWeight(
++        const weight = Aggregate._convertToWeight(
+             filteredAndRemappedResults[e],
+             item.audits[e],
+             e);
++
++        // If any audit fails (weight is 0 but expected weight > 0), mark as failed
++        if (weight === 0 && (item.audits[e].weight || 0) > 0) {
++          anyFailed = true;
++        }
++
++        overallScore += weight;
+       });
+ 
+       maxScore = Aggregate._getTotalWeight(item.audits);
+@@ -185,7 +193,8 @@ class Aggregate {
+         overall: (overallScore / maxScore),
+         name: item.name,
+         description: item.description,
+-        subItems: subItems
++        subItems: subItems,
++        passed: !anyFailed
+       };
+     });
+   }
+@@ -207,13 +216,16 @@ class Aggregate {
+    */
+   static aggregate(aggregation, auditResults) {
+     const score = Aggregate.compare(auditResults, aggregation.items);
++    // If any item did not pass, aggregation should not be marked as passing
++    const passed = score.every(item => item.passed !== false);
+     return {
+       name: aggregation.name,
+       description: aggregation.description,
+       scored: aggregation.scored,
+       total: (aggregation.scored ? Aggregate.getTotal(score) : null),
+       categorizable: aggregation.categorizable,
+-      score: score
++      score: score,
++      passed: passed
+     };
+   }
+ }

@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder",
+            "src/ol/render/canvas/hitdetect.js//(module)"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//getAnchor",
+            "src/ol/style/Icon.js//getOrigin",
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint",
+            "src/ol/render/canvas/hitdetect.js//createHitDetectionImageData"
+        ],
+        "explanation": "1. Icon.getAnchor / getOrigin (in Icon.js) compute the pixel anchor and source origin under the assumption of positive scale. With a negative scale they still return the same anchor/origin, so the flipped image is drawn or tested at the wrong position.\n\n2. CanvasImageBuilder.setImageStyle (in ImageBuilder.js) picks up the negative scale and stores it in scale_. drawPoint then issues two DRAW_IMAGE instruction sets (one for display, one for hit detection). For hit detection it uses the unadjusted anchorX_/anchorY_ and unscaled scale_ array, so the hit\u2010mask is drawn completely out of place (or entirely off\u2010canvas) when scale is negative.\n\n3. createHitDetectionImageData (in hitdetect.js) rebuilds the Icon for hit detection by calling new Icon({\u2026, scale: originalImage.getScale(), \u2026}). Because Icon.getAnchor/getOrigin haven\u2019t been corrected for negative scale, the temporary hit mask is never placed where the flipped icon appears on screen, so clicks never intersect it.\n\nTogether these functions/classes assume positive scaling when calculating anchors, origins, and hit\u2010detection drawing. They must be updated to handle negative scale (e.g. by flipping the anchor/origin calculations and adjusting the hit\u2010mask placement) in order to restore click registration and proper partial rendering at map edges.",
+        "bug_scenario": "The user applies a negative scale to an icon style (flipping it horizontally) while keeping rotation at zero. In this flipped state:\n1. Clicking on the icon does not register any hits (hit\u2010detection completely fails).\n2. When the flipped icon crosses the map boundary, the entire icon disappears instead of being partially rendered (clipped) at the edge."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder",
+            "src/ol/render/canvas/Executor.js//Executor"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//getAnchor",
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint",
+            "src/ol/render/canvas/Executor.js//replayImageOrLabel_",
+            "src/ol/render/canvas/hitdetect.js//createHitDetectionImageData"
+        ],
+        "explanation": "These methods are responsible for positioning, drawing and hit\u2010testing point symbols. Icon.getAnchor computes the pixel anchor but does not account for negative scale flips, so the image and its hit area are offset incorrectly. CanvasImageBuilder.setImageStyle and drawPoint record anchor, size and scale (including negative values) separately for rendering vs. hit detection, but the hitDetectionInstructions push raw scale values without the same pixel\u2010ratio adjustments, so the flipped hit buffer is never drawn under the pointer. Executor.replayImageOrLabel_ applies translation and context scaling for rendering but assumes positive scale when snapping to pixel or centering, so negative scale causes the icon to be rendered off-canvas (and thus disappear at edges). Finally, hitdetect.createHitDetectionImageData re-creates icons via Icon and ImmediateRenderer, inheriting the same anchor/scale mistakes, so the colored hit test canvas never shows the flipped icon and pick events always miss.",
+        "bug_scenario": "When an Icon style is given a negative scale and zero rotation, two problems occur: (1) the pointer hit tests never register on the flipped icon, and (2) when the icon is moved to the edge of the map viewport it disappears entirely instead of being clipped. In the repro sandbox you click and drag a penguin icon with scale set to \u20131 (rotation 0) and see neither hit detection nor partial rendering at the edge behave as expected."
+    }
+}

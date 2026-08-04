@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/third_party/traceviewer-js/extras/importer/trace_event_importer.js//TraceEventImporter"
+        ],
+        "bug_functions": [
+            "lighthouse-core/third_party/traceviewer-js/extras/importer/trace_event_importer.js//TraceEventImporter.prototype.processInstantEvent",
+            "lighthouse-core/third_party/traceviewer-js/extras/importer/trace_event_importer.js//TraceEventImporter.prototype.processDurationEvent"
+        ],
+        "explanation": "When you inject synthetic events with phase 'R', the importer.importEvents dispatcher treats 'R' events as instant events, then processInstantEvent sees no 's' scope and delegates them into processDurationEvent. That builds short duration slices (begin/end) instead of point annotations. The marker feature is implemented by XMarkerAnnotation and its view (x_marker_annotation.js / x_marker_annotation_view.js), but those annotations are never created by the importer. To fix the bug, TraceEventImporter must detect 'R' mark events and instantiate XMarkerAnnotation (rather than call processDurationEvent), so that the UI will render them as vertical markers.",
+        "bug_scenario": "In the DevTools Timeline pane you can see your custom \u201cLighthouse metric\u201d events (phase 'R') rendered as thick, duration\u2010style red bars under the \u201cInteractions\u201d track instead of thin vertical marker lines at the exact timestamps. In the screenshot, the synthetic metric events (First Contentful Paint, First Meaningful Paint, etc.) appear as long slices rather than the expected vertical markers."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/third_party/traceviewer-js/extras/importer/trace_event_importer.js//TraceEventImporter.importEvents",
+            "lighthouse-core/third_party/traceviewer-js/extras/importer/trace_event_importer.js//TraceEventImporter.processInstantEvent",
+            "lighthouse-core/third_party/traceviewer-js/model/x_marker_annotation.js//XMarkerAnnotation",
+            "lighthouse-core/third_party/traceviewer-js/ui/annotations/x_marker_annotation_view.js//XMarkerAnnotationView"
+        ],
+        "bug_functions": [
+            "TraceEventImporter.importEvents",
+            "TraceEventImporter.processInstantEvent",
+            "XMarkerAnnotation.fromDict",
+            "XMarkerAnnotationView.draw"
+        ],
+        "explanation": "Right now, the importer is treating phase 'R' (mark) events as instant events but immediately routing them through processDurationEvent, which turns them into begin/end slices instead of point markers. In importEvents() it groups 'R' into the instant-event branch, and processInstantEvent() dispatches to processDurationEvent whenever event.s is undefined\u2014so every R event becomes a full slice. To render them as vertical X-markers, the importer should detect 'R' events (and/or events in the 'lighthouse' category) and create an XMarkerAnnotation at that timestamp rather than a duration slice. The XMarkerAnnotation and its view exist (x_marker_annotation.js and x_marker_annotation_view.js) but never get used. Fixing this requires updating importEvents()/processInstantEvent() to call Annotation.create(XMarkerAnnotation, \u2026) for 'R' events so they draw as thin vertical lines instead of long slices.",
+        "bug_scenario": "In the Timeline pane of DevTools you should see thin vertical \u201cmarker\u201d lines at the exact timestamp of each synthetic Lighthouse metric (First Contentful Paint, First Meaningful Paint, etc.). Instead, all of our injected \u2018R\u2019 events are rendering as thick duration bars under the \u201cInteractions\u201d lane (just like a slice), stretching from their timestamp all the way to the end of the trace. In the provided screenshot you can see colored bars instead of vertical markers at e.g. ~460 ms, ~1 100 ms, ~6 300 ms, etc."
+    }
+}

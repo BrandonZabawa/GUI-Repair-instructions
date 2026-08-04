@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js",
+            "lib/features/modeling/behavior/ResizeLaneBehavior.js",
+            "lib/features/modeling/cmd/AddLaneHandler.js",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js",
+            "lib/features/modeling/util/LaneUtil.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/behavior/CreateParticipantBehavior.js",
+            "lib/features/modeling/behavior/ReplaceElementBehaviour.js",
+            "lib/features/modeling/behavior/RemoveParticipantBehavior.js"
+        ],
+        "explanation": "These files are closely related to the handling of pool (participant) lanes in bpmn-js. Specifically:\n- DeleteLaneBehavior.js, ResizeLaneBehavior.js: Relate to adding/removing and resizing lanes, which is core to the problem scenario described.\n- AddLaneHandler.js, ResizeLaneHandler.js: Handle the commands behind lane modifications which could affect the pool's connectability detection.\n- LaneUtil.js: Contains utility functions for identifying lanes and their boundaries, likely used for hit detection and updating behavior.\n- BpmnUpdater.js: Handles updating diagram state after changes, could be involved if the model is not updated correctly after lane changes.\n- CreateParticipantBehavior.js, ReplaceElementBehaviour.js, RemoveParticipantBehavior.js: Deal directly with participants (pools), their initialization, replacement, or removal\u2014these may handle legacy states or improper resets after dynamic changes.\nTogether, these are the areas most suspicious for introducing a bug where lane add/remove operations leave the pool in an inconsistent state wrt connection boundaries, breaking the Message Flow tool's behavior as described in the report.",
+        "bug_scenario": "The bug scenario occurs when a user adds an extra lane to a pool and then removes it, reverting the pool back to having only a single lane (with just the header/body). After this, trying to connect a Message Flow to the body of this pool is not possible\u2014the only area that allows connection is the pool header. This regression breaks the expected behavior: after removing the added lane, connecting a message flow to the pool body should work again, but doesn't. The bug is likely due to state left over from lane addition/removal or incorrect detection of connectable areas on the participant element after dynamic lane changes. The attached image does not show the actual bug in action, but would be part of documenting the workflow or UI setup in a bug report."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js",
+            "lib/features/modeling/behavior/ResizeLaneBehavior.js",
+            "lib/features/modeling/behavior/CreateParticipantBehavior.js",
+            "lib/features/modeling/behavior/UpdateFlowNodeRefsBehavior.js",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js",
+            "lib/features/modeling/cmd/SplitLaneHandler.js",
+            "lib/features/modeling/util/LaneUtil.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/rules/BpmnRules.js"
+        ],
+        "explanation": "The bug centers on manipulating lanes (adding then removing) and how the connection logic/behavior for a single-lane pool breaks, preventing connections to the pool's body. Key bug-related files are: (1) behaviors and handlers dealing with lane manipulation (DeleteLaneBehavior.js, ResizeLaneBehavior.js, ResizeLaneHandler.js, SplitLaneHandler.js, LaneUtil.js), since these affect pool structure/state; (2) CreateParticipantBehavior.js and UpdateFlowNodeRefsBehavior.js, as they help define how pools and their references are managed in the diagram model, which likely influences valid connection points; (3) BpmnUpdater.js, which synchronizes diagram/model updates after structural changes and might be missing an update after lane deletion; (4) BpmnRules.js, which governs what connections are allowed where, and may not be properly resetting allowable drop targets after lane updates. These files collectively govern pool/lane geometry, connection policies, and integration with the rendering/model-layer, making them all suspicious for the observed issue.",
+        "bug_scenario": "The bug scenario involves the inability to add a message flow by clicking on the body (lane area) of a pool after adding and then removing a lane. This only allows message flow connections at the header, not the lane, even after reverting the pool to a single lane. The animation shows the sequence: two pools are created, connected via message flow (works fine initially), one pool gets a lane added and removed, and then message flows can only be added to the header of that pool, not its body, showing a UI issue with boundary detection or event handling for connection points after dynamic lane changes."
+    }
+}

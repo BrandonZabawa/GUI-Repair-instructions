@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "src/cascader/cascader.jsx",
+            "src/cascader/menu.jsx",
+            "src/cascader/item.jsx",
+            "types/cascader/index.d.ts"
+        ],
+        "explanation": "All of the logic for attaching a native title attribute to individual Cascader options lives in these three files:\n\n\u2022 src/cascader/cascader.jsx \u2013 the root component that instantiates the drop-down, passes props (including any new `showItemTitle` flag) down to the menu and items.\n\n\u2022 src/cascader/menu.jsx \u2013 renders each column of options (each <ul> or <li>) and currently unconditionally passes the item.label into the title attribute on the DOM node.\n\n\u2022 src/cascader/item.jsx \u2013 responsible for rendering the individual option contents and also applies the title attribute directly on the element by default.\n\nTo add a prop that disables titles, you\u2019d need to modify both `menu.jsx` and `item.jsx` to only set `title={...}` when the prop is true (default), then thread that prop through in `cascader.jsx`. Finally, update `types/cascader/index.d.ts` so TypeScript users can see and type the new API prop.",
+        "bug_scenario": "In the current Cascader implementation every menu item automatically renders a native \u201ctitle\u201d attribute (and shows the browser tooltip) whenever its label is too long and is ellipsized via CSS. Even if you pass a completely custom itemRender, the title attribute is still applied to each <li> or <span>, so you see the full text tooltip on hover. The user wants an API (for example a prop like `showItemTitle={false}`) to turn off all of these title attributes and prevent the default tooltip from ever appearing."
+    },
+    "2": {
+        "bug_files": [
+            "src/cascader/item.jsx",
+            "src/cascader/menu.jsx",
+            "src/cascader/index.jsx",
+            "src/cascader/utils.js",
+            "src/tree/view/tree-node.jsx",
+            "src/tree/index.jsx",
+            "types/cascader/index.d.ts",
+            "types/tree/index.d.ts"
+        ],
+        "explanation": "\n\u2022 src/cascader/item.jsx: This file is where individual options are rendered (with a `title={label}` on the wrapping element). To disable titles you must alter this component\u2019s logic to respect a new prop.\n\u2022 src/cascader/menu.jsx: Constructs the panels and delegates to item.jsx. If you add a prop to disable titles, you need to pass it through here.\n\u2022 src/cascader/index.jsx: The entry point for Cascader, where you would define and forward the new API prop (e.g. `showTitle`).\n\u2022 src/cascader/utils.js: Contains the default `itemRender` helper. If title disabling interacts with custom renders, you may need a small adjustment here.\n\u2022 src/tree/view/tree-node.jsx & src/tree/index.jsx: Tree nodes also carry title attributes by default. To provide a consistent API for both components, update the rendering of Tree nodes in these files.\n\u2022 types/cascader/index.d.ts & types/tree/index.d.ts: Update the TypeScript definitions to declare the new API prop (e.g. `showTitle?: boolean`).",
+        "bug_scenario": "In the current Cascader (and Tree) implementation every option node is rendered with a native \u201ctitle\u201d attribute set to its label. As a result, even if you supply a custom itemRender (e.g. wrapping your label in a <span> without a title), you still see the browser\u2019s default tooltip on hover. The user wants an API prop (for example removeTitle or showTitle={false}) to opt out of adding that title attribute entirely."
+    }
+}

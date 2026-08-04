@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-typescript.js",
+            "components/prism-typescript.min.js",
+            "components/prism-tsx.js",
+            "components/prism-tsx.min.js"
+        ],
+        "explanation": "The files prism-typescript.js and prism-tsx.js define Prism\u2019s TypeScript and TSX grammars, including the regexes that match reserved keywords. The current keyword patterns don\u2019t enforce a proper word boundary at the end of the match, so they incorrectly match the prefix of longer identifiers (e.g. matching \u201cinfer\u201d inside \u201cinference\u201d). By correcting those regexes\u2014adding or tightening the trailing boundary check\u2014you will prevent partial matches and fix the highlighting issues. The .min.js files are the corresponding builds that also need updating once the source .js files are patched.",
+        "bug_scenario": "In TypeScript/TSX import lists, identifiers that begin with a reserved keyword (e.g. \u201cinference\u201d or \u201ctypeDefs\u201d) are being partially highlighted as if they were the bare keyword (\u201cinfer\u201d or \u201ctype\u201d), even though they\u2019re part of a longer identifier. Only exact, standalone keywords should be highlighted."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-typescript.js",
+            "components/prism-tsx.js"
+        ],
+        "explanation": "Both prism-typescript.js and prism-tsx.js define the TS/TSX language grammars and supply the regexes that Prism uses to identify keywords. The bug stems from their keyword patterns not enforcing end-of-word boundaries, so they match reserved words when followed by alphanumeric characters. Adjusting the regex in these files (e.g. adding a word boundary \\b at the end of the keyword patterns) will prevent partial matches like \u201cinference\u201d or \u201ctypeDefs.\u201d",
+        "bug_scenario": "In TSX/TypeScript imports, Prism\u2019s TypeScript grammar is matching reserved words like `infer` and `type` inside longer identifiers rather than as standalone words. So when you write `import { infer, inference, infer }`, Prism flags both occurrences of \u201cinfer\u201d\u2014even the one in \u201cinference\u201d\u2014as a keyword. The same happens with \u201ctype\u201d (but not with \u201cconst\u201d since its regex uses proper word boundaries)."
+    }
+}

@@ -1,0 +1,59 @@
+diff --git a/src/ol/render/canvas/Immediate.js b/src/ol/render/canvas/Immediate.js
+index 5290d0a897..4813926d88 100644
+--- a/src/ol/render/canvas/Immediate.js
++++ b/src/ol/render/canvas/Immediate.js
+@@ -379,13 +379,15 @@ class CanvasImmediateRenderer extends VectorContext {
+       rotation += this.viewRotation_;
+     }
+     for (; offset < end; offset += stride) {
+-      const x = pixelCoordinates[offset] + this.textOffsetX_;
+-      const y = pixelCoordinates[offset + 1] + this.textOffsetY_;
++      // pivot around the feature point (no offset yet)
++      const x = pixelCoordinates[offset];
++      const y = pixelCoordinates[offset + 1];
+       if (
+         rotation !== 0 ||
+         this.textScale_[0] != 1 ||
+         this.textScale_[1] != 1
+       ) {
++        // rotate around the base point
+         const localTransform = composeTransform(
+           this.tmpLocalTransform_,
+           x,
+@@ -397,21 +399,34 @@ class CanvasImmediateRenderer extends VectorContext {
+           -y
+         );
+         context.setTransform.apply(context, localTransform);
++        // move to feature point, apply scale
+         context.translate(x, y);
+         context.scale(this.textScale_[0], this.textScale_[1]);
++        // now apply the style offset after rotation/scale
++        context.translate(this.textOffsetX_, this.textOffsetY_);
+         if (this.textStrokeState_) {
+           context.strokeText(this.text_, 0, 0);
+         }
+         if (this.textFillState_) {
+           context.fillText(this.text_, 0, 0);
+         }
++        // reset to identity
+         context.setTransform(1, 0, 0, 1, 0, 0);
+       } else {
++        // no rotation/scale: offset order does not matter
+         if (this.textStrokeState_) {
+-          context.strokeText(this.text_, x, y);
++          context.strokeText(
++            this.text_,
++            x + this.textOffsetX_,
++            y + this.textOffsetY_
++          );
+         }
+         if (this.textFillState_) {
+-          context.fillText(this.text_, x, y);
++          context.fillText(
++            this.text_,
++            x + this.textOffsetX_,
++            y + this.textOffsetY_
++          );
+         }
+       }
+     }

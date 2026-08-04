@@ -1,0 +1,47 @@
+diff --git a/src/ol/renderer/canvas/VectorLayer.js b/src/ol/renderer/canvas/VectorLayer.js
+index c5025e47d5..085f360be4 100644
+--- a/src/ol/renderer/canvas/VectorLayer.js
++++ b/src/ol/renderer/canvas/VectorLayer.js
+@@ -222,11 +222,7 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+           : undefined,
+       );
+     } while (++world < endWorld);
+-  }
+-
+-  /**
+-   * @private
+-   */
++  /** @private */
+   setDrawContext_() {
+     if (this.opacity_ !== 1) {
+       this.targetContext_ = this.context;
+@@ -235,6 +231,17 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+         this.context.canvas.height,
+         canvasPool,
+       );
++      // clear the offscreen buffer to avoid residual pixels when opacity < 1
++      this.context.clearRect(
++        0,
++        0,
++        this.context.canvas.width,
++        this.context.canvas.height
++      );
++    }
++  }
++        canvasPool,
++      );
+     }
+   }
+ 
+@@ -289,7 +296,11 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+     const viewState = frameState.viewState;
+ 
+     this.prepareContainer(frameState, target);
++    // clear the main canvas for decluttered, translucent layers to prevent accumulation
+     const context = this.context;
++    if (this.opacity_ !== 1 && frameState.declutter) {
++      context.clearRect(0, 0, context.canvas.width, context.canvas.height);
++    }
+ 
+     const replayGroup = this.replayGroup_;
+     let render = replayGroup && !replayGroup.isEmpty();

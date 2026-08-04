@@ -1,0 +1,68 @@
+{
+    "1/1": {
+        "lighthouse-core/computed/load-simulator.js": [
+            {
+                "SEARCH": [
+                    "case 'simulate':",
+                    "if (throttling) {",
+                    "options.rtt = throttling.rttMs;",
+                    "options.throughput = throttling.throughputKbps * 1024;",
+                    "options.cpuSlowdownMultiplier = throttling.cpuSlowdownMultiplier;",
+                    "}",
+                    "break;"
+                ],
+                "REPLACE": [
+                    "      case 'simulate':",
+                    "        if (throttling) {",
+                    "          options.rtt = throttling.rttMs;",
+                    "          options.throughput = throttling.throughputKbps * 1024;",
+                    "          // Lantern: account for both CPU and layout slowdown so simulated tasks",
+                    "          // run longer and late layout shifts show up in CLS.",
+                    "          options.cpuSlowdownMultiplier = throttling.cpuSlowdownMultiplier;",
+                    "          options.layoutTaskMultiplier = throttling.cpuSlowdownMultiplier;",
+                    "        }",
+                    "        break;"
+                ]
+            }
+        ],
+        "lighthouse-core/gather/driver.js": [
+            {
+                "SEARCH": [
+                    "async setThrottling(settings, passConfig) {",
+                    "if (settings.throttlingMethod !== 'devtools') {",
+                    "return emulation.clearAllNetworkEmulation(this);",
+                    "}",
+                    "",
+                    "const cpuPromise = passConfig.useThrottling ?",
+                    "emulation.enableCPUThrottling(this, settings.throttling) :",
+                    "emulation.disableCPUThrottling(this);",
+                    "const networkPromise = passConfig.useThrottling ?",
+                    "emulation.enableNetworkThrottling(this, settings.throttling) :",
+                    "emulation.clearAllNetworkEmulation(this);",
+                    "",
+                    "await Promise.all([cpuPromise, networkPromise]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  async setThrottling(settings, passConfig) {",
+                    "    // Only 'provided' runs with no in-page emulation.  Both 'devtools' and",
+                    "    // 'simulate' should now throttle the real page so network-quiet waits",
+                    "    // include those slow images/overlays that cause late layout shifts.",
+                    "    if (settings.throttlingMethod === 'provided') {",
+                    "      return emulation.clearAllNetworkEmulation(this);",
+                    "    }",
+                    "",
+                    "    const cpuPromise = passConfig.useThrottling",
+                    "      ? emulation.enableCPUThrottling(this, settings.throttling)",
+                    "      : emulation.disableCPUThrottling(this);",
+                    "    const networkPromise = passConfig.useThrottling",
+                    "      ? emulation.enableNetworkThrottling(this, settings.throttling)",
+                    "      : emulation.clearAllNetworkEmulation(this);",
+                    "",
+                    "    await Promise.all([cpuPromise, networkPromise]);",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/snapping/BpmnConnectSnapping.js",
+            "lib/features/snapping/BpmnCreateMoveSnapping.js",
+            "lib/features/snapping/BpmnSnappingUtil.js",
+            "lib/features/snapping/index.js"
+        ],
+        "explanation": "All of the snapping logic for docking connected elements lives under lib/features/snapping. \n\n\u2022 BpmnConnectSnapping.js implements the rules that snap connection ends to BPMN element docking points when elements are moved or connections are created. The bug is that its listener is no longer firing or calculating the docking target correctly. \n\n\u2022 BpmnCreateMoveSnapping.js wires shape move/create events into the snapping framework. It should invoke the docking logic once a move ends, but in v4-beta that integration appears broken. \n\n\u2022 BpmnSnappingUtil.js contains the shared calculations for finding docking anchors and matching them against current cursor positions. If the anchor lookup or threshold logic changes, connections will never snap. \n\n\u2022 index.js under snapping simply bundles and registers these modules into the diagram.js eventbus. If it no longer registers the handlers in the right order or at the right priority, none of the docking handlers will run. \n\nTogether these four files form the complete docking/snapping feature for connected elements, so fixes will need to be made here to restore v3.x behavior.",
+        "bug_scenario": "When moving a BPMN element that already has a connection attached (for example, an intermediate event with an incoming flow) into a new target container (e.g. another pool), the connection end no longer snaps to the element\u2019s designated docking point as it did in v3.x. In the screenshots you can see that in v3.x the grey connection endpoint automatically jumps to the circle\u2019s docking handle and stays there, whereas in v4-beta it floats freely and never latches onto the docking point on drop."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/snapping/BpmnCreateMoveSnapping.js",
+            "lib/features/snapping/BpmnSnappingUtil.js",
+            "lib/features/snapping/BpmnConnectSnapping.js",
+            "lib/features/snapping/index.js"
+        ],
+        "explanation": "All of the docking snap behavior is implemented in the `features/snapping` folder. \n\n\u2022 BpmnCreateMoveSnapping.js: drives the snap guides when moving or creating shapes (including docking guides on container boundaries).  \n\u2022 BpmnSnappingUtil.js: contains the utility routines that calculate docking points and generate the alignment guidelines.  \n\u2022 BpmnConnectSnapping.js: although chiefly for connection handles, it participates in registering snap behavior and calculates connection-point snapping on shapes.  \n\u2022 index.js: wires up the snapping providers into the core snapping service.\n\nBecause the snapping code for docking was altered or removed here in v4-beta, restoring or adapting these modules is required to bring back the old docking snap behavior.",
+        "bug_scenario": "When moving an event element over a container boundary in v4-beta the event no longer \u201csnaps\u201d to the nearest docking point on that boundary. In v3.x you would see the small snap indicator exactly at the pool boundary\u2019s docking position and the event would attach there on drop. In v4-beta the free-move guide appears but the element never jumps to the exact docking point."
+    }
+}

@@ -1,0 +1,86 @@
+diff --git a/src/ol/layer/WebGLTile.js b/src/ol/layer/WebGLTile.js
+index d801be00a6..32c2961031 100644
+--- a/src/ol/layer/WebGLTile.js
++++ b/src/ol/layer/WebGLTile.js
+@@ -307,11 +307,15 @@ class WebGLTileLayer extends BaseTileLayer {
+       'bandCount' in source ? source.bandCount : 4
+     );
+ 
++    // Pass blendMode from style if present
++    const blendMode = this.style_ && this.style_.blendMode ? this.style_.blendMode : undefined;
++
+     return new WebGLTileLayerRenderer(this, {
+       vertexShader: parsedStyle.vertexShader,
+       fragmentShader: parsedStyle.fragmentShader,
+       uniforms: parsedStyle.uniforms,
+       cacheSize: this.cacheSize_,
++      blendMode: blendMode,
+     });
+   }
+ 
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index b94618be2f..be493841e0 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -137,6 +137,12 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+       uniforms: options.uniforms,
+     });
+ 
++    /**
++     * @type {string|undefined}
++     * @private
++     */
++    this.blendMode_ = options.blendMode;
++
+     /**
+      * This transform converts tile i, j coordinates to screen coordinates.
+      * @type {import("../../transform.js").Transform}
+@@ -454,7 +460,8 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     }
+ 
+     this.helper.useProgram(this.program_);
+-    this.helper.prepareDraw(frameState, !blend);
++    // Pass blendMode to helper.prepareDraw
++    this.helper.prepareDraw(frameState, !blend, this.blendMode_);
+ 
+     const zs = Object.keys(tileTexturesByZ)
+       .map(Number)
+diff --git a/src/ol/webgl/Helper.js b/src/ol/webgl/Helper.js
+index ae8358c00d..40e5efaa67 100644
+--- a/src/ol/webgl/Helper.js
++++ b/src/ol/webgl/Helper.js
+@@ -552,9 +552,10 @@ class WebGLHelper extends Disposable {
+    * subsequent draw calls.
+    * @param {import("../PluggableMap.js").FrameState} frameState current frame state
+    * @param {boolean} [opt_disableAlphaBlend] If true, no alpha blending will happen.
++   * @param {string|undefined} [blendMode] Optional blend mode string, e.g. 'additive'
+    * @api
+    */
+-  prepareDraw(frameState, opt_disableAlphaBlend) {
++  prepareDraw(frameState, opt_disableAlphaBlend, blendMode) {
+     const gl = this.getGL();
+     const canvas = this.getCanvas();
+     const size = frameState.size;
+@@ -578,10 +579,18 @@ class WebGLHelper extends Disposable {
+     gl.clear(gl.COLOR_BUFFER_BIT);
+ 
+     gl.enable(gl.BLEND);
+-    gl.blendFunc(
+-      gl.ONE,
+-      opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA
+-    );
++
++    // Support for blendMode
++    if (blendMode === 'additive' || blendMode === 'one') {
++      // gl.ONE, gl.ONE for additive blending
++      gl.blendFunc(gl.ONE, gl.ONE);
++    } else {
++      // Default: src = ONE, dst = ONE_MINUS_SRC_ALPHA (standard alpha blend)
++      gl.blendFunc(
++        gl.ONE,
++        opt_disableAlphaBlend ? gl.ZERO : gl.ONE_MINUS_SRC_ALPHA
++      );
++    }
+ 
+     gl.useProgram(this.currentProgram_);
+     this.applyFrameState(frameState);

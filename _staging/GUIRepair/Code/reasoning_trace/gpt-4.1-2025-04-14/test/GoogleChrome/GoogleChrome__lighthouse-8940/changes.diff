@@ -1,0 +1,21 @@
+diff --git a/lighthouse-core/audits/byte-efficiency/uses-optimized-images.js b/lighthouse-core/audits/byte-efficiency/uses-optimized-images.js
+index 86df60232..e4bd73e71 100644
+--- a/lighthouse-core/audits/byte-efficiency/uses-optimized-images.js
++++ b/lighthouse-core/audits/byte-efficiency/uses-optimized-images.js
+@@ -83,7 +83,15 @@ class UsesOptimizedImages extends ByteEfficiencyAudit {
+         warnings.push(`Unable to decode ${URL.getURLDisplayName(image.url)}`);
+         continue;
+       } else if (/(jpeg|bmp)/.test(image.mimeType) === false) {
+-        continue;
++        // Skip PNG spritesheets or images that are likely to require lossless compression
++        if (
++          image.mimeType === 'image/png' &&
++          /sprite|spritesheet/i.test(image.url)
++        ) {
++          continue;
++        }
++        // Optionally, skip all PNGs (if you want to be more conservative)
++        // if (image.mimeType === 'image/png') continue;
+       }
+ 
+       let jpegSize = image.jpegSize;

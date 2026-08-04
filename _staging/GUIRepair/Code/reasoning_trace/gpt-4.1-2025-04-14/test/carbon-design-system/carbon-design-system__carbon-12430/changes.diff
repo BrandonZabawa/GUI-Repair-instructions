@@ -1,0 +1,70 @@
+diff --git a/packages/react/src/components/Dropdown/Dropdown.js b/packages/react/src/components/Dropdown/Dropdown.js
+index 816e4d18..b9324703 100644
+--- a/packages/react/src/components/Dropdown/Dropdown.js
++++ b/packages/react/src/components/Dropdown/Dropdown.js
+@@ -33,6 +33,7 @@ const Dropdown = React.forwardRef(function Dropdown(
+   {
+     className: containerClassName,
+     disabled,
++    readOnly, // <-- Add readOnly prop
+     direction,
+     items,
+     label,
+@@ -101,6 +102,7 @@ const Dropdown = React.forwardRef(function Dropdown(
+       [`${prefix}--dropdown--open`]: isOpen,
+       [`${prefix}--dropdown--inline`]: inline,
+       [`${prefix}--dropdown--disabled`]: disabled,
++      [`${prefix}--dropdown--readonly`]: readOnly, // <-- Add read-only class
+       [`${prefix}--dropdown--light`]: light,
+       [`${prefix}--dropdown--${size}`]: size,
+       [`${prefix}--list-box--up`]: direction === 'top',
+@@ -133,8 +135,18 @@ const Dropdown = React.forwardRef(function Dropdown(
+ 
+   // needs to be Capitalized for react to render it correctly
+   const ItemToElement = itemToElement;
+-  const toggleButtonProps = getToggleButtonProps();
+-  const helper =
++  // If readOnly, override toggleButtonProps to prevent opening
++  let toggleButtonProps = getToggleButtonProps();
++  if (readOnly) {
++    toggleButtonProps = {
++      ...toggleButtonProps,
++      onClick: (e) => e.preventDefault(),
++      onKeyDown: (e) => e.preventDefault(),
++      tabIndex: -1,
++      'aria-readonly': true,
++    };
++  }
++  const helper = 
+     helperText && !isFluid ? (
+       <div className={helperClasses}>{helperText}</div>
+     ) : null;
+@@ -185,6 +197,8 @@ const Dropdown = React.forwardRef(function Dropdown(
+           className={`${prefix}--list-box__field`}
+           disabled={disabled}
+           aria-disabled={disabled}
++          aria-readonly={readOnly || undefined}
++          tabIndex={readOnly ? -1 : undefined}
+           title={selectedItem ? itemToString(selectedItem) : label}
+           {...toggleButtonProps}
+           ref={mergeRefs(toggleButtonProps.ref, ref)}>
+@@ -245,6 +259,11 @@ Dropdown.propTypes = {
+    */
+   ariaLabel: PropTypes.string,
+ 
++  /**
++   * Specify if the Dropdown should be read-only (not interactive, but not visually disabled)
++   */
++  readOnly: PropTypes.bool,
++
+   /**
+    * Provide a custom className to be applied on the bx--dropdown node
+    */
+@@ -390,6 +409,7 @@ Dropdown.propTypes = {
+ 
+ Dropdown.defaultProps = {
+   disabled: false,
++  readOnly: false,
+   type: 'default',
+   itemToString: defaultItemToString,
+   itemToElement: null,

@@ -1,0 +1,27 @@
+diff --git a/src/ol/render/canvas/Immediate.js b/src/ol/render/canvas/Immediate.js
+index 101d9fe22b..b87280d3a1 100644
+--- a/src/ol/render/canvas/Immediate.js
++++ b/src/ol/render/canvas/Immediate.js
+@@ -982,15 +982,18 @@ class CanvasImmediateRenderer extends VectorContext {
+       const strokeStyleLineJoin = strokeStyle.getLineJoin();
+       const strokeStyleWidth = strokeStyle.getWidth();
+       const strokeStyleMiterLimit = strokeStyle.getMiterLimit();
++      // Scale dash pattern and offset for high-DPI so dashes keep their intended length
++      const strokeLineDash = strokeStyleLineDash ? strokeStyleLineDash : defaultLineDash;
++      const strokeLineDashOffset = strokeStyleLineDashOffset
++        ? strokeStyleLineDashOffset
++        : defaultLineDashOffset;
+       this.strokeState_ = {
+         lineCap:
+           strokeStyleLineCap !== undefined
+             ? strokeStyleLineCap
+             : defaultLineCap,
+-        lineDash: strokeStyleLineDash ? strokeStyleLineDash : defaultLineDash,
+-        lineDashOffset: strokeStyleLineDashOffset
+-          ? strokeStyleLineDashOffset
+-          : defaultLineDashOffset,
++        lineDash: strokeLineDash.map(d => this.pixelRatio_ * d),
++        lineDashOffset: this.pixelRatio_ * strokeLineDashOffset,
+         lineJoin:
+           strokeStyleLineJoin !== undefined
+             ? strokeStyleLineJoin

@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.getPageLoadError",
+            "lighthouse-core/gather/driver.js//Driver._waitForFcp",
+            "lighthouse-core/gather/driver.js//Driver._waitForFullyLoaded",
+            "lighthouse-core/gather/driver.js//Driver.gotoURL"
+        ],
+        "explanation": "The bug centers on the NO_FCP error (No First Contentful Paint) when running Lighthouse in the background tab (extension). The class GatherRunner in 'lighthouse-core/gather/gather-runner.js' is responsible for orchestrating the page load, gathering, and error handling. Its methods 'loadPage' and 'getPageLoadError' are central to detecting and surfacing FCP failures. The Driver class in 'lighthouse-core/gather/driver.js' handles communication with Chrome and page lifecycle events. Its methods '_waitForFcp', '_waitForFullyLoaded', and 'gotoURL' are directly involved in waiting for and detecting the First Contentful Paint event. When a tab is in the background, Chrome may throttle or suppress FCP events, causing these functions to never resolve and resulting in a NO_FCP error. Therefore, these classes and methods are key bug-related elements, needing updates to handle or warn about background tab limitations appropriately.",
+        "bug_scenario": "When running Lighthouse (LH) on a URL (e.g., https://www.google.com/) with the Chrome extension, and the tab is in the background, the performance metrics are not collected. Instead, the audit fails with NO_FCP (No First Contentful Paint), as indicated by the error message: 'Something went wrong with recording the trace over your page load. Please run Lighthouse again. (NO_FCP)'. This leads to all performance metrics showing 'Error!' and no results for Performance or PWA. This does not happen in CLI mode, only in the extension, suggesting an issue with how page lifecycle events are handled when the tab is backgrounded."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner",
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.getPageLoadError",
+            "lighthouse-core/gather/driver.js//Driver._waitForFcp",
+            "lighthouse-core/gather/driver.js//Driver.gotoURL",
+            "lighthouse-core/gather/driver.js//Driver._waitForFullyLoaded"
+        ],
+        "explanation": "The core of this bug is that Lighthouse cannot observe First Contentful Paint (FCP) when the tab is backgrounded, leading to a NO_FCP error and missing performance metrics. The key logic responsible for this behavior involves:\n\n- 'GatherRunner' in 'gather-runner.js': This class orchestrates the page load, including error handling for navigation and FCP. Its 'loadPage' and 'getPageLoadError' methods are directly responsible for detecting and reporting NO_FCP errors, deciding whether to treat a run as failed.\n- 'Driver' in 'driver.js': This class interfaces with Chrome's protocol, handling navigation, event waiting, and FCP detection. The '_waitForFcp' method is where FCP is awaited, and if the page is in the background, Chrome may suppress FCP events, causing this promise to never resolve and triggering a NO_FCP error. 'gotoURL' and '_waitForFullyLoaded' are also critical as they coordinate navigation and the various load event waits, including FCP, that determine if a run succeeds or fails.\n\nThese classes and functions are central to the bug because the failure to see FCP and the resulting NO_FCP error are a direct consequence of how and where FCP events are awaited and handled in the context of tab state (foreground/background), especially in extension runs.",
+        "bug_scenario": "The bug scenario occurs when running Lighthouse (LH) as a browser extension (not CLI) on a URL, especially if the tab is in the background. The run fails to collect performance metrics (NO_FCP error), resulting in missing trace data and performance results, as seen in the screenshot. The error message 'Something went wrong with recording the trace over your page load. Please run Lighthouse again. (NO_FCP)' is displayed. This means First Contentful Paint and related metrics cannot be recorded, likely due to Chrome's throttling/background tab behavior or how LH waits for FCP in extension mode."
+    }
+}

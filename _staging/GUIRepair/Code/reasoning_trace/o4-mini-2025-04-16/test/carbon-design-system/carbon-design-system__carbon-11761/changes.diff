@@ -1,0 +1,68 @@
+diff --git a/packages/react/src/components/DataTable/DataTable.js b/packages/react/src/components/DataTable/DataTable.js
+index 5b119aad..457abf85 100644
+--- a/packages/react/src/components/DataTable/DataTable.js
++++ b/packages/react/src/components/DataTable/DataTable.js
+@@ -402,20 +402,25 @@ export default class DataTable extends React.Component {
+       useStaticWidth,
+       stickyHeader,
+       overflowMenuOnHover,
+-    };
+-  };
+-
+   /**
+-   * Helper utility to get the TableContainer Props.
++   * Helper utility to get all the TableContainer Props.
++   * By default we generate a container ID and wire up ARIA labels
++   * so that consumers don’t have to manage title/description IDs by hand.
+    */
+   getTableContainerProps = () => {
+     const { stickyHeader, useStaticWidth } = this.props;
+-
++    const containerId = this.getTablePrefix();
+     return {
++      id: containerId,
++      'aria-labelledby': `${containerId}__title`,
++      'aria-describedby': `${containerId}__description`,
+       stickyHeader,
+       useStaticWidth,
+     };
+   };
++      useStaticWidth,
++    };
++  };
+ 
+   /**
+    * Helper utility to get all the currently selected rows
+diff --git a/packages/react/src/components/DataTable/TableContainer.js b/packages/react/src/components/DataTable/TableContainer.js
+index 1a744a84..3c70e24b 100644
+--- a/packages/react/src/components/DataTable/TableContainer.js
++++ b/packages/react/src/components/DataTable/TableContainer.js
+@@ -17,6 +17,7 @@ const TableContainer = ({
+   description,
+   stickyHeader,
+   useStaticWidth,
++  id,
+   ...rest
+ }) => {
+   const prefix = usePrefix();
+@@ -30,11 +31,17 @@ const TableContainer = ({
+   );
+ 
+   return (
+-    <div {...rest} className={tableContainerClasses}>
++    <div id={id} {...rest} className={tableContainerClasses}>
+       {title && (
+         <div className={`${prefix}--data-table-header`}>
+-          <h4 className={`${prefix}--data-table-header__title`}>{title}</h4>
+-          <p className={`${prefix}--data-table-header__description`}>
++          <h4
++            id={id ? `${id}__title` : undefined}
++            className={`${prefix}--data-table-header__title`}>
++            {title}
++          </h4>
++          <p
++            id={id ? `${id}__description` : undefined}
++            className={`${prefix}--data-table-header__description`}>
+             {description}
+           </p>
+         </div>

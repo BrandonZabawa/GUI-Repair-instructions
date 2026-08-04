@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "gather/gather-runner-test.js",
+            "network-records-to-devtools-log.js",
+            "computed/page-dependency-graph-test.js",
+            "computed/resource-summary-test.js",
+            "audits/metrics-test.js",
+            "runner-test.js"
+        ],
+        "explanation": "1. gather/gather-runner-test.js \u2013 validates how the gather phase collects artifacts (e.g. traces, devtools logs) across frames. We need to see whether subframes are even surfaced here.\n2. network-records-to-devtools-log.js \u2013 converts raw networkRecords into a DevTools log format. If iframe requests are dropped or mis\u2010attributed, metrics will be skewed.\n3. computed/page-dependency-graph-test.js \u2013 builds the dependency graph of all network requests and resources. Ensuring subframe nodes/resources appear here is crucial to include their cost.\n4. computed/resource-summary-test.js \u2013 summarizes all resource sizes and timings. If iframe resources aren\u2019t included, weight and timing won\u2019t factor into metrics.\n5. audits/metrics-test.js \u2013 exercises the core performance metric calculations (FCP, TTI, Speed Index, etc.). It shows what inputs are expected and if they currently assume only the main frame.\n6. runner-test.js \u2013 covers the end\u2010to\u2010end run (gather \u2192 audit \u2192 report). This is where aggregation across frames (and potential multi\u2010url runs) should be hooked in to reflect iframe impact.",
+        "bug_scenario": "The example shows a parent page (index.html) that embeds a slow\u2010loading, artificially throttled iframe (huge-dom.html). When Lighthouse runs on the parent, its Performance score (~71) ignores the iframe\u2019s heavy/slow resources. Running Lighthouse directly on the iframe yields a much lower Performance score (~39). In other words, subframe load impact isn\u2019t bubbled up to the parent\u2019s metrics, producing misleadingly good scores.\n\nKey on\u2010screen elements:\n- A top\u2010level iframe HTML element in index.html\n- Parent page metrics panel (showing 71)\n- Child (iframe\u2010only) metrics panel (showing 39)\n- Metrics like First Contentful Paint, Speed Index, Time to Interactive, etc., that should aggregate across frames but currently do not"
+    }
+}

@@ -1,0 +1,60 @@
+diff --git a/src/components/sprite-selector-item/sprite-selector-item.jsx b/src/components/sprite-selector-item/sprite-selector-item.jsx
+index 458df186f..46eb02fe0 100644
+--- a/src/components/sprite-selector-item/sprite-selector-item.jsx
++++ b/src/components/sprite-selector-item/sprite-selector-item.jsx
+@@ -21,7 +21,8 @@ const SpriteSelectorItem = props => (
+             onMouseEnter: props.onMouseEnter,
+             onMouseLeave: props.onMouseLeave,
+             onMouseDown: props.onMouseDown,
+-            onTouchStart: props.onMouseDown
++            onTouchStart: props.onMouseDown,
++            onContextMenu: props.onContextMenu
+         }}
+         disable={props.preventContextMenu}
+         id={`${props.name}-${contextMenuId}`}
+@@ -99,6 +100,7 @@ SpriteSelectorItem.propTypes = {
+     onDuplicateButtonClick: PropTypes.func,
+     onExportButtonClick: PropTypes.func,
+     onMouseDown: PropTypes.func,
++    onContextMenu: PropTypes.func,
+     onMouseEnter: PropTypes.func,
+     onMouseLeave: PropTypes.func,
+     preventContextMenu: PropTypes.bool,
+diff --git a/src/containers/sprite-selector-item.jsx b/src/containers/sprite-selector-item.jsx
+index f946cf83f..e91ba11c3 100644
+--- a/src/containers/sprite-selector-item.jsx
++++ b/src/containers/sprite-selector-item.jsx
+@@ -26,6 +26,7 @@ class SpriteSelectorItem extends React.PureComponent {
+             'handleMouseEnter',
+             'handleMouseLeave',
+             'handleMouseDown',
++            'handleContextMenu',
+             'handleDragEnd',
+             'handleDrag',
+             'handleTouchEnd'
+@@ -82,7 +83,16 @@ class SpriteSelectorItem extends React.PureComponent {
+         }
+     }
+     handleMouseDown (e) {
+-        this.dragRecognizer.start(e);
++        // Only start drag on left mouse button (button === 0)
++        if (e.button === 0) {
++            this.dragRecognizer.start(e);
++        }
++    }
++
++    handleContextMenu (e) {
++        // Prevent drag recognizer from interfering with right-click/context menu
++        // Allow ContextMenuTrigger to handle the context menu
++        // Do not call preventDefault here, let ContextMenuTrigger handle it
+     }
+     handleClick (e) {
+         e.preventDefault();
+@@ -139,6 +149,7 @@ class SpriteSelectorItem extends React.PureComponent {
+                 onDuplicateButtonClick={onDuplicateButtonClick ? this.handleDuplicate : null}
+                 onExportButtonClick={onExportButtonClick ? this.handleExport : null}
+                 onMouseDown={this.handleMouseDown}
++                onContextMenu={this.handleContextMenu}
+                 onMouseEnter={this.handleMouseEnter}
+                 onMouseLeave={this.handleMouseLeave}
+                 {...props}

@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//createRenderer",
+            "src/ol/layer/WebGLTile.js//getRenderSource",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/source/GeoTIFF.js//getProjection"
+        ],
+        "explanation": "The classes and functions identified are central to how raster data is loaded, reprojected, and rendered in OpenLayers, specifically for the WebGLTile layer and GeoTIFF sources. 1) WebGLTileLayer (src/ol/layer/WebGLTile.js) is the high-level layer that manages raster tile sources for WebGL rendering. Its createRenderer and getRenderSource methods are involved in initializing the renderer and obtaining the source to render\u2014these may lack the reprojection logic necessary for sources whose projection does not match the map view. 2) WebGLTileLayerRenderer (src/ol/renderer/webgl/TileLayer.js) is responsible for the actual rendering of tiles in WebGL, and its renderFrame method is where tiles are selected and drawn. If the tile source's projection does not match the view, this is where reprojection (e.g., using ReprojTile) should be handled. 3) GeoTIFFSource (src/ol/source/GeoTIFF.js) handles the reading and projection management of GeoTIFF files. The getProjection function determines the source projection; if this is not communicated upward or handled in the renderer, reprojection will fail. 4) ReprojTile (src/ol/reproj/Tile.js) is the utility that actually performs tile reprojection when needed. If WebGLTileLayer/WebGLTileLayerRenderer do not instantiate ReprojTile when needed, reprojection will not occur. Thus, the bug is likely due to missing logic in the renderer/layer to detect projection mismatches and to reproject raster tiles (possibly by using ReprojTile), unlike standard TileLayer/TileImage where this is handled.",
+        "bug_scenario": "The user is attempting to overlay a Cloud Optimized GeoTIFF (COG), which is in a UTM projection (EPSG:32636), onto a map that is set to a different projection (EPSG:4326 or EPSG:3857). While base layers like OSM display correctly and the map can fit to the COG's extent, the COG image itself does not display. This suggests that the automatic reprojection of raster tiles (GeoTIFF via WebGLTile) is not occurring, unlike for vector or standard tile layers."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles",
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal"
+        ],
+        "explanation": "The core of the issue is reprojection support for raster tiles (specifically, GeoTIFF sources) when using the WebGLTile layer. The main classes involved are:\n- WebGLTileLayer (src/ol/layer/WebGLTile.js): This is the main layer class that manages raster tiles rendered with WebGL. If it does not handle the case where the source projection differs from the view projection, reprojection won't be triggered or supported.\n- GeoTIFFSource (src/ol/source/GeoTIFF.js): This is the data source that provides the image tiles. If this source does not provide the necessary metadata or does not enable reprojection, the layer cannot reproject the data.\n- WebGLTileLayerRenderer (src/ol/renderer/webgl/TileLayer.js): This renderer is responsible for drawing the tiles. The functions renderFrame, enqueueTiles, and prepareFrameInternal are directly responsible for fetching, preparing, and rendering tiles. If these do not handle on-the-fly reprojection (e.g., by using ReprojTile or equivalent logic as in non-WebGL layers), the tiles will not be reprojected and rendered correctly. These functions are the likely points where reprojection logic must be implemented or invoked when the source and view projections differ.\n\nIf the WebGLTile layer stack does not support or invoke a reprojection step, that explains why the COG is not visible when its projection differs from the map's view. The fix would involve ensuring that the renderer or the layer can create and render reprojected tiles (possibly using logic similar to ReprojTile from src/ol/reproj/Tile.js), or at least invoke reprojection logic when necessary.",
+        "bug_scenario": "The bug scenario involves displaying a Cloud Optimized GeoTIFF (COG) that is in a UTM projection (EPSG:32636) on an OpenLayers map using a different projection (EPSG:4326 or EPSG:3857). The expected behavior is to see the COG image reprojected and rendered on the map, possibly alongside other layers (like OpenStreetMap). However, the COG does not display, even though the map can fit to its extent and other layers render fine. The user suspects that either automatic reprojection is not supported for the WebGLTile layer, or there is missing functionality or a bug regarding reprojection of raster tiles in this context."
+    }
+}

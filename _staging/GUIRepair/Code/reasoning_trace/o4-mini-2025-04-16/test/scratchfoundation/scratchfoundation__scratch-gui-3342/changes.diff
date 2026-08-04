@@ -1,0 +1,68 @@
+diff --git a/src/components/blocks/blocks.jsx b/src/components/blocks/blocks.jsx
+index 683da23c1..2b0fa5b99 100644
+--- a/src/components/blocks/blocks.jsx
++++ b/src/components/blocks/blocks.jsx
+@@ -6,14 +6,40 @@ import styles from './blocks.css';
+ const BlocksComponent = props => {
+     const {
+         componentRef,
++        watermarkUrl,
+         ...componentProps
+     } = props;
++    // Make the blocks container relative so we can absolutely position the watermark
+     return (
+         <Box
+             className={styles.blocks}
+             componentRef={componentRef}
++            style={{position: 'relative'}}
+             {...componentProps}
+-        />
++        >
++            {/*
++                If we have a watermarkUrl, render the invisible (pointerEvents:none) img
++                20px from the top, flush right to the zoom controls, 48×48px max, 35% opacity.
++            */}
++            {watermarkUrl && (
++                <img
++                    src={watermarkUrl}
++                    alt=""
++                    style={{
++                        position: 'absolute',
++                        top: '20px',
++                        right: '20px',
++                        width: '48px',
++                        height: '48px',
++                        maxWidth: '48px',
++                        maxHeight: '48px',
++                        opacity: 0.35,
++                        pointerEvents: 'none',
++                        zIndex: 0
++                    }}
++                />
++            )}
++        </Box>
+     );
+ };
+ BlocksComponent.propTypes = {
+diff --git a/src/containers/blocks.jsx b/src/containers/blocks.jsx
+index 57c91e3c6..331fa55c1 100644
+--- a/src/containers/blocks.jsx
++++ b/src/containers/blocks.jsx
+@@ -445,8 +445,17 @@ class Blocks extends React.Component {
+         /* eslint-enable no-unused-vars */
+         return (
+             <div>
++                {/*
++                    Pass through the watermark URL for the currently-selected target.
++                    We pull the MD5 from editingTarget.currentCostume.assetId
++                    and build the standard Scratch asset endpoint.
++                */}
+                 <BlocksComponent
+                     componentRef={this.setBlocks}
++                    watermarkUrl={this.props.vm.editingTarget
++                        ? `https://assets.scratch.mit.edu/internalapi/asset/${this.props.vm.editingTarget.currentCostume.assetId}/get/`
++                        : null
++                    }
+                     {...props}
+                 />
+                 {this.state.prompt ? (

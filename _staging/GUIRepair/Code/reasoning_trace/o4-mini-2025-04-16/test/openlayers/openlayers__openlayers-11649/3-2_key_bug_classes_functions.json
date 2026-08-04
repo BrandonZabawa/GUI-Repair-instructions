@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/proj/proj4.js//register",
+            "src/ol/proj/Projection.js//Projection"
+        ],
+        "bug_functions": [
+            "src/ol/proj/proj4.js//register"
+        ],
+        "explanation": "The register function in proj4.js reads proj4.defs(code) and passes def.units and def.axis directly into the new Projection without any fallback. When a proj4 definition omits units (common for geographic CRSs) or axis, def.units and def.axis are undefined, so the Projection constructor ends up with units_ = undefined and axisOrientation_ defaulting to 'enu'. To fix the broken geographic projections, register (or the Projection constructor) must provide default values: units should default to 'degrees' and axisOrientation should default to 'neu' when def.units or def.axis are not set.",
+        "bug_scenario": "After calling proj4.defs('EPSG:4258', ...) and then ol.proj.proj4.register(proj4), the new OpenLayers Projection for EPSG:4258 has its units undefined (units_: undefined, metersPerUnit_: undefined) and its axisOrientation defaulted to 'enu'. In console logs you see def.units and def.axis are undefined, so the Projection instance is missing the correct \"degrees\" unit and the geographic axis order ('neu'), which leads to broken map display for that CRS."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/proj/proj4.js//(module)",
+            "src/ol/proj/Projection.js//Projection"
+        ],
+        "bug_functions": [
+            "src/ol/proj/proj4.js//register",
+            "src/ol/proj/Projection.js//constructor"
+        ],
+        "explanation": "The register function in proj4.js reads proj4.defs(code) and passes def.units and def.axis directly into the Projection constructor. When those properties are missing in proj4\u2019s definition (as is the case for most geographic EPSG codes), units_ remains undefined (so getMetersPerUnit returns undefined) and axisOrientation_ falls back to the default \u2018enu\u2019. To fix the bug, register() must supply a fallback (e.g. def.units || 'degrees', def.axis || 'neu') or the Projection constructor must itself default missing units to Units.DEGREES and adjust the default axisOrientation for geographic CRSs. These two locations are thus the key points for the fix.",
+        "bug_scenario": "When a user defines a geographic CRS (for example \u201cEPSG:4258\u201d) via proj4.defs and then calls ol.proj.proj4.register(proj4), OpenLayers creates a Projection with undefined units and the default \u201cenu\u201d axisOrientation instead of treating the CRS as geographic (units=\u2018degrees\u2019, axisOrientation=\u2018neu\u2019). On the map this results in broken projections, no point resolution, and no proper unit conversions."
+    }
+}

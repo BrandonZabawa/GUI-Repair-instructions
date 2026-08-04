@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/modeling/Modeling.js",
+            "lib/features/context-pad/ContextPadProvider.js"
+        ],
+        "explanation": "\u2022 LabelEditingProvider.js: Its complete() hook finalizes direct editing by calling modeling.updateLabel. No guard exists to bail out if the element has been deleted, leading to the illegal invocation.\n\u2022 cmd/UpdateLabelHandler.js: The command handler for the updateLabel command actually carries out the label update; it needs to be made more defensive (e.g. check for existence of element or its businessObject) or avoid execution when element is gone.\n\u2022 Modeling.js: The modeling.updateLabel API that enqueues the element.updateLabel action on the CommandStack must not be called for removed elements; a guard here can prevent illegal invocation.\n\u2022 ContextPadProvider.js: This is where the delete action is registered (modeling.removeElements). We need to cancel or defer direct editing before performing the remove, so no label\u2010update is queued for a nonexistent element.",
+        "bug_scenario": "When an element\u2019s label is being edited (direct editing active) and the user deletes that element via the context pad (trash icon), the editor throws an \u201cillegal invocation\u201d error during the command stack\u2019s execute or revert phase for the element.updateLabel action. In the GIF, you can see the user typing directly on the label, then clicking the delete button, which causes the direct\u2010editing provider to complete the edit and call modeling.updateLabel on an element that has just been removed, leading to the exception."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js",
+            "lib/features/modeling/Modeling.js",
+            "lib/features/modeling/behavior/RemoveElementBehavior.js"
+        ],
+        "explanation": "\u2022 LabelEditingProvider.js is where direct\u2010editing sessions are completed. It unconditionally calls the labeling logic (update) even when the element has been deleted.\n\u2022 UpdateLabelHandler.js backs the \u201celement.updateLabel\u201d command. When invoked for a removed element, it ends up calling native functions with an invalid context, triggering an illegal invocation.\n\u2022 Modeling.js exposes the updateLabel API that dispatches the command to the command stack. This is the site where \u2018element.updateLabel\u2019 is pushed and executed.\n\u2022 RemoveElementBehavior.js is responsible for removing elements via modeling commands but does not ensure any active direct\u2010editing session is cancelled first. Closing or suspending direct editing here would prevent the illegal invocation.",
+        "bug_scenario": "When you start editing an element\u2019s label inline (the blue dashed box around the element) and then immediately delete that same element via the context\u2010pad trash icon, the editor throws an \u201cillegal invocation\u201d exception in the <execute> phase of the \u201celement.updateLabel\u201d command. In practice this happens because direct\u2010editing tries to complete the label update on an element that has just been removed."
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/reproj/DataTile.js//ReprojDataTile"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.configure_",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.loadTile_",
+            "src/ol/reproj/DataTile.js//ReprojDataTile.constructor"
+        ],
+        "explanation": "GeoTIFFSource.configure_ is responsible for building the internal tile grid and should take wrapX into account when determining the valid extent. GeoTIFFSource.loadTile_ then creates ReprojDataTile instances for reprojection, but it never passes the wrapX setting into the reprojection pipeline. In ReprojDataTile.constructor the sourceExtent is clamped purely against the sourceTileGrid_.getExtent(), without checking the original wrapX flag. As a result, the input is never trimmed to the local tile grid extent and nodata pixels show up outside the intended bounds when reprojection occurs.",
+        "bug_scenario": "When using a GeoTIFF source with a non-zero nodata value and reprojection enabled, the source tiles are not cropped to the tile grid extent despite wrapX=false. In the reprojection example (#15402) you can see nodata areas bleeding beyond the tile boundaries. Without reprojection the GeoTIFFSource.wrapX option correctly crops the output to the tile grid extent, but once the source goes through ReprojDataTile the cropping step is lost."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/reproj/DataTile.js//ReprojDataTile"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//configure_",
+            "src/ol/source/GeoTIFF.js//loadTile_",
+            "src/ol/reproj/DataTile.js//constructor",
+            "src/ol/reproj/DataTile.js//reproject_"
+        ],
+        "explanation": "The GeoTIFFSource class reads tiles directly and in its configure_ and loadTile_ implementations it honors the wrapX option by cropping source tile requests to the tile grid extent. However, when reprojection is enabled, tile loading is delegated to ReprojDataTile (in DataTile.js). Its constructor and reproject_ method compute sourceExtents and gather source tiles but never re-apply the wrapX cropping logic derived from the GeoTIFFSource settings. To fix the bug, the wrapX condition and extent-clamping steps from GeoTIFFSource must be passed into ReprojDataTile (via its constructor parameters) and used in its constructor or reproject_ method to clamp the sourceExtent before fetching and reprojecting the tiles.",
+        "bug_scenario": "When a GeoTIFF source is used without reprojection, the GeoTIFFSource.wrapX option is correctly applied to crop tiles to the tile-grid extent (both axes), even if the source projection is \u201cglobal.\u201d However, when the layer is reprojected (e.g. via a non-matching view projection), the input tiles go through the ReprojDataTile pipeline and the wrapX-based cropping steps are never applied. As a result, tiles outside the intended grid extent (or nodata regions) bleed into the reprojected output, producing unwanted data / black borders."
+    }
+}

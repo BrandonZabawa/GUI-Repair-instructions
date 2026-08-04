@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js",
+            "packages/react/src/components/OverflowMenu/OverflowMenu-test.js"
+        ],
+        "explanation": "OverflowMenu.js is where the `light` prop is defined in defaultProps and flagged as deprecated via Carbon\u2019s deprecation utility. Because defaultProps always injects `light`, the deprecation helper warns even when the user hasn\u2019t set it explicitly. The test file OverflowMenu-test.js will also need updating (or adding a regression test) to assert that no warning is emitted when `light` isn\u2019t passed.",
+        "bug_scenario": "When rendering an <OverflowMenu> without ever passing a `light` prop, the console still emits a deprecation warning: \u201cThe `light` prop for `OverflowMenu` is no longer needed and has been deprecated\u2026\u201d. In our code we never set `light`, so the warning is spurious. It comes from the component\u2019s own defaultProps and prop\u2010type deprecation helper treating the default field as a user\u2010supplied prop."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js",
+            "packages/react/src/components/OverflowMenu/index.js"
+        ],
+        "explanation": "OverflowMenu.js is where the component defines its props and defaultProps, and it still declares or references a `light` prop so the deprecation helper always runs\u2014even when the user never passed it. The index.js in the same folder exports the component and its prop types (including any default), so it also participates in passing the unused `light` prop downstream. To fix the issue, the defaultProp for `light` should be removed (or the deprecation logic guarded so it only triggers when the user actually passes light).",
+        "bug_scenario": "When rendering an <OverflowMenu> without ever setting the deprecated \u201clight\u201d prop, the component still issues a console warning: \u201cThe `light` prop for `OverflowMenu` is no longer needed and has been deprecated. It will be removed in the next major release. Use the Layer component instead.\u201d In other words, a default \u201clight\u201d prop is present (or still being handled) internally, so even when the user doesn\u2019t pass it, the deprecation logic sees it and spits out a warning. This breaks tests that assert no console warnings."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/VectorTile.js",
+            "src/ol/VectorTileRenderType.js",
+            "src/ol/VectorRenderTile.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/renderer/canvas/ExecutorGroup.js"
+        ],
+        "explanation": "These files form the code path for rendering vector tiles as standalone canvas images. \\n\\n\u2022 layer/VectorTile.js reads the user\u2019s renderMode setting and hands off to the appropriate renderer. \\n\u2022 VectorTileRenderType.js defines the IMAGE mode selector. \\n\u2022 VectorRenderTile.js is responsible for creating and sizing the off-screen canvas for each vector tile and applying the pixelRatio transform. Errors here can shift the clipping rectangle on non-integer device pixel ratios. \\n\u2022 renderer/canvas/VectorTileLayer.js pulls together the tiled canvases, positions them on the map canvas, and calls each VectorRenderTile\u2019s drawing logic. Mis-alignment here shows up as seams when browser zoom factors differ from devicePixelRatio. \\n\u2022 renderer/canvas/ExecutorGroup.js actually issues the canvas clip() calls around each tile extent. If the clip path is offset by sub-pixel amounts (as happens when CSS zoom is in play), thin lines appear between tiles. \\n\\nTo fix this bug one must adjust how the pixelRatio and browser zoom are combined in VectorRenderTile.js (and ensure the clip rectangle in ExecutorGroup.js is snapped to pixel boundaries), so that the per-tile clipping always matches the tile edges even at non-100% browser zoom.",
+        "bug_scenario": "When using a VectorTile layer with renderMode: 'image' and zooming the browser window (e.g. to 150% via Ctrl-+), the canvas\u2010based tile images are rendered with visible clipping seams between adjacent tiles. At 100% zoom (or when using hybrid mode) the tiles align perfectly; at non-100% browser zoom, half-pixel offsets creep in and the per-tile clipping rectangle (used to keep each canvas tile from drawing beyond its own bounds) no longer lines up exactly on pixel boundaries, producing thin gaps between tiles."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/source/VectorTile.js",
+            "src/ol/layer/VectorTile.js",
+            "src/ol/layer/VectorTileRenderType.js",
+            "src/ol/render/canvas/BuilderGroup.js",
+            "src/ol/render/canvas/ExecutorGroup.js"
+        ],
+        "explanation": "All of these files participate in taking raw vector\u2010tile features, rendering them into an offscreen canvas (with a certain pixel ratio and tileBuffer), and then compositing that canvas onto the main map canvas.  \n\u2013 VectorTileLayer.js contains the specialized drawTileImage() logic for image\u2010mode vector tiles.  It calculates the tile\u2019s canvas size and the drawImage() parameters.  Small rounding errors here (at non\u2010integer devicePixelRatios) lead to clipped edges between tiles.\n\u2013 VectorTile.js (source) is where the default gutter (tileBuffer) is defined.  A zero or too\u2010small buffer exacerbates edge clipping when the pixel ratio changes.\n\u2013 VectorTile.js and VectorTileRenderType.js (layer) drive which renderMode is used, and help pick the code paths that end up in the canvas renderer.  Ensuring that the correct pixelRatio and buffer are consistently passed through both vector and image modes lives here.\n\u2013 BuilderGroup.js and ExecutorGroup.js handle subdividing your features into drawing instructions and actually painting them into the offscreen tile canvases.  They must calculate and apply the same gutter/extent expansion as VectorTile.js, at the proper pixel ratio.  If their sizes or transforms are even a fraction off, you will see tile seams when the browser zoom is not 100%.\n\nFixing this bug will require aligning the pixel\u2010ratio calculations, ensuring integer canvas dimensions after multiplying by devicePixelRatio, and applying a small overlap buffer consistently so no tile edge is accidentally cropped when rendered at non\u2010standard zoom levels.",
+        "bug_scenario": "When viewing a VectorTile layer in \"image\" renderMode with the browser zoomed above 100% (for example 150%), individual tile\u2010canvases end up slightly misaligned or clipped at their borders.  In practice you see little gaps or a narrow seam between adjacent tiles (as in the reproduction GIF), even though everything looks perfect at 100% zoom or when using \"hybrid\" mode."
+    }
+}

@@ -1,0 +1,486 @@
+{
+    "1/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "reset(options) {",
+                    "super.reset(options);",
+                    "",
+                    "this.vertexShader_ = options.vertexShader;",
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {",
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "reset(options) {",
+                    "super.reset(options);",
+                    "",
+                    "this.vertexShader_ = options.vertexShader;",
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {",
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");",
+                    "this.helper.flushBufferData(this.indices_); // Ensure buffer data is flushed",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.vertexShader_ = options.vertexShader;",
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {",
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "this.vertexShader_ = options.vertexShader;",
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {",
+                    "// Ensure distinct shader programs for each reset to avoid lost context issues",
+                    "this.program_ = this.helper.createProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");",
+                    "this.helper.flushBufferData(this.indices_);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {"
+                ],
+                "REPLACE": [
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "// Ensure the WebGL context is preserved or restored",
+                    "if (this.helper && this.helper.getGL()) {"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "beforeTilesRender(frameState, tilesWithAlpha) {",
+                    "super.beforeTilesRender(frameState, tilesWithAlpha);",
+                    "this.helper.useProgram(this.program_, frameState);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "beforeTilesRender(frameState, tilesWithAlpha) {",
+                    "super.beforeTilesRender(frameState, tilesWithAlpha);",
+                    "const gl = this.helper.getGL();",
+                    "",
+                    "if (gl.isContextLost()) {",
+                    "// Handle texture rebinding when context is restored after a loss",
+                    "this.program_ = this.helper.getProgram(this.fragmentShader_, this.vertexShader_);",
+                    "this.helper.flushBufferData(this.indices_);",
+                    "}",
+                    "",
+                    "this.helper.useProgram(this.program_, frameState);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");",
+                    "this.helper.flushBufferData(this.indices_);"
+                ],
+                "REPLACE": [
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");",
+                    "this.helper.flushBufferData(this.indices_);",
+                    "",
+                    "// Re-bind palette textures when context is reset",
+                    "if (this.paletteTextures_ && this.paletteTextures_.length) {",
+                    "const gl = this.helper.getGL();",
+                    "this.paletteTextures_.forEach((paletteTexture, paletteIndex) => {",
+                    "const texture = paletteTexture.getTexture(gl);",
+                    "this.helper.bindTexture(texture, textureIndex, paletteTexture.name);",
+                    "textureIndex++;",
+                    "});",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "beforeTilesRender(frameState, tilesWithAlpha) {",
+                    "super.beforeTilesRender(frameState, tilesWithAlpha);",
+                    "this.helper.useProgram(this.program_, frameState);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "beforeTilesRender(frameState, tilesWithAlpha) {",
+                    "super.beforeTilesRender(frameState, tilesWithAlpha);",
+                    "",
+                    "// Re-initialize WebGL program in case of context loss",
+                    "if (!this.program_) {",
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_",
+                    ");",
+                    "}",
+                    "this.helper.useProgram(this.program_, frameState);",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "setStyle(style) {",
+                    "this.styleVariables_ = style.variables || {};",
+                    "this.style_ = style;",
+                    "const parsedStyle = parseStyle(this.style_, this.getSourceBandCount_());",
+                    "const renderer = this.getRenderer();"
+                ],
+                "REPLACE": [
+                    "setStyle(style) {",
+                    "this.styleVariables_ = style.variables || {};",
+                    "this.style_ = style;",
+                    "const parsedStyle = parseStyle(this.style_, this.getSourceBandCount_());",
+                    "const renderer = this.getRenderer();",
+                    "",
+                    "// Reset WebGL resources to prevent loss after layer re-addition",
+                    "renderer.reset({",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "paletteTextures: parsedStyle.paletteTextures,",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");"
+                ],
+                "REPLACE": [
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_",
+                    ");",
+                    "this.helper.deleteBuffer(this.indices_); // Ensure buffers are correctly reinitialized",
+                    "this.helper.flushBufferData(this.indices_); // Flush buffer data after reset"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const helper = this.helper;",
+                    "if (helper) {",
+                    "const gl = helper.getGL();",
+                    "gl.deleteProgram(this.program_);",
+                    "delete this.program_;",
+                    "helper.deleteBuffer(this.indices_);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const helper = this.helper;",
+                    "if (helper) {",
+                    "const gl = helper.getGL();",
+                    "gl.deleteProgram(this.program_);",
+                    "delete this.program_;",
+                    "",
+                    "for (let paletteTexture of this.paletteTextures_) { // Ensure palette textures are deleted",
+                    "gl.deleteTexture(paletteTexture.getTexture(gl));",
+                    "}",
+                    "",
+                    "helper.deleteBuffer(this.indices_);",
+                    "this.paletteTextures_ = []; // Clear the palette textures to avoid using old contexts",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "...",
+                    "this.addChangeListener(LayerProperty.SOURCE, this.handleSourceUpdate_);",
+                    "}",
+                    "",
+                    "...",
+                    "setStyle(style) {",
+                    "...",
+                    "const parsedStyle = parseStyle(this.style_, this.getSourceBandCount_());",
+                    "const renderer = this.getRenderer();",
+                    "renderer.reset({",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "paletteTextures: parsedStyle.paletteTextures,",
+                    "});",
+                    "this.changed();",
+                    "}",
+                    "..."
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "...",
+                    "this.addChangeListener(LayerProperty.SOURCE, () => {",
+                    "this.handleSourceUpdate_();",
+                    "if (this.getRenderer()) {",
+                    "this.getRenderer().disposeInternal(); // Ensure resources are disposed",
+                    "this.createRenderer();                // Re-create renderer to reset context",
+                    "}",
+                    "});",
+                    "}",
+                    "",
+                    "...",
+                    "setStyle(style) {",
+                    "this.changed(); // Trigger change event",
+                    "this.disposeInternal(); // Dispose of old WebGL resources",
+                    "this.createRenderer(); // Re-create to ensure proper context allocation",
+                    "}",
+                    "..."
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayerRenderer extends WebGLBaseTileLayerRenderer {",
+                    "...",
+                    "reset(options) {",
+                    "super.reset(options);",
+                    "this.vertexShader_ = options.vertexShader;",
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {",
+                    "this.program_ = this.helper.getProgram(this.fragmentShader_, this.vertexShader_);",
+                    "}",
+                    "}",
+                    "...",
+                    "afterHelperCreated() {",
+                    "this.program_ = this.helper.getProgram(this.fragmentShader_, this.vertexShader_);",
+                    "this.helper.flushBufferData(this.indices_);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayerRenderer extends WebGLBaseTileLayerRenderer {",
+                    "...",
+                    "reset(options) {",
+                    "super.reset(options);",
+                    "const gl = this.helper.getGL();",
+                    "if (this.program_) {",
+                    "gl.deleteProgram(this.program_);",
+                    "}",
+                    "this.program_ = this.helper.getProgram(options.fragmentShader, options.vertexShader);",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {",
+                    "this.program_ = this.helper.getProgram(this.fragmentShader_, this.vertexShader_);",
+                    "}",
+                    "}",
+                    "...",
+                    "afterHelperCreated() {",
+                    "this.program_ = this.helper.getProgram(this.fragmentShader_, this.vertexShader_);",
+                    "this.helper.flushBufferData(this.indices_);",
+                    "this.helper.deleteBuffer(); // clear current WebGL buffers",
+                    "this.helper.createBuffer(); // re-create buffers to get correct context",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "* Clean up underlying WebGL resources.",
+                    "* @function",
+                    "* @api",
+                    "*/",
+                    "WebGLTileLayer.prototype.dispose;"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* Clean up underlying WebGL resources.",
+                    "* @function",
+                    "* @api",
+                    "*/",
+                    "WebGLTileLayer.prototype.dispose = function() {",
+                    "if (this.getRenderer()) {",
+                    "this.getRenderer().disposeInternal();",
+                    "}",
+                    "};"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "disposeInternal() {",
+                    "const helper = this.helper;",
+                    "if (helper) {",
+                    "const gl = helper.getGL();",
+                    "gl.deleteProgram(this.program_);",
+                    "delete this.program_;",
+                    "helper.deleteBuffer(this.indices_);",
+                    "}",
+                    "super.disposeInternal();",
+                    "delete this.indices_;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "disposeInternal() {",
+                    "const helper = this.helper;",
+                    "if (helper) {",
+                    "const gl = helper.getGL();",
+                    "gl.deleteProgram(this.program_);",
+                    "helper.deleteBuffer(this.indices_);",
+                    "// Clear any palette textures to avoid WebGL context errors",
+                    "this.paletteTextures_.forEach(texture => {",
+                    "gl.deleteTexture(texture.getTexture(gl));",
+                    "});",
+                    "this.paletteTextures_ = [];",
+                    "}",
+                    "super.disposeInternal();",
+                    "delete this.indices_;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayerRenderer extends WebGLBaseTileLayerRenderer {",
+                    "...",
+                    "reset(options) {",
+                    "super.reset(options);",
+                    "",
+                    "this.vertexShader_ = options.vertexShader;",
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {",
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayerRenderer extends WebGLBaseTileLayerRenderer {",
+                    "...",
+                    "reset(options) {",
+                    "super.reset(options);",
+                    "",
+                    "// Ensure disposing of old program to avoid WebGL context issues",
+                    "if (this.program_) {",
+                    "const gl = this.helper.getGL();",
+                    "gl.deleteProgram(this.program_);",
+                    "}",
+                    "",
+                    "this.vertexShader_ = options.vertexShader;",
+                    "this.fragmentShader_ = options.fragmentShader;",
+                    "this.paletteTextures_ = options.paletteTextures || [];",
+                    "if (this.helper) {",
+                    "this.program_ = this.helper.getProgram(",
+                    "this.fragmentShader_,",
+                    "this.vertexShader_,",
+                    ");",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "renderer.reset({",
+                    "vertexShader: parsedStyle.vertexShader,",
+                    "fragmentShader: parsedStyle.fragmentShader,",
+                    "uniforms: parsedStyle.uniforms,",
+                    "paletteTextures: parsedStyle.paletteTextures,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "renderer.disposeInternal(); // Ensure cleanup of WebGL resources",
+                    "renderer = this.createRenderer(); // Recreate renderer with latest style"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "WebGLTileLayerRenderer.prototype.disposeInternal = function () {",
+                    "const helper = this.helper;",
+                    "if (helper) {",
+                    "const gl = helper.getGL();",
+                    "gl.deleteProgram(this.program_);",
+                    "delete this.program_;",
+                    "helper.deleteBuffer(this.indices_);",
+                    "}",
+                    "super.disposeInternal();",
+                    "delete this.indices_;",
+                    "};"
+                ],
+                "REPLACE": [
+                    "WebGLTileLayerRenderer.prototype.disposeInternal = function () {",
+                    "const helper = this.helper;",
+                    "if (helper) {",
+                    "const gl = helper.getGL();",
+                    "if (this.program_) {",
+                    "gl.deleteProgram(this.program_);",
+                    "}",
+                    "this.program_ = null;",
+                    "this.paletteTextures_ = []; // Clear palette textures",
+                    "helper.deleteBuffer(this.indices_);",
+                    "}",
+                    "super.disposeInternal();",
+                    "this.indices_ = null;",
+                    "};"
+                ]
+            }
+        ]
+    }
+}

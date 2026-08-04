@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//defaultItemToString",
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown (forwardRef render function)"
+        ],
+        "explanation": "The core of the bug lives in Dropdown.js. The helper `defaultItemToString` and the Dropdown component\u2019s render logic both rely solely on `itemToString(selectedItem)` when setting the toggle button\u2019s `title` attribute and its visible label (`<span>`). When `itemToString` has been overridden to return a React element (via IconDropdown patterns), those places end up stringifying the object (`[object Object]`). To fix this, the Dropdown render function needs to accept a new prop or flag (e.g. `renderSelectedItem`) so that it can use `itemToElement` (or another callback) when rendering the selected item, both for the button content and the `title` attribute, while leaving the menu items alone. PropTypes and defaultProps should be updated alongside the forwardRef render to support this new prop.",
+        "bug_scenario": "In the IconDropdown use case the consumer is hijacking `itemToString` to return a React element (the icon + label) so that the selected item in the closed Dropdown shows the icon. As of v10.43/7.43, the Dropdown\u2019s toggle button `title` attribute still calls `itemToString(selectedItem)`, which in this case returns an object, so you see \u201ctitle=\"[object Object]\"\u201d on hover instead of the icon or its proper label."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//defaultItemToString",
+            "packages/react/src/components/Dropdown/Dropdown.js//(inline render of toggle <button> using itemToString for title and label)"
+        ],
+        "explanation": "All of the logic that controls how the selected item is rendered lives in the Dropdown component in Dropdown.js. Specifically: 1) the defaultItemToString helper defines how items are converted into strings (used by the title attribute), and 2) the rendering of the toggle <button> always calls itemToString(selectedItem) for both its title prop and label <span>. Because itemToString is being overridden to return React elements, this leads to a bad title string \u201c[object Object]\u201d. To fix this, Dropdown.js must expose a separate API (e.g. a new renderSelectedItem prop) or change the button render logic so that it can use itemToElement for visual content while still calling itemToString for the title tooltip.",
+        "bug_scenario": "The screenshots show a custom IconDropdown built by \u201chijacking\u201d Dropdown\u2019s itemToString to return a React element so that the selected icon (e.g. a checkmark) renders correctly in the button. Since v10.43 the Dropdown always calls itemToString when setting the button\u2019s title attribute (used as tooltip) and its label <span>. Because itemToString now returns an object (the React element), hovering shows \u201ctitle=[object Object]\u201d instead of the intended string. The desired behavior is to render the selected item as an element (via itemToElement) but still use a string (via itemToString) for the title/tooltip \u2014 or expose a new prop to control which renderer is used for the selected value."
+    }
+}

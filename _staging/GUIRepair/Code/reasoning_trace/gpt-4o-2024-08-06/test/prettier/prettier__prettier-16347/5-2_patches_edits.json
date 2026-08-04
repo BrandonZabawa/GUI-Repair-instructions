@@ -1,0 +1,178 @@
+{
+    "1/5": {
+        "src/language-markdown/printer-markdown.js": [
+            {
+                "SEARCH": [
+                    "case \"whitespace\": {",
+                    "const { next } = path;",
+                    "",
+                    "const proseWrap =",
+                    "// leading char that may cause different syntax",
+                    "next && /^>|^(?:[*+-]|#{1,6}|\\d+[).])$/.test(next.value)",
+                    "? \"never\"",
+                    ": options.proseWrap;",
+                    "",
+                    "return printWhitespace(path, node.value, proseWrap);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "case \"whitespace\": {",
+                    "  const { next } = path;",
+                    "",
+                    "  const proseWrap =",
+                    "    // leading char that may cause different syntax",
+                    "    next && /^>|^(?:[*+-]|#{1,6}|\\d+[).])$/.test(next.value)",
+                    "      ? \"never\"",
+                    "      : options.proseWrap;",
+                    "",
+                    "  // Preserve empty lines",
+                    "  if (node.value.includes('\\n\\n')) {",
+                    "    return node.value;",
+                    "  }",
+                    "",
+                    "  return printWhitespace(path, node.value, proseWrap);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/language-markdown/printer-markdown.js": [
+            {
+                "SEARCH": [
+                    "case \"whitespace\": {",
+                    "const { next } = path;",
+                    "",
+                    "const proseWrap =",
+                    "// leading char that may cause different syntax",
+                    "next && /^>|^(?:[*+-]|#{1,6}|\\\\d+[).])$/.test(next.value)",
+                    "? \"never\"",
+                    ": options.proseWrap;",
+                    "",
+                    "return printWhitespace(path, node.value, proseWrap);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    case \"whitespace\": {",
+                    "      const { next } = path;",
+                    "",
+                    "      const proseWrap =",
+                    "        // leading char that may cause different syntax",
+                    "        next && /^>|^(?:[*+-]|#{1,6}|\\\\d+[).])$/.test(next.value)",
+                    "          ? \"never\"",
+                    "          : options.proseWrap;",
+                    "",
+                    "      // Ensuring newlines are preserved in YAML frontmatter",
+                    "      const isFrontMatter =",
+                    "        path.parent.type === \"root\" && node.position.start.line === 1;",
+                    "",
+                    "      return isFrontMatter ? node.value : printWhitespace(path, node.value, proseWrap);",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/language-markdown/printer-markdown.js": [
+            {
+                "SEARCH": [
+                    "function printRoot(path, options, print) {",
+                    "/** @typedef {{ index: number, offset: number }} IgnorePosition */",
+                    "/** @type {Array<{start: IgnorePosition, end: IgnorePosition}>} */"
+                ],
+                "REPLACE": [
+                    "function printRoot(path, options, print) {",
+                    "  /** @typedef {{ index: number, offset: number }} IgnorePosition */",
+                    "  /** ",
+                    "  * Preserve blank lines for specific node types ",
+                    "  * @type {Array<{start: IgnorePosition, end: IgnorePosition}>} ",
+                    "  */"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "case \"front-matter\":",
+                    "return options.originalText.slice(",
+                    "node.position.start.offset,",
+                    "node.position.end.offset,",
+                    ");"
+                ],
+                "REPLACE": [
+                    "    case \"front-matter\":",
+                    "      return options.originalText.slice(",
+                    "        node.position.start.offset,",
+                    "        node.position.end.offset,",
+                    "      ).replace(/^(\\s*\\n)+/gm, '\\n');"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/language-markdown/printer-markdown.js": [
+            {
+                "SEARCH": [
+                    "function genericPrint(path, options, print) {",
+                    "const { node } = path;",
+                    "if (shouldRemainTheSameContent(path)) {",
+                    "/** @type {Doc} */",
+                    "const parts = [\"\"];",
+                    "const textsNodes = splitText(",
+                    "options.originalText.slice(",
+                    "node.position.start.offset,",
+                    "node.position.end.offset,",
+                    "),",
+                    ");",
+                    "for (const node of textsNodes) {"
+                ],
+                "REPLACE": [
+                    "function genericPrint(path, options, print) {",
+                    "  const { node } = path;",
+                    "  if (shouldRemainTheSameContent(path)) {",
+                    "    /** @type {Doc} */",
+                    "    const parts = [\"\"];",
+                    "    const textsNodes = splitText(",
+                    "      options.originalText.slice(",
+                    "        node.position.start.offset,",
+                    "        node.position.end.offset,",
+                    "      ),",
+                    "    );",
+                    "    for (const node of textsNodes) {",
+                    "      // Preserve empty lines",
+                    "      if (node.type === \"whitespace\" && node.value.includes(\"\\n\\n\")) {",
+                    "        parts.push(hardline, hardline);",
+                    "        continue;",
+                    "      }"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/language-markdown/printer-markdown.js": [
+            {
+                "SEARCH": [
+                    "const proseWrap =",
+                    "// leading char that may cause different syntax",
+                    "next && /^>|^(?:[*+-]|#{1,6}|\\d+[).])$/.test(next.value)",
+                    "? \"never\"",
+                    ": options.proseWrap;",
+                    "",
+                    "return printWhitespace(path, node.value, proseWrap);"
+                ],
+                "REPLACE": [
+                    "const proseWrap =",
+                    "  // leading char that may cause different syntax",
+                    "  next && /^>|^(?:[*+-]|#{1,6}|\\d+[).])$/.test(next.value)",
+                    "    ? \"never\"",
+                    "    : options.proseWrap;",
+                    "",
+                    "// Overriding to preserve empty lines in front-matter",
+                    "if (node.type === \"whitespace\" && /^\\n\\n$/.test(node.value)) {",
+                    "  return node.value;",
+                    "}",
+                    "",
+                    "return printWhitespace(path, node.value, proseWrap);"
+                ]
+            }
+        ]
+    }
+}

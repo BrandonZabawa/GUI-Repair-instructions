@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ComboBox/index.js",
+            "packages/react/src/internal/FloatingMenu.js",
+            "packages/react/src/internal/ClickListener.js"
+        ],
+        "explanation": "\u2022 ComboBox.js (packages/react/src/components/ComboBox/ComboBox.js and its index.js) contains all of the open/close and filter logic for the React ComboBox. That is where the toggle handler should notify other menus to close but currently does not.  \n\u2022 FloatingMenu.js in internal is the wrapper component that attaches click-outside listeners and positions the menu. It uses ClickListener to fire onClickOutside events, but when clicking the toggle of a second ComboBox it doesn\u2019t recognize it as \u201coutside\u201d of the first, so the first never collapses.  \n\u2022 ClickListener.js is the low-level utility that watches for global clicks. Its logic for determining when a click is \u201cinside\u201d another floating menu needs to be adjusted so clicks on a different ComboBox trigger it to emit an outside click and close the previous instance.  \nBy updating ComboBox.js to emit a global close event (or to hook into FloatingMenu\u2019s close logic) when opening a new ComboBox, and by tweaking FloatingMenu.js/ClickListener.js to treat other ComboBox toggles as outside clicks, you can restore the expected dismiss-other behavior.",
+        "bug_scenario": "On a page with more than one ComboBox, opening one ComboBox does not dismiss any other already-open ComboBox (whereas opening a DropDown will dismiss an open ComboBox). In the screenshots you can see two ComboBoxes (\u201cDatabase\u201d and \u201cProcess\u201d). After expanding \u201cDatabase\u201d, clicking the chevron of \u201cProcess\u201d correctly expands the second list, but the first ComboBox remains open in the background instead of collapsing as expected. This only happens with the React ComboBox component in carbon-components-react 10.37.0 (it worked in 10.23.2)."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/internal/ClickListener.js"
+        ],
+        "explanation": "ComboBox.js is the React wrapper that manages the open/close state of the ComboBox menu. Its toggle handler currently only sets its own isOpen state and does not trigger the close behavior on other instances. ClickListener.js is the internal component used by ComboBox to detect clicks outside the component and dismiss the menu; it is responsible for wiring up document-level event listeners. Because the ComboBox toggle click on a different instance isn\u2019t being treated as an \u2018outside\u2019 click by ClickListener (or isn\u2019t processed early enough to close the previous instance before the new one opens), both menus remain open. Fixing the bug will require updating the open/close logic in ComboBox.js to invoke the close callback on other open instances (or adjusting ClickListener.js to treat any ComboBox toggle as an outside click to all other ComboBoxes). This is why these two files are directly related to the issue.",
+        "bug_scenario": "On a page with multiple Carbon React ComboBox components, opening one ComboBox and then clicking the chevron of another ComboBox does not dismiss the first one. Both dropdown menus remain open side by side. The expected behavior is that opening a new ComboBox should automatically close any other open ComboBox (or DropDown)."
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ListBox/ListBox.js",
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/react/src/components/Dropdown/Dropdown.js"
+        ],
+        "explanation": "1) ListBox.js takes any aria-controls/aria-owns passed in and blindly spreads them onto both the root and the toggle button, so when the menu is closed you still get broken IDrefs. Those props need to be filtered out or overridden based on isOpen. 2) ListBoxField.js hard-codes an aria-label of \u201copen menu\u201d/\u201cclose menu\u201d on the clickable toggle <div>, which replaces the user\u2019s visible placeholder text as the accessible name. 3) Dropdown.js simply passes all props through to ListBox (including those bad ARIA attributes) without any validation. Fixing these three files will allow you to drop invalid aria-controls/owns in the closed state and restore a proper accessible name that includes the visible label.",
+        "bug_scenario": "When you render the Carbon React <Dropdown> with custom aria-controls and aria-owns props (or even in the closed state by default), those attributes end up on the toggle button pointing at an ID that doesn\u2019t exist (e.g. \u201ccarbon-dropdown-example__menu\u201d). Axe/DAP flags that as \u201cARIA attributes must conform to valid values.\u201d  At the same time the internal toggle <div> (ListBoxField) carries an aria-label of \u201copen menu\u201d or \u201cclose menu,\u201d which overrides its visible label text (the \u201cDropdown menu options\u201d placeholder), causing \u201cAccessible name does not contain the visible label text.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/react/src/components/ListBox/ListBoxMenu.js"
+        ],
+        "explanation": "\n1) Dropdown.js is the public wrapper that takes your id, label, aria\u2010props and hands them off into the ListBox. It passes the id down into ListBox and ListBoxField, so any aria-controls/owns you give to Dropdown end up hard-coding the generated menu ID into ListBoxField.\n\n2) ListBoxField.js is where the <div role=\"button\" \u2026> lives. It unconditionally renders aria-controls and aria-owns (using the id + \"__menu\" suffix) even when the menu isn\u2019t mounted, so aria-controls points to a non-existent ID. It also sets aria-label to just \u201cOpen menu\u201d or \u201cClose menu,\u201d which conflicts with the visible label text, so the accessible name doesn\u2019t include the dropdown\u2019s label.\n\n3) ListBoxMenu.js is responsible for rendering the element with id = `${id}__menu` (the target of aria-controls/owns). That menu only exists in the DOM when you expand the dropdown\u2014so when it\u2019s closed there is no element with that generated ID. This mismatch triggers the \u201cinvalid ARIA attribute values\u201d error in DAP/axe. To fix: only apply aria-controls/owns when the menu is present (or keep a hidden menu element), or move to aria-labelledby for the button, and merge the visible label text into the button\u2019s accessible name rather than overriding it.",
+        "bug_scenario": "When you render a Carbon React <Dropdown> and inspect it with DAP (or axe-core), you see two violations on the collapsed dropdown button: 1) aria-controls/aria-owns is pointing at an element ID (e.g. \u201ccarbon\u2010dropdown\u2010example__menu\u201d) that doesn\u2019t actually exist in the DOM when the menu is closed, and 2) the button\u2019s aria-label (\u201cOpen menu\u201d or \u201cClose menu\u201d) does not include the visible label text (\u201cDropdown menu options\u201d), so its accessible name doesn\u2019t match the visible label. Both of those ARIA problems are coming from the internal ListBoxField (and the way the menu ID is generated in ListBoxMenu) and the way Dropdown spreads user props into that field."
+    }
+}

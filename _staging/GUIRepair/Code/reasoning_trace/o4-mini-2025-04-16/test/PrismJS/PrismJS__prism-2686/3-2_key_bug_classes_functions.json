@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-shell-session.js//Prism.languages['shell-session']"
+        ],
+        "bug_functions": [],
+        "explanation": "All of the shell-session tokenization lives in components/prism-shell-session.js. That file defines Prism.languages['shell-session'] with two main token patterns, 'command' and 'output'. The 'command' pattern is built by injecting a complex string-matching subpattern (the variable strings) into a larger RegExp. In recent downloads that composite regex no longer matches valid shell prompts and commands, so every line falls back to the 'output' rule. Fixing this requires adjusting the regular expressions inside Prism.languages['shell-session'] (in prism-shell-session.js) so that the command pattern once again correctly recognizes the prompt, the command text and the quoted strings.",
+        "bug_scenario": "On the Prism test-drive page (and in the downloaded bundles for 1.22/1.23), any code block marked with language=\"shell-session\" is no longer being tokenized correctly. Instead of splitting the prompt, command and output into separate tokens, the entire block is being marked as \u201coutput\u201d (i.e. everything falls under the output pattern). Previously the same code and same Prism version (from an earlier download) would correctly highlight the prompt (user@host$), the command (echo \u2026, exit) and the quotes within the command. The DOM inspection shows only a single span.token.output wrapping the entire block, meaning the \u201ccommand\u201d pattern never matched."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-shell-session.js//Prism.languages['shell-session'] definition",
+            "components/prism-shell-session.js//RegExp(...).replace(/<<str>>/g, function () {\u2026})",
+            "components/prism-shell-session.js//Prism.languages['sh-session']=Prism.languages.shellsession alias assignment"
+        ],
+        "explanation": "All of the broken behavior stems from the definition of the Shell session language in components/prism-shell-session.js. The key element is the `Prism.languages['shell-session']` object: it provides the `command` and `output` patterns. If the `command` pattern never matches, everything falls back to `output`. That pattern is built via a `RegExp` call with a placeholder `<<str>>` which is replaced by the `strings` pattern array in a `.replace(...)` callback. If that replacement or the resulting regex syntax is malformed, the `command` branch will always fail. Finally, the alias assignment at the bottom (`Prism.languages['sh-session']=Prism.languages.shellsession=Prism.languages['shell-session'];`) links the hyphenated and non-hyphenated names; if one of these names doesn\u2019t match the loader\u2019s identifier, the language won\u2019t load correctly. Fixing the regex construction or the alias key names in these lines will restore proper tokenization of prompt, command and output in shell-session mode.",
+        "bug_scenario": "In the screenshots we see that code blocks marked with language=\"shell-session\" no longer break out the prompt, command and output. Instead of seeing separate tokens for the prompt (/home/user$), the command (echo \u2026, exit, colorized as \"bash\"), and the output, the entire content is lumped into a single \"output\" token. In other words the tokenizer for the Shell session language is not matching the `command` pattern at all and is treating everything as `output`."
+    }
+}

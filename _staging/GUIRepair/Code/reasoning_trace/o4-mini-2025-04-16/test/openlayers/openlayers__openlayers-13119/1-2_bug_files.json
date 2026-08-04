@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/webgl/Helper.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/layer/WebGLTile.js"
+        ],
+        "explanation": "Helper.js is where OpenLayers sets up the WebGL context\u2019s blending state (defaulting to gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA). We need to parameterize that logic to switch to gl.ONE, gl.ONE when a layer requests additive blending. TileLayer.js (webgl) is the renderer that invokes Helper.drawElements per WebGLTile layer; it must read the new flag on the layer and pass it into Helper so the correct blendFunc call is made. WebGLTile.js defines the layer API for WebGL tile rendering; this is where we expose the new style flag (e.g. `additiveBlend: true/false`) and provide a getter so the renderer can detect and apply the custom blend mode.",
+        "bug_scenario": "When rendering multiple WebGLTile layers with different color mappings in OpenLayers, the default blend function (gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) prevents proper additive blending of colors. We need the ability to flag individual WebGLTile layers so that they use gl.ONE, gl.ONE (additive blending) instead of the default blend mode, yielding the correct combined color intensities."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/webgl/Helper.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/layer/WebGLTile.js"
+        ],
+        "explanation": "\u2022 src/ol/webgl/Helper.js: This file contains the code that unconditionally calls gl.enable(BLEND) and gl.blendFunc(...) for all WebGL rendering. It\u2019s where the blendFunc parameters are hard\u2010coded, so it must be extended to read a layer\u2010specific flag and choose gl.ONE, gl.ONE when requested.  \n\u2022 src/ol/renderer/webgl/TileLayer.js: This is the WebGL renderer for TileLayer. It creates and configures the helper for each frame. It needs to pass the new blend flag from the layer style into Helper.js so the blend call can be customized.  \n\u2022 src/ol/layer/WebGLTile.js: This defines the WebGLTile layer API and default style options. To expose a blend mode flag to the user, this file must be updated to accept and serialize a new boolean or enum in the style object, so the renderer and helper can pick it up.",
+        "bug_scenario": "In the current OpenLayers WebGL\u2010based TileLayer implementation, all layers are rendered with a single, hard\u2010coded blend function (e.g. gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)) in Helper.js, so you cannot switch to additive blending (gl.ONE, gl.ONE). For our digital slide viewer we need to color and blend multiple WebGLTile layers using gl.ONE, gl.ONE, but there is no API hook or flag in WebGLTile layer style to control the blend function. The goal is to add a boolean or blend\u2010mode flag to the WebGLTile layer style so that, when set, the helper uses gl.blendFunc(gl.ONE, gl.ONE) instead of the default."
+    }
+}

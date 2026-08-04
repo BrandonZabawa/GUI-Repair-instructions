@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/rules/constructor-super.js",
+            "lib/rules/no-this-before-super.js"
+        ],
+        "explanation": "Both constructor-super.js and no-this-before-super.js use a shared mechanism (via a segmentInfoMap keyed by code-path segment ids) to track flags such as superCalled. Under certain AST shapes (for example when trailing blank lines or empty constructor bodies produce code-path segments that weren\u2019t registered), the rule callbacks attempt to read info.superCalled on an undefined entry. Fixing this requires initializing or guarding lookups in segmentInfoMap before accessing superCalled (and related flags) in those two rule files.",
+        "bug_scenario": "When linting a simple ES2015 class that extends another (with a constructor that calls super()), ESLint crashes at runtime inside its \u201cconstructor-super\u201d/\u201cno-this-before-super\u201d rules with \u201cCannot read property \u2018superCalled\u2019 of undefined.\u201d The error surfaces in a freshly created file (bug.js) with only a derived class, a super() call, and a trivial try-for-of-catch. The rule logic that tracks whether super() has been called per code\u2010path segment is indexing into an uninitialized info map entry, leading to undefined.superCalled."
+    },
+    "2": {
+        "bug_files": [
+            "lib/rules/constructor-super.js"
+        ],
+        "explanation": "The error emerges because lib/rules/constructor-super.js tracks a boolean flag called superCalled on each CodePathSegment it observes, but under certain AST shapes (e.g. a for-of loop inside a try/catch) it never initializes that flag for every segment. Later, when it tries to read info.superCalled on an uninitialized segment, info is undefined and you get the crash. Fixing this requires updating constructor-super.js to ensure every segmentInfoMap entry is created (or guard against missing entries) before reading superCalled.",
+        "bug_scenario": "In the VSCode screenshot and the ESLint output you see a crash inside the \u201cconstructor-super\u201d rule. You have a simple ES6 class:\n\n  class Extender {}\n  class BugProof extends Extender {\n    constructor(props) {\n      super(props);\n      try {\n        let arr = [];\n        for (let a of arr) {}\n      } catch (err) {}\n    }\n  }\n\nWhen you save or add a blank line at the end, ESLint trips over a \u201cCannot read property 'superCalled' of undefined\u201d error and reports a \u201cParsing error: Unexpected token\u201d at that last blank line. The crash is coming from inside the constructor-super rule\u2019s code-path logic rather than from a true syntax problem in your file."
+    }
+}

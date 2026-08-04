@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "core/audits/no-unload-listeners.js",
+            "core/gather/gatherers/global-listeners.js"
+        ],
+        "explanation": "The key files are: (1) 'core/audits/no-unload-listeners.js', which implements the audit that is supposed to detect 'unload' event listeners but currently only checks the main world and not isolated contexts; and (2) 'core/gather/gatherers/global-listeners.js', which gathers global event listeners but only from the main world context. To fix the bug, these files would need to be updated to enumerate and check all execution contexts (including those created by extensions/content scripts), so that unload listeners injected in isolated worlds are detected and reported by the audit.",
+        "bug_scenario": "The bug scenario is that the Lighthouse bfcache audit fails due to an 'unload' event handler in the main frame, but the 'no-unload-listeners' audit passes, and no unload listeners are visible in DevTools or via getEventListeners(window). This happens because an extension injects an unload listener in an isolated execution context (content script), making it invisible to the current detection logic, which only checks the main world context. The result is a confusing situation for users, as the bfcache audit reports a problem that the unload-listener audit cannot see or explain."
+    }
+}

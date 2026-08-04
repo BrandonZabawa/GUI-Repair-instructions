@@ -1,0 +1,307 @@
+{
+    "1/10": {
+        "src/ol/control/Attribution.js": [
+            {
+                "SEARCH": [
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".filter((layer) => layer.getVisible() && (!layer.get('group') || layer.get('group').getVisible()))",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/layer/Group.js": [
+            {
+                "SEARCH": [
+                    "layerState.visible = layerState.visible && ownLayerState.visible;",
+                    "layerState.maxResolution = Math.min("
+                ],
+                "REPLACE": [
+                    "layerState.visible = layerState.visible && ownLayerState.visible;",
+                    "",
+                    "if (!layerState.visible) {",
+                    "layerState.attributions = undefined;",
+                    "}",
+                    "",
+                    "layerState.maxResolution = Math.min("
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/layer/Group.js": []
+    },
+    "4/10": {
+        "src/ol/control/Attribution.js": [
+            {
+                "SEARCH": [
+                    "this.collectSourceAttributions_(frameState);"
+                ],
+                "REPLACE": [
+                    "this.collectSourceAttributionsWithGroupVisibility_(frameState);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "collectSourceAttributions_(frameState) {",
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");",
+                    "",
+                    "const collapsible = !this.getMap()",
+                    ".getAllLayers()",
+                    ".some(",
+                    "(layer) =>",
+                    "layer.getSource() &&",
+                    "layer.getSource().getAttributionsCollapsible() === false",
+                    ");",
+                    "if (!this.overrideCollapsible_) {",
+                    "this.setCollapsible(collapsible);",
+                    "}",
+                    "return visibleAttributions;"
+                ],
+                "REPLACE": [
+                    "collectSourceAttributionsWithGroupVisibility_(frameState) {",
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".filter(layer => layer.getVisible() && this.groupLayerVisible(layer))",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");",
+                    "",
+                    "const collapsible = !this.getMap()",
+                    ".getAllLayers()",
+                    ".some(",
+                    "(layer) =>",
+                    "layer.getSource() &&",
+                    "layer.getSource().getAttributionsCollapsible() === false",
+                    ");",
+                    "if (!this.overrideCollapsible_) {",
+                    "this.setCollapsible(collapsible);",
+                    "}",
+                    "return visibleAttributions;",
+                    "},",
+                    "",
+                    "/**",
+                    "* Checks group layer visibility.",
+                    "* @param {import(\"../layer/Layer.js\").default} layer The layer.",
+                    "* @return {boolean} Whether the group layer is visible.",
+                    "*/",
+                    "groupLayerVisible(layer) {",
+                    "let currentLayer = layer;",
+                    "while (currentLayer.getParent()) {",
+                    "currentLayer = currentLayer.getParent();",
+                    "if (!currentLayer.getVisible()) {",
+                    "return false;",
+                    "}",
+                    "}",
+                    "return true;"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/layer/Group.js": [
+            {
+                "SEARCH": [
+                    "layerState.visible = layerState.visible && ownLayerState.visible;"
+                ],
+                "REPLACE": [
+                    "layerState.visible = layerState.visible && ownLayerState.visible && this.getVisible();"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/control/Attribution.js": [
+            {
+                "SEARCH": [
+                    ".collectSourceAttributions_(frameState) {",
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");"
+                ],
+                "REPLACE": [
+                    ".collectSourceAttributions_(frameState) {",
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".filter(layer => layer.getVisible() && this.isGroupLayerVisible(layer))",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");",
+                    "",
+                    "isGroupLayerVisible(layer) {",
+                    "let currentLayer = layer;",
+                    "while (currentLayer) {",
+                    "if (!currentLayer.getVisible()) return false;",
+                    "currentLayer = currentLayer.get('parentLayer') || null;",
+                    "}",
+                    "return true;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/control/Attribution.js": [
+            {
+                "SEARCH": [
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".flatMap((layer) => layer.getAttributions(frameState))"
+                ],
+                "REPLACE": [
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".flatMap((layer) => {",
+                    "if (layer.getVisible() && layer instanceof LayerGroup) {",
+                    "return layer.getLayers().getArray().flatMap((sublayer) => {",
+                    "return sublayer.getVisible() ? sublayer.getAttributions(frameState) : [];",
+                    "});",
+                    "} else if (layer.getVisible()) {",
+                    "return layer.getAttributions(frameState);",
+                    "}",
+                    "return [];",
+                    "})"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/control/Attribution.js": [
+            {
+                "SEARCH": [
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".filter(layer => layer.get('visible')) // Ensure layer is visible",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/layer/Group.js": [
+            {
+                "SEARCH": [
+                    "layerState.visible = layerState.visible && ownLayerState.visible;"
+                ],
+                "REPLACE": [
+                    "layerState.visible = ownLayerState.visible && layerState.visible;"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/control/Attribution.js": [
+            {
+                "SEARCH": [
+                    "collectSourceAttributions_(frameState) {",
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");",
+                    "",
+                    "const collapsible = !this.getMap()",
+                    ".getAllLayers()",
+                    ".some(",
+                    "(layer) =>",
+                    "layer.getSource() &&",
+                    "layer.getSource().getAttributionsCollapsible() === false",
+                    ");"
+                ],
+                "REPLACE": [
+                    "collectSourceAttributions_(frameState) {",
+                    "const checkVisibility = (layer) => {",
+                    "let currentLayer = layer;",
+                    "while (currentLayer) {",
+                    "if (!currentLayer.getVisible()) return false;",
+                    "currentLayer = currentLayer.getParentLayer();",
+                    "}",
+                    "return true;",
+                    "};",
+                    "",
+                    "const visibleAttributions = Array.from(",
+                    "new Set(",
+                    "this.getMap()",
+                    ".getAllLayers()",
+                    ".filter(checkVisibility)",
+                    ".flatMap((layer) => layer.getAttributions(frameState))",
+                    ")",
+                    ");",
+                    "",
+                    "const collapsible = !this.getMap()",
+                    ".getAllLayers()",
+                    ".filter(checkVisibility)",
+                    ".some(",
+                    "(layer) =>",
+                    "layer.getSource() &&",
+                    "layer.getSource().getAttributionsCollapsible() === false",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/control/Attribution.js": [
+            {
+                "SEARCH": [
+                    ".flatMap((layer) => layer.getAttributions(frameState))"
+                ],
+                "REPLACE": [
+                    ".flatMap((layer) => {",
+                    "// Only include attributions if the layer and its parent groups are visible",
+                    "let currentLayer = layer;",
+                    "while (currentLayer) {",
+                    "if (!currentLayer.getVisible()) {",
+                    "return [];",
+                    "}",
+                    "currentLayer = currentLayer.getParentGroup ? currentLayer.getParentGroup() : null;",
+                    "}",
+                    "return layer.getAttributions(frameState);",
+                    "})"
+                ]
+            }
+        ]
+    }
+}

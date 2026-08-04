@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/DataTable.js",
+            "packages/react/src/components/DataTable/Table.js",
+            "packages/react/src/components/DataTable/TableHeader.js"
+        ],
+        "explanation": "All of the logic around sizing and sorting lives in the React DataTable wrapper: \n\n\u2022 DataTable.js is the top-level component that accepts the size prop and figures out which headers are sortable; it should flag the underlying <Table> with a new sortable prop when any header is sorted, but currently it doesn\u2019t.  \n\u2022 Table.js is responsible for rendering the <table> element with the right CSS classnames (e.g. bx--data-table--tall, and in v7+ a bx--table--sortable class). Without passing sortable into this component, the tall-variant sort styles never get applied.  \n\u2022 TableHeader.js actually renders the <th> and the sort icon; it needs to adjust its internal spacing or vertical-alignment when inside a tall table or when the sortable class is present. Because neither Table nor TableHeader toggles the new \u201csortable\u201d styling or alignment rules for tall tables, the label/icon combination floats out of sync with the other headers.",
+        "bug_scenario": "When you set the DataTable size to \u201ctall\u201d and enable sorting on one or more columns (via getHeaderProps({ header, isSortable: true })), the header label and its sort icon become vertically misaligned compared to the other, non-sortable headers. In the screenshot you can see that the \u201cName\u201d header (which is sortable) sits a few pixels higher than the \u201cDescription\u201d, \u201cStatus\u201d, and \u201cStart Date\u201d headers when using the tall row height."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/DataTable.js",
+            "packages/react/src/components/DataTable/Table.js",
+            "packages/react/src/components/DataTable/TableHeader.js"
+        ],
+        "explanation": "\u2022 DataTable.js: this is the top\u2010level React component. It accepts the size prop (e.g. \"tall\") and is responsible for forwarding it into the table rendering pipeline. If it doesn\u2019t propagate size correctly, the rest of the table (notably the sortable headers) won\u2019t receive the necessary class names to trigger the tall-variant CSS.  \n\u2022 Table.js: renders the <table> element and applies modifier classes such as bx--table--tall based on the size prop. If the tall class is missing or mis\u2010named here, the CSS that centers the sort\u2010button content in tall rows never applies.  \n\u2022 TableHeader.js: renders each <th> and, when isSortable is true, wraps its contents in the bx--table-sort <button>. Currently it doesn\u2019t detect the tall context and so the inner button keeps the default vertical padding (for normal rows) and ends up misaligned in padding\u2010increased tall rows.  \n\u2022 data-table.scss: contains the CSS rules for both the tall table variant and the sort\u2010button styling. It needs a new rule (or adjustment) under the .bx--table--tall modifier so that .bx--table-sort elements (and their child icon + label spans) are vertically centered in the taller header row.",
+        "bug_scenario": "When you render a carbon DataTable with size=\"tall\" and enable sorting on one or more columns, the header cells that are wrapped in the sort\u2010button become vertically misaligned compared to the plain header cells. In the screenshot the \u201cName\u201d header (sortable) sits slightly lower than \u201cDescription\u201d, \u201cStatus\u201d, and \u201cStart Date\u201d (non\u2010sortable), even though the row height has increased for the tall variant."
+    }
+}

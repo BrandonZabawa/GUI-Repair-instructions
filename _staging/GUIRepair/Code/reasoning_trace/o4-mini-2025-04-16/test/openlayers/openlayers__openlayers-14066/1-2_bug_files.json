@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/common.js"
+        ],
+        "explanation": "src/ol/source/GeoTIFF.js is where the convertToRGB option is declared, passed down, and used when reading GeoTIFF images. It needs to be updated to accept and interpret the 'auto' value. src/ol/source/common.js contains the low-level routines that actually call image.readRasters() or image.readRGB(), and holds the metadata inspection logic (samples per pixel and photometric interpretation). Both must be updated so that when convertToRGB is set to 'auto', the code checks the TIFF\u2019s color space and sample count and then chooses readRGB() only for the specified non-RGB color spaces.",
+        "bug_scenario": "When using a GeoTIFF source with three samples per pixel in a non-RGB photometric interpretation (e.g. CMYK, YCbCr, CIELab or ICCLab), the library currently only honors a boolean convertToRGB option. The request is to add a new convertToRGB: 'auto' setting that inspects the image metadata (samples per pixel and photometric interpretation) and automatically calls image.readRGB() when appropriate, falling back to the existing readRasters path otherwise."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "site/src/doc/tutorials/raster-reprojection-resources/index.md"
+        ],
+        "explanation": "src/ol/source/GeoTIFF.js is the core implementation of the GeoTIFF source, where the convertToRGB option needs to be introduced and the logic added to inspect the photometricInterpretation and call image.readRGB() when 'auto' is selected. The tutorial under site/src/doc/tutorials/raster-reprojection-resources/index.md documents the GeoTIFF source options, so it must also be updated to describe the new convertToRGB:'auto' behavior.",
+        "bug_scenario": "When a GeoTIFF source is configured with convertToRGB:'auto' and the file has three samples per pixel but uses a non-RGB photometric interpretation (for example CMYK, YCbCr, CIELab or ICCLab), the source should detect this automatically and invoke image.readRGB() to get an RGB output. At the moment this option isn\u2019t recognized by the GeoTIFF source and no auto\u2010conversion occurs."
+    }
+}

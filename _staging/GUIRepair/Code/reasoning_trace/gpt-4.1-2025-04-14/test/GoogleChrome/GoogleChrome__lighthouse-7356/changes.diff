@@ -1,0 +1,43 @@
+diff --git a/lighthouse-core/gather/driver.js b/lighthouse-core/gather/driver.js
+index b3e593d29..26d60984e 100644
+--- a/lighthouse-core/gather/driver.js
++++ b/lighthouse-core/gather/driver.js
+@@ -561,7 +561,7 @@ class Driver {
+   }
+ 
+   /**
+-   * Returns a promise that resolve when a frame has a FCP.
++   * Returns a promise that resolve when a frame has a FCP, or after a timeout.
+    * @return {{promise: Promise<void>, cancel: function(): void}}
+    */
+   _waitForFCP() {
+@@ -570,6 +570,8 @@ class Driver {
+       throw new Error('_waitForFCP.cancel() called before it was defined');
+     };
+ 
++    const FCP_TIMEOUT = 10000; // 10 seconds
++
+     const promise = new Promise(resolve => {
+       /** @param {LH.Crdp.Page.LifecycleEventEvent} e */
+       const lifecycleListener = e => {
+@@ -582,10 +584,20 @@ class Driver {
+       this.on('Page.lifecycleEvent', lifecycleListener);
+ 
+       let canceled = false;
++      /** @type {NodeJS.Timeout|undefined} */
++      let timeoutId = setTimeout(() => {
++        if (!canceled) {
++          cancel();
++          // Optionally: log.warn('Driver', 'Timed out waiting for FCP event');
++          resolve();
++        }
++      }, FCP_TIMEOUT);
++
+       cancel = () => {
+         if (canceled) return;
+         canceled = true;
+         this.off('Page.lifecycleEvent', lifecycleListener);
++        if (timeoutId) clearTimeout(timeoutId);
+       };
+     });
+ 

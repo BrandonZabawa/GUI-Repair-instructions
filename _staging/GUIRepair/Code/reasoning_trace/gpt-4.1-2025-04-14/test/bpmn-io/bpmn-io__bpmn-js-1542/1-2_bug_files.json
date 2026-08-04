@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/LabelBehavior.js",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js"
+        ],
+        "explanation": "1. 'lib/features/modeling/behavior/LabelBehavior.js': This file is directly mentioned in the stack trace and is responsible for handling label positioning and updates. Improper handling of undefined or invalid connection segments when a gateway is inserted is likely here, as it tries to lay out or move labels.\n2. 'lib/features/modeling/behavior/util/LabelLayoutUtil.js': This utility is referenced at the line where the error 'segmentIndex' is read. It likely computes geometry for labels and connections, and may not defensively check for cases where expected connection data is missing or malformed during the move/insert operation.\n3. 'lib/features/modeling/behavior/DropOnFlowBehavior.js': Also in the stack trace and directly involved in the user operation (dropping a gateway on a flow), connecting user actions to model updates and label/connection adjustments. Bugs during model updates or invalid state could originate or be propagated here, especially for edge cases inserting on flows with labels.\n\nThese files together coordinate the visual and semantic update of the diagram when gateways are dropped on flows, and are directly referenced by the error stack. Other files (like core model or unrelated behaviors) are not implicated by the bug report, trace, or scenario.",
+        "bug_scenario": "When a user attempts to insert a gateway onto an existing flow (specifically before a label like 'NO'), the BPMN editor throws a TypeError: 'Cannot read properties of undefined (reading segmentIndex)'. This breaks the editor, making it unresponsive and unusable. The stack trace indicates that the problem occurs in label layout and behavior utilities when (re-)positioning connection labels and when connections/flows are updated, especially during gateway insertion. The GIF shows the user dragging a gateway onto the green sequence flow 'NO', immediately resulting in the error and freezing the diagram editor."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/LabelBehavior.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "explanation": "1. 'lib/features/modeling/behavior/util/LabelLayoutUtil.js' is referenced at the top of the call stack, indicating that code here is failing when it tries to access 'segmentIndex' on an undefined value during the label layout process.\n2. 'lib/features/modeling/behavior/LabelBehavior.js' is also directly implicated and appears in the stack trace. It participates in label rendering and behavior updates during flow changes.\n3. 'lib/features/modeling/behavior/DropOnFlowBehavior.js' is responsible for logic when elements like gateways are dropped onto flows, and appears in the stack; this interaction is directly described in the bug scenario.\n4. 'lib/features/modeling/Modeling.js' provides the main modeling actions such as createShape, appendShape, layoutConnection, and reconnect, all of which are referenced in the trace and closely interact with flow and label positioning. These files are the most likely places where incorrect flow or label data could lead to the observed error, and where a fix would be needed to handle undefined cases more robustly.",
+        "bug_scenario": "The bug occurs when a user attempts to insert a gateway onto a flow, particularly before a label (such as the 'NO' label in the diagram), which causes the editor to throw an error: 'Cannot read properties of undefined (reading 'segmentIndex')'. This results in the editor breaking and becoming unusable. The stack trace points specifically to code involved in label layout and label behavior during the interaction flow, as well as connection layout when shapes are created or moved in the BPMN diagram editor. The image shows a typical flow where a user might try to add a gateway before the 'NO' path label, leading to this crash."
+    }
+}

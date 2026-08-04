@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Checkbox/Checkbox.tsx//Checkbox"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Checkbox/Checkbox.stories.js//Playground",
+            "packages/react/src/components/Checkbox/__tests__/Checkbox-test.js//describe('Checkbox')"
+        ],
+        "explanation": "1. Checkbox (packages/react/src/components/Checkbox/Checkbox.tsx):\n   - The `CheckboxProps` interface and the `Checkbox` forwardRef component must be extended to include a `readOnly?: boolean` prop.\n   - Within the function body, the new `readOnly` prop needs to be spread onto the `<input>` (so that the HTML `readonly` attribute is applied) and used to conditionally add a `--readonly` CSS modifier class (e.g., `${prefix}--checkbox--readonly`).\n\n2. Playground story (packages/react/src/components/Checkbox/Checkbox.stories.js):\n   - The `Playground` function must include `readOnly` in its `args` so that Storybook knobs allow toggling the read-only state.\n   - Add an argType entry for `readOnly: { control: 'boolean' }` and include it in the rendered `<Checkbox>` props by default.\n   - Optionally, add a dedicated `ReadOnly` story that sets `readOnly: true` for easy copy/paste.\n\n3. Checkbox tests (packages/react/src/components/Checkbox/__tests__/Checkbox-test.js):\n   - Extend the `describe('Checkbox')` block with a new `it('should set the readOnly attribute and CSS class on the <input> element', ...)` test.\n   - In that test, render `<Checkbox id=\"test\" labelText=\"test\" readOnly />`, assert `screen.getByRole('checkbox')` has `.readOnly` attribute and the correct `${prefix}--checkbox--readonly` class on its wrapper or input.\n\nThese changes ensure the component API, styling, Storybook stories, and RTL tests fully support and validate the newly requested read-only checkbox state.",
+        "bug_scenario": "The two design mockups show the intended \u201cread-only\u201d checkbox state: visually the checkbox appears non-interactive with a neutral border and text color, yet reflects its checked/unchecked status. The current `<Checkbox>` component in `packages/react` does not support a `readOnly` prop\u2014it neither passes `readOnly` to the underlying `<input>` nor applies a special CSS class for styling. As a result, consumers cannot render checkboxes in a read-only state per the new design guidelines."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Checkbox/Checkbox.tsx//Checkbox"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Checkbox/Checkbox.stories.js//Playground",
+            "packages/react/src/components/Checkbox/__tests__/Checkbox-test.js//describe('Checkbox')"
+        ],
+        "explanation": "1. Checkbox (in Checkbox.tsx) is the core component that must accept and handle a readOnly prop: it needs to be destructured from props, rendered onto the <input>, have its onChange disabled when readOnly is true, and apply a new CSS class (e.g. `${prefix}--checkbox--readonly`) to produce the proper styling shown in the images. 2. The Playground story (in Checkbox.stories.js) must expose the readOnly control in argTypes so designers can toggle and preview the variant, and there should be a new ReadOnly story for copy-and-paste. 3. The test suite (Checkbox-test.js) currently does not test read-only behavior; it needs new RTL tests to assert that the readOnly attribute is present on the input, that clicks do not trigger onChange when readOnly is true, and that the read-only styling class is applied.",
+        "bug_scenario": "The designer has added a new \"read only\" variant for the Checkbox component\u2014with a lighter border, no interaction, and the same spacing\u2014but the current implementation does not support a readOnly prop on the Checkbox (no special styling class is added, clicks still fire onChange, and neither the storybook playground nor the test suite cover it). The screenshots show unselected, selected, and grouped checkboxes in their normal and read-only states (with teal border and disabled look) and the spacing/structure guidelines for read-only items."
+    }
+}

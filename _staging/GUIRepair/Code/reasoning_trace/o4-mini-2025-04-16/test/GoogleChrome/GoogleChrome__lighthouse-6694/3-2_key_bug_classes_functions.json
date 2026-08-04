@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.audit",
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.hasAlreadyConnectedToOrigin"
+        ],
+        "explanation": "The class UsesRelPreconnectAudit (in lighthouse-core/audits/uses-rel-preconnect.js) implements the audit that detects potential preconnect savings by examining network timings alone. Its static audit() method never inspects the page\u2019s DOM for existing <link rel=\"preconnect\"/> or dns-prefetch hints, so it flags even already-preconnected origins. The helper hasAlreadyConnectedToOrigin only checks for zero DNS/TCP timing on the network record\u2014it does not know about hint tags in the HTML. To fix the false positive, audit() must be extended to gather link elements from the DOM (or receive a new artifact with preconnect/dns-prefetch hints) and filter out any origins that already have those resource hints.",
+        "bug_scenario": "When running the \u201cAvoid multiple, costly round trips to any origin\u201d opportunity audit (uses-rel-preconnect) on a page that already includes <link rel=\"preconnect\"/> hints for third-party origins, Lighthouse still reports those origins with non-zero savings. In other words, even though the page\u2019s HTML already preconnects to https://www.google-analytics.com and https://fonts.gstatic.com, the audit\u2019s output lists them as missed preconnect opportunities."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit",
+            "lighthouse-core/config/default-config.js//defaultConfig"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.audit"
+        ],
+        "explanation": "The core of the false positive lives in UsesRelPreconnectAudit (uses-rel-preconnect.js). Its `audit()` method gathers network records and computes wasted DNS/TCP time but never inspects the page\u2019s `<link rel=preconnect>` hints. As a result it flags origins that were already preconnected. To fix this, you need to extend `UsesRelPreconnectAudit.audit()` (and potentially its helper methods) to consume a new artifact containing the DOM\u2019s link-rel hints, then filter out any origins already declared via `<link rel=preconnect>` or `dns-prefetch`. In addition, the default Lighthouse config (default-config.js) must include a gatherer for those link elements so that the audit can see and exclude preconnected origins.",
+        "bug_scenario": "When running Lighthouse\u2019s \u201cAvoid multiple, costly round trips to any origin\u201d opportunity audit (uses-rel-preconnect), it still reports savings on origins for which the page already includes `<link rel=\"preconnect\">` hints. In other words, even though the HTML declares preconnects for \u201chttps://www.google-analytics.com\u201d and \u201chttps://fonts.gstatic.com\u201d, the audit ignores them and flags both origins with non-zero wasted time."
+    }
+}

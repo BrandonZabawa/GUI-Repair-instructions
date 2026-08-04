@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js",
+            "packages/react/src/components/MultiSelect/MultiSelect.js",
+            "packages/react/src/components/MultiSelect/MultiSelect-story.js",
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/react/src/components/ListBox/ListBoxMenu.js",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js",
+            "packages/react/src/internal/useId.js"
+        ],
+        "explanation": "\u2022 FilterableMultiSelect.js reads the `id` prop and derives multiple element IDs (label, input, menu), so duplicate props produce duplicate DOM IDs. It also uses `<div role='group'>` for the menu container.  \n\u2022 MultiSelect.js shares much of the ID-generation logic and should be aligned.  \n\u2022 MultiSelect-story.js defines two FilterableMultiSelect examples with the same id, so needs updating to use unique ids or auto-id generation.  \n\u2022 ListBoxField.js and ListBoxMenu.js/ ListBoxMenuItem.js set ARIA roles on the wrapper, menu, and menu items: options end up outside a true role=\"listbox\" container. These components must ensure the proper wrapper role (listbox) for options.  \n\u2022 internal/useId.js provides unique id generation and should be integrated so that when an id prop is reused, the component auto-generates unique IDs to avoid collisions.",
+        "bug_scenario": "In the Filterable variant of the MultiSelect component (as shown in the Carbon React storybook), rendering two instances with the same `id` prop causes duplicate HTML `id` attributes on the wrapper, label, input, and menu elements. This triggers DAP violations (\u201cElement 'id' attribute values must be unique\u201d) and ARIA errors (\u201crole='option' must be contained within an element with role='listbox'\u201d). The FilterableMultiSelect uses its `id` prop to build multiple sub-IDs and renders its options inside a `<div role=\"group\">` rather than a `listbox`, so options with role=\"option\" are in an invalid parent."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.js",
+            "packages/react/src/components/MultiSelect/MultiSelect.js",
+            "packages/react/src/components/MultiSelect/MultiSelectPropTypes.js",
+            "packages/react/src/internal/useId.js"
+        ],
+        "explanation": "FilterableMultiSelect.js is responsible for rendering the filterable dropdown, including assigning the base id to the label, input, and menu. It currently passes the same user-provided id to both instances, producing duplicate IDs. MultiSelect.js contains shared logic for id\u2010based ARIA attributes (listbox, option roles) that are mis-scoped when the id is duplicated. MultiSelectPropTypes.js defines the id prop requirement and could enforce uniqueness or warn. internal/useId.js provides the default unique id generation logic when no id is passed; updating these files to merge user id with a unique suffix (or warn on duplicates) will fix the accessibility errors.",
+        "bug_scenario": "When rendering two MultiSelect.Filterable components with the same \u201cid\u201d prop (in this case \u201ccarbon-multiselect-example\u201d), the HTML DOM ends up with duplicate id attributes and ARIA roles applied to elements outside of a valid listbox container. The DAP scan reports \u201cElement \u2018id\u2019 attribute values must be unique within a document\u201d and multiple \u201coption\u201d roles not contained within a role=\u201clistbox\u201d parent. The screenshot shows two <input> elements and multiple menu items all sharing the same id values, leading to accessibility violations."
+    }
+}

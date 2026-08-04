@@ -1,0 +1,167 @@
+{
+    "bug_classes": {},
+    "bug_functions": {
+        "1": {
+            "function_name": "snapInsideTarget",
+            "file_path": "lib/features/snapping/BpmnConnectSnapping.js",
+            "function_details": [
+                {
+                    "name": "snapInsideTarget",
+                    "start_line": 99,
+                    "end_line": 115
+                }
+            ],
+            "function_code": [
+                "function snapInsideTarget(event, target) {",
+                "",
+                "  AXES.forEach(function(axis) {",
+                "    var matchingTargetDimension = getDimensionForAxis(axis, target),",
+                "        newCoordinate;",
+                "",
+                "    if (event[axis] < target[axis] + TARGET_BOUNDS_PADDING) {",
+                "      newCoordinate = target[axis] + TARGET_BOUNDS_PADDING;",
+                "    } else if (event[axis] > target[axis] + matchingTargetDimension - TARGET_BOUNDS_PADDING) {",
+                "      newCoordinate = target[axis] + matchingTargetDimension - TARGET_BOUNDS_PADDING;",
+                "    }",
+                "",
+                "    if (newCoordinate) {",
+                "      setSnapped(event, axis, newCoordinate);",
+                "    }",
+                "  });",
+                "}"
+            ]
+        },
+        "2": {
+            "function_name": "snapBoundaryEventLoop",
+            "file_path": "lib/features/snapping/BpmnConnectSnapping.js",
+            "function_details": [
+                {
+                    "name": "snapBoundaryEventLoop",
+                    "start_line": 118,
+                    "end_line": 145
+                }
+            ],
+            "function_code": [
+                "function snapBoundaryEventLoop(event, source, target) {",
+                "  var sourceMid = mid(source),",
+                "      orientation = getOrientation(sourceMid, target, -10),",
+                "      snappingAxes = [];",
+                "",
+                "  if (/top|bottom/.test(orientation)) {",
+                "    snappingAxes.push('x');",
+                "  }",
+                "",
+                "  if (/left|right/.test(orientation)) {",
+                "    snappingAxes.push('y');",
+                "  }",
+                "",
+                "  snappingAxes.forEach(function(axis) {",
+                "    var coordinate = event[axis], newCoordinate;",
+                "",
+                "    if (abs(coordinate - sourceMid[axis]) < BOUNDARY_TO_HOST_THRESHOLD) {",
+                "      if (coordinate > sourceMid[axis]) {",
+                "        newCoordinate = sourceMid[axis] + BOUNDARY_TO_HOST_THRESHOLD;",
+                "      }",
+                "      else {",
+                "        newCoordinate = sourceMid[axis] - BOUNDARY_TO_HOST_THRESHOLD;",
+                "      }",
+                "",
+                "      setSnapped(event, axis, newCoordinate);",
+                "    }",
+                "  });",
+                "}"
+            ]
+        },
+        "3": {
+            "function_name": "snapToPosition",
+            "file_path": "lib/features/snapping/BpmnConnectSnapping.js",
+            "function_details": [
+                {
+                    "name": "snapToPosition",
+                    "start_line": 149,
+                    "end_line": 152
+                }
+            ],
+            "function_code": [
+                "function snapToPosition(event, position) {",
+                "  setSnapped(event, 'x', position.x);",
+                "  setSnapped(event, 'y', position.y);",
+                "}"
+            ]
+        },
+        "4": {
+            "function_name": "BpmnConnectSnapping",
+            "file_path": "lib/features/snapping/BpmnConnectSnapping.js",
+            "function_details": [
+                {
+                    "name": "BpmnConnectSnapping",
+                    "start_line": 32,
+                    "end_line": 92
+                }
+            ],
+            "function_code": [
+                "export default function BpmnConnectSnapping(eventBus, rules) {",
+                "  eventBus.on([",
+                "    'connect.hover',",
+                "    'connect.move',",
+                "    'connect.end',",
+                "  ], HIGHER_PRIORITY, function(event) {",
+                "    var context = event.context,",
+                "        source = context.source,",
+                "        target = context.target;",
+                "",
+                "    if (event.originalEvent && isCmd(event.originalEvent)) {",
+                "      return;",
+                "    }",
+                "",
+                "    if (!context.initialSourcePosition) {",
+                "      context.initialSourcePosition = context.sourcePosition;",
+                "    }",
+                "",
+                "    var connectionAttrs = rules.allowed('connection.create', {",
+                "      source: source,",
+                "      target: target",
+                "    });",
+                "",
+                "    if (target && connectionAttrs) {",
+                "      snapInsideTarget(event, target);",
+                "    }",
+                "",
+                "    if (target && isAnyType(connectionAttrs, [",
+                "      'bpmn:Association',",
+                "      'bpmn:DataInputAssociation',",
+                "      'bpmn:DataOutputAssociation',",
+                "      'bpmn:SequenceFlow'",
+                "    ])) {",
+                "",
+                "      // snap source",
+                "      context.sourcePosition = mid(source);",
+                "",
+                "      if (is(source, 'bpmn:BoundaryEvent') && target === source.host) {",
+                "        snapBoundaryEventLoop(event, source, target);",
+                "      }",
+                "    } else if (isType(connectionAttrs, 'bpmn:MessageFlow')) {",
+                "",
+                "      if (is(source, 'bpmn:Event')) {",
+                "",
+                "        // snap source",
+                "        context.sourcePosition = mid(source);",
+                "      }",
+                "",
+                "      if (is(target, 'bpmn:Event')) {",
+                "",
+                "        // snap target",
+                "        snapToPosition(event, mid(target));",
+                "      }",
+                "",
+                "    } else {",
+                "",
+                "      // un-snap source",
+                "      context.sourcePosition = context.initialSourcePosition;",
+                "    }",
+                "  });",
+                "}"
+            ]
+        }
+    }
+}

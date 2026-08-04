@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/webgl/TileTexture.js//TileTexture",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/source/DataTile.js//DataTileSource",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/TileTexture.js//bindAndConfigure",
+            "src/ol/webgl/TileTexture.js//uploadImageTexture",
+            "src/ol/webgl/TileTexture.js//uploadDataTexture",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles"
+        ],
+        "explanation": "TileTexture.bindAndConfigure is hard-coded to gl.LINEAR for both TEXTURE_MIN_FILTER and TEXTURE_MAG_FILTER, so WebGLTile always smooths tiles regardless of the source setting. Both uploadImageTexture and uploadDataTexture call bindAndConfigure, propagating the incorrect filtering. In WebGLTileLayerRenderer.enqueueTiles (and related tile-setup methods), new TileTexture instances are created without any awareness of the source\u2019s imageSmoothing option. Additionally, DataTileSource and GeoTIFFSource do not expose or forward an imageSmoothing flag, so user code cannot disable smoothing for non-ImageTile sources. To fix the bug, TileTexture must accept and honor an imageSmoothing parameter (switching to gl.NEAREST when false), WebGLTileLayerRenderer must pass the source\u2019s setting to TileTexture, and DataTileSource/GeoTIFFSource should optionally support the imageSmoothing option where meaningful.",
+        "bug_scenario": "In the WebGL Sea Level example, when zoomed in the renderer always applies bilinear filtering (gl.LINEAR) to tiles, even if the source is configured with imageSmoothing: false. This causes thin, blurred \u201csea\u201d lines along contours or tile boundaries in the DEM-based layer. In contrast, the Canvas renderer respects imageSmoothing=false and renders crisp, pixel-aligned tiles. The WebGLTile renderer needs to pass the source\u2019s imageSmoothing setting through to the underlying TileTexture so it can use nearest-neighbor filtering (gl.NEAREST) when smoothing is disabled."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/webgl/TileTexture.js//TileTexture",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/TileTexture.js//bindAndConfigure",
+            "src/ol/webgl/TileTexture.js//uploadImageTexture",
+            "src/ol/webgl/TileTexture.js//uploadDataTexture",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles"
+        ],
+        "explanation": "The core of the bug is that TileTexture.bindAndConfigure unconditionally sets both TEXTURE_MIN_FILTER and TEXTURE_MAG_FILTER to gl.LINEAR, ignoring any imageSmoothing:false configuration on the source. uploadImageTexture and uploadDataTexture both call bindAndConfigure, propagating the unwanted linear filtering to both ImageTile and DataTile sources. Meanwhile, WebGLTileLayerRenderer.enqueueTiles (and its upstream texture creation) never passes the source\u2019s imageSmoothing flag into TileTexture, so the WebGL renderer has no opportunity to select nearest\u2010neighbor filtering. To fix this, bindAndConfigure (and its callers) must accept an imageSmoothing parameter and choose gl.NEAREST when the source requests no smoothing, and WebGLTileLayerRenderer must read the layer.getSource().imageSmoothing setting and forward it into TileTexture.",
+        "bug_scenario": "When using the WebGLTile renderer with a raster DEM (\u201cSea Level\u201d) and the source imageSmoothing setting set to false, the map still uses linear texture filtering (gl.LINEAR) when zoomed in. The result is washed-out pixel values and thin \u201csea\u201d lines along contour edges or at tile boundaries (visible as single-pixel artifacts when panning). The desired behavior is to respect the tile source\u2019s imageSmoothing:false flag and switch the WebGL texture filters to nearest\u2010neighbor sampling (gl.NEAREST) to preserve the original pixel values."
+    }
+}

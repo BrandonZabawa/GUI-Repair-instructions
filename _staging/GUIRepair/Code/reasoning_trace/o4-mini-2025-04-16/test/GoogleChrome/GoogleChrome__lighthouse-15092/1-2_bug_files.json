@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "core/config/validation.js",
+            "core/config/config-helpers.js",
+            "core/config/default-config.js",
+            "core/config/perf-config.js",
+            "core/gather/base-artifacts.js",
+            "core/runner.js"
+        ],
+        "explanation": "\u2022 core/config/validation.js: This module enforces config schema rules but currently doesn\u2019t forbid a custom config that omits required trace artifacts. It needs a check to ensure that if performance audits are requested, the necessary gatherers (like \u201ctrace\u201d) are present.\\n\u2022 core/config/config-helpers.js: Handles merging and normalizing user configs. When a user supplies a bare `artifacts` array, this code should inject or fall back to the default trace-gathering artifacts.\\n\u2022 core/config/default-config.js & core/config/perf-config.js: Define the \"default\" and \"performance\" configurations, including the required `artifacts` entries for `traces`. When users supply a custom config with `extends: null`, these files\u2019 defaults aren\u2019t applied\u2014leading to missing gatherers. We must either re-apply the defaults or validate against omission.\\n\u2022 core/gather/base-artifacts.js: Determines which artifacts get computed based on the config. It currently assumes that trace artifacts will be present. It may need safeguards to throw an earlier, clearer error or auto-include the trace gatherer when performance audits are enabled.\\n\u2022 core/runner.js: Orchestrates the gather and audit phases and populates the final `lhr.artifacts`. Since missing artifacts here lead directly to downstream runtime errors in the metric computations, adding a preflight check for the presence of the required trace artifact would allow a friendlier validation error rather than per-audit crashes.",
+        "bug_scenario": "When running Lighthouse with a custom config that provides its own `artifacts` array but omits any of the trace-gathering artifacts (e.g. the built-in \u201ctrace\u201d gatherer), every performance audit\u2014including metrics, opportunities and diagnostics\u2014blows up with a runtime error \u201cRequired traces gatherer did not run.\u201d. The report UI then shows all performance items as red \u201cError\u201d badges because the metrics code can\u2019t find the trace data it needs."
+    },
+    "2": {
+        "bug_files": [
+            "report/renderer/report-renderer.js",
+            "report/renderer/components.js",
+            "report/renderer/performance-category-renderer.js",
+            "report/generator/report-generator.js",
+            "core/config/validation.js",
+            "cli/printer.js"
+        ],
+        "explanation": "\u2022 report/renderer/report-renderer.js: This is the central entry point for turning an LHR into an HTML report. It needs to accommodate top-level and per-audit runtime errors, and format the red \u201cError\u201d badges correctly when no trace data is available.\n\n\u2022 report/renderer/components.js: Contains the table-row and badge components that display individual audit results. The logic here looks at `auditResult.errorMessage` and decides whether to render a score, a dash, or an error. It must be updated to clearly communicate \u201cmissing trace data\u201d rather than crash or show generic placeholders.\n\n\u2022 report/renderer/performance-category-renderer.js: Builds the performance metrics section (First Contentful Paint, Speed Index, etc.). Because those metrics all rely on trace data, this file must handle the case where the computed artifact is never run and gracefully render the error state for each metric.\n\n\u2022 report/generator/report-generator.js: Wire-up code that injects the renderer into the surrounding HTML shell and links styles/scripts. If the design of the runtime-error UI changes, the generator may need tweaks to include new classes or scripts for error handling.\n\n\u2022 core/config/validation.js: Runs before any gatherers execute, validating that the config includes at least the required trace gatherers when performance audits are enabled. Adding a rule here will let us fail fast with a clear message instead of letting every metric blow up in the report UI.\n\n\u2022 cli/printer.js: Responsible for printing the top-level `lhr.runtimeError` in the CLI. It should be updated in tandem so that when the report generator surfaces a missing-traces error, the CLI summary still matches the new design and explanation in HTML reports.",
+        "bug_scenario": "When a user runs Lighthouse with a completely custom config that omits the built\u2010in trace gatherers (for example by specifying a minimal `artifacts` array with only URL and viewport gatherers), every performance metric, opportunity, and diagnostic will throw a runtime error when it tries to read trace data that was never collected. In the generated HTML report you see a row for each audit with a red \u201cError\u201d badge and the message \u201cRequired traces gatherer did not run.\u201d"
+    }
+}

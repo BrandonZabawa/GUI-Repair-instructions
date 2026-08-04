@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/config-provider/cache.js",
+            "src/config-provider/index.jsx",
+            "src/config-provider/config.jsx",
+            "types/config-provider/index.d.ts"
+        ],
+        "explanation": "• cache.js: This module implements the global Map (or object) used to store all ConfigProvider contexts. Since entries are only removed in componentWillUnmount (which SSR never calls), the cache will leak. We need to add a public API (e.g. clearCache or remove by id) and/or hook into SSR teardown to purge stale entries.  \n• index.jsx: The ConfigProvider component mounts and adds an entry into cache.js; it also defines componentWillUnmount to remove it. Because SSR doesn’t call this method, we must modify this file to expose a manual clear API or wrap the render-to-string logic to invoke cleanup.  \n• config.jsx: The HOC factory that also uses getContextProps and may rely on cached values. If we change the cache interface, config.jsx must be updated to use the new clear APIs or to avoid retaining references in SSR.  \n• types/config-provider/index.d.ts: The TypeScript declaration for ConfigProvider needs to be extended to include any new static methods (e.g. ConfigProvider.clearCache) so that consumers of the package can call the manual cleanup API without type errors.",
+        "bug_scenario": "In a pure-SSR workload the built-in cache inside ConfigProvider keeps growing and never gets garbage-collected. Under SSR React never invokes componentWillUnmount, so the cleanup logic in ConfigProvider.index.jsx never runs, leaving entries in the global cache map alive for the life of the process. The heap snapshots show hundreds of ConfigProvider contexts still retained."
+    },
+    "2": {
+        "bug_files": [
+            "src/config-provider/cache.js",
+            "src/config-provider/index.jsx",
+            "src/config-provider/config.jsx",
+            "src/config-provider/get-context-props.jsx"
+        ],
+        "explanation": "• src/config-provider/cache.js: 核心缓存模块，内部保存了所有 ConfigProvider 渲染时 compute 出来的 context，且提供 set/get/remove 等方法；当多个 SSR 渲染累积时，这里会保留对所有实例的引用。\n• src/config-provider/index.jsx: ConfigProvider 组件本身会在 componentDidMount/update 时往 cache 中写入数据，并在 componentWillUnmount 时 remove，但在 SSR 场景下该卸载方法不会被调用，导致 cache 一直持有未释放的实例引用。\n• src/config-provider/config.jsx: ConfigProvider.config 方法生成的 HOC，也会通过 cache 来存储或读取父级 context，对缓存行为有依赖，需要同步增加手动清除/清空 cache 的访问点。\n• src/config-provider/get-context-props.jsx: 静态工具方法，通过 cache 来获取当前 displayName 对应的上下文 props，也会间接依赖 cache 中的老实例，需要一并跟随 cache 的清理逻辑做调整。",
+        "bug_scenario": "在 SSR 场景下重复调用 ReactDOMServer.renderToString(<ConfigProvider>…) 时，我们在内存快照中发现 Cache Map（一棵名为 “table” 的 Map）中不断累积大量的 ConfigProvider 实例，且在模拟 1000 次 SSR 渲染后这些实例无法被 GC 掉。原因是源码中虽然在 componentWillUnmount 中会调用 cache.remove 来释放当前实例在缓存中的数据，但 React 的 SSR 渲染并不触发 componentWillUnmount 生命周期，导致 cache 持有了所有已创建实例的引用，从而造成内存泄漏。"
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/format/reveal/metadata.ts//revealMetadataFilter",
+            "src/format/reveal/format-reveal.ts//revealjsFormat",
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor"
+        ],
+        "explanation": "1. revealMetadataFilter (metadata.ts) is responsible for taking the user\u2019s kebab-cased options (including hash-type) and converting them into the camelCase properties the rest of the code expects. If hash-type isn\u2019t correctly filtered and passed through, the downstream code that handles centering the title slide won\u2019t see the setting.\n2. revealjsFormat (format-reveal.ts) picks up the hashType setting and translates it into the appropriate Reveal.js configuration. The comment \u201chash-type: number (as shorthand for \u2013auto_identifiers)\u201d lives here, so any logic around enabling numeric slide IDs lives in this function.\n3. revealHtmlPostprocessor (format-reveal.ts) applies post\u2010render fixes on each <section> element. In particular it contains the comment \u201cif we are using \u2019number\u2019 as our hash type then remove the title slide id\u201d and also handles adding the CSS class that centers the title slide. If the ID is removed (or never recognized because the hashType value wasn\u2019t passed through correctly), the centering selector never matches and the title slide is left-aligned.\n\nTo fix the bug, the flow of the hash-type setting must be restored: revealMetadataFilter must include the kHashType key so that revealjsFormat sees it, and revealHtmlPostprocessor must not strip or mis\u2010apply the slide ID/class that triggers the centering style when hashType is \u201cnumber.\u201d",
+        "bug_scenario": "The two screenshots show the title slide rendered by the Reveal.js format under Quarto with different \u201chash-type\u201d settings. In the first (working) case, where hash-type: title is used, the title, subtitle, author and date are all centered as expected. In the second (broken) case, with hash-type: number, the title block has been shifted to the upper left (and the usual centering CSS never applies), leaving the slide misaligned."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/format/reveal/metadata.ts//revealMetadataFilter",
+            "src/format/reveal/format-reveal.ts//revealjsFormat",
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor"
+        ],
+        "explanation": "\u2022 revealMetadataFilter (metadata.ts): This function normalizes kebab-cased metadata into camelCase Reveal.js options. It does not special-case the custom `hash-type` setting, so downstream code never sees the numeric-hash directive.\n\n\u2022 revealjsFormat (format-reveal.ts): The stubbed comment \"// hash-type: number (as shorthand for -auto_identifiers)\" indicates where `hash-type` should be translated into Reveal.js\u2019s `hash` and `hashOneBasedIndex` settings\u2014but no implementation appears to be present to do so, so `hash-type` is effectively ignored or mishandled.\n\n\u2022 revealHtmlPostprocessor (format-reveal.ts): This postprocessor contains the logic to remove the title\u2010slide ID when `hash-type: number` is detected, but it does not reapply centering (or adjust the `center` configuration) on the stripped slide. As a result, the title slide loses both its ID anchor and its centering class when numeric hashes are enabled.\n\nTogether, these functions constitute the metadata handling, format construction, and post-processing stages that should interpret `hash-type: number`, remove the title\u2010slide ID, and then restore centering. Fixing the bug will require augmenting revealMetadataFilter to recognize `hash-type`, implementing the translation in revealjsFormat, and ensuring revealHtmlPostprocessor reapplies centering to the title slide.",
+        "bug_scenario": "The two screenshots illustrate the title\u2010slide centering behavior when using Quarto\u2019s Reveal.js output with different hash-type settings. In the first (working) image, using `hash-type: title` the slide\u2019s title, subtitle and author/date block are centered on the page. In the second (broken) image, using `hash-type: number` the metadata block is stripped of its default ID and the title slide is no longer auto\u2010centered: all text shifts to the left, and the date anchors at the bottom left."
+    }
+}

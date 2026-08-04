@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/FileUploader/FileUploader.js",
+            "packages/react/src/components/FileUploader/FileUploader.test.js"
+        ],
+        "explanation": "\u2022 FileUploader.js defines the FileUploaderButton component and spreads or explicitly sets the `role` prop onto the <label> used for the upload button. This is where the invalid or empty `role` attribute is being introduced, so it must be removed or guarded before rendering.\n\n\u2022 FileUploader.test.js contains unit tests and/or snapshots that assert on the behavior or rendered output of FileUploaderButton (including role or tabIndex). Once the role attribute is removed from the component code, these tests and/or snapshots will fail and must be updated to remove references to `role` so they continue to pass.",
+        "bug_scenario": "When you render <FileUploaderButton> in React and run the DAP accessibility checker, the <label> element that is used as the clickable file-upload trigger ends up with an empty or invalid \u201crole\u201d attribute (for example \u201crole=\u201d), causing the violation \u201cElements that use \u2018role\u2019 must reference a valid WAI-ARIA role.\u201d The fix is to remove the hard-coded role prop from the <label> in the FileUploaderButton component so no invalid role attribute is rendered."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/FileUploader/FileUploader.js",
+            "packages/react/src/components/FileUploader/FileUploader-test.js",
+            "packages/react/src/components/FileUploader/FileUploader-story.js"
+        ],
+        "explanation": "In `FileUploader.js`, the `FileUploaderButton` subcomponent declares a `role` prop (with defaultProps set to `'button'`) and then spreads `...other` onto the `<label>` element, causing an invalid or empty `role` attribute to appear.  To resolve the violation, the `role` prop (and its defaultProp) must be removed from this component.  Because tests and the story currently reference or snapshot the component\u2019s rendered output (which includes the `role` attribute), `FileUploader-test.js` and `FileUploader-story.js` also need updates to remove or adjust any expectations around that `role` attribute.",
+        "bug_scenario": "When using the React `FileUploaderButton` from `carbon-components-react`, the underlying `<label>` that wraps the hidden file input is rendered with a bare `role` attribute (no value) \u2014 e.g. `<label role tabindex=\"0\" \u2026>`.  Running DAP/Axe flags this as \u201cElements that use \u2018role\u2019 must reference a valid WAI-ARIA role.\u201d  The fix is to stop passing the `role` prop through onto the `<label>` entirely."
+    }
+}

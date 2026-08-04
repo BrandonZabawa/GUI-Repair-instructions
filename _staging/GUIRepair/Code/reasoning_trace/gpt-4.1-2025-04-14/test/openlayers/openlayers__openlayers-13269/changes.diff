@@ -1,0 +1,42 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index 2af3a33b3d..dae0c7b9ab 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -347,21 +347,25 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+             frameState.pixelRatio,
+             viewState.projection
+           );
+-          if (!tileTexture) {
+-            tileTexture = new TileTexture(tile, tileGrid, this.helper);
+-            tileTextureCache.set(cacheKey, tileTexture);
++        if (!tileTexture) {
++          // --- GUTTER PATCH START ---
++          // Adjust texture coordinates if the source has a gutter
++          const gutter = typeof tileSource.getGutter === 'function' ? tileSource.getGutter() : 0;
++          tileTexture = new TileTexture(tile, tileGrid, this.helper, gutter);
++          tileTextureCache.set(cacheKey, tileTexture);
++          // --- GUTTER PATCH END ---
++        } else {
++          if (this.isDrawableTile_(tile)) {
++            tileTexture.setTile(tile);
+           } else {
+-            if (this.isDrawableTile_(tile)) {
+-              tileTexture.setTile(tile);
+-            } else {
+-              const interimTile =
+-                /** @type {import("../../webgl/TileTexture").TileType} */ (
+-                  tile.getInterimTile()
+-                );
+-              tileTexture.setTile(interimTile);
+-            }
++            const interimTile =
++              /** @type {import("../../webgl/TileTexture").TileType} */ (
++                tile.getInterimTile()
++              );
++            tileTexture.setTile(interimTile);
+           }
+         }
++        }
+ 
+         addTileTextureToLookup(tileTexturesByZ, tileTexture, z);
+ 

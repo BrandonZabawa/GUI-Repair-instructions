@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer.render",
+            "src/ol/renderer/webgl/TileLayer.js//getRenderExtent",
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal"
+        ],
+        "explanation": "The `WebGLTileLayer.render` override in WebGLTile.js never intersects the map frame extent with the layer\u2019s own `extent` property, so sources are fetched and drawn beyond the user-defined bounds. In the renderer (TileLayer.js), `getRenderExtent` is supposed to clip the map's frame extent to the layer extent but is left unimplemented, and `prepareFrameInternal` enqueues tiles over the full frame rather than the clipped region. By implementing `getRenderExtent` to intersect `frameState.extent` with `this.layer.getExtent()` and updating `prepareFrameInternal` (and/or `render`) to use that clipped extent, the renderer will correctly limit drawn tiles to the original layer extent.",
+        "bug_scenario": "A COG (cloud-optimized GeoTIFF) is displayed using a WebGLTile layer with an explicit `extent` option (red box). However the rendered raster is not clipped to that extent: it overruns the red bounding box, drawing black backgrounds and stray tile edges outside the intended area. As you zoom in, the drawn area also narrows in an uncontrolled way. In short, the layer\u2019s configured extent is not being enforced in the WebGL renderer."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//render",
+            "src/ol/layer/WebGLTile.js//getSources",
+            "src/ol/renderer/webgl/TileLayer.js//getRenderExtent",
+            "src/ol/renderer/webgl/TileLayer.js//prepareFrameInternal",
+            "src/ol/renderer/webgl/TileLayer.js//enqueueTiles"
+        ],
+        "explanation": "\u2022 src/ol/layer/WebGLTile.js::WebGLTileLayer#getSources and #render always use the full frameState.extent (map viewport) to pick and draw tiles, ignoring the layer\u2019s own extent property. This means no clipping against the COG\u2019s true bounding box.  \n\u2022 src/ol/renderer/webgl/TileLayer.js::WebGLTileLayerRenderer#getRenderExtent is currently a stub; without a proper intersection of the frame extent and the layer extent, tiles outside the layer boundary continue to be enqueued and drawn.  \n\u2022 In prepareFrameInternal and enqueueTiles, the (unclipped) extent drives tile lookup and queuing logic, so tiles beyond the true extent are fetched and rendered.  \nTo fix the bug, getRenderExtent must be implemented to intersect the frame extent with the layer extent, and prepareFrameInternal/ enqueueTiles must use that clipped extent. Additionally, WebGLTileLayer.render (and its getSources call) should respect the layer\u2019s extent when choosing which tile sources to draw.",
+        "bug_scenario": "The user is displaying a single-band Cloud\u2010Optimized GeoTIFF (COG) with WebGLTileLayer and setting the layer\u2019s native extent to the TIFF\u2019s real bounding box. In QGIS and on a 2D map, the image stays strictly within that extent rectangle. However, when rendered with WebGLTileLayer on the web, portions of the tile appear far outside the defined red\u2010box extent (and the rendered image slants/narrows as you zoom in). In other words, tiles that should be clipped at the layer\u2019s extent are still fetched or drawn outside of it."
+    }
+}

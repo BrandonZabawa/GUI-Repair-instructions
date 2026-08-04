@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/util/LabelLayoutUtil.js"
+        ],
+        "explanation": "\u2022 AdaptiveLabelPositioningBehavior.js contains the logic that listens for element creation/move events and calls the label layout util to align labels based on flow orientation. Since pasted elements aren\u2019t going through the same create/move code path, this behavior is never triggered.\\n\u2022 BpmnCopyPaste.js orchestrates the paste operation. It creates shapes and attaches them; however, it doesn\u2019t dispatch the modeling events that AdaptiveLabelPositioningBehavior listens to. We need to hook into this file to fire the appropriate labeling adjustment after paste.\\n\u2022 DropOnFlowBehavior.js handles dropping elements on flows (including pasted elements). It sets the flow attachment but doesn\u2019t call label positioning logic. Pasted elements drop here, so the missing label alignment should be injected in this file or in the event chain it triggers.\\n\u2022 LabelLayoutUtil.js provides the low\u2010level routines for calculating and applying label positions and orientations. It is used by AdaptiveLabelPositioningBehavior and will be the utility we invoke when stitching in the paste/drop code paths.",
+        "bug_scenario": "When copying and pasting a BPMN element that has a label (e.g. a boundary event) onto a flow that runs vertically, the pasted element is dropped correctly but its label does not adjust its position or rotation to align with the flow direction. The AdaptiveLabelPositioningBehavior\u2014which ordinarily repositions labels when elements are created or moved on differently oriented flows\u2014is not invoked for pasted elements."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/AdaptiveLabelPositioningBehavior.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js",
+            "lib/import/BpmnImporter.js"
+        ],
+        "explanation": "\u2022 AdaptiveLabelPositioningBehavior.js implements the actual logic to reorient labels based on element position and flow direction, but it subscribes only to create/move life-cycle events.  \n\u2022 BpmnCopyPaste.js (with ModdleCopy.js) reconstructs BPMN elements on paste by delegating to the importer pipeline rather than using the modeling.create commands, so AdaptiveLabelPositioningBehavior is never invoked.  \n\u2022 BpmnImporter.js is used under the hood by the copy/paste feature to rehydrate definitions, again bypassing the normal create event hooks.  \nTherefore these files must be adjusted so that after paste completes the adaptive label positioning is explicitly applied (for example by re-emitting a create event or calling into the AdaptiveLabelPositioningBehavior or its utility functions).",
+        "bug_scenario": "After copying and pasting a boundary event (with a vertically-aligned label) onto a vertically oriented flow, the pasted boundary event\u2019s label remains in its original orientation rather than adapting to the new flow direction. In the supplied GIF you can see that when the element is pasted the AdaptiveLabelPositioningBehavior is never triggered, so the label ends up misaligned."
+    }
+}

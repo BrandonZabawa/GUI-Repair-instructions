@@ -1,0 +1,53 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index ed48cc2a6b..cec6534d6a 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -88,25 +88,29 @@ function addTileTextureToLookup(tileTexturesByZ, tileTexture, z) {
+  * @return {import("../../extent.js").Extent} Frame extent intersected with layer extents.
+  */
+ function getRenderExtent(frameState, extent) {
+-  const layerState = frameState.layerStatesArray[frameState.layerIndex];
+-  if (layerState.extent) {
+-    extent = getIntersection(
+-      extent,
+-      fromUserExtent(layerState.extent, frameState.viewState.projection)
+-    );
+-  }
+-  const source = /** @type {import("../../source/Tile.js").default} */ (
+-    layerState.layer.getRenderSource()
+-  );
+-  if (!source.getWrapX()) {
+-    const gridExtent = source
+-      .getTileGridForProjection(frameState.viewState.projection)
+-      .getExtent();
+-    if (gridExtent) {
+-      extent = getIntersection(extent, gridExtent);
+-    }
+-  }
+-  return extent;
++const layerState = frameState.layerStatesArray[frameState.layerIndex];
++if (layerState.extent) {
++extent = getIntersection(
++extent,
++fromUserExtent(layerState.extent, frameState.viewState.projection)
++);
++}
++const source = /** @type {import("../../source/Tile.js").default} */ (
++layerState.layer.getRenderSource()
++);
++if (!source.getWrapX()) {
++const gridExtent = source
++.getTileGridForProjection(frameState.viewState.projection)
++.getExtent();
++if (gridExtent) {
++extent = getIntersection(extent, gridExtent);
++}
++}
++// Ensure the extent is within the layer's defined extent
++if (layerState.extent) {
++extent = getIntersection(extent, layerState.extent);
++}
++return extent;
+ }
+ 
+ function getCacheKey(source, tileCoord) {

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/ImageLayer.js",
+            "src/ol/renderer/canvas/common.js",
+            "src/ol/source/ImageWMS.js"
+        ],
+        "explanation": "1. src/ol/renderer/canvas/ImageLayer.js  \n   \u2022 This class is responsible for sizing and drawing the off\u2010screen canvas for image layers. It always uses frameState.pixelRatio to compute canvas.width/height and calls getRenderPixelSize(frameState.pixelRatio), ignoring the ImageWMS source\u2019s configured ratio_ (which defaults to 1).  \n2. src/ol/renderer/canvas/common.js  \n   \u2022 The helper getRenderPixelSize() multiplies the world-extent dimensions by the passed\u2010in pixelRatio. Because ImageLayer.js always hands it the device pixelRatio, the canvas ends up oversized whenever source.ratio_ differs.  \n3. src/ol/source/ImageWMS.js  \n   \u2022 The WMS source exposes an optional ratio_ property (default 1) that should define the pixel ratio for requested images. Because the renderer never uses this ratio_, a 1\u00d7 WMS image still gets drawn into a 2\u00d7 (or higher) canvas on HiDPI screens, wasting memory. Adjusting ImageLayer.js to use source.ratio_ (or the image\u2019s pixelRatio property) when sizing the canvas will eliminate the overallocation.",
+        "bug_scenario": "When displaying an ImageWMS source on a HiDPI (high-pixel-ratio) device, OpenLayers always sizes the internal canvas using the device\u2019s display pixel ratio (e.g. 2\u00d7), even if the WMS source was explicitly requested at a 1\u00d7 pixel ratio. The result is a canvas that is twice as wide and tall as needed\u2014using four times the GPU/JS memory\u2014because the rendering code never falls back to the source\u2019s own \u201cratio\u201d parameter."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/canvas/ImageLayer.js"
+        ],
+        "explanation": "The file src/ol/renderer/canvas/ImageLayer.js is where the offscreen canvas for drawing the image layer is created and sized. It currently uses frameState.pixelRatio (the device/display pixel ratio) unconditionally when computing canvas.width/height and context.scale, rather than using the image source\u2019s own pixelRatio (often 1 for WMS). As a result, on HiDPI screens the canvas is oversized and wastes memory. Correcting this to use image.getPixelRatio() when sizing and scaling the canvas will fix the over-allocation.",
+        "bug_scenario": "On HiDPI (high pixel-density) displays, when rendering an ImageLayer (e.g. from a WMS source) whose own pixelRatio is 1, the renderer nonetheless uses the map\u2019s display pixelRatio to size the offscreen canvas. This doubles the canvas\u2019 width and height (for a devicePixelRatio of 2), and so uses 4\u00d7 the memory needed. The bug images show normal WMS tiles loaded, but the allocated canvas is written out as twice the expected dimensions."
+    }
+}

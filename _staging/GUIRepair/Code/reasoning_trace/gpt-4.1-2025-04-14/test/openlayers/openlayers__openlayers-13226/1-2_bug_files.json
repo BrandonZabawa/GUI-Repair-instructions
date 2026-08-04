@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/Tile.js",
+            "src/ol/layer/Tile.js"
+        ],
+        "explanation": "These files are bug related because: 'src/ol/layer/WebGLTile.js' implements the WebGLTileLayer, which needs to properly handle sources using view projection with wrapX false. 'src/ol/renderer/webgl/TileLayer.js' contains the WebGL tile rendering logic, where the tile grid expectation is likely enforced. 'src/ol/source/Tile.js' defines the source interface and tile grid usage, so tweaks may be needed to support sources without tile grids in WebGL context. 'src/ol/layer/Tile.js' is included for reference and comparison, as it demonstrates the expected, correct behavior when handling sources with and without tile grids (as per the bug report and reproduction steps).",
+        "bug_scenario": "The bug is that when using a source with view projection and wrapX set to false, the WebGLTileLayer renderer expects the source to have a tile grid, but this is not the case for sources using view projections. As a result, tiles are not rendered correctly. The expected behavior is for WebGLTileLayer to handle these sources in the same way as TileLayer does."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/Tile.js",
+            "src/ol/layer/Tile.js",
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "explanation": "- src/ol/layer/WebGLTile.js is directly responsible for defining the WebGLTileLayer behavior and interface, and any workaround or compatibility logic for sources with view projection or missing tile grids would likely go here. \n- src/ol/renderer/webgl/TileLayer.js contains the core logic for rendering tile layers with WebGL, where assumptions about the presence of tile grids or the behavior of wrapX may be enforced. \n- src/ol/source/Tile.js underpins tile source logic, including how tile grids are defined or not, and how wrapX is handled, which is relevant for sources lacking a tile grid. \n- src/ol/layer/Tile.js is the reference working implementation: comparing its handling and special cases can help identify what's missing in WebGLTileLayer, and serves as baseline.\n- src/ol/tilegrid/TileGrid.js deals with the tile grid structure and is relevant because the bug centers around assumptions or checks for existence of tile grids. Any defensive code or validation would be here. \nOther files like source wrappers (e.g., various specific source types) may be indirectly involved, but the most directly relevant codepaths for this bug are those which handle sources, tile grids, and layer rendering in both WebGLTileLayer and reference TileLayer.",
+        "bug_scenario": "The bug occurs when using sources with view projection and wrapX set to false together with WebGLTileLayer: the WebGL renderer expects the source to have a tile grid, but such sources may not provide one, leading to incompatibility or rendering failure. This differs from the regular Tile layer which works as expected. The problem is likely around how WebGLTileLayer and its renderer expects and handles tile grids and wrapX property."
+    }
+}

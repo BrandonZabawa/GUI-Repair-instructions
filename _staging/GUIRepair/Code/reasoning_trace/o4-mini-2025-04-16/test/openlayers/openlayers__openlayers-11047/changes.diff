@@ -1,0 +1,34 @@
+diff --git a/src/ol/source/Raster.js b/src/ol/source/Raster.js
+index 9992395d54..e833f2413d 100644
+--- a/src/ol/source/Raster.js
++++ b/src/ol/source/Raster.js
+@@ -259,6 +259,10 @@ class RasterSource extends ImageSource {
+    * @api
+    */
+   setOperation(operation, opt_lib) {
++    // terminate old worker threads before replacing
++    if (this.worker_) {
++      this.worker_.terminate();
++    }
+     this.worker_ = new Processor({
+       operation: operation,
+       imageOps: this.operationType_ === RasterOperationType.IMAGE,
+@@ -445,6 +449,18 @@ class RasterSource extends ImageSource {
+   getImageInternal() {
+     return null; // not implemented
+   }
++
++  /**
++   * @inheritDoc
++   */
++  disposeInternal() {
++    // clean up worker threads on dispose
++    if (this.worker_) {
++      this.worker_.terminate();
++      this.worker_ = null;
++    }
++    super.disposeInternal();
++  }
+ }
+ 
+ /**

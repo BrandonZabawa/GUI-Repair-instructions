@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/latex.js//COMMAND",
+            "src/languages/latex.js//formula"
+        ],
+        "bug_functions": [
+            "src/languages/latex.js//export default function(hljs)"
+        ],
+        "explanation": "The root of the bug lives in the LaTeX grammar definition in src/languages/latex.js. The object COMMAND (and by extension the formula variant) includes a sub-mode labelled className: 'string' that begins on /\\{/ and ends on /\\}/. When highlight.js enters that mode, it treats the entire brace-delimited block as a string and does not apply further TeX or math highlighting to its contents. To fix this, the braces variant either must be removed or replaced so that content inside { \u2026 } is lexed normally (i.e. sub-parsed with the standard COMMAND and formula rules) rather than locked into a flat string mode.",
+        "bug_scenario": "In highlight.js\u2019s LaTeX grammar, everything between literal \u201c{\u201d and \u201c}\u201d is treated as a \u201cstring\u201d mode. As a result, any valid TeX commands or math (e.g. \\eTiX, \\pi, \\!, \\~, superscripts, text macros) that appear inside braces are never fed back into the normal command or formula highlighter. The screenshots show braces such as {x^3}, {Hello \\! world}, and {Goodbye\\~ world} rendered with no syntax highlighting of the TeX content inside."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/latex.js//COMMAND"
+        ],
+        "bug_functions": [
+            "src/languages/latex.js//export default function(hljs)"
+        ],
+        "explanation": "The COMMAND mode in src/languages/latex.js defines LaTeX commands and then contains a sub-mode with className 'string' whose variants begin/end on '{' and '}'. That mode greedily consumes all text inside braces as a single string, preventing nested commands from being highlighted. The default export function builds the overall language definition, so the fix must adjust or remove the '{\u2026}' string variant in COMMAND to allow normal parsing inside braces.",
+        "bug_scenario": "In the provided screenshots of LaTeX code, any code inside curly braces (e.g. \u2018{\u2026}\u2019) is highlighted as a single string\u2010like block, so commands such as \\eTiX, \\TeX, \\!, \\~ and other LaTeX constructs inside those braces never receive their normal syntax highlighting. Everything between \u2018{\u2019 and \u2018}\u2019 is treated as a \u2018string\u2019 and its inner tokens are ignored."
+    }
+}

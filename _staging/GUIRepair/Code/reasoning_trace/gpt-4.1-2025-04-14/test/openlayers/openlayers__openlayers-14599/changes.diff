@@ -1,0 +1,42 @@
+diff --git a/src/ol/control/Attribution.js b/src/ol/control/Attribution.js
+index 0ca804a3a7..1577ce4f16 100644
+--- a/src/ol/control/Attribution.js
++++ b/src/ol/control/Attribution.js
+@@ -190,15 +190,33 @@ class Attribution extends Control {
+    * @private
+    */
+   collectSourceAttributions_(frameState) {
++    // Helper to recursively collect attributions from only effectively visible layers
++    function collectVisibleAttributions(layers, frameState) {
++      let attributions = [];
++      layers.forEach((layer) => {
++        // Check effective visibility: must be visible in the current view
++        if (typeof layer.isVisible === 'function' && layer.isVisible(frameState.viewState)) {
++          if (typeof layer.getLayers === 'function') {
++            // It's a group, recurse
++            attributions = attributions.concat(collectVisibleAttributions(layer.getLayers().getArray(), frameState));
++          } else {
++            // It's a leaf layer
++            attributions = attributions.concat(layer.getAttributions(frameState));
++          }
++        }
++      });
++      return attributions;
++    }
++
++    const map = this.getMap();
++    const allLayers = map.getLayers().getArray ? map.getLayers().getArray() : map.getAllLayers();
+     const visibleAttributions = Array.from(
+       new Set(
+-        this.getMap()
+-          .getAllLayers()
+-          .flatMap((layer) => layer.getAttributions(frameState))
++        collectVisibleAttributions(allLayers, frameState)
+       )
+     );
+ 
+-    const collapsible = !this.getMap()
++    const collapsible = !map
+       .getAllLayers()
+       .some(
+         (layer) =>

@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/rules/no-constant-condition.js"
+        ],
+        "bug_functions": [
+            "lib/rules/no-constant-condition.js//reportIfConstant"
+        ],
+        "explanation": "The core logic for reporting constant conditions is inside the 'reportIfConstant' function in 'lib/rules/no-constant-condition.js'. This function checks if the 'test' node is a constant and then calls 'context.report({ node, message: ... })'. Currently, it reports the entire 'test' node, which for constructs like 'IfStatement' or 'ConditionalExpression' includes the whole condition/expression, not just the constant part. To address the bug, the logic in 'reportIfConstant' (and possibly how the node/range is selected for reporting) needs to be refined to only report the specific sub-node that is constant (e.g., the 'Literal' node for 'true'), ensuring the error range is as narrow as expected.",
+        "bug_scenario": "The bug relates to ESLint's 'no-constant-condition' rule, which is supposed to flag constant conditions like 'if (true)' or 'true ? 1 : 0'. The problem is that ESLint highlights and reports the entire statement or expression containing the constant condition, rather than just the exact range of the constant condition itself (e.g., just 'true'). The screenshot shows that the linter underlines the entire 'if (true) {' and 'something(true ? 1 : 0);', rather than only underlining 'true' in both cases."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "lib/rules/no-constant-condition.js//reportIfConstant"
+        ],
+        "explanation": "The function 'reportIfConstant' in 'lib/rules/no-constant-condition.js' is responsible for reporting when a node contains a constant condition. It calls 'context.report({ node, message: ... })', but it reports the entire node, which in the context of an 'IfStatement' or 'ConditionalExpression' means the whole statement/expression is highlighted. To fix the bug described in the report, this function needs to be edited so that it reports only the constant node (e.g., the literal 'true' or the constant test condition), rather than the entire encompassing statement. This directly addresses the problem where the error range is too broad.",
+        "bug_scenario": "The bug scenario is that ESLint's 'no-constant-condition' rule is reporting error ranges that are too broad. When a constant condition is detected, instead of only underlining or highlighting the constant part (e.g., the literal 'true' in 'if (true)'), the error range encompasses the entire statement or expression (e.g., the whole 'if (true) { ... }' or the entire conditional expression), making it harder for users to identify the actual constant condition."
+    }
+}

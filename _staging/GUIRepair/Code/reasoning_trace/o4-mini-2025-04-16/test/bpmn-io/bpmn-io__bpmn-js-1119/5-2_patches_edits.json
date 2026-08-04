@@ -1,0 +1,92 @@
+{
+    "1/1": {
+        "lib/features/modeling/behavior/ReplaceConnectionBehavior.js": [
+            {
+                "SEARCH": [
+                    "function replaceReconnectedConnection(event) {",
+                    "",
+                    "var context = event.context,",
+                    "connection = context.connection,",
+                    "allowed,",
+                    "replacement;",
+                    "",
+                    "if (context.newTarget) {",
+                    "allowed = bpmnRules.canConnect(connection.source, context.newTarget);",
+                    "} else {",
+                    "allowed = bpmnRules.canConnect(context.newSource, connection.target);",
+                    "}",
+                    "",
+                    "if (!allowed || allowed.type === connection.type) {",
+                    "return;",
+                    "}",
+                    "",
+                    "// temporarily connect old shapes with new connection",
+                    "replacement = modeling.connect(connection.source, connection.target, {",
+                    "type: allowed.type,",
+                    "waypoints: connection.waypoints.slice()",
+                    "});"
+                ],
+                "REPLACE": [
+                    "    function replaceReconnectedConnection(event) {",
+                    "",
+                    "      var context = event.context,",
+                    "          connection = context.connection,",
+                    "          allowed,",
+                    "          replacement;",
+                    "",
+                    "      if (context.newTarget) {",
+                    "        allowed = bpmnRules.canConnect(connection.source, context.newTarget);",
+                    "      } else {",
+                    "        allowed = bpmnRules.canConnect(context.newSource, connection.target);",
+                    "      }",
+                    "",
+                    "      if (!allowed || allowed.type === connection.type) {",
+                    "        return;",
+                    "      }",
+                    "",
+                    "      // temporarily connect old shapes with new connection",
+                    "      // \u2192 make sure to put the new connection into the target\u2019s parent container",
+                    "      var newParent = context.newTarget",
+                    "        ? context.newTarget.parent",
+                    "        : context.newSource.parent;",
+                    "",
+                    "      replacement = modeling.connect(",
+                    "        connection.source,",
+                    "        connection.target,",
+                    "        {",
+                    "          type: allowed.type,",
+                    "          waypoints: connection.waypoints.slice()",
+                    "        },",
+                    "        { parent: newParent }",
+                    "      );"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (replacementType) {",
+                    "modeling.connect(source, target, {",
+                    "type: replacementType,",
+                    "waypoints: connection.waypoints.slice()",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "      if (replacementType) {",
+                    "        // when auto\u2010fixing SequenceFlow \u21c4 MessageFlow, also place it into the target container",
+                    "        var newParent = target.parent;",
+                    "",
+                    "        modeling.connect(",
+                    "          source,",
+                    "          target,",
+                    "          {",
+                    "            type: replacementType,",
+                    "            waypoints: connection.waypoints.slice()",
+                    "          },",
+                    "          { parent: newParent }",
+                    "        );",
+                    "      }"
+                ]
+            }
+        ]
+    }
+}

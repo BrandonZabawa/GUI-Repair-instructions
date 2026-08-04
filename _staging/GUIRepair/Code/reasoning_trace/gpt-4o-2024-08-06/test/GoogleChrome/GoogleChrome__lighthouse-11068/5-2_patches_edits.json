@@ -1,0 +1,34 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/gatherers/css-usage.js": [
+            {
+                "SEARCH": [
+                    "await driver.sendCommand('DOM.enable');",
+                    "await driver.sendCommand('CSS.enable');",
+                    "await driver.sendCommand('CSS.startRuleUsageTracking');",
+                    "await driver.evaluateAsync('getComputedStyle(document.body)');"
+                ],
+                "REPLACE": [
+                    "    await driver.sendCommand('DOM.enable');",
+                    "    await driver.sendCommand('CSS.enable');",
+                    "    await driver.sendCommand('CSS.startRuleUsageTracking');",
+                    "",
+                    "    // Evaluate stylesheets in all frames, including iframes",
+                    "    const evaluateStylesheets = async (frame) => {",
+                    "      const frameStylesheets = await driver.sendCommand('CSS.getAllStyleSheets', {frameId: frame.id});",
+                    "      frameStylesheets.forEach(sheet => stylesheets.push(sheet));",
+                    "      const childFrames = await driver.sendCommand('Page.getFrameTree', {frameId: frame.id});",
+                    "      for (const childFrame of childFrames.childFrames) {",
+                    "        await evaluateStylesheets(childFrame);",
+                    "      }",
+                    "    };",
+                    "",
+                    "    const mainFrame = await driver.sendCommand('Page.getFrameTree');",
+                    "    await evaluateStylesheets(mainFrame.frameTree.frame);",
+                    "",
+                    "    await driver.evaluateAsync('getComputedStyle(document.body)');"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/IconImage.js",
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconOrigin.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "\u2022 src/ol/style/IconImage.js: This is where the sprite sub-image is extracted, and where the new tinted canvas is created. The code path that handles colorization currently ignores or misuses the device pixel ratio when computing source offsets and canvas dimensions, so the tinted image ends up shifted.\n\n\u2022 src/ol/style/Icon.js: The high-level style class passes icon size, offset, scale, and color into IconImage and ultimately into the render pipeline. Any mismatch here (especially scale versus pixelRatio) will carry through to the tinted image.\n\n\u2022 src/ol/style/IconOrigin.js: Utility routines compute the pixel offset into a sprite sheet.  Because IconImage creates a new offscreen canvas for colored icons, IconOrigin\u2019s pixel-based origin isn\u2019t being scaled consistently by the devicePixelRatio there.\n\n\u2022 src/ol/render/canvas/ImageBuilder.js: This component takes the (potentially colored) icon image and draws it onto the feature canvas using drawImage with the computed offsets and sizes. If those offsets were computed incorrectly upstream, the builder simply reproduces the shift on the map.",
+        "bug_scenario": "When applying a custom color to an Icon style that is drawn from a sprite sheet, on devices whose screen pixelRatio \u2260 1 the portion of the sprite that gets used is shifted.  In other words, providing both an explicit offset/size and a color causes IconImage to generate a tinted off-screen canvas at the wrong pixel ratio, so the builder ends up drawing the wrong sub-rectangle of the sprite at high DPI.  At pixelRatio = 1 or when no color is applied, offsets are correct; but as soon as colorization kicks in on a high-DPI display, the computed pixel offsets are off by a factor and you see slices of the adjacent sprite rather than the intended icon."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/style/IconImageCache.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "The offset miscalculation lives in the code paths for loading and drawing tinted icons at non-unit pixel ratios. \n\n\u2022 style/Icon.js \u2013 reads the offset, size and color parameters and hands them off to the IconImage cache. Any change in pixel ratio should be preserved here. \n\n\u2022 style/IconImage.js \u2013 stores origin, size and pixelRatio but the logic introduced in PR 11277 for applying color doesn\u2019t re-scale the offset correctly before creating the tinted canvas. \n\n\u2022 style/IconImageCache.js \u2013 keys and (re)uses IconImage instances by URL, color, offset and pixelRatio. The cache key logic (and retrieval) fails to distinguish the properly scaled origin in the colored image case. \n\n\u2022 render/canvas/ImageBuilder.js \u2013 consumes the origin and size from IconImage to issue the drawImage instruction. With the origin miscomputed upstream, the wrong slice of the sprite is ever drawn in the tinted code path on DPR \u2260 1.",
+        "bug_scenario": "When using an Icon style that references a sprite sheet with a custom offset and size, everything renders correctly at devicePixelRatio = 1 or when no color is applied. As soon as you run at a higher pixel ratio (e.g. DPR = 2) and apply a custom fill color to the icon, the sub\u2010image you\u2019ve requested from the sprite sheet becomes shifted. In other words, the origin inside the sprite frame is miscomputed only in the \u201ctinted\u201d (colored) code path on high-DPI screens."
+    }
+}

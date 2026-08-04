@@ -1,0 +1,46 @@
+diff --git a/lib/features/copy-paste/BpmnCopyPaste.js b/lib/features/copy-paste/BpmnCopyPaste.js
+index 0060df80..b04c7fd0 100644
+--- a/lib/features/copy-paste/BpmnCopyPaste.js
++++ b/lib/features/copy-paste/BpmnCopyPaste.js
+@@ -68,6 +68,10 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+     if (businessObject.default) {
+       descriptor.default = businessObject.default.id;
+     }
++    // boundary event attachment
++    if (businessObject.attachedToRef) {
++      descriptor.attachedToRef = businessObject.attachedToRef.id;
++    }
+   });
+ 
+   eventBus.on('moddleCopy.canCopyProperty', function(context) {
+@@ -84,7 +88,7 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+ 
+   var references;
+ 
+-  function resolveReferences(descriptor) {
++function resolveReferences(descriptor) {
+     var businessObject = getBusinessObject(descriptor);
+ 
+     // default sequence flows
+@@ -95,6 +99,14 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+       };
+     }
+ 
++    // boundary event attachment references
++    if (descriptor.attachedToRef) {
++      references[ descriptor.attachedToRef ] = {
++        element: businessObject,
++        property: 'attachedToRef'
++      };
++    }
++
+     references = omit(references, reduce(references, function(array, reference, key) {
+       var element = reference.element,
+           property = reference.property;
+@@ -157,4 +169,4 @@ BpmnCopyPaste.$inject = [
+ 
+ function isLabel(element) {
+   return !!element.labelTarget;
+-}
+\ No newline at end of file
++}

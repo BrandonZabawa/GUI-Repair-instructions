@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/copy-paste/ModdleCopy.js"
+        ],
+        "explanation": "\u2014 SubProcessStartEventBehavior.js implements the rule that typed Start Events (StartEvent with eventDefinitions) cannot be created inside subprocesses, but that rule is only wired up to direct modeling.createShape calls, not to copy/paste operations.  \n\u2014 BpmnCopyPaste.js is responsible for handling paste; it currently just replays a bulk of modeling.createShape calls without filtering out forbidden shapes. It needs to invoke the same rule checks (or explicitly filter StartEvents with definitions when target is a SubProcess).  \n\u2014 BpmnRules.js defines the core allow/deny logic for shape.create, shape.move, etc. We need to add or extend its copyPaste (or shape.create) rule so that pasting a typed StartEvent into a SubProcess is vetoed.  \n\u2014 ModdleCopy.js does the low\u2010level clone of BPMN elements; it must be kept in sync so that invalid scenarios aren\u2019t silently rehydrated. Adjusting ModdleCopy or the post\u2010paste cleanup can prevent the invalid artifact from ever reaching the modeling layer.",
+        "bug_scenario": "A user can copy a typed Start Event (e.g. an Email\u2010type start event) and paste it onto a SubProcess \u2014 something that the existing modeling behavior explicitly forbids when you create a new typed Start Event directly. In the GIF you can see the email start event being dragged from the palette over a subprocess and pasted inside it, even though typed start events should never be allowed in a subprocess/context sub\u2010process."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/modeling/behavior/SubProcessStartEventBehavior.js",
+            "lib/features/rules/BpmnRules.js"
+        ],
+        "explanation": "\u2022 BpmnCopyPaste.js: This is the module that handles cloning and inserting shapes on paste. It currently does not enforce the rule that typed start events may not be created inside subprocesses, so it needs to consult the existing creation rules or explicitly forbid such drops.\n\n\u2022 SubProcessStartEventBehavior.js: This behavior implements the prohibition of creating typed start events inside subprocesses at creation time. The same rule must be applied in paste scenarios but is not currently invoked by the copy-paste provider.\n\n\u2022 BpmnRules.js: This is the central rules engine for shape creation. It defines which shapes may be created where. The rule for disallowing typed start events in subprocesses lives here (as consulted by SubProcessStartEventBehavior), but copy-paste does not trigger it. Updating BpmnRules to cover paste operations or ensuring BpmnCopyPaste invokes it will fix the issue.",
+        "bug_scenario": "A user copies a typed (e.g. mail) start event and pastes it into a collapsed or embedded subprocess. Although the BPMN spec and the SubProcessStartEventBehavior prohibit creating any typed start event within a subprocess, the copy-paste feature currently allows the drop target to accept it. The GIF shows dragging a mail start icon and dropping it onto a subprocess container\u2014and the pasted event is inserted, which should be disallowed."
+    }
+}

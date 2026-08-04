@@ -1,0 +1,72 @@
+{
+    "1/1": {
+        "core/lib/tracehouse/trace-processor.js": [
+            {
+                "SEARCH": [
+                    "// \"Modern\" traces with a navigation have a FrameCommittedInBrowser event",
+                    "const mainFramePids = frameCommittedEvts.length",
+                    "? frameCommittedEvts.map(e => e?.args?.data?.processId)",
+                    "// \u2026But old traces and some timespan traces may not. In these situations, we'll assume the",
+                    "// primary process ID remains constant (as there were no navigations).",
+                    ": [mainFrameInfo.startingPid];",
+                    "",
+                    "const pidToTid = new Map();",
+                    "",
+                    "mainFramePids.forEach(pid => {",
+                    "// While renderer tids are generally predictable, we'll doublecheck it",
+                    "const threadNameEvt = keyEvents.find(e =>",
+                    "e.cat === '__metadata' &&",
+                    "e.pid === pid &&",
+                    "e.ph === 'M' &&",
+                    "e.name === 'thread_name' &&",
+                    "e.args.name === 'CrRendererMain'",
+                    ");",
+                    "const tid = threadNameEvt?.tid;",
+                    "",
+                    "if (!tid) {",
+                    "throw new Error('Unable to determine tid for renderer process');",
+                    "}",
+                    "",
+                    "pidToTid.set(pid, tid);",
+                    "});",
+                    "return pidToTid;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    // \"Modern\" traces with a navigation have a FrameCommittedInBrowser event",
+                    "    const mainFramePids = frameCommittedEvts.length",
+                    "      ? frameCommittedEvts.map(e => e?.args?.data?.processId ?? e?.args?.data?.processPseudoId)",
+                    "      // \u2026But old traces and some timespan traces may not. In these situations, we'll assume the",
+                    "      // primary process ID remains constant (as there were no navigations).",
+                    "      : [mainFrameInfo.startingPid];",
+                    "",
+                    "    const pidToTid = new Map();",
+                    "",
+                    "    mainFramePids.forEach(pid => {",
+                    "      if (pid === undefined) {",
+                    "        // Skip undefined pids, as they can't be mapped to a thread.",
+                    "        return;",
+                    "      }",
+                    "      // While renderer tids are generally predictable, we'll doublecheck it",
+                    "      const threadNameEvt = keyEvents.find(e =>",
+                    "        e.cat === '__metadata' &&",
+                    "        e.pid === pid &&",
+                    "        e.ph === 'M' &&",
+                    "        e.name === 'thread_name' &&",
+                    "        e.args.name === 'CrRendererMain'",
+                    "      );",
+                    "      const tid = threadNameEvt?.tid;",
+                    "",
+                    "      if (!tid) {",
+                    "        throw new Error('Unable to determine tid for renderer process');",
+                    "      }",
+                    "",
+                    "      pidToTid.set(pid, tid);",
+                    "    });",
+                    "    return pidToTid;",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,132 @@
+{
+    "1/5": {
+        "lib/rules/no-unused-vars.js": [
+            {
+                "SEARCH": [
+                    ".some(def => (",
+                    "def.node.id &&",
+                    "def.node.id.type === \"ObjectPattern\" &&",
+                    "def.node.id.properties.length &&",
+                    "restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type) &&  // last property is a rest property",
+                    "!restProperties.has(def.name.parent.type)  // variable is sibling of the rest property"
+                ],
+                "REPLACE": [
+                    ".some(def => {",
+                    "const isRestSibling = (",
+                    "def.node.id &&",
+                    "def.node.id.type === \"ObjectPattern\" &&",
+                    "def.node.id.properties.length &&",
+                    "restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type)",
+                    ");",
+                    "",
+                    "const isFunctionArgument = (",
+                    "def.name.parent &&",
+                    "def.name.parent.type === \"FunctionExpression\" || def.name.parent.type === \"ArrowFunctionExpression\"",
+                    ");",
+                    "",
+                    "return isRestSibling && (isFunctionArgument || !restProperties.has(def.name.parent.type));",
+                    "})"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "lib/rules/no-unused-vars.js": [
+            {
+                "SEARCH": [
+                    "if (config.ignoreRestSiblings) {",
+                    "const restProperties = new Set([\"ExperimentalRestProperty\", \"RestProperty\"]);",
+                    "",
+                    "return variable.defs",
+                    ".filter(def => def.name.type === \"Identifier\")",
+                    ".some(def => (",
+                    "def.node.id &&",
+                    "def.node.id.type === \"ObjectPattern\" &&",
+                    "def.node.id.properties.length &&",
+                    "restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type) &&  // last property is a rest property",
+                    "!restProperties.has(def.name.parent.type)  // variable is sibling of the rest property",
+                    "));",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (config.ignoreRestSiblings) {",
+                    "const restProperties = new Set([\"ExperimentalRestProperty\", \"RestProperty\", \"RestElement\"]);",
+                    "",
+                    "return variable.defs",
+                    ".filter(def => def.name.type === \"Identifier\")",
+                    ".some(def => (",
+                    "def.node.parent &&",
+                    "def.node.parent.properties &&",
+                    "def.node.parent.properties.some(prop => restProperties.has(prop.type))",
+                    "));",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "lib/rules/no-unused-vars.js": [
+            {
+                "SEARCH": [
+                    "restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type) &&  // last property is a rest property",
+                    "!restProperties.has(def.name.parent.type)  // variable is sibling of the rest property"
+                ],
+                "REPLACE": [
+                    "def.node.id.properties.some(prop => restProperties.has(prop.type)) &&  // any property is a rest property",
+                    "def.node.id.properties.every(prop => prop.key.name !== variable.name)  // variable is not the rest property itself"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "lib/rules/no-unused-vars.js": [
+            {
+                "SEARCH": [
+                    "return variable.defs",
+                    ".filter(def => def.name.type === \"Identifier\")",
+                    ".some(def => (",
+                    "def.node.id &&",
+                    "def.node.id.type === \"ObjectPattern\" &&",
+                    "def.node.id.properties.length &&",
+                    "restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type) &&  // last property is a rest property",
+                    "!restProperties.has(def.name.parent.type)  // variable is sibling of the rest property"
+                ],
+                "REPLACE": [
+                    "return variable.defs.some(def => {",
+                    "const isRestPropertySibling = def.node.id &&",
+                    "def.node.id.type === \"ObjectPattern\" &&",
+                    "def.node.id.properties.length &&",
+                    "restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type);",
+                    "const isRestInFunctionArgs = def.node.type === \"FunctionDeclaration\" ||",
+                    "def.node.type === \"ArrowFunctionExpression\";",
+                    "",
+                    "return isRestPropertySibling && isRestInFunctionArgs;"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "lib/rules/no-unused-vars.js": [
+            {
+                "SEARCH": [
+                    "def.node.id &&",
+                    "def.node.id.type === \"ObjectPattern\" &&",
+                    "def.node.id.properties.length &&",
+                    "restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type) &&  // last property is a rest property",
+                    "!restProperties.has(def.name.parent.type)  // variable is sibling of the rest property"
+                ],
+                "REPLACE": [
+                    "def.name &&",
+                    "((def.node.id && def.node.id.type === \"ObjectPattern\" &&",
+                    "def.node.id.properties.length &&",
+                    "restProperties.has(def.node.id.properties[def.node.id.properties.length - 1].type)) ||  // last property is a rest property",
+                    "(def.node.type === \"FunctionDeclaration\" &&",
+                    "def.node.params &&",
+                    "def.node.params.length &&",
+                    "restProperties.has(def.node.params[def.node.params.length - 1].type))) &&  // last param is a rest param",
+                    "!restProperties.has(def.name.parent.type)  // variable is sibling of the rest property"
+                ]
+            }
+        ]
+    }
+}

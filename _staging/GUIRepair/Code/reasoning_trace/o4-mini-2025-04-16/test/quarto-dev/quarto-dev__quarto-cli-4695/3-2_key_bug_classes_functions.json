@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/publish/confluence/confluence.ts//publish",
+            "src/publish/confluence/confluence-helper.ts//updateLinks",
+            "src/publish/confluence/confluence-helper.ts//convertForSecondPass"
+        ],
+        "bug_functions": [
+            "src/publish/confluence/confluence.ts//publish",
+            "src/publish/confluence/confluence-helper.ts//updateLinks",
+            "src/publish/confluence/confluence-helper.ts//convertForSecondPass",
+            "src/resources/extensions/quarto/confluence/overrides.lua//LinkConfluence"
+        ],
+        "explanation": "\u2022 publish (in confluence.ts) orchestrates the two\u2010pass publish process and is responsible for calling updateLinks in the second pass to rewrite .qmd hrefs into actual Confluence page URLs. If it never invokes updateLinks or passes the wrong arguments for index.qmd, none of the Markdown links will be resolved.\n\u2022 updateLinks (in confluence-helper.ts) contains the logic (using LINK_FINDER, FILE_FINDER, replaceExtension, etc.) that finds <a href='... .qmd'> targets in the rendered HTML and replaces them with Confluence page links. A bug here (for example an incorrect regex or skipped target files) means the href never gets rewritten.\n\u2022 convertForSecondPass (in confluence-helper.ts) transforms the spaceChanges array to apply link updates on pages that were created in pass #1. If index.qmd isn\u2019t included or is filtered out, updateLinks won\u2019t see those links.\n\u2022 LinkConfluence (in overrides.lua) is the low\u2010level function that wraps a Pandoc link in an <a> tag. If it is never used (because link rewriting happens later) or if its output isn\u2019t caught by updateLinks (for example if it doesn\u2019t generate the expected href format), the raw anchor will never point at a Confluence page.\n\nTogether these functions form the core of how Quarto converts Markdown links into Confluence page links. Troubleshooting should begin by verifying that publish calls updateLinks for index.qmd, and then stepping through updateLinks/convertForSecondPass to ensure the .qmd targets are matched and replaced correctly.",
+        "bug_scenario": "On a Quarto\u2010to\u2010Confluence site, an index.qmd containing Markdown links such as \u201c* [January](2022-01.qmd)\u201d renders correctly in the local preview (clickable links to each report), but after publishing to Confluence the bullet items appear as plain text (no hyperlinks). The screenshots show that on Confluence the list items \u201cJanuary\u201d and \u201cMarch\u201d are rendered without <a> tags, indicating that the relative .qmd links were never converted into Confluence\u2010compatible page links."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/publish/confluence/confluence.ts//publish",
+            "src/publish/confluence/confluence-helper.ts//updateLinks",
+            "src/publish/confluence/confluence-helper.ts//convertForSecondPass",
+            "src/resources/extensions/quarto/confluence/overrides.lua//LinkConfluence",
+            "src/resources/extensions/quarto/confluence/publish.lua//Writer.Link"
+        ],
+        "explanation": "All of these functions form the heart of the link-resolution pipeline for Confluence publishing.  \n\u2022 publish (in confluence.ts) \u2013 this is where the two-pass publish is meant to occur (first create pages, then update links to point at those new pages).  If the second pass is never invoked or wired up correctly, links remain untouched.  \n\u2022 updateLinks & convertForSecondPass (in confluence-helper.ts) \u2013 these helpers scan for .qmd hrefs, map them to newly created page IDs/URLs, and rewrite the ConfluenceSpaceChange tree accordingly.  If their regex or their invocation is wrong, no rewriting happens.  \n\u2022 LinkConfluence (in overrides.lua) \u2013 this low-level function emits the raw <a href> HTML in the Pandoc filter; if its input target still ends in \u201c.qmd\u201d (or is empty), you get no valid link.  \n\u2022 Writer.Link (in publish.lua) \u2013 this Pandoc filter hook that calls LinkConfluence; if the link.target passed here was never rewritten from .qmd to a Confluence URL, the filter just outputs plain text anchors or skips them altogether.  \nThese are the functions you\u2019ll need to inspect and modify \u2013 either to tighten the .qmd-matching regex, ensure the second-pass link update actually runs, or transform the href target before LinkConfluence is called.",
+        "bug_scenario": "When you author a Quarto site with an index.qmd that contains relative links to other .qmd pages (e.g. \u201c* [January](2022-01.qmd) \u2022 [March](2022-03.qmd)\u201d), the preview in your IDE correctly renders those as clickable links. But when you publish to Confluence via the quarto-confluence provider, the links fail to be rewritten and just appear as plain list text; no <a href> tags are generated for the .qmd targets. Essentially the Confluence pipeline that is supposed to rewrite or resolve .qmd links into Confluence page URLs never kicks in (or the regex doesn\u2019t match), so your index page on Confluence shows bullet text instead of clickable links."
+    }
+}

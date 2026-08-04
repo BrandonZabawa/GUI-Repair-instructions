@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Notification/next/Notification.stories.js"
+        ],
+        "explanation": "Storybook\u2019s Docs addon looks at the CSF story definition when no explicit MDX Preview or Source is provided. In our case:  \n\n1. Notification.mdx is a plain .mdx file (not .stories.mdx) and does not include any <Preview> or <Source> blocks, so Storybook falls back to auto-generating docs from the CSF stories.  \n2. next/Notification.stories.js defines each example as an inline render function that wraps the Notification component in the FeatureFlags provider. Because the JSX uses an anonymous function and the wrapper is imported from @carbon/feature-flags, the source transformer only sees \u201c<FeatureFlags>\u2026<No Display Name/>\u2026\u201d rather than the Notification component itself.  \n\nBy updating the MDX file to use the correct .stories.mdx naming and explicitly embedding the <Preview> (and/or <Source>) for each story, or by refactoring Notification.stories.js to use args-based stories (so the component name is inferred correctly), the \u201cShow code\u201d panel will show the intended Notification markup instead of the internal wrapper.",
+        "bug_scenario": "In the Storybook Docs tab for the Notifications component (e.g. the Inline example), clicking the \u201cShow code\u201d button opens a black code block\u2014but instead of showing the Notification usage itself, it displays the underlying wrapper <FeatureFlags> tags plus a generic <No Display Name /> placeholder. In other words, Storybook is pulling in the raw render() wrapper from the CSF story rather than the actual Notification markup."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Notification/Notification-story.js"
+        ],
+        "explanation": "Both of these files drive the Notifications docs in Storybook. Notification-story.js is where the individual Notification examples (Inline, Toast, etc.) are defined and needs proper story names, displayName assignments or docs parameters so Storybook can locate and extract the exact JSX. Notification.mdx is the Markdown\u2010based doc page; because it only contains <Props /> and no explicit <Story> blocks or source parameters, the addon-docs auto\u2010injection is falling back to the wrapper\u2019s FeatureFlags code. Adjusting the stories (e.g. exporting named story functions with displayName or adding parameters.docs.source) and/or updating the MDX (inserting explicit <Story name=\"Inline\" /> sections) will allow the Docs tab to pull in and display the real Notification example code instead of the wrapper fallback.",
+        "bug_scenario": "When you click the \u201cShow code\u201d button in the Docs tab on the Notifications component page, Storybook doesn\u2019t render the Notification JSX you wrote \u2013 instead you only see the surrounding <FeatureFlags> wrapper and a <No Display Name /> placeholder. In other words, the Docs panel is pulling in the wrong source and falling back to the wrapper\u2019s code rather than showing your Notification example code."
+    }
+}

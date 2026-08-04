@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Pagination/Pagination.js",
+            "packages/components/src/components/pagination/pagination.config.js"
+        ],
+        "explanation": "1. Pagination.js: this is where the footer string is constructed (around lines 148 and 312 in the React implementation). We need to introduce conditional logic here to check if max === 1 or totalPages === 1 and choose the singular noun.\n2. Pagination.test.js: the existing unit tests assume only plural labels. We must add or update tests to cover the singular case so that we don\u2019t regress.\n3. pagination.config.js: the default text tokens for \"item(s)\" and \"page(s)\" live in this config. We need to make sure there are singular and plural entries, and expose them to the React component so it can pick the right form based on the count.",
+        "bug_scenario": "In the Pagination component\u2019s footer text, when there is exactly one item or one page the UI still renders the plural labels (\u201citems\u201d and \u201cpages\u201d). For example \u201c1\u20131 of 1 items\u201d should read \u201c1\u20131 of 1 item\u201d, and when there is only a single page it should read \u201c1\u20131 of 1 page.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Pagination/Pagination.js",
+            "packages/react/src/components/Pagination/experimental/Pagination.js",
+            "packages/components/src/components/pagination/pagination.config.js",
+            "packages/components/src/components/pagination/pagination.js",
+            "packages/react/src/components/Pagination/Pagination-test.js"
+        ],
+        "explanation": "\u2022 packages/react/src/components/Pagination/Pagination.js is the main React implementation where the footer text is composed using totalItems, max (items per page) and totalPages. This is where the conditional logic for singular vs. plural must be added.  \n\u2022 packages/react/src/components/Pagination/experimental/Pagination.js contains the experimental variant of the same component and needs the same fix.  \n\u2022 packages/components/src/components/pagination/pagination.config.js defines the default strings for \u201citem(s) per page\u201d and \u201cof X page(s).\u201d It may need new singular variants or a function to choose based on count.  \n\u2022 packages/components/src/components/pagination/pagination.js is the unstyled vanilla JavaScript component; it parallels the React logic and likewise must handle singular forms.  \n\u2022 packages/react/src/components/Pagination/Pagination-test.js contains the unit tests for the Pagination component; tests need to be updated or added to assert correct singular text when max===1 or totalPages===1.",
+        "bug_scenario": "When there is exactly one item or exactly one page, the footer in the Pagination component still reads \u201citems\u201d or \u201cpages\u201d (plural). The report and screenshot show \u201c1 items per page\u201d and \u201c1 of 1 pages,\u201d but it should read \u201c1 item per page\u201d and \u201c1 of 1 page.\u201d"
+    }
+}

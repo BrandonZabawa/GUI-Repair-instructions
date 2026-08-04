@@ -1,0 +1,33 @@
+diff --git a/src/menu/view/group.jsx b/src/menu/view/group.jsx
+index 66017409c..f2abcedb7 100644
+--- a/src/menu/view/group.jsx
++++ b/src/menu/view/group.jsx
+@@ -1,4 +1,4 @@
+-import React, { Component, cloneElement } from 'react';
++import React, { Component, Children, cloneElement } from 'react';
+ import PropTypes from 'prop-types';
+ import cx from 'classnames';
+ import Item from './item';
+@@ -40,7 +40,12 @@ export default class Group extends Component {
+             [className]: !!className,
+         });
+ 
+-        const newChildren = children.map(child => {
++        // use React.Children.map to normalize text nodes / single child / arrays
++        const newChildren = Children.map(children, child => {
++            // leave non‐elements untouched
++            if (!React.isValidElement(child)) {
++                return child;
++            }
+             const { className } = child.props;
+             const newChildClassName = cx({
+                 [`${prefix}menu-group-item`]: true,
+@@ -51,7 +56,7 @@ export default class Group extends Component {
+                 parentMode,
+                 className: newChildClassName,
+             });
+-        });
++        }) || [];
+ 
+         return [
+             <Item

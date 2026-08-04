@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/Tabs/StyledTabs.js//StyledTabsHeader",
+            "src/js/components/Tabs/StyledTabs.js//StyledTabPanel",
+            "src/js/components/Tabs/Tabs.js//Tabs",
+            "src/js/components/Tab/StyledTab.js//StyledTab",
+            "src/js/components/Tab/Tab.js//Tab"
+        ],
+        "bug_functions": [],
+        "explanation": "\u2022 StyledTabsHeader (in StyledTabs.js): This styled component defines the tab header container. PR #6137 introduced pad and margin adjustments when overflow=true (pad='2px', margin='-2px'), which shifts the header\u2019s bottom inward, causing the underline to float above the panel border.  \n\u2022 StyledTabPanel (in StyledTabs.js): Its min-height and flex logic govern the panel\u2019s size inside a fixed container; any mis-alignment here can indirectly affect header positioning when overflow is active.  \n\u2022 Tabs (in Tabs.js): The main component decides when overflow is true and applies the pad/margin props to StyledTabsHeader. The layout logic here (overflow detection, headerProps) must be adjusted so that header remains at the bottom edge.  \n\u2022 StyledTab (in StyledTab.js) & Tab (in Tab.js): Together these render each individual Tab and its active border (underline). The Tab component computes border styles based on theme.tab.border and applies them via StyledTab. If the header container\u2019s bottom inset changes, these border positions need compensating styling to stay anchored. Adjusting any of these elements will restore the underline to its intended sticky bottom position.",
+        "bug_scenario": "In the repro, we have a fixed-height Box containing scrollable tab panels. The tab headers sit above this container and each active Tab renders a bottom border (underline). In version 2.24.0 the underline stays flush against the bottom of the header region (just above the content box\u2019s top border), even when the content in the panel scrolls. After PR #6137 (in 2.25.0), once you scroll the inner content, the underline no longer hugs the bottom edge of the header\u2014it is pushed upward by the extra margin/padding logic, leaving a gap between the underline and the panel border."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/Tabs/StyledTabs.js//StyledTabsHeader",
+            "src/js/components/Tabs/StyledTabs.js//StyledTabPanel",
+            "src/js/components/Tabs/Tabs.js//Tabs"
+        ],
+        "bug_functions": [
+            "src/js/components/Tabs/Tabs.js//onResize (inside useLayoutEffect)",
+            "src/js/components/Tabs/Tabs.js//render (the block building tabsHeaderStyles and applying margin/pad to StyledTabsHeader)"
+        ],
+        "explanation": "The fix needs to happen where the header\u2019s border and layout adjustments are applied (StyledTabsHeader in StyledTabs.js) and where the panel is sized and flexed (StyledTabPanel). Those styled components were changed in the PR that introduced flex support. In Tabs.js, the code in the render function that computes tabsHeaderStyles (attaching the border) and the useLayoutEffect\u2019s onResize logic (which governs overflow and triggers the margin/pad hack on StyledTabsHeader) determine where that border is drawn. Because the header and panel now share a flex container inside a scrolling Box, the border positioning and negative margins no longer line up. By adjusting the StyledTabsHeader CSS (for example adding position:sticky; bottom:0; or correcting the pad/margin for the non\u2010overflow case) and/or tweaking the onResize logic in Tabs.js, the underline can be restored to sit flush at the bottom of the header regardless of scrolling.",
+        "bug_scenario": "When using a fixed\u2010height, overflow:auto container around Grommet Tabs, the bottom border (underline) of the tab header is no longer flush against the top of the scrolling panel. As you scroll the content, the grey underline \u201cfloats\u201d and becomes detached from the bottom edge of the header area\u2014it moves into the content region rather than staying pinned under the tab titles."
+    }
+}

@@ -1,0 +1,110 @@
+{
+    "1/1": {
+        "lighthouse-core/audits/byte-efficiency/unused-css-rules.js": [
+            {
+                "SEARCH": [
+                    "static computeUsage(stylesheetInfo) {",
+                    "let usedUncompressedBytes = 0;",
+                    "const totalUncompressedBytes = stylesheetInfo.content.length;",
+                    "",
+                    "for (const usedRule of stylesheetInfo.usedRules) {",
+                    "usedUncompressedBytes += usedRule.endOffset - usedRule.startOffset;",
+                    "}",
+                    "",
+                    "const totalTransferredBytes = ByteEfficiencyAudit.estimateTransferSize(",
+                    "stylesheetInfo.networkRecord, totalUncompressedBytes, 'Stylesheet');",
+                    "const percentUnused = (totalUncompressedBytes - usedUncompressedBytes) / totalUncompressedBytes;",
+                    "const wastedBytes = Math.round(percentUnused * totalTransferredBytes);",
+                    "",
+                    "return {",
+                    "wastedBytes,",
+                    "wastedPercent: percentUnused * 100,",
+                    "totalBytes: totalTransferredBytes,",
+                    "};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  static computeUsage(stylesheetInfo) {",
+                    "    let usedUncompressedBytes = 0;",
+                    "    const totalUncompressedBytes = stylesheetInfo.content.length;",
+                    "",
+                    "    for (const usedRule of stylesheetInfo.usedRules) {",
+                    "      usedUncompressedBytes += usedRule.endOffset - usedRule.startOffset;",
+                    "    }",
+                    "",
+                    "    // If the stylesheet was injected (e.g., via JS from a JSON payload), and a networkRecord exists,",
+                    "    // use the actual transfer size of the network record, regardless of resource type.",
+                    "    let totalTransferredBytes;",
+                    "    if (",
+                    "      stylesheetInfo.networkRecord &&",
+                    "      stylesheetInfo.header &&",
+                    "      stylesheetInfo.header.isInline &&",
+                    "      stylesheetInfo.networkRecord.transferSize",
+                    "    ) {",
+                    "      totalTransferredBytes = stylesheetInfo.networkRecord.transferSize;",
+                    "    } else {",
+                    "      totalTransferredBytes = ByteEfficiencyAudit.estimateTransferSize(",
+                    "        stylesheetInfo.networkRecord, totalUncompressedBytes, 'Stylesheet'",
+                    "      );",
+                    "    }",
+                    "    const percentUnused = (totalUncompressedBytes - usedUncompressedBytes) / totalUncompressedBytes;",
+                    "    const wastedBytes = Math.round(percentUnused * totalTransferredBytes);",
+                    "",
+                    "    return {",
+                    "      wastedBytes,",
+                    "      wastedPercent: percentUnused * 100,",
+                    "      totalBytes: totalTransferredBytes,",
+                    "    };",
+                    "  }"
+                ]
+            }
+        ],
+        "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js": [
+            {
+                "SEARCH": [
+                    "static estimateTransferSize(networkRecord, totalBytes, resourceType, compressionRatio = 0.5) {",
+                    "if (!networkRecord) {",
+                    "// We don't know how many bytes this asset used on the network, but we can guess it was",
+                    "// roughly the size of the content gzipped.",
+                    "// See https://discuss.httparchive.org/t/file-size-and-compression-savings/145 for multipliers",
+                    "return Math.round(totalBytes * compressionRatio);",
+                    "} else if (networkRecord.resourceType === resourceType) {",
+                    "// This was a regular standalone asset, just use the transfer size.",
+                    "return networkRecord.transferSize || 0;",
+                    "} else {",
+                    "// This was an asset that was inlined in a different resource type (e.g. HTML document).",
+                    "// Use the compression ratio of the resource to estimate the total transferred bytes.",
+                    "const transferSize = networkRecord.transferSize || 0;",
+                    "const resourceSize = networkRecord.resourceSize;",
+                    "const compressionRatio = resourceSize !== undefined ? (transferSize / resourceSize) : 1;",
+                    "return Math.round(totalBytes * compressionRatio);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  static estimateTransferSize(networkRecord, totalBytes, resourceType, compressionRatio = 0.5) {",
+                    "    if (!networkRecord) {",
+                    "      // We don't know how many bytes this asset used on the network, but we can guess it was",
+                    "      // roughly the size of the content gzipped.",
+                    "      // See https://discuss.httparchive.org/t/file-size-and-compression-savings/145 for multipliers",
+                    "      return Math.round(totalBytes * compressionRatio);",
+                    "    } else if (networkRecord.resourceType === resourceType) {",
+                    "      // This was a regular standalone asset, just use the transfer size.",
+                    "      return networkRecord.transferSize || 0;",
+                    "    } else if (networkRecord.transferSize && networkRecord.resourceType !== resourceType) {",
+                    "      // If the resource was inlined or injected (e.g., CSS from JSON), use the actual transfer size.",
+                    "      return networkRecord.transferSize;",
+                    "    } else {",
+                    "      // This was an asset that was inlined in a different resource type (e.g. HTML document).",
+                    "      // Use the compression ratio of the resource to estimate the total transferred bytes.",
+                    "      const transferSize = networkRecord.transferSize || 0;",
+                    "      const resourceSize = networkRecord.resourceSize;",
+                    "      const compressionRatio = resourceSize !== undefined ? (transferSize / resourceSize) : 1;",
+                    "      return Math.round(totalBytes * compressionRatio);",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

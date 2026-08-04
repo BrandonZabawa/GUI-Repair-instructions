@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/renderer/Composite.js",
+            "src/ol/render/canvas.js"
+        ],
+        "explanation": "All of the listed files participate in the canvas\u2010based drawing and compositing of layers:\n\n\u2022 src/ol/renderer/canvas/Layer.js  \n  This is the central entry point for drawing any layer onto the 2D canvas. It sets up context.globalAlpha based on the layer opacity and issues the draw call. A change here could cause identical opacities to override one another rather than blend.\n\n\u2022 src/ol/renderer/canvas/TileLayer.js  \n  This subclass handles tiled layers specifically (including ArcGIS REST tiles). It inherits the opacity logic and may introduce its own grouping or clipping logic; a recent tweak to how tiles are composited against the canvas could lead to the stacking bug.\n\n\u2022 src/ol/renderer/Composite.js  \n  When multiple renderers (image, tile, vector) are used together, Composite orchestrates the draw order and context state. If it now delays or batches alpha state changes, identical opacity values could end up treated as a single block, forcing the last one to cover the rest.\n\n\u2022 src/ol/render/canvas.js  \n  This module contains the low\u2010level drawing routines (world wraps, multi\u2010canvas handling, feature builders) that ultimately call into the layer renderers. Any change here to context.save/restore or globalAlpha reset logic could ripple up and break layer stacking when opacities match exactly.",
+        "bug_scenario": "After upgrading OpenLayers from 6.7.0 to 6.9.0 (and specifically as of 6.8.1), stacked independent tiled ArcGIS REST layers that all share the same opacity value no longer blend into one another. Instead the top\u2010most layer in the stack draws at full opacity over the other layers (even though a semi-transparent opacity is configured), though the basemap still shows through. If you slightly vary each layer\u2019s opacity (e.g. 0.49, 0.50, 0.51) the stack repaints correctly, which points to an issue in how identical globalAlpha values are being applied or reset in the canvas rendering pipeline."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/renderer/canvas/ImageLayer.js",
+            "src/ol/renderer/Composite.js",
+            "src/ol/renderer/canvas/ExecutorGroup.js"
+        ],
+        "explanation": "All of these files participate in canvas-based layer rendering and opacity management. Layer.js is the base canvas renderer that sets context.globalAlpha for each layer; TileLayer.js and ImageLayer.js draw tile sources and image sources respectively using that alpha; Composite.js combines group layers and may apply nested opacities; and ExecutorGroup.js runs the low-level draw instructions on the canvas context and is responsible for pushing and restoring context state (including alpha). A bug in how globalAlpha is set or reset in these modules causes identical opacity levels to collapse into full opacity when layering multiple tile layers.",
+        "bug_scenario": "After updating to OpenLayers 6.9.0 (and 6.8.1+), applying identical opacity values (for example 0.5) to multiple independent tiled ArcGIS REST layers causes the top-most layer to render as fully opaque over the other OL layers, instead of stacking transparently. Basemaps still show through, and if you vary each layer\u2019s opacity slightly (0.49, 0.50, 0.51) the stacking works correctly. The behavior did not occur in 6.7.0 and below."
+    }
+}

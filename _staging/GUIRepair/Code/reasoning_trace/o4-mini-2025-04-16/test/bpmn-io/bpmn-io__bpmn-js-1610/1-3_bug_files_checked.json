@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/modeling/behavior/SubProcessPlaneBehavior.js",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js"
+        ],
+        "explanation": "\u2022 LabelEditingProvider.js: this is the module that registers and controls the lifecycle of the direct\u2010editing overlay (starting it, positioning it, and tearing it down). It currently does not listen for a plane/root switch event and therefore never dismisses the open editor on navigation.  \n\u2022 SubProcessPlaneBehavior.js: this modeling behavior is responsible for switching the diagram\u2019s root into and out of subprocess planes. It emits the root change but does not signal the direct editing feature to cancel any ongoing edits.   \n\u2022 DrilldownOverlayBehavior.js: this feature shows the subprocess breadcrumb overlay when drilling down. It is already listening to drilldown events and could act as the bridge to fire a directEditing.cancel on every plane transition so that the LabelEditingProvider can clean up its DOM elements.",
+        "bug_scenario": "When a user activates direct\u2010editing on a BPMN element label (for example inside a collapsed subprocess plane) and then switches into another plane (drills down into a subprocess or back out), the HTML editing box remains visible and active even though the diagram\u2019s visible root has changed. We see in the GIF that after navigating between planes, the text\u2010input is still floating on the canvas, orphaned from its element."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/LabelEditingPreview.js",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js",
+            "lib/features/modeling/behavior/SubProcessPlaneBehavior.js"
+        ],
+        "explanation": "All of the files above participate in either starting or tearing down the direct editing overlay, or in switching the canvas plane. \\n\\n\u2022 LabelEditingProvider.js is where direct editing is wired up on click and where the active editor should be closed whenever the diagram root changes. It listens to commandStack events, but currently does not react to the \u2018updateCanvasRoot\u2019 command.\\n\\n\u2022 LabelEditingPreview.js manages the actual HTML input floating above the SVG. It needs to remove the overlay DOM when the canvas root is switched.\\n\\n\u2022 UpdateCanvasRootHandler.js is the BPMN modeling command that actually swaps out the root plane when you click into or out of a subprocess. Since the active direct editor lives outside of the modeling stack, we must emit an event here (or handle it in the provider) to cancel editing.\\n\\n\u2022 SubProcessPlaneBehavior.js is the behavior that interprets clicks on subprocess shapes and ultimately calls the UpdateCanvasRoot command. It\u2019s the entry point for plane switching and therefore a good place to fire a cancellation event for any live label editor.",
+        "bug_scenario": "When you activate in-place (direct) label editing inside a collapsed subprocess (or any plane) and then drill into or switch to another BPMN plane, the HTML input used by the direct editing overlay does not get torn down. As a result the little text box remains floating on the canvas long after its target is no longer visible. You can reproduce this by opening the sample diagram, double-clicking to rename an activity inside a subprocess, then clicking the subprocess to open its inner plane \u2014 the input stays on the old plane."
+    }
+}

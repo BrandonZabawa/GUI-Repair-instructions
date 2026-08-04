@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-post/reveal.lua",
+            "src/format/reveal/format-reveal.ts",
+            "src/format/html/format-html.ts",
+            "src/core/html.ts"
+        ],
+        "explanation": "\u2022 resources/filters/quarto-post/reveal.lua: this Lua filter is responsible for converting stand-alone images into RevealJS background slides. It currently ignores any wrapping `<a>` link and emits only the image as a background attribute, dropping the anchor entirely.\n\u2022 src/format/reveal/format-reveal.ts: defines the RevealJS\u2010specific HTML generation and slide wrappers; it delegates to the Lua filter and does not re-attach anchors for image-only slides.\n\u2022 src/format/html/format-html.ts: contains the shared HTML rendering logic for links and images in Quarto\u2019s HTML pipeline. Stand-alone images get special handling here, but RevealJS overrides can bypass the normal link rendering.\n\u2022 src/core/html.ts: the core HTML helper that emits `<a>` and `<img>` tags. The logic that wraps an image in an `<a>` lives here, but Quarto\u2019s Reveal post\u2010processor causes that code path to be skipped when the image is detected as a background rather than inline content.\n\nTogether, these files implement and override the behavior that strips the anchor tag on a slide containing only a linked image. Fixing the bug will require updating the Lua filter (and possibly the Reveal formatting code in TypeScript) so that it preserves or re-wraps the `<a>` around the image when a link is present.",
+        "bug_scenario": "When you author a RevealJS slide in Quarto that contains only a single linked image (i.e. the entire slide body is just \u201c[![](image)](url)\u201d), the output drops the `<a>` wrapper around the `<img>`. As soon as you add any other content (even plain text) on that slide, the link starts working again. From inspection of the pipeline, Quarto\u2019s post\u2010processing Lua filter for RevealJS is detecting a standalone figure and converting it to a CSS background slide \u2013 but in doing so it strips out any anchor tags around the image."
+    },
+    "2": {
+        "bug_files": [
+            "src/format/reveal/format-reveal.ts",
+            "src/resources/filters/common/figures.lua",
+            "src/resources/filters/quarto-post/reveal.lua"
+        ],
+        "explanation": "\u2022 src/format/reveal/format-reveal.ts is the TypeScript module that orchestrates how Quarto generates the HTML structure for RevealJS slides and must be updated to preserve anchor tags around standalone images.\n\u2022 resources/filters/common/figures.lua is the Lua filter that detects standalone images and transforms them into figure blocks; its logic currently unwraps link-wrapped images, stripping out the anchor.\n\u2022 resources/filters/quarto-post/reveal.lua is the post-processing filter applied to RevealJS output; it further massages the slide DOM (e.g. center-aligning images) and can remove outer anchors on slides containing only an image. \n\nTogether these three are responsible for detecting stand-alone images, wrapping them in layout containers for centering, and finally emitting the markup.  Fixing the link-preservation logic in these files will ensure that an image alone on a slide retains its hyperlink in the output.",
+        "bug_scenario": "On a RevealJS slide that contains only a standalone image wrapped in a link \u2014 for example Markdown like:\n\n```markdown\n[![](https://quarto.org/.../image.jpeg)](https://google.com)\n```\n\nthe generated HTML drops the `<a>` entirely, so the image is rendered without the hyperlink.  If any other content appears before the image, the link is preserved.  The screenshot shows a fireworks image on its own slide; clicking it produces no navigation."
+    }
+}

@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/components/src/components/overflow-menu/overflow-menu.config.js",
+            "packages/components/src/components/overflow-menu/overflow-menu.js//OverflowMenu",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu"
+        ],
+        "bug_functions": [
+            "packages/components/src/components/overflow-menu/overflow-menu.config.js//variants",
+            "packages/components/src/components/overflow-menu/overflow-menu.js//static get options",
+            "packages/components/src/components/overflow-menu/overflow-menu.js//getMenuOffset",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//getMenuOffset",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//render"
+        ],
+        "explanation": "To introduce a `--light` modifier, we must update both the vanilla\u2010JS and React implementations. In the config file (overflow-menu.config.js) we need a new \u2018light\u2019 variant in the `variants` array so Storybook and the CSS generator include it. In the vanilla component (overflow-menu.js) the static `options` getter holds class names (e.g. `classMenuShown`, `classShown`), so it must be extended to recognize and apply a `--light` class; the `getMenuOffset` function will need no change for contrast but should be aware if positioning differs for light styling (if any). In the React component (OverflowMenu.js), its exported `getMenuOffset` should accept an extra `light` flag if needed, and the `render` method must read a new `light` prop, add the `${prefix}--overflow-menu--light` class to its root element, and reflect that in its PropTypes and defaultProps so users can enable the light style via `<OverflowMenu light>`.",
+        "bug_scenario": "The OverflowMenu is rendering in a medium\u2010gray style against a light\u2010gray page background, making the menu blend in and lose contrast. The user wants a \u201clight\u201d version (e.g. a `--light` modifier) so that the menu background can switch to white (or a lighter shade) when placed on gray pages. The attached screenshot shows a gray menu on a gray container, which is hard to distinguish."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/components/src/components/overflow-menu/overflow-menu.config.js",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js",
+            "packages/react/src/components/OverflowMenu/OverflowMenu-story.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu.render",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu.propTypes",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu.defaultProps",
+            "packages/react/src/components/OverflowMenu/OverflowMenu-story.js//OverflowMenuExample"
+        ],
+        "explanation": "\u2022 overflow-menu.config.js: the Storybook variants list currently only defines \u201cdefault\u201d and \u201cup\u201d; a new \u201clight\u201d variant should be added here (with `context.light = true`) so that the light modifier is applied in the static demos.\n\u2022 OverflowMenu (React) class: needs a new boolean `light` prop (in static propTypes/defaultProps) and the render() method must detect `this.props.light` and append the CSS class `${settings.prefix}--overflow-menu--light` alongside the existing flavour classes.\n\u2022 OverflowMenuExample in the story file: the story definition should include a knob or a new story entry to toggle or display the light version \u2014 wiring the `light` prop through to the component so designers can preview and test the high-contrast style.",
+        "bug_scenario": "The screenshot shows an overflow menu on a light-grey background. The white menu body has light-grey dividers and menu items, which offers very low contrast against the grey page background. The user requested a \u201clight\u201d version (a `--light` modifier) so that when the menu is placed on a grey surface, it inverts its colours (e.g. dark text and dividers on a white background or vice versa) for better visibility."
+    }
+}

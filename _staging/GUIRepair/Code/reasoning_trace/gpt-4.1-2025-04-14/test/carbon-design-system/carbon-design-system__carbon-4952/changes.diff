@@ -1,0 +1,63 @@
+diff --git a/packages/react/src/components/ComboBox/ComboBox.js b/packages/react/src/components/ComboBox/ComboBox.js
+index 5bd43230..0cedea6f 100644
+--- a/packages/react/src/components/ComboBox/ComboBox.js
++++ b/packages/react/src/components/ComboBox/ComboBox.js
+@@ -196,6 +196,7 @@ export default class ComboBox extends React.Component {
+ 
+     this.state = {
+       inputValue: getInputValue(props, {}),
++      isComposing: false,
+     };
+   }
+ 
+@@ -227,17 +228,20 @@ export default class ComboBox extends React.Component {
+ 
+       setHighlightedIndex(findHighlightedIndex(this.props, inputValue));
+ 
+-      this.setState(
+-        () => ({
+-          // Default to empty string if we have a false-y `inputValue`
+-          inputValue: inputValue || '',
+-        }),
+-        () => {
+-          if (onInputChange) {
+-            onInputChange(inputValue);
++      // Only update inputValue in state if not composing
++      if (!this.state.isComposing) {
++        this.setState(
++          () => ({
++            // Default to empty string if we have a false-y `inputValue`
++            inputValue: inputValue || '',
++          }),
++          () => {
++            if (onInputChange) {
++              onInputChange(inputValue);
++            }
+           }
+-        }
+-      );
++        );
++      }
+     }
+   };
+ 
+@@ -347,6 +351,19 @@ export default class ComboBox extends React.Component {
+                 aria-autocomplete="list"
+                 ref={this.textInput}
+                 {...rest}
++                onCompositionStart={() => {
++                  this.setState({ isComposing: true });
++                }}
++                onCompositionEnd={event => {
++                  this.setState(
++                    { isComposing: false, inputValue: event.target.value },
++                    () => {
++                      if (this.props.onInputChange) {
++                        this.props.onInputChange(event.target.value);
++                      }
++                    }
++                  );
++                }}
+                 {...getInputProps({
+                   disabled,
+                   id,

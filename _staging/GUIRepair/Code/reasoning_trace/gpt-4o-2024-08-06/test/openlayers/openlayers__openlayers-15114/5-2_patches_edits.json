@@ -1,0 +1,353 @@
+{
+    "1/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "if (linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (!linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride,",
+                    "true // Ensure right-hand rule for exterior and left-hand for interior",
+                    ");",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "getOrientedFlatCoordinates() {",
+                    "if (this.orientedRevision_ != this.getRevision()) {",
+                    "const flatCoordinates = this.flatCoordinates;",
+                    "if (linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();"
+                ],
+                "REPLACE": [
+                    "getOrientedFlatCoordinates() {",
+                    "if (this.orientedRevision_ != this.getRevision()) {",
+                    "const flatCoordinates = this.flatCoordinates;",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "if (!linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {"
+                ]
+            }
+        ],
+        "src/ol/render/webgl/VectorStyleRenderer.js": [
+            {
+                "SEARCH": [
+                    "generatePolygonRenderInstructions(",
+                    "polygonBatch,",
+                    "new Float32Array(0),",
+                    "this.customAttributes_,",
+                    "transform",
+                    ") {",
+                    "// Existing logic...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "generatePolygonRenderInstructions(",
+                    "polygonBatch,",
+                    "new Float32Array(0),",
+                    "this.customAttributes_,",
+                    "transform",
+                    ") {",
+                    "orientLinearRings(polygonBatch.flatCoordinates, 0,",
+                    "polygonBatch.ends, polygonBatch.stride, true);",
+                    "// The polygon coordinates are re-oriented using the right-hand rule (ISO standard for GeoJSON)",
+                    "",
+                    "// Existing logic...",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "if (linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (!linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride",
+                    ");",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "if (linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const orientation = true; // Assume orientation follows right-hand rule",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride,",
+                    "orientation",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/render/webgl/VectorStyleRenderer.js": [
+            {
+                "SEARCH": [
+                    "const polygonInstructions = this.hasFill_",
+                    "? generatePolygonRenderInstructions(",
+                    "geometryBatch.polygonBatch,",
+                    "new Float32Array(0),",
+                    "this.customAttributes_,",
+                    "transform",
+                    ")",
+                    ": null;"
+                ],
+                "REPLACE": [
+                    "const rightOrientation = true; // Use right-hand rule orientation",
+                    "const polygonInstructions = this.hasFill_",
+                    "? generatePolygonRenderInstructions(",
+                    "geometryBatch.polygonBatch,",
+                    "new Float32Array(0),",
+                    "this.customAttributes_,",
+                    "transform,",
+                    "rightOrientation",
+                    ")",
+                    ": null;"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "orientLinearRings(flatCoordinates, 0, this.ends_, this.stride, right);"
+                ],
+                "REPLACE": [
+                    "if (right !== undefined) {",
+                    "flatCoordinates = this.getOrientedFlatCoordinates().slice();",
+                    "orientLinearRings(flatCoordinates, 0, this.ends_, this.stride, right);",
+                    "} else {",
+                    "flatCoordinates = this.flatCoordinates;",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const properlyOriented = linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride);",
+                    "this.orientedFlatCoordinates_ = properlyOriented ? flatCoordinates.slice() : flatCoordinates;",
+                    "if (!properlyOriented) {",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride,",
+                    "false",
+                    ");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "getCoordinates(right) {",
+                    "let flatCoordinates;",
+                    "if (right !== undefined) {",
+                    "flatCoordinates = this.getOrientedFlatCoordinates().slice();",
+                    "orientLinearRings(flatCoordinates, 0, this.ends_, this.stride, right);",
+                    "} else {",
+                    "flatCoordinates = this.flatCoordinates;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "getCoordinates(right=true) { // Enforcing orientation with right-hand rule by default",
+                    "let flatCoordinates;",
+                    "flatCoordinates = this.getOrientedFlatCoordinates().slice();",
+                    "orientLinearRings(flatCoordinates, 0, this.ends_, this.stride, right);"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "return this.orientedFlatCoordinates_;"
+                ],
+                "REPLACE": [
+                    "let reverse = false; // Add flag for reversing",
+                    "if (!linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "reverse = true; // Indicate need to reverse orientation",
+                    "}",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride,",
+                    "true, // Ensure counter-clockwise for outer, clockwise for inner",
+                    "reverse // Pass reverse flag",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "getOrientedFlatCoordinates() {",
+                    "if (this.orientedRevision_ != this.getRevision()) {",
+                    "const flatCoordinates = this.flatCoordinates;",
+                    "if (linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride",
+                    ");",
+                    "}",
+                    "this.orientedRevision_ = this.getRevision();",
+                    "}",
+                    "return this.orientedFlatCoordinates_;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "getOrientedFlatCoordinates() {",
+                    "if (this.orientedRevision_ != this.getRevision()) {",
+                    "const flatCoordinates = this.flatCoordinates;",
+                    "",
+                    "// Always enforce the correct orientation: counter-clockwise for outer, clockwise for inner",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "if (!linearRingsAreOriented(this.orientedFlatCoordinates_, 0, this.ends_, this.stride)) {",
+                    "orientLinearRings(this.orientedFlatCoordinates_, 0, this.ends_, this.stride, true);",
+                    "}",
+                    "",
+                    "this.orientedRevision_ = this.getRevision();",
+                    "}",
+                    "return this.orientedFlatCoordinates_;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "if (linearRingsAreOriented(flatCoordinates, 0, this.ends_, this.stride)) {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates;",
+                    "} else {",
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "this.orientedFlatCoordinates_ = flatCoordinates.slice();",
+                    "this.orientedFlatCoordinates_.length = orientLinearRings(",
+                    "this.orientedFlatCoordinates_,",
+                    "0,",
+                    "this.ends_,",
+                    "this.stride,",
+                    "true  // Enforce Right-Hand Rule for orientation",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/geom/Polygon.js": [
+            {
+                "SEARCH": [
+                    "if (right !== undefined) {",
+                    "flatCoordinates = this.getOrientedFlatCoordinates().slice();",
+                    "orientLinearRings(flatCoordinates, 0, this.ends_, this.stride, right);",
+                    "} else {",
+                    "flatCoordinates = this.flatCoordinates;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "// Assume polygons must be oriented according to the right-hand rule by default",
+                    "flatCoordinates = this.getOrientedFlatCoordinates().slice();",
+                    "orientLinearRings(flatCoordinates, 0, this.ends_, this.stride, right !== false);"
+                ]
+            }
+        ]
+    }
+}

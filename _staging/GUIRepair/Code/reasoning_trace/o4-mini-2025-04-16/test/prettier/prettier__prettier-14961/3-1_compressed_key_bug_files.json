@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_file": "src/language-html/embed/angular-interpolation.js",
+        "compressed": "NO",
+        "line_numbers": 38,
+        "compressed_line_numbers": 38,
+        "compressed_bug_file_content": "import { group, indent, line } from \"../../document/builders.js\";\nimport { replaceEndOfLine } from \"../../document/utils.js\";\nimport { formatAttributeValue } from \"./utils.js\";\n\nconst interpolationRegex = /{{(.+?)}}/s;\n\nasync function printAngularInterpolation(text, textToDoc) {\n  const parts = [];\n  for (const [index, part] of text.split(interpolationRegex).entries()) {\n    if (index % 2 === 0) {\n      parts.push(replaceEndOfLine(part));\n    } else {\n      try {\n        parts.push(\n          group([\n            \"{{\",\n            indent([\n              line,\n              await formatAttributeValue(part, textToDoc, {\n                parser: \"__ng_interpolation\",\n                __isInHtmlInterpolation: true, // to avoid unexpected `}}`\n                trailingComma: \"none\",\n              }),\n            ]),\n            line,\n            \"}}\",\n          ])\n        );\n      } catch {\n        parts.push(\"{{\", replaceEndOfLine(part), \"}}\");\n      }\n    }\n  }\n\n  return parts;\n}\n\nexport { interpolationRegex, printAngularInterpolation };"
+    },
+    "2": {
+        "bug_file": "src/language-html/embed/angular-attributes.js",
+        "compressed": "NO",
+        "line_numbers": 94,
+        "compressed_line_numbers": 94,
+        "compressed_bug_file_content": "import {\n  getUnescapedAttributeValue,\n  getTextValueParts,\n} from \"../utils/index.js\";\nimport { fill } from \"../../document/builders.js\";\nimport {\n  formatAttributeValue,\n  printExpand,\n  shouldHugJsExpression,\n} from \"./utils.js\";\nimport {\n  interpolationRegex as angularInterpolationRegex,\n  printAngularInterpolation,\n} from \"./angular-interpolation.js\";\n\nfunction createAngularPrinter({ parser }) {\n  return (textToDoc, print, path /*, options*/) =>\n    formatAttributeValue(\n      getUnescapedAttributeValue(path.node),\n      textToDoc,\n      {\n        parser,\n        // angular does not allow trailing comma\n        trailingComma: \"none\",\n      },\n      shouldHugJsExpression\n    );\n}\n\nconst printNgAction = createAngularPrinter({ parser: \"__ng_action\" });\nconst printNgBinding = createAngularPrinter({ parser: \"__ng_binding\" });\nconst printNgDirective = createAngularPrinter({ parser: \"__ng_directive\" });\n\nfunction printAngularAttribute(path, options) {\n  if (options.parser !== \"angular\") {\n    return;\n  }\n\n  const { node } = path;\n  const attributeName = node.fullName;\n\n  /**\n   *     (click)=\"angularStatement\"\n   *     on-click=\"angularStatement\"\n   */\n  if (\n    (attributeName.startsWith(\"(\") && attributeName.endsWith(\")\")) ||\n    attributeName.startsWith(\"on-\")\n  ) {\n    return printNgAction;\n  }\n\n  /**\n   *     [target]=\"angularExpression\"\n   *     bind-target=\"angularExpression\"\n   *     [(target)]=\"angularExpression\"\n   *     bindon-target=\"angularExpression\"\n   */\n  if (\n    (attributeName.startsWith(\"[\") && attributeName.endsWith(\"]\")) ||\n    /^bind(?:on)?-/.test(attributeName) ||\n    // Unofficial rudimentary support for some of the most used directives of AngularJS 1.x\n    /^ng-(?:if|show|hide|class|style)$/.test(attributeName)\n  ) {\n    return printNgBinding;\n  }\n\n  /**\n   *     *directive=\"angularDirective\"\n   */\n  if (attributeName.startsWith(\"*\")) {\n    return printNgDirective;\n  }\n\n  const value = getUnescapedAttributeValue(node);\n\n  /**\n   *     i18n=\"longDescription\"\n   *     i18n-attr=\"longDescription\"\n   */\n  if (/^i18n(?:-.+)?$/.test(attributeName)) {\n    return () =>\n      printExpand(\n        fill(getTextValueParts(node, value.trim())),\n        !value.includes(\"@@\")\n      );\n  }\n\n  if (angularInterpolationRegex.test(value)) {\n    return (textToDoc) => printAngularInterpolation(value, textToDoc);\n  }\n}\n\nexport default printAngularAttribute;"
+    },
+    "3": {
+        "bug_file": "src/language-js/parse/angular.js",
+        "compressed": "NO",
+        "line_numbers": 34,
+        "compressed_line_numbers": 34,
+        "compressed_bug_file_content": "import {\n  parseAction,\n  parseBinding,\n  parseInterpolationExpression,\n  parseTemplateBindings,\n} from \"angular-estree-parser\";\nimport { locStart, locEnd } from \"../loc.js\";\n\n/**\n * @param {parseAction | parseBinding | parseInterpolationExpression | parseTemplateBindings} parseMethod\n */\nfunction createParser(parseMethod) {\n  return {\n    astFormat: \"estree\",\n    parse(text) {\n      const node = parseMethod(text);\n\n      return {\n        type: \"NGRoot\",\n        node:\n          parseMethod === parseAction && node.type !== \"NGChainedExpression\"\n            ? { ...node, type: \"NGChainedExpression\", expressions: [node] }\n            : node,\n      };\n    },\n    locStart,\n    locEnd,\n  };\n}\n\nexport const __ng_action = createParser(parseAction);\nexport const __ng_binding = createParser(parseBinding);\nexport const __ng_interpolation = createParser(parseInterpolationExpression);\nexport const __ng_directive = createParser(parseTemplateBindings);"
+    },
+    "4": {
+        "bug_file": "src/plugins/angular.js",
+        "compressed": "NO",
+        "line_numbers": 1,
+        "compressed_line_numbers": 1,
+        "compressed_bug_file_content": "export * as parsers from \"../language-js/parse/angular.js\";"
+    }
+}

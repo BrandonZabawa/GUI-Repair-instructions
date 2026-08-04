@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/cascader/cascader.jsx",
+            "src/cascader-select/cascader-select.jsx"
+        ],
+        "explanation": "Both cascader.jsx and cascader-select.jsx are responsible for consuming the user\u2019s dataSource and then walking or caching its nodes. In cascader.jsx (methods setCache, updateCache and the constructor), the code assigns new properties onto each node object. In cascader-select.jsx the wrapper passes the raw dataSource straight into Cascader without cloning, so the frozen objects reach the mutation logic. To fix the immer error, these files must avoid mutating the original array items (for example, by deep-cloning before use or by using non-mutative data structures).",
+        "bug_scenario": "When using immer with setAutoFreeze(true), the user\u2019s dataSource array is frozen and cascader internally tries to add or modify properties (e.g. .value, internal cache markers) on those objects. That mutation attempt on an immutable (frozen) object throws \u201cCannot add property value, object is not extensible\u201d. In the screenshot you can see the error originates in cascader.js at setCache/updateCache, called during CascaderSelect\u2019s initialization. The root cause is that the component directly mutates the user-provided dataSource rather than working on a clone."
+    },
+    "2": {
+        "bug_files": [
+            "src/cascader/cascader.jsx",
+            "src/cascader/utils.js",
+            "src/cascader-select/cascader-select.jsx"
+        ],
+        "explanation": "\u2022 src/cascader/cascader.jsx \u2013 contains the core Cascader class with updateCache() and setCache() that mutate dataSource nodes (adding internal cache fields).\n\u2022 src/cascader/utils.js \u2013 various data-processing helpers may also write back onto the original item objects (e.g. flattening or mapping children).\n\u2022 src/cascader-select/cascader-select.jsx \u2013 the wrapper around Cascader that passes the dataSource array directly into the Cascader instance without cloning, so any internal mutation in Cascader affects the frozen user data.\n\nAll three collaborate to take the prop dataSource and then assign cache or metadata fields onto those exact objects, which fails when the objects have been frozen by immer.",
+        "bug_scenario": "When using immer.setAutoFreeze(true) to freeze the state tree, the data array passed into <CascaderSelect> becomes non-extensible. Inside the Cascader component (used by CascaderSelect), methods like setCache/updateCache attempt to add or override properties (value, label, checked, etc.) directly on the user\u2019s data objects. This mutation on frozen objects throws \u201cCannot add property \u2026, object is not extensible.\u201d The component should never modify the original dataSource items."
+    }
+}

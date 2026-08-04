@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//getOrigin",
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint",
+            "src/ol/render/canvas/ImageBuilder.js//drawMultiPoint"
+        ],
+        "explanation": "The heart of the bug is that Icon.getOrigin() adds the displacement values to the source\u2010rectangle origin (offset) for cropping, rather than applying displacement to the draw position. CanvasImageBuilder.setImageStyle() then reads that displaced origin and CanvasImageBuilder.drawPoint()/drawMultiPoint() use it to compute the source rectangle passed to canvas.drawImage, effectively shifting the crop window and clipping the icon. Displacement should move the drawn image on the canvas, not shrink or slide the portion of the image being sampled.",
+        "bug_scenario": "In the provided example a green \u201ccross\u201d icon styled with ol/style/Icon has a non-zero displacement, but when rendered the icon is cropped (parts of the cross are cut off) instead of simply shifted. In contrast, the regularshape example without an external image shows no clipping at the same displacement."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//getOrigin",
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint",
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle"
+        ],
+        "explanation": "The Icon class in src/ol/style/Icon.js computes the sub-image origin (via getOrigin()) and includes the displacement in that computation. However, it does not expand or adjust the icon\u2019s overall bounding box to accommodate that displacement. In the canvas renderer (src/ol/render/canvas/ImageBuilder.js), CanvasImageBuilder.setImageStyle reads the origin and size from the Icon style, and drawPoint uses those values to issue a drawImage instruction with a fixed width/height. Because getOrigin moved the cropping window but the builder still draws into the original slot size, parts of the displaced icon lie outside and get clipped. These methods span the style \u2192 render boundary and are therefore key to fixing the clipping issue.",
+        "bug_scenario": "When using an Icon style with a non-zero displacement, the rendered icon graphic (the green cross) is shifted and parts of it fall outside the image \u201cslot\u201d and get clipped by the canvas. Visually you see the cross cut off at its edges instead of fully visible and simply shifted."
+    }
+}

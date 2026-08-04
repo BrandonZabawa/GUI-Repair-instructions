@@ -1,0 +1,100 @@
+{
+    "bug_classes": {},
+    "bug_functions": {
+        "1": {
+            "function_name": "BpmnUpdater.prototype.updateDiParent",
+            "file_path": "lib/features/modeling/BpmnUpdater.js",
+            "function_details": [
+                {
+                    "name": "BpmnUpdater.prototype.updateDiParent",
+                    "start_line": 403,
+                    "end_line": 422
+                }
+            ],
+            "function_code": [
+                "BpmnUpdater.prototype.updateDiParent = function(di, parentDi) {",
+                "",
+                "  if (parentDi && !is(parentDi, 'bpmndi:BPMNPlane')) {",
+                "    parentDi = parentDi.$parent;",
+                "  }",
+                "",
+                "  if (di.$parent === parentDi) {",
+                "    return;",
+                "  }",
+                "",
+                "  var planeElements = (parentDi || di.$parent).get('planeElement');",
+                "",
+                "  if (parentDi) {",
+                "    planeElements.push(di);",
+                "    di.$parent = parentDi;",
+                "  } else {",
+                "    collectionRemove(planeElements, di);",
+                "    di.$parent = null;",
+                "  }",
+                "};"
+            ]
+        },
+        "2": {
+            "function_name": "BpmnUpdater.prototype.updateParent",
+            "file_path": "lib/features/modeling/BpmnUpdater.js",
+            "function_details": [
+                {
+                    "name": "BpmnUpdater.prototype.updateParent",
+                    "start_line": 294,
+                    "end_line": 342
+                }
+            ],
+            "function_code": [
+                "BpmnUpdater.prototype.updateParent = function(element, oldParent) {",
+                "",
+                "  // do not update BPMN 2.0 label parent",
+                "  if (element instanceof Label) {",
+                "    return;",
+                "  }",
+                "",
+                "  // data stores in collaborations are handled separately by DataStoreBehavior",
+                "  if (is(element, 'bpmn:DataStoreReference') &&",
+                "      element.parent &&",
+                "      is(element.parent, 'bpmn:Collaboration')) {",
+                "    return;",
+                "  }",
+                "",
+                "  var parentShape = element.parent;",
+                "",
+                "  var businessObject = element.businessObject,",
+                "      di = getDi(element),",
+                "      parentBusinessObject = parentShape && parentShape.businessObject,",
+                "      parentDi = getDi(parentShape);",
+                "",
+                "  if (is(element, 'bpmn:FlowNode')) {",
+                "    this.updateFlowNodeRefs(businessObject, parentBusinessObject, oldParent && oldParent.businessObject);",
+                "  }",
+                "",
+                "  if (is(element, 'bpmn:DataOutputAssociation')) {",
+                "    if (element.source) {",
+                "      parentBusinessObject = element.source.businessObject;",
+                "    } else {",
+                "      parentBusinessObject = null;",
+                "    }",
+                "  }",
+                "",
+                "  if (is(element, 'bpmn:DataInputAssociation')) {",
+                "    if (element.target) {",
+                "      parentBusinessObject = element.target.businessObject;",
+                "    } else {",
+                "      parentBusinessObject = null;",
+                "    }",
+                "  }",
+                "",
+                "  this.updateSemanticParent(businessObject, parentBusinessObject);",
+                "",
+                "  if (is(element, 'bpmn:DataObjectReference') && businessObject.dataObjectRef) {",
+                "    this.updateSemanticParent(businessObject.dataObjectRef, parentBusinessObject);",
+                "  }",
+                "",
+                "  this.updateDiParent(di, parentDi);",
+                "};"
+            ]
+        }
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/format/GeoJSON.js//GeoJSON",
+            "src/ol/geom/MultiPolygon.js//MultiPolygon"
+        ],
+        "bug_functions": [
+            "src/ol/format/GeoJSON.js//readFeatureFromObject",
+            "src/ol/format/GeoJSON.js//readFeaturesFromObject",
+            "src/ol/format/GeoJSON.js//readGeometryFromObject",
+            "src/ol/format/GeoJSON.js//readMultiPolygonGeometry",
+            "src/ol/geom/MultiPolygon.js//setCoordinates"
+        ],
+        "explanation": "The stack trace in the error screenshot points directly to MultiPolygon.js (specifically MultiPolygon.setCoordinates and the MultiPolygon constructor) and GeoJSON.js (GeoJSON.readFeatureFromObject, readFeaturesFromObject, readGeometryFromObject, and readMultiPolygonGeometry). These functions are responsible for parsing and constructing geometry objects from the GeoJSON input. The bug involves a RangeError that typically occurs when an array length is set to a negative or excessively large value, which can happen if the input coordinates array is malformed or not properly validated before being passed to setCoordinates. The relevant functions/classes are responsible for reading and constructing features and geometries from GeoJSON\u2014so any missing validation or assumptions about input structure can lead to this kind of runtime error. The MultiPolygon class and its setCoordinates method are central because they handle the conversion from raw coordinate data to the internal geometry representation, which is where the invalid array length likely arises if input is incorrect or insufficiently checked.",
+        "bug_scenario": "The bug scenario involves loading a GeoJSON file in OpenLayers (ol) v6.14.1, which results in an uncaught RangeError: Invalid array length. The error is visible in the console screenshot, showing the call stack, and occurs during the parsing of MultiPolygon geometries. The map fails to render the data correctly, unlike other tools such as QGIS or LeafletJS, which display the data without issue. The second image demonstrates the expected visualization of the polygons."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/format/GeoJSON.js//GeoJSON",
+            "src/ol/geom/MultiPolygon.js//MultiPolygon"
+        ],
+        "bug_functions": [
+            "src/ol/format/GeoJSON.js//readFeatureFromObject",
+            "src/ol/format/GeoJSON.js//readFeaturesFromObject",
+            "src/ol/format/GeoJSON.js//readGeometryFromObject",
+            "src/ol/geom/MultiPolygon.js//setCoordinates"
+        ],
+        "explanation": "The stack trace and error message indicate that the bug is triggered during the process of parsing GeoJSON features (specifically MultiPolygon geometries) and setting their coordinates. The 'setCoordinates' method of the MultiPolygon class is directly causing the 'Invalid array length' error, likely due to improper validation or handling of coordinates. The GeoJSON class and its functions (readFeatureFromObject, readFeaturesFromObject, readGeometryFromObject) are responsible for deserializing GeoJSON geometries and are thus key to the bug, since they are involved in processing the input before passing it to the geometry constructors. Any fix would need to add validation or error handling in these functions to ensure only valid coordinate arrays are passed to MultiPolygon.setCoordinates.",
+        "bug_scenario": "The error scenario occurs when loading a GeoJSON file with a MultiPolygon geometry using OpenLayers (ol v6.14.1). The browser console reports an 'Uncaught RangeError: Invalid array length' with a stack trace pointing to setCoordinates in MultiPolygon.js, the MultiPolygon constructor, and several GeoJSON parsing and feature loading functions. The image shows a map with rendered polygons, but the error halts further processing. The error does not occur with other libraries like LeafletJS. The likely cause is malformed or unexpected coordinates in the GeoJSON, possibly not being validated or sanitized, leading to an attempt to create an array of invalid length."
+    }
+}

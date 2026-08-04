@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js",
+            "lib/draw/TextRenderer.js",
+            "lib/util/DiUtil.js",
+            "lib/import/BpmnImporter.js",
+            "lib/import/BpmnTreeWalker.js"
+        ],
+        "explanation": "\u2022 lib/draw/BpmnRenderer.js \u2013 This is the core file responsible for drawing BPMN lanes, pools and their labels. It currently only invokes the horizontal label-layout path, so vertical headers never get positioned or drawn.\n\u2022 lib/draw/BpmnRenderUtil.js \u2013 Hosts helper routines (e.g. computeLabelBox, getLabelOrientation) used by BpmnRenderer. These utilities must be extended to handle isHorizontal=false and calculate rotated bounding boxes for vertical labels.\n\u2022 lib/draw/TextRenderer.js \u2013 Performs the low-level text layout and rotation. It needs to receive and apply the \u201cvertical\u201d orientation flag so that the text element is rotated 90\u00b0 and positioned on the side of the pool/lane instead of above it.\n\u2022 lib/util/DiUtil.js \u2013 Parses DI attributes (including isHorizontal) from the BPMN XML. Any mistake or omission here prevents the drawing layer from even knowing which shapes are vertical.\n\u2022 lib/import/BpmnImporter.js & lib/import/BpmnTreeWalker.js \u2013 These files walk the BPMN DI tree and attach metadata (including isHorizontal) to elements in the element registry. If they do not correctly map the isHorizontal attribute into the element\u2019s businessObject/di, the renderer never sees the vertical flag. All of these modules must collaborate to properly import, propagate and render pool/lane labels for vertical collaborations.",
+        "bug_scenario": "When importing and rendering BPMN collaborations with vertical pools (i.e. BPMNShape elements where the DI attribute isHorizontal=\"false\"), lane and pool header labels are not laid out or drawn correctly. In the first (reference) image you see a horizontal collaboration with pool and lane labels positioned in the horizontal (\u201cnormal\u201d) orientation. In the second (problem) image the same diagram is imported with isHorizontal=\"false\" but none of the pool or lane labels render: the headers disappear because the renderer never accounts for vertical orientation when computing label positions and rotations."
+    },
+    "2": {
+        "bug_files": [
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js",
+            "lib/draw/TextRenderer.js",
+            "lib/import/BpmnImporter.js",
+            "lib/util/DiUtil.js"
+        ],
+        "explanation": "\u2022 lib/draw/BpmnRenderer.js contains the drawPool() and drawLane() routines that place the pool and lane backgrounds and their labels, but it never checks the isHorizontal flag to adjust label orientation or placement.  \n\u2022 lib/draw/BpmnRenderUtil.js hosts helper methods used by BpmnRenderer for computing label anchors and margins, again with no awareness of vertical orientation.  \n\u2022 lib/draw/TextRenderer.js is responsible for actually rendering text elements; it always orients labels horizontally.  \n\u2022 lib/import/BpmnImporter.js reads the DI for BPMN shapes (including width, height, and isHorizontal), but currently ignores isHorizontal when constructing the element\u2019s visual model.  \n\u2022 lib/util/DiUtil.js provides low-level access to DI attributes (including isHorizontal), but no code in the rendering pipeline ever uses it to influence layout.  \nAll of these files collaborate to import and draw labels, and none account for vertical pools, so they must be updated to read the isHorizontal flag and rotate/reposition pool and lane labels accordingly.",
+        "bug_scenario": "When importing a BPMN diagram with a vertical pool (DI attribute isHorizontal=\u201cfalse\u201d), all of the pool and lane labels are still laid out as if the pool were horizontal. In other words, the diagram\u2019s \u201cPool 1\u201d / \u201cPool 2\u201d titles and the individual lane names are never rotated or repositioned for a vertical orientation, so they end up stuck on the wrong side or oriented incorrectly. In the screenshots you can see the long, tall pool printed side-to-side like a horizontal container, with its label still on the top and not rotated, and the lane headers likewise never flipped to run vertically alongside the tall container."
+    }
+}

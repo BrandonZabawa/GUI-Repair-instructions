@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/language-js/needs-parens.js"
+        ],
+        "bug_functions": [
+            "src/language-js/needs-parens.js//needsParens",
+            "src/language-js/utils/is-type-cast-comment.js//isTypeCastComment"
+        ],
+        "explanation": "\u2022 The core of the bug lives in needs-parens.js: the `needsParens` function is responsible for deciding when to preserve or drop surrounding parentheses on expressions. It currently doesn\u2019t recognize JSDoc annotations like `@satisfies` as requiring parentheses, so it strips them off.\n\n\u2022 The helper in is-type-cast-comment.js, `isTypeCastComment`, is used by `needsParens` to detect block comments that carry type information. It only looks for `@type`, not `@satisfies`, so JSDoc patterns beyond `@type` aren\u2019t detected and parentheses aren\u2019t preserved.\n\nTo fix the bug, `isTypeCastComment` should be extended (or a new utility added) to recognize `@satisfies` (and potentially other JSDoc tags) as type\u2013annotation comments, and then `needsParens` will preserve the parentheses as intended.",
+        "bug_scenario": "In the Playground GIF and screenshot, Prettier strips the parentheses around the object literal when it is annotated with a `@satisfies` JSDoc comment. The user wrote:\n\n```js\nmodule.exports = /** @satisfies {Record<string, string>} */ ({\n  hello: 1337,\n});\n```\n\nbut Prettier outputs:\n\n```js\nmodule.exports = /** @satisfies {Record<string, string>} */ {\n  hello: 1337,\n};\n```\n\nDropping those parentheses prevents IDEs from providing correct intellisense for the `@satisfies` annotation."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-js/utils/is-type-cast-comment.js//isTypeCastComment",
+            "src/language-js/needs-parens.js//needsParens"
+        ],
+        "explanation": "The core of this bug is that Prettier only recognizes comments containing \u201c@type\u201d as type-cast annotations. In needs-parens.js, the function needsParens uses a helper (isTypeCastComment) to detect JSDoc type casts and preserve the surrounding parentheses. However, isTypeCastComment only tests for /@type\\b/, so it doesn\u2019t pick up other JSDoc tags like @satisfies. As a result, needsParens returns false and Prettier strips the parentheses around the object. To fix this, isTypeCastComment must be extended (or a new predicate added) to detect @satisfies (and similar tags), allowing needsParens to keep the parens intact.",
+        "bug_scenario": "When formatting a JavaScript module export that\u2019s preceded by a JSDoc \u201c@satisfies\u201d comment, Prettier drops the surrounding parentheses around the object literal. E.g. \n\n  module.exports = /** @satisfies {Record<string, string>} */ ({ hello: 1337 });\n\nis rewritten as\n\n  module.exports = /** @satisfies {Record<string, string>} */ { hello: 1337 };\n\nRemoving those parens breaks VS Code\u2019s intellisense for the satisfied type."
+    }
+}

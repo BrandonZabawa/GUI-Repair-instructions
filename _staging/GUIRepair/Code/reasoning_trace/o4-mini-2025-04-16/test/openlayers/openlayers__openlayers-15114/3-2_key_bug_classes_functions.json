@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/webgl/MixedGeometryBatch.js//MixedGeometryBatch"
+        ],
+        "bug_functions": [
+            "src/ol/render/webgl/MixedGeometryBatch.js//addCoordinates_",
+            "src/ol/geom/flat/orient.js//linearRingIsClockwise"
+        ],
+        "explanation": "MixedGeometryBatch.addCoordinates_ is responsible for breaking polygons into outer and inner rings for batching. It looks for clockwise rings (using linearRingIsClockwise) to split the flat coordinate array into separate polygon batches. If ring orientation detection is incorrect, addCoordinates_ will split a single polygon into multiple batches or duplicate entries, causing the fill to be drawn more than once. The linearRingIsClockwise function in orient.js implements the orientation check but may return the wrong boolean for GeoJSON\u2019s coordinate winding (GeoJSON expects the exterior ring to be counter-clockwise). Together these lead to extra batch entries and overlapping fill. Fixing the orientation test or adjusting the splitting logic in addCoordinates_ will prevent repeated fill drawing.",
+        "bug_scenario": "When converting GeoJSON polygons to WebGL vector layers, valid GeoJSON (with properly oriented rings) is rendered with multiple overlapping fills, producing a darker color. Invalid GeoJSON (rings in wrong winding order) does not exhibit that problem. The overlapping fill indicates that polygons are being split or re-drawn multiple times, likely due to mis-detection of ring orientation."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/webgl/MixedGeometryBatch.js//MixedGeometryBatch",
+            "src/ol/geom/flat/orient.js"
+        ],
+        "bug_functions": [
+            "src/ol/render/webgl/MixedGeometryBatch.js//MixedGeometryBatch.addCoordinates_",
+            "src/ol/geom/flat/orient.js//linearRingIsClockwise",
+            "src/ol/render/webgl/utils.js//writePolygonTrianglesToBuffers"
+        ],
+        "explanation": "MixedGeometryBatch.addCoordinates_ (in the Polygon case) walks through each ring and calls linearRingIsClockwise to split the rings whenever it finds a clockwise ring. Because linearRingIsClockwise is using a bottom\u2010left origin test (and OpenLayers defaults to a left\u2010hand rule), the outer and inner rings end up misclassified. addCoordinates_ then emits two separate \u201csub\u2010polygons\u201d instead of one polygon with holes. downstream, writePolygonTrianglesToBuffers simply triangulates each sub\u2010polygon in turn\u2014so what should have been one polygon with a hole becomes two solid fills, causing the fill\u2010color to overlap itself. Fixing or inverting the orientation test in linearRingIsClockwise (or adjusting the split logic in addCoordinates_) restores correct hole handling.",
+        "bug_scenario": "When converting a GeoJSON polygon with a hole to the WebGL vector layer, the hole is not cut out\u2014instead both the outer ring and the inner ring are rendered as filled polygons, so the fill\u2010color overlaps itself (you see multiple layers of the same color). This only happens when the GeoJSON rings follow the \u201ccorrect\u201d orientation (according to geojsonlint); invalidly\u2010oriented rings don\u2019t trigger the bad splitting and draw correctly."
+    }
+}

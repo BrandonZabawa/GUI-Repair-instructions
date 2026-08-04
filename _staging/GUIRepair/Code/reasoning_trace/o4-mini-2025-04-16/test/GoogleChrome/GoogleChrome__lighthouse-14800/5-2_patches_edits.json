@@ -1,0 +1,28 @@
+{
+    "1/1": {
+        "core/lib/tracehouse/trace-processor.js": [
+            {
+                "SEARCH": [
+                    "// \"Modern\" traces with a navigation have a FrameCommittedInBrowser event",
+                    "const mainFramePids = frameCommittedEvts.length",
+                    "? frameCommittedEvts.map(e => e?.args?.data?.processId)",
+                    "// \u2026But old traces and some timespan traces may not. In these situations, we'll assume the",
+                    "// primary process ID remains constant (as there were no navigations).",
+                    ": [mainFrameInfo.startingPid];"
+                ],
+                "REPLACE": [
+                    "  // \"Modern\" traces with a navigation have a FrameCommittedInBrowser event",
+                    "  const mainFramePids = frameCommittedEvts.length",
+                    "    ? frameCommittedEvts.map(e => {",
+                    "        // Use data.processId if present, otherwise fall back to the event's pid",
+                    "        const data = e.args?.data || {};",
+                    "        return typeof data.processId === 'number' ? data.processId : e.pid;",
+                    "      })",
+                    "    // \u2026But old traces and some timespan traces may not. In these situations, we'll assume the",
+                    "    // primary process ID remains constant (as there were no navigations).",
+                    "    : [mainFrameInfo.startingPid];"
+                ]
+            }
+        ]
+    }
+}

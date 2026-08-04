@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/python.js//export default function(hljs)",
+            "src/languages/python.js//NUMBER"
+        ],
+        "explanation": "The core of the problem lives in the NUMBER mode defined in python.js. Its integer variant is wrapped with leading and trailing word\u2013boundary anchors (\\b), so it will not match a digit sequence when it\u2019s immediately followed by a letter. As a result \u201c1if\u201d isn\u2019t tokenized into \u20181\u2019 (NUMBER) and \u2018if\u2019 (keyword). Adjusting that regex\u2014by replacing the trailing \\b with a lookahead that ensures the next character isn\u2019t part of the number, or by otherwise removing the restrictive word\u2013boundary\u2014will let the engine stop number matching before the letters and allow the keyword rule to fire on \u201cif\u201d and \u201celse.\u201d",
+        "bug_scenario": "When Python code contains a numeric literal immediately followed by a keyword (e.g. \u201c1if\u201d, \u201c0else\u201d), the highlighter fails to split the token into a number and a keyword. In the screenshots you can see \u201c1if\u201d and \u201c0else\u201d treated as plain text rather than \u201c1\u201d\u2192number and \u201cif\u201d\u2192keyword. The expected behavior is to highlight \u201c1\u201d as a number, then \u201cif\u201d as a keyword, even with no space between them."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/python.js"
+        ],
+        "bug_functions": [
+            "src/languages/python.js//NUMBER",
+            "src/languages/python.js//KEYWORDS"
+        ],
+        "explanation": "The root of the issue lies in the Python language definition in python.js. The NUMBER constant defines numeric\u2010literal patterns that rely on word-boundary (\\b) anchors. In \u20181if\u2019, the boundary after the digit never matches (because the next character is a word character), so NUMBER fails to terminate cleanly. Meanwhile, the KEYWORDS object\u2019s $pattern (/[A-Za-z]\\w+|__\\w+__/) only matches sequences beginning with a letter, but since highlight.js never splits off the \u201cif\u201d from the preceding digit, the keyword pattern never runs. To fix the bug, the NUMBER and/or KEYWORDS definitions must be adjusted (for example by adding lookahead/lookbehind checks or altering boundary logic) so that numbers and immediately following keywords are tokenized separately even without whitespace.",
+        "bug_scenario": "In Python code like print(1if 0==0else\"b\"), the highlighter fails to split the literal number \u201c1\u201d from the keyword \u201cif\u201d when no space appears. All of \u201c1if\u201d is treated as one token (either number or plain text), and the \u201cif\u201d keyword is never highlighted separately. In contrast, GitHub and the expected output show \u201c1\u201d highlighted as a number and \u201cif\u201d highlighted as a keyword even without an intervening space."
+    }
+}

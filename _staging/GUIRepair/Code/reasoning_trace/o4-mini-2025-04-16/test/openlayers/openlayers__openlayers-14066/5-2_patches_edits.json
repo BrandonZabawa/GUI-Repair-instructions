@@ -1,0 +1,65 @@
+{
+    "1/1": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* @type {'readRasters' | 'readRGB'}",
+                    "*/",
+                    "this.readMethod_ = options.convertToRGB ? 'readRGB' : 'readRasters';"
+                ],
+                "REPLACE": [
+                    "    /**",
+                    "     * @type {boolean|'auto'}",
+                    "     * @private",
+                    "     * The raw convertToRGB option: false | true | 'auto'",
+                    "     */",
+                    "    this.convertToRGB_ = options.convertToRGB;",
+                    "    /**",
+                    "     * @type {'readRasters' | 'readRGB'}",
+                    "     * @private",
+                    "     * A default read method for boolean true/false; will be overridden in 'auto' mode per image.",
+                    "     */",
+                    "    this.readMethod_ = options.convertToRGB === true ? 'readRGB' : 'readRasters';"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "requests[sourceIndex] = image[this.readMethod_]({",
+                    "window: pixelBounds,",
+                    "width: sourceTileSize[0],",
+                    "height: sourceTileSize[1],",
+                    "samples: samples,",
+                    "fillValue: fillValue,",
+                    "pool: pool,",
+                    "interleave: false,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "      // determine read method based on convertToRGB_ ('auto' | boolean)",
+                    "      let method = this.readMethod_;",
+                    "      if (this.convertToRGB_ === 'auto') {",
+                    "        // only switch to readRGB() when the image is 3\u2010sample and has a non\u2010RGB photometric interpretation",
+                    "        const photo = image.fileDirectory.PhotometricInterpretation;",
+                    "        const spp = image.getSamplesPerPixel();",
+                    "        // TIFF codes: 5 = CMYK, 6 = YCbCr, 8 = CIELab, 9 = ICCLab",
+                    "        if (spp === 3 && [5, 6, 8, 9].includes(photo)) {",
+                    "          method = 'readRGB';",
+                    "        } else {",
+                    "          method = 'readRasters';",
+                    "        }",
+                    "      }",
+                    "      requests[sourceIndex] = image[method]({",
+                    "        window: pixelBounds,",
+                    "        width: sourceTileSize[0],",
+                    "        height: sourceTileSize[1],",
+                    "        samples: samples,",
+                    "        fillValue: fillValue,",
+                    "        pool: pool,",
+                    "        interleave: false,",
+                    "      });"
+                ]
+            }
+        ]
+    }
+}

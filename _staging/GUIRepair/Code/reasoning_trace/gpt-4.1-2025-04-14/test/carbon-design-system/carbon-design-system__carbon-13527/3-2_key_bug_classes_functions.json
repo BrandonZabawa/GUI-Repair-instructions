@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/SideNav.js//SideNav",
+            "packages/react/src/components/UIShell/SideNavMenu.js//SideNavMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/SideNav.js//handleToggle",
+            "packages/react/src/components/UIShell/SideNavMenu.js//SideNavMenu"
+        ],
+        "explanation": "The core of the issue is the interaction between the SideNav expansion state and the dropdown menu state. The SideNav component (SideNav class in SideNav.js) manages the expanded/collapsed state and triggers state changes on mouse enter/leave. The handleToggle function in SideNav.js controls when the SideNav should expand or collapse, including via hover. SideNavMenu (in SideNavMenu.js) manages the open/closed state of its dropdown menu, and tries to sync with the SideNav's expansion via the isSideNavExpanded prop. However, the dropdown state is only updated if isSideNavExpanded changes, and may not properly close when the SideNav retracts on mouse leave. The logic in both SideNav and SideNavMenu must coordinate so that when the SideNav rail retracts (collapses), any open dropdowns also close; this will likely require updating how the SideNav passes its expansion state and how SideNavMenu reacts to those changes.",
+        "bug_scenario": "The bug scenario is that when using the SideNav Rail component in the Carbon UI Shell, if a user hovers over the SideNav and opens a dropdown menu, moving the mouse away causes the SideNav to retract, but the dropdown menu remains open. This results in a visually inconsistent and confusing state where the dropdown floats detached from the collapsed sidebar."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/SideNav.js//SideNav",
+            "packages/react/src/components/UIShell/SideNavMenu.js//SideNavMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/UIShell/SideNav.js//handleToggle",
+            "packages/react/src/components/UIShell/SideNavMenu.js//SideNavMenu"
+        ],
+        "explanation": "The bug is related to the interaction between the expanded state of the SideNav and the open state of dropdown menus within SideNavMenu. \n\n- 'SideNav' in 'SideNav.js' manages the expansion and collapse (via hover or click) of the sidenav rail. Its 'handleToggle' function and mouse/focus event handlers control when the sidenav expands or retracts. If the sidenav retracts but does not communicate this state change to its children (like dropdowns), those child menus may remain open.\n- 'SideNavMenu' in 'SideNavMenu.js' controls the dropdown menu's expanded/collapsed state via 'isExpanded' and the 'isSideNavExpanded' prop. The component tries to sync its open state with its parent's expansion, but if the parent retracts unexpectedly, the menu may not close if the state sync logic is incomplete or not triggered.\n\nFixing this bug will likely require ensuring that when the sidenav retracts (via mouse leave or other triggers in SideNav), all open dropdowns (SideNavMenu) are also closed by updating their state accordingly.",
+        "bug_scenario": "The bug occurs when using the SideNav Rail component from Carbon Design System. When a user hovers over the sidenav and opens a dropdown menu, if the mouse is moved away causing the sidenav to retract, the dropdown menu remains open instead of closing. This creates a visually inconsistent and potentially confusing experience, as the dropdown appears to 'float' without its parent sidenav being visible."
+    }
+}

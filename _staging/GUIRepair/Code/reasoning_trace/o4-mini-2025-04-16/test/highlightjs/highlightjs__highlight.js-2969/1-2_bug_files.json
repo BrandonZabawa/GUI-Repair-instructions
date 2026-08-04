@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/ruby.js"
+        ],
+        "explanation": "The file src/languages/ruby.js is responsible for defining Ruby\u2019s tokenization rules, including the syntax for character literals (the \u201c?\u201d notation). The regular expressions in this file currently only cover the simplest cases (printable ASCII letters, basic escapes) and do not include patterns for slash, escaped backslash, non-ASCII, Unicode codepoint braces, or control/meta sequences. To fix the bug, you must update the literal/regex definitions in ruby.js so that these additional forms are recognized and highlighted as character literals rather than mistaken for regex or invalid syntax.",
+        "bug_scenario": "When using Ruby\u2019s single\u2010character literal syntax (the \u201c?\u201d prefix), only the simplest cases (like \u201c?a\u201d) are highlighted correctly. More complex forms \u2013 including \u201c?/\u201d (the slash itself), escaped backslashes (\u201c?\\\\\u201d), non-ASCII characters (\u201c?\u3042\u201d), Unicode codepoint notation (\u201c?\\u{1AF9}\u201d), and control/meta combinations (\u201c?\\C-a\u201d, \u201c?\\M-a\u201d, etc.) \u2013 currently either break highlighting or are treated as the start of a regex rather than a character literal. In the screenshots the valid literals parse as strings, but \u201c?/\u201d becomes a regex token and the other forms aren\u2019t recognized at all. The expected behavior is that all of these \u201c?\u201d\u2010prefixed character literals are highlighted consistently as string literals."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/ruby.js"
+        ],
+        "explanation": "All of Ruby\u2019s syntax rules live in ruby.js under src/languages.  That file defines the regexes and modes for string, regex and character literal parsing.  Its current character-literal pattern only handles the simplest form (`?.`), so sequences like `?/`, escaped backslashes, Unicode escapes and control/meta prefixes fall through (and in the case of `?/`, get mistaken for a regex).  To fix the bug, ruby.js must be updated with expanded rules covering these unsupported ?x notations.",
+        "bug_scenario": "When highlighting Ruby source code, the built-in grammar misparses many of Ruby\u2019s \u201c?x\u201d character literal forms.  Simple cases like `?a` work, but `?/` is treated as the start of a regex, escapes like `?\\\\` and unicode forms like `?\\u{1234}`, non-ASCII (`?\u3042`), control/meta (`?\\C-a`, `?\\M-\\C-x`) and other variants aren\u2019t recognized, leading to incorrect tokenization and broken highlighting (see screenshots above)."
+    }
+}

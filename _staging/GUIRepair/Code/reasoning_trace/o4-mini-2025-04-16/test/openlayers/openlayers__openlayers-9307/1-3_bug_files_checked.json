@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/LabelCache.js"
+        ],
+        "explanation": "The extra vertical gap comes from the default line\u2010spacing logic in the canvas text builder and the lack of any configurable line\u2010height option in the Text style.\n\n\u2022 src/ol/style/Text.js defines the Text style API but does not expose any property to adjust the spacing between lines.\n\u2022 src/ol/render/canvas/TextBuilder.js is responsible for splitting the label on \u201c\\n\u201d and laying out each line at a fixed offset (a hard-coded line height multiplier).\n\u2022 src/ol/render/canvas/LabelCache.js measures and caches the rendered text dimensions using that same spacing logic.\n\nTo remove or customize the gap, you\u2019d need to introduce a lineHeight/lineSpacing option in Text.js, propagate it into TextBuilder.js, and adjust how LabelCache.js computes the per-line offsets when building the label image.",
+        "bug_scenario": "When rendering a multiline label (e.g. text: \"3.5\\nbar\"), OpenLayers v4.6.4 (and lower) inserts an undesired gap between the two lines of text that was not present in earlier releases (v2.13). The user wants no blank space by default between lines, but the library\u2019s canvas text builder applies a fixed line spacing, causing that extra gap."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/LabelCache.js",
+            "src/ol/render/canvas/TextBuilder.js"
+        ],
+        "explanation": "\u2022 src/ol/style/Text.js defines the Text style API (font, text, lineSpacing, etc.) but does not expose or apply any user-configurable line-height or leading. \u2022 src/ol/render/canvas/LabelCache.js measures the font\u2019s ascent/descent via canvas metrics and builds an offscreen image for each text line. It computes a full bounding-box height for each line, which is then carried over to every multiline label. \u2022 src/ol/render/canvas/TextBuilder.js uses that label cache and always offsets each new line by the full measured bounding-box height (plus any zero default lineSpacing). That logic creates the oversized gap. Fixing the bug requires adjusting how LabelCache measures line height (for example, using actual em height instead of full bounding-box) or applying a smaller default lineSpacing in TextBuilder when rendering multiple lines.",
+        "bug_scenario": "When you set a Text style with a newline (e.g. text: '3.5\\nbar') in OL v4.6.4 (and any 4.x), the two lines are rendered with a large built-in gap between them. In OL v2.13 the same two-line label is drawn snugly (no extra leading). The screenshot shows that under v4.6.4 each successive line is offset by the full font bounding-box height (as measured by the offscreen label cache), whereas under v2.13 the lines are drawn directly one after the other."
+    }
+}

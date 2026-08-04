@@ -1,0 +1,50 @@
+{
+    "1/1": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const { printComment } = require(\"./comment.js\"); // make sure we can print a single comment",
+                    "",
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "",
+                    "  // Special\u2010case default: with trailing line comments",
+                    "  if (node.type === \"SwitchCase\" && !node.test && node.comments) {",
+                    "    // Extract only the trailing line comments",
+                    "    const trailingLineComments = node.comments.filter(",
+                    "      (c) => c.type === \"Line\" && c.trailing === true",
+                    "    );",
+                    "",
+                    "    if (trailingLineComments.length) {",
+                    "      // Remove them so they won't get printed as dangling below",
+                    "      node.comments = node.comments.filter(",
+                    "        (c) => !(c.type === \"Line\" && c.trailing === true)",
+                    "      );",
+                    "",
+                    "      // Inline them on the same line as `default:`",
+                    "      // We will join them with a single space and then print the consequent.",
+                    "      return [",
+                    "        concat(",
+                    "          trailingLineComments.map((comment) =>",
+                    "            concat([\" \", printComment(path.comment(comment), options)])",
+                    "          )",
+                    "        ),",
+                    "        // Now fall back to printing the consequent block normally",
+                    "        printStatementSequence(path, options, print, \"consequent\"),",
+                    "      ];",
+                    "    }",
+                    "  }",
+                    "",
+                    "  // Fallback for all other cases",
+                    "  return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

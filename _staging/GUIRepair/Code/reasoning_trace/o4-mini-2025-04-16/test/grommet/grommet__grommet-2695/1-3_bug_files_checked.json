@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Meter/StyledMeter.js",
+            "src/js/components/Meter/Circle.js",
+            "src/js/components/Meter/Meter.js"
+        ],
+        "explanation": "\u2022 StyledMeter.js: this file injects the CSS transition on all path properties (transition: all 300ms), causing Chrome to animate the path\u2019s geometry (the d attribute) rather than just the stroke offset. \n\u2022 Circle.js: this component builds and renders the actual <path> for a circle meter, setting new d, strokeDasharray, and strokeDashoffset whenever the value changes. Because transition: all is in effect, changes to d are animated (morphing) instead of just the stroke offset.  \n\u2022 Meter.js: this is the top\u2010level logic that chooses between bar and circle types, passes the transition timing into StyledMeter, and triggers the re\u2010render. It must be updated or given finer\u2010grained props so that only the stroke\u2010dashoffset is animated, not the entire path shape.",
+        "bug_scenario": "When you render a Meter of type \u201ccircle\u201d in Chrome and update its value, the SVG <path> that draws the arc is styled with a blanket \u201ctransition: all 300ms\u201d rule. Chrome will animate every attribute change on the path (including its d attribute) over 300 ms, producing a visibly warped, \u201cmorphing\u201d effect. In Firefox and Safari the d attribute isn\u2019t transitioned so the arc simply jumps to its new geometry and you don\u2019t see the glitch. What you want instead is a smooth radial animation of the stroke around the circle, not a shape\u2010morph transition of the path data."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/Meter/StyledMeter.js",
+            "src/js/components/Meter/Circle.js",
+            "src/js/components/Meter/utils.js",
+            "src/js/components/Meter/Meter.js"
+        ],
+        "explanation": "\u2022 StyledMeter.js: This file applies \u201ctransition: all 300ms \u2026\u201d to every <path> in the Meter\u2019s SVG, causing Chrome to interpolate the entire path definition (the 'd' attribute) rather than just the stroke length. Removing or narrowing that transition here is the primary fix.  \n\u2022 Circle.js: This is where the circular arc <path> is created and its stroke-dasharray is set. It inherits the transition from StyledMeter.js, so it\u2019s directly affected by the over-broad CSS rule. You may need to override style here or adjust which properties get transitioned.  \n\u2022 utils.js: Contains the functions that compute the SVG arc path string and dash array values used by Circle.js. While not strictly a CSS file, it underpins the path data being animated. If you switch to animating only stroke-dasharray, you should confirm these calculations still produce correct values.  \n\u2022 Meter.js: Chooses between Bar and Circle types and props. Changing how transition timing or style props flow into the Circle type will likely involve updates here\u2014e.g. passing a more specific transition prop or disabling transition by default for circle type.",
+        "bug_scenario": "When you click to change the value on a circular Meter in Chrome, the SVG path is redrawn with a \u201ctransition: all 300ms\u201d on the <path> element, so Chrome interpolates the entire path shape and you see a wild, distorted morphing as it moves from one arc to the next. In Firefox and Safari the <path> \u2019d\u2019 attribute changes aren\u2019t animated, so you see no animation at all. The desired behavior is a smooth, radial arc transition (ideally animating only the stroke-dasharray), not a shape-morphing animation."
+    }
+}

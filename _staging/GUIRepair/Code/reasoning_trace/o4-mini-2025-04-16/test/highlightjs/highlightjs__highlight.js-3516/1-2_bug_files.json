@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/lib/css-shared.js",
+            "src/languages/css.js"
+        ],
+        "explanation": "The core of the CSS highlighting rules lives in css-shared.js, which defines how CSS functions (like url()) are detected and where they end. Its current begin/end regex for matching url(\u2026) does not account for quoted substrings that contain parentheses, so it closes the mode on the first \")\" even if it\u2019s inside quotes. The css.js language file then uses these shared rules when highlighting CSS code. To fix this bug, the url() function mode in css-shared.js must be updated to ignore parentheses that appear inside single or double quotes, and css.js doesn\u2019t need other changes once the shared rule is corrected.",
+        "bug_scenario": "When highlighting CSS code that contains a url() function call wrapping a quoted string which itself contains parentheses\u2014for example:\n\n    url('/path/to/image (01).jpg')\n\nhighlight.js\u2019s CSS grammar treats the closing parenthesis of url() as the end of the function too early, ignoring that it may be inside a quoted string. As a result, the inner string isn\u2019t recognized properly and the syntax coloring breaks out of the string at the first \")\" it sees."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/lib/css-shared.js",
+            "src/languages/css.js"
+        ],
+        "explanation": "The CSS grammar is defined in two places. In css-shared.js you\u2019ll find the URL\u00adfunction and string parsing rules (the regexes and state transitions that decide when a string or a function ends). Those rules currently don\u2019t distinguish a parenthesis that appears inside a quoted string from one that closes the url() call. In css.js those shared rules are brought into the CSS mode. To fix the bug, you must update css-shared.js so that parentheses inside single or double quotes do not terminate the url() context (and indirectly adjust the CSS mode in css.js if necessary to use the corrected shared rules).",
+        "bug_scenario": "When you write CSS variables using the url() function and the file name contains parentheses \u2013 for example url('\u2026/background (01).jpg') \u2013 the built-in CSS highlighter treats the first \")\" inside the quoted string as the end of the url() call. That leaves the closing quote and the remainder of the line unrecognized and mis\u00adhighlighted."
+    }
+}

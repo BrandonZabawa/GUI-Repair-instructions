@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "rules/constructor-super.md",
+            "rules/no-this-before-super.md",
+            "developer-guide/working-with-rules.md",
+            "developer-guide/code-path-analysis.md",
+            "developer-guide/source-code.md",
+            "developer-guide/unit-tests.md"
+        ],
+        "explanation": "1. rules/constructor-super.md \u2013 Documents exactly the logic that checks for valid super() calls; this is where ESLint tracks the superCalled flag that is throwing an undefined-property error.\n2. rules/no-this-before-super.md \u2013 Explains the complementary rule that must coordinate with constructor-super to prevent use of this before super; often these two rules share internal state and initialization logic.\n3. developer-guide/working-with-rules.md \u2013 Gives an overview of how visitor patterns and rule contexts operate, useful for understanding why the rule context might be undefined.\n4. developer-guide/code-path-analysis.md \u2013 Details how ESLint traverses the AST and maintains state across function and class constructors; essential for reproducing the break in state tracking.\n5. developer-guide/source-code.md \u2013 Provides a map of the project\u2019s code layout so you can locate the implementation files (lib/rules/constructor-super.js, etc.) and understand the broader architecture.\n6. developer-guide/unit-tests.md \u2013 Shows how rule tests are written and run; useful for creating a minimal test case that reproduces the superCalled error in CI or locally.",
+        "bug_scenario": "In the screenshot we see VS Code with the ESLint extension reporting a runtime exception inside ESLint (\u2018Cannot read property \u201csuperCalled\u201d of undefined\u2019) with a red error banner at the top. In the editor window there\u2019s a simple ES2015 class definition (class Extender, class BugProof extends Extender), a constructor that calls super(props), and a try/catch around an empty for\u2026of loop. As soon as the user types an extra blank line at the end (line 21), ESLint crashes, reporting a parsing error at that last line while internally trying to read \u201csuperCalled\u201d on an undefined object. The bug involves the constructor-super rule (and internally its tracking of whether super() has been called), the parsing logic, and the way ESLint\u2019s rule engine tracks state for each constructor node."
+    }
+}

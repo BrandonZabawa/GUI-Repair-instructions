@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Group.js//LayerGroup",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Group.js//LayerGroup.getLayerStatesArray",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.renderFeature"
+        ],
+        "explanation": "The LayerGroup class in src/ol/layer/Group.js manages the opacity for groups of layers via its getLayerStatesArray method, which multiplies child layer opacities by the group opacity. This method is key to propagating group opacity to all descendant layers. The CanvasVectorTileLayerRenderer class in src/ol/renderer/canvas/VectorTileLayer.js is responsible for rendering vector tile layers, including their labels. Its renderFeature method handles how individual features (such as labels) are painted, potentially not respecting the composed opacity from the group. The bug likely arises due to a disconnect between how group opacity is composed and how it is applied when rendering vector tile labels. Therefore, these classes and methods are central to diagnosing and fixing the bug.",
+        "bug_scenario": "The bug scenario involves a layer group in a mapping application using vector tile layers. When the opacity of the group is changed with setOpacity(), the expected behavior is for all child layers (including vector tile labels) to fade accordingly. However, the labels from vector tile layers do not respect the group opacity setting, while other child layers and non-label vector tile features (like fill-color) do. This results in label overlays that remain fully opaque regardless of group opacity, causing visual inconsistency."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/Group.js//LayerGroup",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Group.js//LayerGroup.getLayerStatesArray",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.renderFeature"
+        ],
+        "explanation": "The LayerGroup class (src/ol/layer/Group.js) is responsible for managing layer groups and handling group properties like opacity. Its getLayerStatesArray method is central to propagating group opacity to child layer states. If vector tile layer label rendering does not respect group opacity, this method is likely involved in how opacity is aggregated or passed down. The CanvasVectorTileLayerRenderer class (src/ol/renderer/canvas/VectorTileLayer.js) handles rendering for vector tile layers, including text (label) features. Its renderFeature method is specifically responsible for rendering individual features, including applying styles such as opacity. If label opacity is not affected by group opacity, this function is likely failing to use the correct opacity value (i.e., not combining the group opacity with the layer/style opacity). The bug is therefore rooted in the connection between group opacity propagation (getLayerStatesArray in LayerGroup) and label rendering (renderFeature in CanvasVectorTileLayerRenderer).",
+        "bug_scenario": "When the opacity of a layer group is modified via setOpacity(), label features (typically rendered as text) on vector tile layers within that group do not have their opacity affected. This is in contrast to other styles (such as fill-color) and to vector layers (non-tiled), both of which respect group opacity. The expected outcome is that changing the group opacity should fade all child layers, including vector tile labels, but currently vector tile labels remain fully opaque regardless of group opacity."
+    }
+}

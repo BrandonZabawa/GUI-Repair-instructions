@@ -1,0 +1,46 @@
+diff --git a/src/ol/layer/WebGLTile.js b/src/ol/layer/WebGLTile.js
+index 752f4ffab4..bca545aa7b 100644
+--- a/src/ol/layer/WebGLTile.js
++++ b/src/ol/layer/WebGLTile.js
+@@ -297,6 +297,18 @@ class WebGLTileLayer extends BaseTileLayer {
+ 
+     super(options);
+ 
++    // ─────────────────────────────────────────────────────────────────────────────
++    // If no layer extent was provided, default it to the source’s extent so
++    // we never render outside the real image bounds.
++    const renderSrc = this.getRenderSource();
++    if (!options.extent && renderSrc && typeof renderSrc.getExtent === 'function') {
++      const srcExtent = renderSrc.getExtent();
++      if (srcExtent) {
++        this.setExtent(srcExtent);
++      }
++    }
++    // ─────────────────────────────────────────────────────────────────────────────
++
+     /**
+      * @type {Array<SourceType>|function(import("../extent.js").Extent, number):Array<SourceType>}
+      * @private
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index ed48cc2a6b..3b9bff3df7 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -95,9 +95,18 @@ function getRenderExtent(frameState, extent) {
+       fromUserExtent(layerState.extent, frameState.viewState.projection)
+     );
+   }
++  // ─────────────────────────────────────────────────────────────────────────────
++  // Also clip to the actual source extent if the source provides one.
+   const source = /** @type {import("../../source/Tile.js").default} */ (
+     layerState.layer.getRenderSource()
+   );
++  if (source.getExtent && typeof source.getExtent === 'function') {
++    const srcExtent = source.getExtent();
++    if (srcExtent) {
++      extent = getIntersection(extent, srcExtent);
++    }
++  }
++  // ─────────────────────────────────────────────────────────────────────────────
+   if (!source.getWrapX()) {
+     const gridExtent = source
+       .getTileGridForProjection(frameState.viewState.projection)

@@ -1,0 +1,56 @@
+{
+    "1/1": {
+        "lighthouse-core/audits/uses-rel-preconnect.js": [
+            {
+                "SEARCH": [
+                    "const preconnectLinks = artifacts.LinkElements.filter(el => el.rel === 'preconnect');",
+                    "const preconnectOrigins = new Set(preconnectLinks.map(link => URL.getOrigin(link.href || '')));"
+                ],
+                "REPLACE": [
+                    "    const preconnectLinks = artifacts.LinkElements.filter(el => el.rel === 'preconnect');",
+                    "    // Build a set of objects with both origin and crossOrigin for accurate matching",
+                    "    const preconnectOrigins = new Set(",
+                    "      preconnectLinks.map(link => {",
+                    "        const origin = URL.getOrigin(link.href || '');",
+                    "        // Normalize crossOrigin: treat undefined/null/empty as 'none'",
+                    "        const crossOrigin = (link.crossOrigin || '').toLowerCase() || 'none';",
+                    "        return `${origin}|${crossOrigin}`;",
+                    "      })",
+                    "    );"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (preconnectOrigins.has(securityOrigin)) {",
+                    "// Add a warning for any origin the user tried to preconnect to but failed",
+                    "warnings.push(str_(UIStrings.crossoriginWarning, {securityOrigin}));",
+                    "return;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "      // Determine if this origin is cross-origin relative to the main resource",
+                    "      const isCrossOrigin = mainResource.parsedURL.securityOrigin !== securityOrigin;",
+                    "      // For cross-origin, require 'anonymous' or 'use-credentials' as crossOrigin attribute",
+                    "      const expectedCrossOrigin = isCrossOrigin ? 'anonymous' : 'none';",
+                    "",
+                    "      if (",
+                    "        preconnectOrigins.has(`${securityOrigin}|${expectedCrossOrigin}`) ||",
+                    "        // Also allow 'use-credentials' for cross-origin",
+                    "        (isCrossOrigin && preconnectOrigins.has(`${securityOrigin}|use-credentials`))",
+                    "      ) {",
+                    "        // Preconnect is present and has correct crossOrigin attribute",
+                    "        return;",
+                    "      }",
+                    "",
+                    "      // If preconnect is present but with wrong crossOrigin, warn",
+                    "      if (",
+                    "        preconnectLinks.some(link => URL.getOrigin(link.href || '') === securityOrigin)",
+                    "      ) {",
+                    "        warnings.push(str_(UIStrings.crossoriginWarning, {securityOrigin}));",
+                    "        return;",
+                    "      }"
+                ]
+            }
+        ]
+    }
+}

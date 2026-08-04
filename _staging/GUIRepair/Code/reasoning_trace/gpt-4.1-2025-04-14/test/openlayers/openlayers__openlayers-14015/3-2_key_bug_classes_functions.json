@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//setStyle",
+            "src/ol/layer/WebGLTile.js//handleSourceUpdate_",
+            "src/ol/layer/WebGLTile.js//getSources",
+            "src/ol/renderer/webgl/TileLayer.js//reset",
+            "src/ol/renderer/webgl/TileLayer.js//renderFrame"
+        ],
+        "explanation": "The core of this bug is cache invalidation and management when the source or projection changes. The class `WebGLTileLayer` is responsible for managing the tile layer, including its source, and has private methods like `handleSourceUpdate_` (which likely handles source change events) and possibly triggers re-render or cache clearing. The `setStyle` method can also be relevant if style changes are related to cache re-use. The `getSources` method is involved in determining which sources to use and may interact with cache logic. \n\nOn the rendering side, `WebGLTileLayerRenderer` manages the actual tile texture cache and rendering. The `reset` method is typically used to clear or re-initialize renderer state, including the cache, when options (such as source or projection) change. The `renderFrame` method is directly involved in rendering and may need to be aware of cache invalidation when sources or projections change. Ensuring these methods properly clear or reset the cache when relevant changes occur is key to resolving the bug.",
+        "bug_scenario": "The bug scenario is that when a WebGL tile layer's data source is changed using `setSource()` or the view's projection is changed, the internal WebGL texture cache is not properly invalidated or cleared. As a result, when the user pans or zooms, old tiles/textures from the previous source or projection are incorrectly reused, leading to visual artifacts where tiles appear from an outdated source or projection. The expected behavior is for the texture cache to be cleared so that only current, valid tiles are rendered."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/WebGLTile.js//WebGLTileLayer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/WebGLTile.js//setSource",
+            "src/ol/layer/WebGLTile.js//handleSourceUpdate_"
+        ],
+        "explanation": "The problem centers on the invalidation and clearing of cached WebGL tile textures when the source or projection changes. The WebGLTileLayer class (src/ol/layer/WebGLTile.js) is responsible for managing tile sources and layer settings, including the setSource() method, which changes the tile source. The handleSourceUpdate_ method is likely involved in handling updates to the source, such as responding to changes or clearing caches. The WebGLTileLayerRenderer class (src/ol/renderer/webgl/TileLayer.js) maintains its own cache of tile textures and renders the tiles. If the cache is not properly cleared when the source or projection changes, stale tiles appear. Therefore, changes are required in WebGLTileLayer (especially setSource, handleSourceUpdate_) to ensure the renderer's cache is cleared or reset, and potentially in WebGLTileLayerRenderer to provide or trigger this cache invalidation. These classes/functions are directly related to the bug because they are responsible for managing and rendering tile sources and their associated textures, which is where the cache invalidation must occur.",
+        "bug_scenario": "When the tile source is replaced using setSource(), or when the view's projection is changed, the cached WebGL tile textures are not invalidated or cleared. This leads to situations where tiles from the previous source or projection are incorrectly displayed after panning or zooming. For example, after switching to a new source or projection, panning back or zooming out reveals tiles from the old source/projection, rather than reloading the correct ones. The expected behavior is that the cache should be cleared immediately after such changes, so only valid tiles are displayed."
+    }
+}

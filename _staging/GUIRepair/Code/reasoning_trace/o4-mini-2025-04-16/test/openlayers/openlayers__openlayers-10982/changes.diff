@@ -1,0 +1,31 @@
+diff --git a/src/ol/renderer/canvas/VectorTileLayer.js b/src/ol/renderer/canvas/VectorTileLayer.js
+index 5661c321e2..88d8d3f1c6 100644
+--- a/src/ol/renderer/canvas/VectorTileLayer.js
++++ b/src/ol/renderer/canvas/VectorTileLayer.js
+@@ -573,6 +573,17 @@ class CanvasVectorTileLayerRenderer extends CanvasTileLayerRenderer {
+     const layer = /** @type {import("../../layer/VectorTile.js").default} */ (this.getLayer());
+     const renderMode = layer.getRenderMode();
+     if (renderMode === VectorTileRenderType.IMAGE) {
++      // Prevent clipped gaps when browser is zoomed by rounding subpixel translations
++      const ts = this.container.style.transform;
++      if (ts) {
++        const m = ts.match(/matrix\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^\)]+)\)/);
++        if (m) {
++          const e = Math.round(parseFloat(m[5]));
++          const f = Math.round(parseFloat(m[6]));
++          this.container.style.transform =
++            `matrix(${m[1]},${m[2]},${m[3]},${m[4]},${e},${f})`;
++        }
++      }
+       return this.container;
+     }
+ 
+@@ -792,6 +803,8 @@ class CanvasVectorTileLayerRenderer extends CanvasTileLayerRenderer {
+       (frameState.pixelRatio / tile.wantedResolution) * tileResolution;
+     const resolution = tileGrid.getResolution(z);
+     const context = tile.getContext(layer);
++    // Turn off smoothing to avoid anti-aliased seams between adjacent canvases
++    context.imageSmoothingEnabled = false;
+ 
+     // Increase tile size when overzooming for low pixel ratio, to avoid blurry tiles
+     pixelRatio = Math.max(pixelRatio, renderPixelRatio / pixelRatio);

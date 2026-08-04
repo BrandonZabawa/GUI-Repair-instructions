@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/publish/confluence/confluence.ts",
+            "src/publish/confluence/confluence-helper.ts",
+            "src/publish/confluence/api/index.ts",
+            "src/format/html/format-html.ts",
+            "src/command/render/pandoc-html.ts"
+        ],
+        "explanation": "These files are suspicious for the following reasons:\n\n- src/publish/confluence/confluence.ts and src/publish/confluence/confluence-helper.ts: These likely orchestrate the conversion and publishing logic from Quarto rendered output to Confluence, including how links are serialized and transformed for Confluence's document model.\n- src/publish/confluence/api/index.ts: Interfaces with Confluence's API, which may affect what transformations or formatting rules are applied to content (including links).\n- src/format/html/format-html.ts: In charge of normal HTML output, potentially reused or adapted for Confluence-specific output. If Markdown is correctly converted to HTML locally but fails on Confluence, format logic in this or a related file might be bypassed, limited, or not reused by the Confluence exporter.\n- src/render/pandoc-html.ts: Coordinates the conversion from Pandoc AST to HTML; if links are lost or not correctly serialized, issues may start here or with its configuration, especially if Confluence uses a custom rendering pipeline that deviates from the local preview's HTML rendering steps.\n\nIn summary, these files are central to how documents are exported or rendered for Confluence, and would be the main suspects for missing or incorrect processing of Markdown links during publishing.",
+        "bug_scenario": "The bug occurs when Quarto documents containing Markdown links (e.g., [January](2022-01.qmd)) render correctly in local previews but lose those links entirely when published to Confluence. The first image depicts the broken scenario on Confluence, where the links to 'January' and 'March' are not clickable or visible as links\u2014just plain text. The second image displays the correct scenario, where the links are rendered as clickable and styled links. This discrepancy suggests that during the export or publishing pipeline to Confluence, Markdown links are not being transformed into Confluence-compatible links or not rendered at all."
+    },
+    "2": {
+        "bug_files": [
+            "src/publish/confluence/confluence.ts",
+            "src/publish/confluence/confluence-helper.ts",
+            "src/publish/confluence/confluence-logger.ts",
+            "src/publish/confluence/confluence-verify.ts",
+            "src/publish/confluence/api/index.ts",
+            "src/publish/confluence/api/types.ts"
+        ],
+        "explanation": "The bug is related to how documents are published from Quarto to Confluence. The malfunction is in the Confluence-specific publishing pipeline \u2013 specifically, converting Markdown (or its intermediate representation) to Confluence's format. The files in src/publish/confluence/ handle all of this logic: confluence.ts is likely the main publisher, confluence-helper.ts may assist in formatting or transformation tasks, confluence-logger.ts records publishing events (potentially useful for debugging the export), and confluence-verify.ts might verify the result. The api/index.ts and api/types.ts contain definitions for communicating with the Confluence API and could be involved if the issue is with API payload formatting. One or more of these files likely contain or call the logic that should transform [text](link.qmd) into the correct Confluence markup, but is failing to do so. No files outside of the confluence publisher sub-tree are likely involved unless the bug is broader (e.g., markdown serialization), but the report and images strongly focus on the Confluence workflow.",
+        "bug_scenario": "The bug report describes an issue where links in an index.qmd file render and work properly in a local preview, but are missing (not turned into links) in the Confluence output. The first screenshot of the Confluence output shows bullet points 'January' and 'March' without links, while the second image (expected/local preview) shows those items as clickable links. This suggests that during the process of publishing to Confluence, link resolution or Markdown-to-Confluence translation is not correctly converting Markdown links."
+    }
+}

@@ -1,0 +1,20 @@
+diff --git a/src/ol/renderer/canvas/VectorTileLayer.js b/src/ol/renderer/canvas/VectorTileLayer.js
+index b6071332a3..d22c6f92b5 100644
+--- a/src/ol/renderer/canvas/VectorTileLayer.js
++++ b/src/ol/renderer/canvas/VectorTileLayer.js
+@@ -553,7 +553,14 @@ class CanvasVectorTileLayerRenderer extends CanvasTileLayerRenderer {
+   renderDeclutter(frameState) {
+     const context = this.context;
+     const alpha = context.globalAlpha;
+-    context.globalAlpha = this.getLayer().getOpacity();
++    // Use effective opacity from layer state (includes group opacity)
++    const layer = this.getLayer();
++    const layerUid = getUid(layer);
++    const layerState = frameState.layerStatesArray.find(
++      (state) => state.layer && getUid(state.layer) === layerUid
++    );
++    const effectiveOpacity = layerState ? layerState.opacity : layer.getOpacity();
++    context.globalAlpha = effectiveOpacity;
+     const viewHints = frameState.viewHints;
+     const hifi = !(
+       viewHints[ViewHint.ANIMATING] || viewHints[ViewHint.INTERACTING]

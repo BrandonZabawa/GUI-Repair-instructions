@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/clean.js",
+            "src/language-js/print/jsx.js"
+        ],
+        "explanation": "The root cause lives in the JavaScript language plugin\u2019s handling of JSX text nodes. In clean.js, Prettier normalizes and trims raw JSX text but only recognizes ASCII whitespace when collapsing and trimming. An IDEOGRAPHIC SPACE doesn\u2019t match those patterns, so the AST for the text nodes can flip between two states. Then in print/jsx.js, the JSX printer groups and splits children based on those text nodes. Because clean.js produced alternating text shapes, print/jsx.js alternates its decision on whether to emit a line break before or after the space. Fixing clean.js to treat U+3000 as whitespace (or preserving it consistently) and adjusting print/jsx.js to handle it deterministically will stabilize the formatting.",
+        "bug_scenario": "When formatting a JSX file that contains a full-width ideographic space (U+3000) between two child nodes (for example `<span />\u3000{...}\u3000<span />`), Prettier 1.19.1 will alternate its output on each run. One run will pull the IDEOGRAPHIC SPACE down onto its own indented line, the next run will collapse it back onto the JSX line. The attached GIF shows this flipping behavior \u2014 the formatter never settles in a stable position for that space.\n"
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/clean.js",
+            "src/language-js/print/jsx.js"
+        ],
+        "explanation": "The unstable behavior stems from how Prettier\u2019s JavaScript printer cleans and then renders pure-whitespace JSX text nodes. \n\n\u2022 src/language-js/clean.js is responsible for collapsing and trimming JSXText nodes \u2013 it currently treats the IDEOGRAPHIC SPACE (\\u3000) as ordinary whitespace, so depending on the order of trimming and splitting it will sometimes remove or preserve an extra indent offset.  \n\n\u2022 src/language-js/print/jsx.js handles the actual printing of those cleaned text nodes (as literal strings or breakable pieces). Because the cleaned value can alternate between \"\" and a single space (or vice versa) around the expression container, the final doc tree changes and the printer emits different indent levels on successive runs.  \n\nAdjusting clean.js to recognize \\u3000 as non-trimmable (or normalizing it explicitly) and updating print/jsx.js to render it consistently will stabilize the JSX formatting around this character.",
+        "bug_scenario": "When you format a JSX fragment that contains the IDEOGRAPHIC SPACE character (\\u3000) between elements, Prettier 1.19.1 will alternate the indentation of that space on each run. In the example, a single IDEOGRAPHIC SPACE between <span /> and {this.props.data.title} ends up shifted left or right unpredictably on successive calls to prettier.format(...)."
+    }
+}

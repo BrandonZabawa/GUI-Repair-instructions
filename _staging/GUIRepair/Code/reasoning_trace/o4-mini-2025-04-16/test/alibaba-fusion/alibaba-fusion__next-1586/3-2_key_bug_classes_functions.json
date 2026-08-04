@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/tree/view/tree.jsx//Tree",
+            "src/tree/view/tree-node.jsx//TreeNode"
+        ],
+        "bug_functions": [
+            "src/tree/view/tree.jsx//handleSelect",
+            "src/tree/view/tree.jsx//getSelectedKeys",
+            "src/tree/view/tree-node.jsx//handleSelect"
+        ],
+        "explanation": "The core of the toggle bug lives in the Tree component\u2019s selection logic. Tree.handleSelect is responsible for receiving click events and computing the new selectedKeys list, but it never flips the flag back to true on repeated clicks. Internally getSelectedKeys (in tree.jsx) derives the next selectedKeys array but isn\u2019t correctly recognizing that a click on an already-unselected node should re-select it. Meanwhile TreeNode.handleSelect (in tree-node.jsx) is how clicks bubble up into Tree.handleSelect, so if it passes the wrong \u2018select\u2019 boolean from its own props/state, the Tree will never see a true select once it\u2019s been set to false. Fixing handleSelect/getSelectedKeys in Tree (and ensuring TreeNode.handleSelect passes the correct select flag) will restore true/false toggling and correct CSS updates.",
+        "bug_scenario": "The user is using the controlled Tree component with a single selectedKeys array and a custom onSelect handler (onCategoryTreeNodeSelect). In the browser console (first screenshot), clicking a node for the first time fires onSelect with extra.selected=true and selectedKeys=[\"78\"], then the user\u2019s handler sets state.selectedCategoryId correctly. Clicking the same node a second time fires onSelect with extra.selected=false and selectedKeys=[ ] (state.selectedCategoryId resets to undefined). However, subsequent clicks on that same node STILL arrive as extra.selected=false, selectedKeys remains empty, and the node\u2019s selected CSS never toggles back on. In the component configuration editor (second screenshot) the Tree\u2019s OnSelect action is bound to the user\u2019s handler. In the user code snippet (third screenshot) onCategoryTreeNodeSelect sets state based solely on extra.selected but immediately logs this.state (showing stale state). Overall, Tree never re-emits extra.selected=true after the first unselect, so the selection cannot toggle back on."
+    },
+    "2": {
+        "bug_classes": [
+            "src/tree/view/tree.jsx//Tree",
+            "src/tree/view/tree-node.jsx//TreeNode"
+        ],
+        "bug_functions": [
+            "src/tree/view/tree.jsx//handleSelect",
+            "src/tree/view/tree.jsx//getSelectedKeys",
+            "src/tree/view/tree-node.jsx//handleSelect"
+        ],
+        "explanation": "The toggle logic lives in Tree.handleSelect (in tree.jsx), which receives the boolean select flag and key, and in Tree.getSelectedKeys which computes the next selectedKeys array. In a controlled scenario (using selectedKeys from props) handleSelect always passes select=false after the first deselect because getSelectedKeys or componentWillReceiveProps does not recalculate a new selection correctly. On the node side, TreeNode.handleSelect fires the onSelect callback and passes the select parameter down. Together these methods drive both the extra.selected flag and the highlight CSS. Fixing the toggle behavior requires adjusting Tree.handleSelect/getSelectedKeys to invert selection properly on each click, and ensuring TreeNode.handleSelect passes the correct boolean each time.",
+        "bug_scenario": "In the demo app the user clicks a tree node to select and deselect it. On first click the console extra.selected comes back true and the node highlights. On the second click extra.selected flips to false but after that every click reports extra.selected:false and the node style never toggles back on. The expected behavior is that each click on the same node should alternate extra.selected between true and false and update its CSS highlight accordingly."
+    }
+}

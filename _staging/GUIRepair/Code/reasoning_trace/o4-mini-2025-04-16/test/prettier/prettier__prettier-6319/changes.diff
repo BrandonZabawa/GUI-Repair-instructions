@@ -1,0 +1,49 @@
+diff --git a/src/language-js/parser-babel.js b/src/language-js/parser-babel.js
+index 0ef8ffb5b..254c65e9d 100644
+--- a/src/language-js/parser-babel.js
++++ b/src/language-js/parser-babel.js
+@@ -5,7 +5,7 @@ const { hasPragma } = require("./pragma");
+ const locFns = require("./loc");
+ const postprocess = require("./postprocess");
+ 
+-function babelOptions(extraPlugins = []) {
++function babelOptions(extraPlugins = [], pipelineProposal = "minimal") {
+   return {
+     sourceType: "module",
+     allowAwaitOutsideFunction: true,
+@@ -30,7 +30,7 @@ function babelOptions(extraPlugins = []) {
+       "optionalCatchBinding",
+       "optionalChaining",
+       "classPrivateProperties",
+-      ["pipelineOperator", { proposal: "minimal" }],
++      ["pipelineOperator", { proposal: pipelineProposal }],
+       "nullishCoalescingOperator",
+       "bigInt",
+       "throwExpressions",
+@@ -46,20 +46,23 @@ function babelOptions(extraPlugins = []) {
+ 
+ function createParse(parseMethod, ...pluginCombinations) {
+   return (text, parsers, opts) => {
+-    // Inline the require to avoid loading all the JS if we don't use it
++    // Inline the require to avoid loading all the JS if we don\'t use it
+     const babel = require("@babel/parser");
+ 
+     let ast;
+     try {
++      const proposal = opts.pipelineProposal || "minimal";
+       ast = tryCombinations(
+         (options) => babel[parseMethod](text, options),
+-        pluginCombinations.map(babelOptions)
++        pluginCombinations.map((plugins) =>
++          babelOptions(plugins, proposal)
++        )
+       );
+     } catch (error) {
+       throw createError(
+         // babel error prints (l:c) with cols that are zero indexed
+         // so we need our custom error
+-        error.message.replace(/ \(.*\)/, ""),
++        error.message.replace(/ \\(.*\\)/, ""),
+         {
+           start: {
+             line: error.loc.line,

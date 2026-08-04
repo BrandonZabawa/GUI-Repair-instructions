@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/config-provider/cache.js//Cache",
+            "src/config-provider/index.jsx//ConfigProvider"
+        ],
+        "bug_functions": [
+            "src/config-provider/cache.js//add",
+            "src/config-provider/cache.js//remove",
+            "src/config-provider/index.jsx//constructor",
+            "src/config-provider/index.jsx//componentDidUpdate",
+            "src/config-provider/index.jsx//componentWillUnmount"
+        ],
+        "explanation": "Cache 类是管理 childContextCache 存储的核心，add 方法在 ConfigProvider 构造和更新时将实例写入 Map，remove 方法在 componentWillUnmount 中删除对应键。但由于 SSR 场景不触发生命周期 componentWillUnmount，remove 从未执行，导致 Map 中的引用永远保留。ConfigProvider 的 constructor 和 componentDidUpdate 也会重复向缓存里添加新的上下文，进一步加剧了泄漏问题。这些类和方法正是造成缓存无法被 GC 回收的根因，需要在这里新增手动清除或 SSR 专用的清理逻辑。",
+        "bug_scenario": "在 SSR 场景下，ConfigProvider 在每次 renderToString 时都会向内部的 childContextCache（一个 Cache 实例）中新增一条缓存记录（在 constructor 和 componentDidUpdate 中调用 childContextCache.add），而在 SSR 模式下 React 不会触发 componentWillUnmount 生命周期，导致 childContextCache.remove 从未被调用，缓存条目不断累积，最终引起内存泄漏。图中可以看到 Map 结构中挂载了大量已经卸载的 ConfigProvider 实例。"
+    },
+    "2": {
+        "bug_classes": [
+            "src/config-provider/cache.js//Cache",
+            "src/config-provider/index.jsx//ConfigProvider"
+        ],
+        "bug_functions": [
+            "src/config-provider/cache.js//Cache.add",
+            "src/config-provider/cache.js//Cache.remove",
+            "src/config-provider/index.jsx//ConfigProvider.constructor",
+            "src/config-provider/index.jsx//ConfigProvider.componentDidUpdate",
+            "src/config-provider/index.jsx//ConfigProvider.componentWillUnmount"
+        ],
+        "explanation": "1. Cache 类（cache.js）负责在内存中存储每个 ConfigProvider 实例的上下文(childContext)。每次创建或更新 ConfigProvider 时，通过 Cache.add 将实例(this)和对应的上下文加入 Map；在 ConfigProvider.componentWillUnmount 中通过 Cache.remove 删除缓存。但在 SSR 下组件卸载不会触发 componentWillUnmount，因此 Map 中的条目永远不会被移除。\n2. ConfigProvider（index.jsx）里 constructor 和 componentDidUpdate 中都会往 childContextCache 中 add；componentWillUnmount 则尝试 remove，但 SSR 环境不会调用该生命周期，导致泄漏。修复思路是在 ConfigProvider 上增加一个手动清理 API（比如 static clearCache），底层调用 childContextCache._store.clear() 或重置 Cache 实例，保证在 SSR 请求结束后可以主动释放所有缓存。同时也可在 Cache 类中新增 clear 或 reset 方法。",
+        "bug_scenario": "在 SSR 场景下，ConfigProvider 在每次 renderToString 渲染时会往内部的 childContextCache（一个 Cache 实例）里新增一条记录，但由于 React SSR 不会调用 componentWillUnmount，导致 Cache 中的记录永远不会被删除，最终在压测时内存不断累积，无法被 GC 回收。"
+    }
+}

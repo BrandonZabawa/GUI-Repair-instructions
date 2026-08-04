@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/FormField/FormField.js//Input",
+            "src/js/components/RangeInput/RangeInput.js//RangeInput",
+            "src/js/components/RangeInput/StyledRangeInput.js//StyledRangeInput"
+        ],
+        "bug_functions": [
+            "src/js/components/RangeInput/StyledRangeInput.js//rangeTrackStyle",
+            "src/js/components/RangeInput/StyledRangeInput.js//&::-webkit-slider-thumb margin-top calculation",
+            "src/js/components/RangeInput/StyledRangeInput.js//trackColorStyle"
+        ],
+        "explanation": "1. FormField.js \u2192 Input: this wrapper detects Grommet inputs and forces them to be plain (removing internal padding) and sets focusIndicator off when inside a FormField. For RangeInput, stripping those default paddings means the slider will fill its container completely, ignoring the FormField\u2019s content pad, so the track reaches beyond the border.\n2. RangeInput.js \u2192 RangeInput: this component never passes any extra padding or sizing props to StyledRangeInput when rendered inside a FormField. Its default focusIndicator logic is correct, but layout (width/height) props are uncontrolled here, resulting in a full-width slider.\n3. StyledRangeInput.js \u2192 StyledRangeInput and its rangeTrackStyle / trackColorStyle: the CSS always sets width:100% for the slider track, making it extend to the full width of the surrounding element. Meanwhile, the thumb\u2019s vertical centering uses a margin-top calculation based on global.spacing vs track height; given the FormField wraps a taller container, that margin formula mis-aligns the thumb vertically. These styling functions are where the full-width and off-center thumb are defined and must be adjusted to respect FormField content padding and to center the slider within the field.",
+        "bug_scenario": "The screenshot shows a FormField labeled \u201cAge\u201d wrapping a RangeInput whose track and thumb extend past the gray FormField border and are not centered vertically or horizontally inside the field. The slider fills the full width of its container (ignoring FormField padding) and the thumb is mis-aligned vertically relative to the track and the FormField\u2019s content box."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/FormField/FormField.js//FormField",
+            "src/js/components/RangeInput/RangeInput.js//RangeInput",
+            "src/js/components/RangeInput/StyledRangeInput.js//StyledRangeInput"
+        ],
+        "bug_functions": [
+            "src/js/components/FormField/FormField.js//Input",
+            "src/js/components/RangeInput/StyledRangeInput.js//rangeTrackStyle",
+            "src/js/components/RangeInput/StyledRangeInput.js//rangeThumbStyle"
+        ],
+        "explanation": "1. FormField (FormField.js): This component wraps any input and applies padding/content margins to align child controls. Its internal Input function determines how children (including RangeInput) are sized and padded. Because RangeInput is not recognized as a Grommet input with built-in padding, the wrapper isn\u2019t adjusting its width or centering it under the FormField border.  \n2. Input (FormField.js): The Input wrapper applies the FormField\u2019s contentProps (padding, margin) but does not constrain or center the child when it is a RangeInput. Fixes here could detect RangeInput and reduce its width (e.g., calc(100% \u2013 horizontal padding)) or center it via Box alignment props.  \n3. RangeInput (RangeInput.js): While primarily a logic\u2010level component, it passes all rest props (e.g., styling flags) through to StyledRangeInput. It does not currently know when it\u2019s inside a FormField and might need to set focusIndicator or padding flags differently when in that context.  \n4. StyledRangeInput (StyledRangeInput.js): This styled\u2010component sets width:100% and negative horizontal/vertical margins for the thumb but never accounts for the FormField\u2019s padding. The helper rangeTrackStyle and rangeThumbStyle functions calculate track and thumb sizes but assume a flush container. Adjusting the width or adding horizontal padding here (or allowing an override from FormField) will prevent the track from overflowing and re\u2010center the thumb within the FormField container.",
+        "bug_scenario": "The screenshot shows a RangeInput slider placed inside a FormField \u201cAge\u201d box. The rounded\u2010rectangle FormField has inner padding, but the RangeInput\u2019s track still spans the full width of its container (100%) and its circular thumb sits off\u2010center, even extending beyond the FormField\u2019s left and right borders. In other words, the slider is overflowing and not horizontally centered within the FormField\u2019s padded content area."
+    }
+}

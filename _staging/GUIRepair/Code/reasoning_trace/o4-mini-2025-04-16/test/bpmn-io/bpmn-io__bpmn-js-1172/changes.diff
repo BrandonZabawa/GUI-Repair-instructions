@@ -1,0 +1,34 @@
+diff --git a/lib/import/BpmnTreeWalker.js b/lib/import/BpmnTreeWalker.js
+index 79aef1d9..b5b8b928 100644
+--- a/lib/import/BpmnTreeWalker.js
++++ b/lib/import/BpmnTreeWalker.js
+@@ -396,11 +396,17 @@ export default function BpmnTreeWalker(handler, translate) {
+         deferred.push(function() {
+           handleSequenceFlow(e, context);
+         });
+-      } else if (is(e, 'bpmn:BoundaryEvent')) {
+-        deferred.unshift(function() {
+-          handleBoundaryEvent(e, context);
+-        });
+-      } else if (is(e, 'bpmn:FlowNode')) {
++        } else if (is(e, 'bpmn:BoundaryEvent')) {
++          // draw boundary event first
++          deferred.unshift(function() {
++            handleBoundaryEvent(e, context);
++          });
++          // defer the data‐associations so they appear on top of the boundary event
++          deferred.push(function() {
++            forEach(e.dataInputAssociations, contextual(handleDataAssociation, context));
++            forEach(e.dataOutputAssociations, contextual(handleDataAssociation, context));
++          });
++        } else if (is(e, 'bpmn:FlowNode')) {
+         handleFlowNode(e, context);
+       } else if (is(e, 'bpmn:DataObject')) {
+         // SKIP (assume correct referencing via DataObjectReference)
+@@ -461,4 +467,4 @@ export default function BpmnTreeWalker(handler, translate) {
+     handleSubProcess: handleSubProcess,
+     registerDi: registerDi
+   };
+-}
+\ No newline at end of file
++}

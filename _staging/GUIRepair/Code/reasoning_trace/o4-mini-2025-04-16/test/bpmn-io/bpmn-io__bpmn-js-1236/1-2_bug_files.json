@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js",
+            "lib/features/modeling/BpmnLayouter.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/modeling/behavior/ReplaceElementBehaviour.js"
+        ],
+        "explanation": "\u2022 ToggleElementCollapseBehaviour.js is where the \u2018collapse\u2019 action is implemented; it re\u2010computes the collapsed container\u2019s bounds based on its children. Turning on the Ad Hoc marker fires this same code path unintentionally, shrinking the shape.  \n\u2022 BpmnLayouter.js contains the layout logic used during collapse/expand and replace, and is responsible for determining default and minimum sizes. A bug here would lead to unexpected dimension changes when the element type changes.  \n\u2022 BpmnUpdater.js updates the underlying BPMN DI (diagram interchange) information\u2014i.e. the shape bounds\u2014and is invoked on both collapse and replace, so any shrink is written back to the diagram.  \n\u2022 BpmnReplace.js (the replace feature) drives the switch to the Ad Hoc Sub Process type; it kicks off a sequence that ends up re\u2010collapsing/re\u2010laying out the shape.  \n\u2022 ReplaceElementBehaviour.js hooks into the modeling command stack for element replacement. It chains together type substitution and layout calls (including the collapse logic).  \n\nTogether these files are responsible for toggling collapse and replacing the subprocess type (to Ad Hoc) and then re\u2010computing/saving its bounds\u2014exactly where the unwanted size change is happening.",
+        "bug_scenario": "In the supplied GIF you start with an expanded Sub Process (with a child element inside), collapse it (works as expected) and then turn it into an Ad Hoc Sub Process. As soon as you switch to the Ad Hoc variant, the collapsed subprocess container is re\u2010sized (it snaps to the bounding box of its child), even though the user didn\u2019t explicitly resize it. In other words, turning the already\u2010collapsed subprocess into an Ad Hoc subprocess triggers a recomputation of its width and height, making the red dashed outline shrink around the circle event, instead of preserving the original collapsed dimensions."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js",
+            "lib/features/modeling/util/ResizeUtil.js",
+            "lib/features/modeling/BpmnLayouter.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/auto-resize/BpmnAutoResizeProvider.js"
+        ],
+        "explanation": "\n- ToggleElementCollapseBehaviour.js: This behavior is responsible for collapsing/expanding subprocesses and kicking off layout updates; it governs how bounds are reset when the subprocess state changes.  \n- ResizeUtil.js: Contains utilities that enforce minimum dimensions when shapes are resized or state-toggled; its thresholds are currently applied on collapse/ad-hoc toggle and lead to unwanted size changes.  \n- BpmnLayouter.js: Computes the dimensions of subprocesses based on contents or markers (including the Ad-Hoc circle). When toggling the Ad-Hoc marker it recomputes bounds and currently ignores the last collapsed size.  \n- BpmnUpdater.js: Persists the updated bounds (DI) after modeling commands run; this commits the incorrect size back into the diagram.  \n- BpmnAutoResizeProvider.js: Listens for shape changes (including collapse/expand and marker toggles) and triggers auto-resize operations which apply ResizeUtil\u2019s minimum sizes, contributing to the jump in dimensions when you turn on the Ad-Hoc marker.",
+        "bug_scenario": "When you collapse an expanded subprocess containing children, then convert that collapsed subprocess into an Ad-Hoc subprocess, its outer boundary box snaps back to the wrong dimensions (you can see the dashed resize indicator change size unexpectedly). In the provided GIF you create a subprocess with a child inside, collapse it (making it small), then toggle on the Ad-Hoc marker and the subprocess jumps to an incorrect size instead of preserving its current collapsed dimensions."
+    }
+}

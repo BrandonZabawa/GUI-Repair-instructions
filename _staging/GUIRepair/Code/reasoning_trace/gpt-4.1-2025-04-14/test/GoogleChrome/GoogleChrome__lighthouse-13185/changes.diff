@@ -1,0 +1,41 @@
+diff --git a/report/renderer/details-renderer.js b/report/renderer/details-renderer.js
+index ae58b027c..435d03cc7 100644
+--- a/report/renderer/details-renderer.js
++++ b/report/renderer/details-renderer.js
+@@ -181,10 +181,36 @@ export class DetailsRenderer {
+ 
+   /**
+    * Create small thumbnail with scaled down image asset.
++   * If fullPageScreenshot is available, use it to render the thumbnail.
++   * Otherwise, fallback to the original image src.
+    * @param {string} details
+    * @return {Element}
+    */
+   _renderThumbnail(details) {
++    // If we have a fullPageScreenshot, use it to render the thumbnail.
++    if (this._fullPageScreenshot && this._fullPageScreenshot.screenshot) {
++      // Use the ElementScreenshotRenderer to create a thumbnail of the full page.
++      // We don't have a node rect, so just use the full screenshot.
++      const maxThumbnailSize = {width: 147, height: 100};
++      // Render the full screenshot as a thumbnail.
++      const elementScreenshot = ElementScreenshotRenderer.render(
++        this._dom,
++        this._fullPageScreenshot.screenshot,
++        // Use the full screenshot rect.
++        {
++          width: this._fullPageScreenshot.screenshot.width,
++          height: this._fullPageScreenshot.screenshot.height,
++          x: 0,
++          y: 0,
++        },
++        maxThumbnailSize
++      );
++      if (elementScreenshot) {
++        elementScreenshot.classList.add('lh-thumbnail');
++        return elementScreenshot;
++      }
++    }
++    // Fallback: original behavior.
+     const element = this._dom.createElement('img', 'lh-thumbnail');
+     const strValue = details;
+     element.src = strValue;

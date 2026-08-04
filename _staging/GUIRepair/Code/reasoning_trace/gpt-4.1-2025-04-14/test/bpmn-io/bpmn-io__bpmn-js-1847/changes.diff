@@ -1,0 +1,44 @@
+diff --git a/lib/features/create-append-anything/AppendContextPadProvider.js b/lib/features/create-append-anything/AppendContextPadProvider.js
+index 4797a426..ca97bad1 100644
+--- a/lib/features/create-append-anything/AppendContextPadProvider.js
++++ b/lib/features/create-append-anything/AppendContextPadProvider.js
+@@ -32,6 +32,7 @@ AppendContextPadProvider.prototype.getContextPadEntries = function(element) {
+   const translate = this._translate;
+   const getAppendMenuPosition = this._getAppendMenuPosition.bind(this);
+ 
++  // Always provide an append entry, fallback to create if popupMenu is empty
+   if (!popupMenu.isEmpty(element, 'bpmn-append')) {
+ 
+     // append menu entry
+@@ -56,6 +57,24 @@ AppendContextPadProvider.prototype.getContextPadEntries = function(element) {
+         }
+       }
+     };
++  } else {
++    // fallback: trigger create action if append is not available
++    return {
++      'append': {
++        group: 'model',
++        imageUrl: appendIcon,
++        title: translate('Create element'),
++        action: {
++          click: function(event, element) {
++            // fallback to createElement editor action
++            const editorActions = this._contextPad._eventBus._injector.get('editorActions', false);
++            if (editorActions) {
++              editorActions.trigger('createElement', event);
++            }
++          }.bind(this)
++        }
++      }
++    };
+   }
+ };
+ 
+@@ -74,4 +93,4 @@ AppendContextPadProvider.prototype._getAppendMenuPosition = function(element) {
+   };
+ 
+   return pos;
+-};
+\ No newline at end of file
++};

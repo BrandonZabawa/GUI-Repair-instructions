@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/verilog.js//meta rule"
+        ],
+        "bug_functions": [
+            "src/languages/verilog.js//export default function(hljs)"
+        ],
+        "explanation": "The Verilog highlighter\u2019s definition lives in the default-exported function in src/languages/verilog.js. Inside its returned grammar, there is a contains entry with className 'meta' that begins on a backtick (`) and ends at end-of-line (end: '$'). Because the end delimiter is '$', everything from the backquote to the end of the line\u2014including comments and unrelated code\u2014is marked as meta. To fix this, the meta rule must be tightened (for example, matching only known directive keywords or stopping at whitespace) so that it doesn\u2019t overrun into comments or normal code.",
+        "bug_scenario": "The screenshots show Verilog code where any backquote (`) triggers a \u201cmeta\u201d scope that runs to the end of the line. As a result, even comments and normal code following a `define or `CONSTANT are colored as meta. In the first image you can see that after `define CONSTANT value, the entire remainder of the line (including \u201c// this is a comment\u201d) is treated as meta. In the second image the use of `CONSTANT in an assignment also colors the \u201c; // comment\u201d as meta. Only the directive name and its keyword arguments should be meta, not the entire rest of the line."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/verilog.js//meta rule"
+        ],
+        "bug_functions": [],
+        "explanation": "Within src/languages/verilog.js the Verilog highlighter defines a \u2018meta\u2019 mode with begin: '`' and end: '$'. This unconditionally consumes everything from the first backquote to end-of-line (including \u2018//\u2019 comments), preventing the C_LINE_COMMENT_MODE from ever matching. Adjusting or narrowing this meta rule (for example, only matching known compiler directives or stopping at comment delimiters) will allow comments and other tokens after `defines and backquoted identifiers to be highlighted correctly.",
+        "bug_scenario": "In the provided screenshots, any text from the backquote (`) to the end of line\u2014including comments\u2014is being highlighted with the \u201cmeta\u201d scope. As a result, comments following a `define or any inline backquoted identifier (e.g. `CONSTANT) are never recognized as comments, breaking the intended syntax highlighting for Verilog directives and comments."
+    }
+}

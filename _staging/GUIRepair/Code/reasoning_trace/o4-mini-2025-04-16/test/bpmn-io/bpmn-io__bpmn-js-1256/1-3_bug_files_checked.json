@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js",
+            "lib/features/modeling/behavior/ResizeLaneBehavior.js",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js",
+            "lib/features/modeling/util/LaneUtil.js",
+            "lib/features/modeling/BpmnLayouter.js",
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "explanation": "Deleting a lane triggers both a removal behavior and subsequent resize and layout adjustments. DeleteLaneBehavior.js handles the initial deletion and must coordinate with ResizeLaneBehavior.js and ResizeLaneHandler.js to recompute parent-lane dimensions. LaneUtil.js contains utility functions for lane geometry and child aggregation, which feed into BpmnLayouter.js\u2019s layout algorithm responsible for arranging lanes after structural changes. Finally, BpmnUpdater.js applies updates to the DI model, adjusting shape bounds in the underlying diagram. A defect in any of these steps\u2014removal logic, size calculation, lane utility functions, overall layout algorithm or DI update\u2014can lead to the observed deformation. These files collectively implement and orchestrate the lane-removal and re-layout process and therefore are the prime candidates for debugging and fixing the issue.",
+        "bug_scenario": "When removing a child lane from a parent lane in a BPMN diagram (demo.bpmn.io v5.x / v6.x), the remaining lanes are incorrectly resized and repositioned. The horizontal band of the parent lane collapses, nested lanes overlap, and the overall diagram layout becomes deformed, making further editing impossible."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DeleteLaneBehavior.js",
+            "lib/features/modeling/behavior/ResizeLaneBehavior.js",
+            "lib/features/modeling/cmd/ResizeLaneHandler.js",
+            "lib/features/modeling/util/LaneUtil.js",
+            "lib/features/modeling/BpmnLayouter.js"
+        ],
+        "explanation": "All of these modules participate in the specialized handling of lanes when they are added, resized or removed:  \n\n\u2022 DeleteLaneBehavior.js  \n  - Intercepts lane removal gestures and triggers the sequence of commands to update the parent\u2019s bounds and re-layout sibling lanes. Any bug here can cause the wrong set of lanes to be targeted for resizing or repositioning.  \n\n\u2022 ResizeLaneBehavior.js  \n  - Listens for shape resize events on lanes (including cascaded resizes after a delete) and applies geometry changes. If the resize logic does not correctly compute the new heights/widths for the remaining lanes, overlaps or gaps appear.  \n\n\u2022 ResizeLaneHandler.js  \n  - Implements the low-level command for actually adjusting lane dimensions in the model and on the diagram. Errors here (e.g. wrong delta calculations or missed updates to child lanes) lead to malformed lane boundaries.  \n\n\u2022 LaneUtil.js  \n  - Contains helper functions (e.g. getChildrenLanes, getLaneBounds, sumHeights) used by both behaviors and handlers to compute how to split or merge lanes. A miscalculation in these utilities will propagate through all higher-level behaviors.  \n\n\u2022 BpmnLayouter.js  \n  - Responsible for the initial and on-the-fly layout of pools and lanes. After a lane is removed, BpmnLayouter recalculates positions of all sibling lanes. If it\u2019s not invoked correctly or uses stale dimensions, the pool boundary can expand or shrink incorrectly.  \n\nTogether these files form the removal \u2192 resize \u2192 relayout pipeline for lanes. Fixing the bug will involve correcting the geometry computations (deltas, sums, offsets) in the util and handler, ensuring the behaviors call the layouter as needed, and verifying that the delete behavior selects the proper targets for update.",
+        "bug_scenario": "When deleting a child lane from a parent lane that contains several lanes, the remaining lanes (and the parent lane itself) are not re-laid out correctly. As a result, sibling lanes either collapse on top of each other or leave large gaps, and the overall pool boundary gets deformed (as shown in the \u201cafter_remove\u201d screenshot). The editor sometimes even becomes unresponsive for further edits because the shapes overlap in an inconsistent way."
+    }
+}

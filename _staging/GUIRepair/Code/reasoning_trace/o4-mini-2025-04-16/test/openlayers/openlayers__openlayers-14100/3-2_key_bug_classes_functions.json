@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/Map.js//Map",
+            "src/ol/TileQueue.js//TileQueue"
+        ],
+        "bug_functions": [
+            "src/ol/Map.js//handlePostRender",
+            "src/ol/Map.js//renderFrame_",
+            "src/ol/TileQueue.js//loadMoreTiles"
+        ],
+        "explanation": "The Map class is responsible for driving the per-frame rendering and for managing the shared TileQueue that pulls in new tiles. In particular, Map.handlePostRender (and the internal renderFrame_ logic) calls into the TileQueue to load more tiles each frame. The TileQueue.loadMoreTiles method then enforces limits on how many tiles can be loaded in total and how many new loads per frame. A change in these methods (or in the default maxTilesLoading/maxNewLoads values) can easily turn a previously highly-concurrent loading pattern into a throttled, sequential one. Since the behavioral change only appears when layers are grouped, the logic in Map.handlePostRender/renderFrame_ that rebuilds or iterates the frameState.wantedTiles across a LayerGroup likely now feeds TileQueue.loadMoreTiles in a way that serializes layer queues rather than issuing them in parallel.",
+        "bug_scenario": "After upgrading from OpenLayers 6.1 to 7.0, tiles in a LayerGroup no longer fire off all their HTTP requests at once. In 6.1 the network waterfall shows 20 TileLayers issuing parallel requests and loading imagery quickly. In 7.0 the same 20 TileLayers each wait for the previous layer to finish before requesting their tiles, resulting in a strictly sequential load and much slower overall imagery display."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/Map.js//Map",
+            "src/ol/TileQueue.js//TileQueue"
+        ],
+        "bug_functions": [
+            "src/ol/Map.js//handlePostRender",
+            "src/ol/TileQueue.js//loadMoreTiles"
+        ],
+        "explanation": "The Map class\u2019s private method handlePostRender is responsible for driving the tile\u2010loading cycle by calling the TileQueue\u2019s loadMoreTiles method each frame with limits on total and new loads. In v7.0 the values passed in or the logic in handlePostRender appears to have been changed so that only one tile is started per frame, yielding sequential behavior. The loadMoreTiles method in TileQueue enqueues and starts new tile loads up to the specified maxNewLoads limit. To restore the original concurrent loading behavior, these two methods (handlePostRender and TileQueue.loadMoreTiles) need to be examined and adjusted so that multiple new tile.load() calls can happen in the same frame, as they did in v6.1.",
+        "bug_scenario": "After upgrading from OpenLayers 6.1 to 7.0, a LayerGroup containing twenty TileLayer instances no longer issues all of its tile\u2010fetch requests in parallel. In 6.1 all twenty requests fire at once (fast initial imagery loads), but in 7.0 each layer\u2019s tile is fetched one at a time in series, dramatically slowing down map rendering (as shown by the waterfall charts in the screenshots)."
+    }
+}

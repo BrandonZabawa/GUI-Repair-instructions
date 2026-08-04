@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/components/src/components/content-switcher/content-switcher.js//ContentSwitcher",
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//ContentSwitcher"
+        ],
+        "bug_functions": [
+            "packages/components/src/components/content-switcher/content-switcher.js//ContentSwitcher.options",
+            "packages/components/src/components/content-switcher/content-switcher.js//ContentSwitcher._changeState",
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//render"
+        ],
+        "explanation": "All of the visual styling for selected versus unselected tabs in the vanilla JS implementation is driven by the ContentSwitcher class in packages/components: its static get options() defines the CSS classes (selectorButton, classActive) and _changeState toggles those classes on each tab. Adjusting the unselected tab\u2019s outline (for example, switching its border color to a darker grey that meets 3:1 contrast) will either require editing the CSS selectors named here or adding a new class and applying it in _changeState. In the React implementation, the render() method constructs the container\u2019s className (including the light variant) and clones each <Switch> child with selected/unselected props; updating this method (or the associated CSS class names) is necessary so that unselected tabs always render with a sufficiently high\u2010contrast border or background.",
+        "bug_scenario": "The ContentSwitcher component\u2019s unselected tabs have only a very light grey background and border that fails the WCAG 1.4.11 3:1 contrast requirement against the container background. In the provided screenshots you can see that the selected tab (\u201cAll\u201d) is black, but the unselected tab (\u201cRead\u201d or \u201cUnread\u201d) is almost white (#f4f4f4 with #e0e0e0 border) and disappears into the page background, making the switcher appear as a lone black button. To fix this, the default styling for unselected tabs needs to introduce a higher\u2010contrast outline or stroke."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/components/src/components/content-switcher/content-switcher.js//class ContentSwitcher",
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//class ContentSwitcher"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//render"
+        ],
+        "explanation": "Both the vanilla-JS and React ContentSwitcher classes are responsible for rendering the switcher structure and assigning CSS class names to selected and unselected tabs.  In the React version, the render() function builds the DOM with the base class (`bx--content-switcher`), toggles the light variant (`bx--content-switcher--light`), and applies the selected class to the active tab.  The contrast of the unselected tabs is entirely driven by those CSS classes.  To meet the 3:1 contrast requirement, we must adjust how and where those classes are applied (for example, defaulting to the light variant when on a grey container, or adding a darker 1px border to the unselected tabs in the CSS tied to these class names).  Editing these two classes and the render method lets us inject or override the necessary CSS hooks to fix the contrast issue.",
+        "bug_scenario": "The ContentSwitcher\u2019s unselected tabs (\u201cRead\u201d, \u201cUnread\u201d) are rendered with a light grey background (#f4f4f4) and a very light border (#e0e0e0) against either a white or slightly off-white container.  This styling only achieves about 1.1:1 contrast, far below the WCAG 1.4.11 requirement of 3:1.  On low-resolution displays the unselected tabs effectively \u201cdisappear,\u201d causing users to mis-identify the switcher as a single black button."
+    }
+}

@@ -1,0 +1,46 @@
+diff --git a/src/ol/renderer/canvas/vectorlayer.js b/src/ol/renderer/canvas/vectorlayer.js
+index 173bef5b37..e67f2befbf 100644
+--- a/src/ol/renderer/canvas/vectorlayer.js
++++ b/src/ol/renderer/canvas/vectorlayer.js
+@@ -350,10 +350,19 @@ ol.renderer.canvas.VectorLayer.prototype.prepareFrame = function(frameState, lay
+ 
+   this.dirty_ = false;
+ 
+-  var replayGroup = new ol.render.canvas.ReplayGroup(
+-      ol.renderer.vector.getTolerance(resolution, pixelRatio), extent, resolution,
+-      pixelRatio, vectorSource.getOverlaps(), this.declutterTree_, vectorLayer.getRenderBuffer());
+-  vectorSource.loadFeatures(extent, resolution, projection);
++var replayGroup = new ol.render.canvas.ReplayGroup(
++ol.renderer.vector.getTolerance(resolution, pixelRatio), extent, resolution,
++pixelRatio, vectorSource.getOverlaps(), this.declutterTree_, vectorLayer.getRenderBuffer());
++vectorSource.loadFeatures(extent, resolution, projection);
++
++// Optimize feature processing by batching
++var features = [];
++vectorSource.forEachFeatureInExtent(extent, function(feature) {
++features.push(feature);
++});
++features.forEach(function(feature) {
++renderFeature(feature);
++});
+   /**
+    * @param {ol.Feature} feature Feature.
+    * @this {ol.renderer.canvas.VectorLayer}
+@@ -432,4 +441,4 @@ ol.renderer.canvas.VectorLayer.prototype.renderFeature = function(feature, resol
+         this.handleStyleImageChange_, this);
+   }
+   return loading;
+-};
++};
+\ No newline at end of file
+diff --git a/src/ol/source/imagevector.js b/src/ol/source/imagevector.js
+index 50e690a583..b202489a30 100644
+--- a/src/ol/source/imagevector.js
++++ b/src/ol/source/imagevector.js
+@@ -313,4 +313,4 @@ ol.source.ImageVector.prototype.setStyle = function(style) {
+   this.styleFunction_ = !style ?
+     undefined : ol.style.Style.createFunction(this.style_);
+   this.changed();
+-};
++};
+\ No newline at end of file

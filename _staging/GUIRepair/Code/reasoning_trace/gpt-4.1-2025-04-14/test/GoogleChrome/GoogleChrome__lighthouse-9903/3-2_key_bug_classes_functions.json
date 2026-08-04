@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit",
+            "lighthouse-core/gather/gatherers/link-elements.js//LinkElements"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.audit",
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.hasValidTiming",
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.hasAlreadyConnectedToOrigin",
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.socketStartTimeIsBelowThreshold",
+            "lighthouse-core/gather/gatherers/link-elements.js//LinkElements.afterPass"
+        ],
+        "explanation": "The core audit logic for suggesting preconnects is implemented in UsesRelPreconnectAudit (in uses-rel-preconnect.js), notably in the audit() method. This function collects network records, checks for timing, and compares discovered origins to those already specified via <link rel='preconnect'> using the LinkElements artifact. Any mismatch or failure in recognizing preconnect hints (or incorrect crossOrigin handling) could cause the issue described. The hasValidTiming, hasAlreadyConnectedToOrigin, and socketStartTimeIsBelowThreshold methods are all used to filter and identify which origins are suggested. The LinkElements gatherer (in link-elements.js), especially its afterPass method, is responsible for collecting link elements from both the document and headers. If this collection misses or misclassifies any resource hints, it could directly influence the audit's output. Together, these classes and functions are central to the bug, as any logic error or edge case in their implementation would cause the audit to repeatedly suggest origins even after they are supposedly handled.",
+        "bug_scenario": "The bug scenario involves Lighthouse repeatedly suggesting that the user should add preconnect resource hints for multiple third-party origins, even after those origins have already been added to the HTML via <link rel=\"preconnect\"> elements. The bug report and the screenshot show that after implementing the recommendations, new origins are still being suggested, causing confusion about which origins are considered 'important.' The user also questions the logic behind the recommendation limit and why origins already present are not being recognized or filtered out."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit",
+            "lighthouse-core/gather/gatherers/link-elements.js//LinkElements"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/uses-rel-preconnect.js//UsesRelPreconnectAudit.audit",
+            "lighthouse-core/gather/gatherers/link-elements.js//LinkElements.afterPass"
+        ],
+        "explanation": "The core logic for identifying which origins should be preconnected and for determining whether the user has already added the appropriate 'preconnect' hints is implemented in the UsesRelPreconnectAudit class in 'lighthouse-core/audits/uses-rel-preconnect.js'. Specifically, the static 'audit' method in this class is responsible for collecting network records, filtering them, checking for existing preconnect link elements, and generating the audit results and suggestions. Any bug in how this method matches or filters origins, or how it determines if a preconnect is already present, could lead to the reported behavior. The LinkElements class in 'lighthouse-core/gather/gatherers/link-elements.js', especially its 'afterPass' method, gathers link elements from both the DOM and headers, normalizes them, and provides this info to the audit. If there is a mismatch, normalization issue, or information not being gathered correctly (e.g., missing or case-insensitive comparison of origins), the audit may not recognize the user's added preconnects and continue to suggest more origins. These classes and methods are thus core to the bug.",
+        "bug_scenario": "The bug scenario is that Lighthouse continues to suggest adding 'preconnect' resource hints for certain third-party origins, even after the user has added preconnect tags for the previously suggested ones. The user expects that, after adding the recommended preconnect tags, Lighthouse should not keep suggesting more origins or at least provide clearer guidance about which origins are considered 'important' and how many should be preconnected. The user is confused because the audit seems to keep surfacing new origins as candidates for preconnect, making it unclear how to fully satisfy the audit's requirements. The attached image shows a Lighthouse report with six origins under the 'Preconnect to required origins' suggestion, each with estimated potential savings."
+    }
+}

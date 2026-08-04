@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer.prototype.prepareFrame",
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer.prototype.renderFrame"
+        ],
+        "explanation": "The bug arises because prepareFrame always calls imageSource.getImage with the map\u2019s display pixelRatio, even if the source is configured to load images at a different pixel ratio (e.g. hidpi = false). Then renderFrame unconditionally sizes the HTMLCanvasElement to frameState.pixelRatio \u00d7 viewport size rather than the image\u2019s own pixelRatio. As a result, when the image itself is only 1\u00d7 resolution but the canvas is created at 2\u00d7, the canvas buffer is 4\u00d7 larger than needed. Fixing requires switching both the getImage() call in prepareFrame and the canvas.width/height calculation in renderFrame to use the image\u2019s pixelRatio (this.image_.getPixelRatio()) instead of frameState.pixelRatio when the source\u2019s pixel ratio differs.",
+        "bug_scenario": "On HiDPI displays (e.g. pixelRatio = 2) using a WMS image source configured with hidpi = false (so the source image is fetched at pixelRatio = 1), the canvas renderer still allocates a canvas at display pixelRatio (2\u00d7 width and height), i.e. 4\u00d7 the area (and memory) needed to draw the 1\u00d7 image. The screenshots show a canvas element twice as large as the requested image."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/ImageLayer.js//renderFrame"
+        ],
+        "explanation": "The bug lives in CanvasImageLayerRenderer. In renderFrame(), the canvas dimensions are set using the device pixelRatio (frameState.pixelRatio) rather than the image\u2019s pixel ratio (image.getPixelRatio()). As a result, when the source image has pixelRatio = 1 on a HiDPI display, the canvas is unnecessarily large. Adjusting canvas.width and canvas.height to use image.getPixelRatio() instead of frameState.pixelRatio will correct the memory over\u2010allocation.",
+        "bug_scenario": "On high\u2010DPI (e.g. Retina) displays, image layers loaded from sources such as WMS (which often have pixelRatio = 1) are being rendered to canvases sized according to the device pixelRatio (e.g. 2). The code in CanvasImageLayerRenderer always sets canvas.width and .height based on frameState.pixelRatio, not the image\u2019s own pixelRatio. When image.getPixelRatio() = 1 but device pixelRatio = 2, the canvas ends up twice as wide/tall as needed, consuming 4\u00d7 the memory."
+    }
+}

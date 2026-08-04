@@ -1,0 +1,197 @@
+{
+    "1/5": {
+        "src/core/image.ts": [
+            {
+                "SEARCH": [
+                    "export function imageContentType(path: string) {",
+                    "const ext = extname(path);",
+                    "return kimageTypes[ext];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function imageContentType(path: string) {",
+                    "  const ext = extname(path);",
+                    "  return kimageTypes[ext] || \"application/octet-stream\"; // Default content type",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/core/image.ts": [
+            {
+                "SEARCH": [
+                    "export function imageSize(path: string) {",
+                    "if (path !== undefined) {",
+                    "if (path.endsWith(\".png\")) {",
+                    "if (existsSync(path)) {",
+                    "const imageData = Deno.readFileSync(path);",
+                    "try {",
+                    "const png = new PngImage(imageData);",
+                    "return {",
+                    "height: png.height,",
+                    "width: png.width,",
+                    "};",
+                    "} catch (error) {",
+                    "throw new Error(`Error reading file ${path}\\n${error.message}`);",
+                    "}",
+                    "}",
+                    "}",
+                    "}",
+                    "}",
+                    "",
+                    "export function imageContentType(path: string) {",
+                    "const ext = extname(path);",
+                    "return kimageTypes[ext];",
+                    "}",
+                    ""
+                ],
+                "REPLACE": [
+                    "export function imageSize(path: string) {",
+                    "  if (path !== undefined && existsSync(path)) {",
+                    "    const ext = extname(path);",
+                    "    if (kimageTypes.hasOwnProperty(ext)) {",
+                    "      const imageData = Deno.readFileSync(path);",
+                    "      try {",
+                    "        if (ext === \".png\") {",
+                    "          const png = new PngImage(imageData);",
+                    "          return {",
+                    "            height: png.height,",
+                    "            width: png.width,",
+                    "          };",
+                    "        }",
+                    "        // Handle other image types if necessary",
+                    "      } catch (error) {",
+                    "        throw new Error(`Error reading file ${path}\\n${error.message}`);",
+                    "      }",
+                    "    }",
+                    "  }",
+                    "}",
+                    "",
+                    "export function imageContentType(path: string) {",
+                    "  const ext = extname(path);",
+                    "  return kimageTypes[ext] || \"application/octet-stream\";",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/core/image.ts": [
+            {
+                "SEARCH": [
+                    "export function imageContentType(path: string) {",
+                    "const ext = extname(path);",
+                    "return kimageTypes[ext];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "export function imageContentType(path: string) {",
+                    "  const parsedPath = decodeURIComponent(path).split('?')[0]; // Decode non-standard URLs and strip query params",
+                    "  const ext = extname(parsedPath);",
+                    "  return kimageTypes[ext] || 'application/octet-stream'; // Default to binary if type unknown",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/core/image.ts": [
+            {
+                "SEARCH": [
+                    "import { existsSync } from \"fs/exists.ts\";",
+                    "import { extname } from \"path/mod.ts\";",
+                    "import PngImage from \"./png.ts\";",
+                    "",
+                    "export function imageSize(path: string) {",
+                    "if (path !== undefined) {",
+                    "if (path.endsWith(\".png\")) {",
+                    "if (existsSync(path)) {",
+                    "const imageData = Deno.readFileSync(path);",
+                    "try {",
+                    "const png = new PngImage(imageData);",
+                    "return {",
+                    "height: png.height,",
+                    "width: png.width,",
+                    "};",
+                    "} catch (error) {",
+                    "throw new Error(`Error reading file ${path}\\n${error.message}`);",
+                    "}",
+                    "}",
+                    "}",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "import { existsSync } from \"fs/exists.ts\";",
+                    "import { extname } from \"path/mod.ts\";",
+                    "import PngImage from \"./png.ts\";",
+                    "",
+                    "function isUrl(path: string): boolean {",
+                    "  try {",
+                    "    new URL(path);",
+                    "    return true;",
+                    "  } catch {",
+                    "    return false;",
+                    "  }",
+                    "}",
+                    "",
+                    "export function imageSize(path: string) {",
+                    "  if (path !== undefined) {",
+                    "    if (isUrl(path) || path.endsWith(\".png\")) {",
+                    "      if (existsSync(path) || isUrl(path)) {",
+                    "        // Use an appropriate method to fetch image data for URLs if necessary",
+                    "        const imageData = Deno.readFileSync(path);",
+                    "        try {",
+                    "          const png = new PngImage(imageData);",
+                    "          return {",
+                    "            height: png.height,",
+                    "            width: png.width,",
+                    "          };",
+                    "        } catch (error) {",
+                    "          throw new Error(`Error reading file or URL ${path}\\n${error.message}`);",
+                    "        }",
+                    "      }",
+                    "    }",
+                    "  }",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/core/image.ts": [
+            {
+                "SEARCH": [
+                    "import { existsSync } from \"fs/exists.ts\";",
+                    "import { extname } from \"path/mod.ts\";",
+                    "import PngImage from \"./png.ts\";",
+                    "",
+                    "export function imageSize(path: string) {",
+                    "if (path !== undefined) {"
+                ],
+                "REPLACE": [
+                    "import { existsSync } from \"fs/exists.ts\";",
+                    "import { extname } from \"path/mod.ts\";",
+                    "import { encodeURI } from \"std/encoding/uri.ts\";",
+                    "import PngImage from \"./png.ts\";",
+                    "",
+                    "export function imageSize(path: string) {",
+                    "  if (path !== undefined) {",
+                    "    path = encodeURI(path);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "export function imageContentType(path: string) {",
+                    "const ext = extname(path);"
+                ],
+                "REPLACE": [
+                    "export function imageContentType(path: string) {",
+                    "  path = encodeURI(path);",
+                    "  const ext = extname(path);"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/Modeling.js",
+            "lib/features/modeling/behavior/DataStoreBehavior.js",
+            "lib/features/modeling/behavior/CreateDataObjectBehavior.js",
+            "lib/features/modeling/behavior/ReplaceElementBehaviour.js",
+            "lib/features/replace/BpmnReplace.js"
+        ],
+        "explanation": "The main error is thrown in BpmnUpdater.js, which handles updates to element and diagram parents after morphing or replacing elements in the model. Since the error is about accessing a property of 'undefined', it likely occurs when morphing outside a Pool leads to an invalid or missing parent reference. Relevant files are:\n- BpmnUpdater.js: This is where the error is thrown and logic for updating diagram parent and semantic parent during morphing is implemented.\n- Modeling.js: Core logic for element creation, deletion, morphing, and updates; it likely orchestrates the morph operation.\n- DataStoreBehavior.js & CreateDataObjectBehavior.js: Given the morph is between DataStoreReference and DataObjectReference, special handling in these behaviors may be needed for validation or parent checks.\n- ReplaceElementBehaviour.js: Manages the logic for replacing (morphing) one element into another, especially relevant for parent/DI structure management.\n- BpmnReplace.js: Handles replace/morph menu/options and the logic to initiate the morphing operation.\nThese files together control the morphing workflow and would need inspection and potential fixes to prevent morphing outside valid contexts or to ensure the morph does not break diagram consistency.",
+        "bug_scenario": "The user encounters an error when attempting to morph a DataStoreReference element to a DataObjectReference outside of a Pool in the BPMN modeler. Specifically, when the morphing operation is triggered, a TypeError is thrown: 'Cannot read properties of undefined (reading 'get')' in BpmnUpdater.js:408, causing the operation to fail and breaking editor functionality. The stack trace indicates this error is related to the handling of parent or DI (diagram interchange) parent updates during the morph operation, especially outside Pool elements, suggesting a missing or invalid parent reference is being accessed during update/replace operations."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/Modeling.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/rules/BpmnRules.js",
+            "lib/util/DiUtil.js"
+        ],
+        "explanation": "The error stack trace directly mentions BpmnUpdater.js, which handles updates to BPMN elements, especially regarding DI parents and BPMN hierarchy. Modeling.js and BpmnReplace.js are likely involved because they facilitate modifications and morphing actions (such as morphing a DataStoreReference to a DataObjectReference). BpmnRules.js and DiUtil.js are potentially involved as BpmnRules.js determines what is allowed (e.g., morphing constraints), and DiUtil.js handles Diagram Interchange utilities, often referenced during parent/child linking. Examining and possibly editing these files would be necessary to fix or guard against this morphing error scenario.",
+        "bug_scenario": "The bug scenario involves an error that occurs when morphing a DataStoreReference to a DataObjectReference outside of a Pool in a BPMN model. The error reported is a 'Cannot read properties of undefined (reading 'get')' in BpmnUpdater.js. This error is triggered in the editor when a user tries to morph (change the type) of a DataStoreReference element that is not contained within a Pool, leading to a crash in the underlying update logic relating to diagram interchanges (DI) and parent-child relationships within BPMN elements."
+    }
+}

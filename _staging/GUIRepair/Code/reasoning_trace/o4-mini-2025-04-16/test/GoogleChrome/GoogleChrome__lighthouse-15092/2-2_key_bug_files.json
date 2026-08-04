@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "core/config/config-helpers.js",
+            "core/config/validation.js",
+            "core/config/default-config.js",
+            "core/runner.js"
+        ],
+        "explanation": "\u2022 core/config/config-helpers.js is where user configs are merged with defaults. Because `extends: null` wipes out the default artifacts list (including the trace gatherers), we end up with no trace gatherers at all. The merge logic needs to inject or preserve trace gatherers even when building a config \u2018from scratch\u2019.  \n\n\u2022 core/config/validation.js currently validates that each gatherer implements the FR interface but does _not_ catch when a required artifact (like the default traces) has been removed. We should add a check in `assertValidConfig` to ensure that all audits\u2019 `requiredArtifacts` (especially trace data) are satisfied by the config\u2019s gatherers.  \n\n\u2022 core/config/default-config.js defines the full set of default artifacts (including the built-in trace gatherers). That file is the reference for what must be present. When `extends:null` is used, we lose those defaults, so we need to document or auto-restore them here.  \n\n\u2022 core/runner.js contains the `_runAudit` logic that inspects `artifacts.traces`/`devtoolsLogs` and throws early if no trace was collected. This is where the runtime errors originate. By validating or merging in the trace gatherers earlier, that code will never see a missing trace and won\u2019t produce the red-error badges for every audit.",
+        "bug_scenario": "When a user runs Lighthouse with a custom config that explicitly sets `extends: null` and only includes the URL and ViewportArtifacts (omitting all trace\u2010related gatherers), every performance audit has no trace to analyze and throws \u201cRequired traces gatherer did not run.\u201d. In the report UI (see screenshots), all Metrics (FCP, FMP, Speed Index, TTI, etc.), all Opportunities and Diagnostics show an Error status with that message, because the runner\u2019s `_runAudit` code bails out on missing traces."
+    }
+}

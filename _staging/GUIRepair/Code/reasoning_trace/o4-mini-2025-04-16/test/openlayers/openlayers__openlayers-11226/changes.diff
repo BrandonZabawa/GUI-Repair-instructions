@@ -1,0 +1,85 @@
+diff --git a/src/ol/interaction/Modify.js b/src/ol/interaction/Modify.js
+index 117340865d..65b3f4e0f9 100644
+--- a/src/ol/interaction/Modify.js
++++ b/src/ol/interaction/Modify.js
+@@ -354,9 +354,7 @@ class Modify extends PointerInteraction {
+      * @private
+      */
+     this.lastPointerEvent_ = null;
+-  }
+-
+-  /**
++  /** 
+    * @param {Feature} feature Feature.
+    * @private
+    */
+@@ -367,8 +365,22 @@ class Modify extends PointerInteraction {
+       if (writer) {
+         writer(feature, geometry);
+       }
++      // — listen to child geometry changes inside a GeometryCollection —
++      if (geometry.getType() === GeometryType.GEOMETRYCOLLECTION) {
++        geometry.getGeometriesArray().forEach(
++          function (childGeom) {
++            childGeom.addEventListener(
++              EventType.CHANGE,
++              this.boundHandleFeatureChange_
++            );
++          },
++          this
++        );
++      }
+     }
+     const map = this.getMap();
++    …
++    const map = this.getMap();
+     if (map && map.isRendered() && this.getActive()) {
+       this.handlePointerAtPixel_(this.lastPixel_, map);
+     }
+@@ -384,17 +396,13 @@ class Modify extends PointerInteraction {
+       this.modified_ = true;
+       this.dispatchEvent(
+         new ModifyEvent(ModifyEventType.MODIFYSTART, this.features_, evt)
+-      );
+-    }
+-  }
+-
+-  /**
++  /** 
+    * @param {Feature} feature Feature.
+    * @private
+    */
+   removeFeature_(feature) {
+     this.removeFeatureSegmentData_(feature);
+-    // Remove the vertex feature if the collection of canditate features is empty.
++    // Remove the vertex feature if the collection of candidate features is empty.
+     if (this.vertexFeature_ && this.features_.getLength() === 0) {
+       this.overlay_.getSource().removeFeature(this.vertexFeature_);
+       this.vertexFeature_ = null;
+@@ -403,6 +411,26 @@ class Modify extends PointerInteraction {
+       EventType.CHANGE,
+       this.boundHandleFeatureChange_
+     );
++    // — also unlisten from child geometries inside a GeometryCollection —
++    const featureGeom = feature.getGeometry();
++    if (
++      featureGeom &&
++      featureGeom.getType() === GeometryType.GEOMETRYCOLLECTION
++    ) {
++      featureGeom.getGeometriesArray().forEach(
++        function (childGeom) {
++          childGeom.removeEventListener(
++            EventType.CHANGE,
++            this.boundHandleFeatureChange_
++          );
++        },
++        this
++      );
++    }
++  }
++      EventType.CHANGE,
++      this.boundHandleFeatureChange_
++    );
+   }
+ 
+   /**

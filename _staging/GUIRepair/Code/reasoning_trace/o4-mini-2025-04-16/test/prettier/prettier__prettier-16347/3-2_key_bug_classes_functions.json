@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/utils/front-matter/print.js",
+            "src/utils/front-matter/parse.js"
+        ],
+        "bug_functions": [
+            "src/utils/front-matter/print.js//print",
+            "src/utils/front-matter/parse.js//parse"
+        ],
+        "explanation": "The core of the problem lies in how we re-emit the YAML front-matter: in src/utils/front-matter/print.js, the code immediately trims node.value (`const value = node.value.trim();`), which discards any leading or trailing blank lines that the user deliberately added. Although parse.js correctly captures the raw front-matter, the trimming in print.js irrevocably removes empty lines. Adjusting or removing the `trim()` call (or otherwise preserving blank lines in the Doc tree) will prevent Prettier from collapsing those blank lines in front-matter.",
+        "bug_scenario": "When running Prettier on a Markdown file that contains YAML front-matter with intentional blank lines between list items (as in the \u201cblogs\u201d section), those empty lines are stripped out. In the playground screenshot you can see the blank line separating the second and third blog entries has been removed after formatting."
+    },
+    "2": {
+        "bug_classes": [
+            "src/utils/front-matter/print.js"
+        ],
+        "bug_functions": [
+            "src/utils/front-matter/print.js//print"
+        ],
+        "explanation": "The frontmatter print function is responsible for re-rendering the YAML block after parsing. In print.js, the implementation calls `node.value.trim()` before feeding it to the YAML parser and printer. By trimming the value, all leading, trailing, and consecutive blank lines become lost. To preserve intentional empty lines in the frontmatter, this `trim()` call must be removed or adjusted so that it does not remove blank lines inside the YAML value.",
+        "bug_scenario": "In the playground screenshot you can see a Markdown document with a YAML frontmatter block that deliberately contains empty lines (for readability) between its top-level keys (e.g. between `docs`, `portfolios`, `blogs`). After formatting with Prettier 3.3.0, those blank lines inside the frontmatter are stripped out\u2014so the YAML ends up densely packed without the original empty lines."
+    }
+}

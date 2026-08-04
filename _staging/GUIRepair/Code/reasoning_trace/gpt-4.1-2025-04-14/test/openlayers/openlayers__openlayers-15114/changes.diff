@@ -1,0 +1,55 @@
+diff --git a/src/ol/render/webgl/utils.js b/src/ol/render/webgl/utils.js
+index 78249d5ea9..0848c7552e 100644
+--- a/src/ol/render/webgl/utils.js
++++ b/src/ol/render/webgl/utils.js
+@@ -287,9 +287,12 @@ export function writePolygonTrianglesToBuffers(
+   instructionsIndex += customAttributesSize;
+   const ringsCount = instructions[instructionsIndex++];
+   let verticesCount = 0;
++  const ringVertexCounts = [];
+   const holes = new Array(ringsCount - 1);
+   for (let i = 0; i < ringsCount; i++) {
+-    verticesCount += instructions[instructionsIndex++];
++    const count = instructions[instructionsIndex++];
++    verticesCount += count;
++    ringVertexCounts.push(count);
+     if (i < ringsCount - 1) {
+       holes[i] = verticesCount;
+     }
+@@ -299,6 +302,36 @@ export function writePolygonTrianglesToBuffers(
+     instructionsIndex + verticesCount * instructionsPerVertex
+   );
+ 
++  // Ensure correct ring orientation for earcut: outer ring CCW, holes CW
++  function ringArea(flat, offset, end) {
++    let area = 0;
++    for (let i = offset, j = end - 2; i < end; j = i, i += 2) {
++      area += (flat[j] - flat[i]) * (flat[j + 1] + flat[i + 1]);
++    }
++    return area;
++  }
++
++  let offset = 0;
++  for (let i = 0; i < ringsCount; i++) {
++    const end = offset + ringVertexCounts[i] * instructionsPerVertex;
++    const area = ringArea(flatCoords, offset, end);
++    // Outer ring should be CCW (area < 0), holes should be CW (area > 0)
++    if ((i === 0 && area > 0) || (i > 0 && area < 0)) {
++      // Reverse ring
++      for (let left = offset, right = end - instructionsPerVertex; left < right; left += 2, right -= 2) {
++        // Swap x
++        let tmp = flatCoords[left];
++        flatCoords[left] = flatCoords[right];
++        flatCoords[right] = tmp;
++        // Swap y
++        tmp = flatCoords[left + 1];
++        flatCoords[left + 1] = flatCoords[right + 1];
++        flatCoords[right + 1] = tmp;
++      }
++    }
++    offset = end;
++  }
++
+   // pushing to vertices and indices!! this is where the magic happens
+   const result = earcut(flatCoords, holes, instructionsPerVertex);
+   for (let i = 0; i < result.length; i++) {

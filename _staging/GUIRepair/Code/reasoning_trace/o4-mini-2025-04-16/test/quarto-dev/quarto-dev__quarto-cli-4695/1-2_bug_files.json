@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/publish/confluence/confluence.ts",
+            "src/publish/confluence/confluence-helper.ts",
+            "resources/extensions/quarto/confluence/overrides.lua",
+            "resources/extensions/quarto/confluence/publish.lua"
+        ],
+        "explanation": "Link transformation for Confluence output is driven by the Confluence publish provider in TypeScript (confluence.ts and confluence-helper.ts build the pandoc call and post-process page content) together with the Lua filters under resources/extensions/quarto/confluence. The overrides.lua and publish.lua files define how Markdown link elements are rewritten into Confluence storage format links. Since the relative QMD links are not being converted to Confluence link macros, these four files are the points in the pipeline that must be modified to detect, resolve, and emit the proper Confluence link syntax for local page references.",
+        "bug_scenario": "When publishing a Quarto site to Confluence, relative Markdown/QMD links (e.g. \u201c* [January](2022-01.qmd)\u201d) render correctly in local HTML but in Confluence the list items appear with no hyperlink (just bullet text). In the screenshots the local preview shows active blue links, but after Confluence publish the bullets for \u201cJanuary\u201d and \u201cMarch\u201d appear as plain text with no clickable links."
+    },
+    "2": {
+        "bug_files": [
+            "src/publish/confluence/confluence.ts",
+            "src/publish/confluence/confluence-helper.ts",
+            "resources/extensions/quarto/confluence/publish.lua",
+            "resources/extensions/quarto/confluence/overrides.lua"
+        ],
+        "explanation": "All of these files are part of the Quarto Confluence\u2010publisher plugin pipeline that takes your Markdown/Pandoc AST and turns it into Confluence storage format.  \n\n\u2022 src/publish/confluence/confluence.ts \u2013 the main TypeScript driver that calls Pandoc, applies the Confluence Lua filters, and sends the result to Confluence.  \n\u2022 src/publish/confluence/confluence-helper.ts \u2013 helper routines that build Confluence page bodies, attach metadata, and (should) transform `<a>` tags into Confluence internal\u2010link macros.  \n\u2022 resources/extensions/quarto/confluence/publish.lua \u2013 the Lua filter invoked during `quarto publish confluence` to walk the Pandoc AST and emit Confluence\u2010compatible link markup.  \n\u2022 resources/extensions/quarto/confluence/overrides.lua \u2013 extensions that override Quarto\u2019s default link rendering when targeting Confluence.  \n\nTogether these components control how `[January](2022-01.qmd)` gets turned into a Confluence macro like `<ac:link><ri:page ri:content-title=\"2022-01\"/></ac:link>`. Because the filter chain currently doesn\u2019t detect or convert ordinary Markdown links, they get dropped (rendered as plain bullets) instead of being turned into working Confluence links.",
+        "bug_scenario": "A user has a simple `index.qmd` in their Quarto site that contains a bulleted list of Markdown links to other reports:\n\n```markdown\n---\ntitle: \"Reports\"\n---\n\n* [January](2022-01.qmd)\n* [March](2022-03.qmd)\n```\n\nWhen they preview the site locally (HTML output), the links render and work perfectly:\n\n\u2022 January  \n\u2022 March\n\nHowever, when they run `quarto publish confluence` to push the same page to Confluence Cloud, the bullets all appear but the hyperlinks vanish:\n\n\u2022 January  \n\u2022 March\n\nNo `<a>` tags or Confluence internal\u2010link macros are generated, so users see plain text bullets with no clickable links."
+    }
+}

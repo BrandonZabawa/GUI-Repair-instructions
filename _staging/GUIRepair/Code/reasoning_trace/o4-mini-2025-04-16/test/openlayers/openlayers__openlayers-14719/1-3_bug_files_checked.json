@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/ImageWMS.js",
+            "src/ol/source/TileWMS.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/Map.js",
+            "src/ol/renderer/canvas/ImageLayer.js"
+        ],
+        "explanation": "\u2022 ImageWMS.js computes the WMS GetMap size from map size \u00d7 pixelRatio without always rounding to integers, causing fractional\u2010pixel requests that draw blurred tiles.  \n\u2022 TileWMS.js (the tiled variant) has the same rounding issue for sub\u2010tiles.  \n\u2022 reproj/Image.js applies reprojection by drawing the returned image into a canvas using the raw width/height, also without enforcing integer dimensions.  \n\u2022 renderer/canvas/Map.js and ImageLayer.js use drawImage on those canvases; when source or destination sizes are fractional, the browser smooths the image, resulting in a blurry look.  \nAll of these files participate in calculating or rendering WMS image dimensions and must enforce integer pixel values to produce a crisp, pixel\u2010perfect map.",
+        "bug_scenario": "When viewing a single\u2010image WMS layer in OpenLayers 7 with a non\u2010integer devicePixelRatio or an odd map width/height, the returned GetMap image is requested or drawn at fractional canvas dimensions. Because those dimensions are not rounded to whole pixels, the browser scales the image and you see blur (example: https://sbrunner.github.io/ngeo/ol7b.html)."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/Map.js",
+            "src/ol/renderer/canvas/ImageLayer.js"
+        ],
+        "explanation": "1) src/ol/Map.js is where the map\u2019s <canvas> element is resized every frame: it computes width = size*pixelRatio and sets canvas.width/height directly from that value without rounding. If pixelRatio is fractional or size is odd, that leads to subpixel buffer sizes and a blurred result. \n\n2) src/ol/renderer/canvas/ImageLayer.js is where the WMS <img> is drawn into the map canvas via context.drawImage. The code uses floating\u2010point x/y/width/height values from the layer\u2019s own image extents, so when those aren\u2019t exact integers, drawImage scales the WMS bitmap (anti\u2010aliasing it) instead of drawing a one-to-one pixel copy. \n\nBoth places need to be updated to round (or snap) to integer pixel values so that the canvas buffer and the drawn WMS image never land on half pixels.",
+        "bug_scenario": "When viewing a WMS layer with OpenLayers 7 on a map whose container width or height is odd (or when the pixelRatio returned by the browser is not an integer), the single <canvas> on which the WMS image is drawn is assigned non\u2010integral or unrounded pixel dimensions. Because both the canvas element\u2019s drawing buffer size and the CSS size end up slightly mismatched, the browser rescales the result and you see a blurry (anti-aliased) image rather than a pixel-perfect WMS fetch."
+    }
+}

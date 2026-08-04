@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/user-timings.js//UserTimings"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/user-timings.js//filterTrace"
+        ],
+        "explanation": "The root cause of negative user timing marks is likely in how the timestamps for marks are calculated relative to navigationStart. In 'filterTrace' (in 'lighthouse-core/audits/user-timings.js'), user timing events have their startTime (and endTime/duration for measures) offset by the navigationStartTime (ut.startTime -= navigationStartTime). If a mark occurs before navigationStart, this calculation yields a negative value. The 'UserTimings' class orchestrates this audit and calls 'filterTrace', making both directly relevant. Fixing this requires filtering out or properly handling user timing marks that occur before navigationStart. Other files (like formatters or trace processing) do not handle the time math or filtering logic, so the bug is isolated to the filtering and audit logic in 'user-timings.js'.",
+        "bug_scenario": "The bug scenario is that the User Timing marks are showing negative numbers, as seen in the image (e.g., Mark: -184.69ms). This indicates that some user timing marks are being reported as occurring before the navigationStart, resulting in negative time values. This is misleading and likely unintended behavior in the performance audit output."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/user-timings.js//UserTimings"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/user-timings.js//filterTrace"
+        ],
+        "explanation": "The negative times indicate a problem with the calculation of event start times relative to navigationStart. In 'lighthouse-core/audits/user-timings.js', the 'filterTrace' function is responsible for extracting and offsetting user timing events by navigationStartTime. If navigationStartTime is not set correctly, or if events prior to navigationStart are included, it can result in negative values. The 'UserTimings' class uses this function in its audit process. Therefore, these are the key locations where the bug occurs and should be fixed.",
+        "bug_scenario": "The bug scenario is that in the audit report, some User Timing marks are displaying negative timestamps (e.g., Mark: -184.69ms), which should not occur. User timing marks and measures should only be positive or zero. This suggests there is an error in how event times are being calculated or offset, likely related to the handling of navigationStart or the trace start time."
+    }
+}

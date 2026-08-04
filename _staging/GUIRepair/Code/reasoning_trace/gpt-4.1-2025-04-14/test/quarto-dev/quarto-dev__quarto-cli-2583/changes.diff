@@ -1,0 +1,63 @@
+diff --git a/src/resources/filters/quarto-pre/table-captions.lua b/src/resources/filters/quarto-pre/table-captions.lua
+index 7ee3a3c11..7d095ca60 100644
+--- a/src/resources/filters/quarto-pre/table-captions.lua
++++ b/src/resources/filters/quarto-pre/table-captions.lua
+@@ -167,7 +167,16 @@ function applyTableCaptions(el, tblCaptions, tblLabels)
+           -- apply table caption and label
+           local beginCaption, captionText, endCaption = raw.text:match(captionPattern)
+           if #tblCaptions[idx] > 0 then
+-            captionText = pandoc.utils.stringify(tblCaptions[idx])
++            if _quarto.format.isHtmlOutput() then
++              captionText = pandoc.write(pandoc.Pandoc(tblCaptions[idx]), "html")
++              -- Remove enclosing <p> tags if present
++              captionText = captionText:gsub("^%s*<p>(.-)</p>%s*$", "%1")
++            elseif _quarto.format.isLatexOutput() then
++              captionText = pandoc.write(pandoc.Pandoc(tblCaptions[idx]), "latex")
++              captionText = captionText:gsub("^%s*\\par%s*", "")
++            else
++              captionText = pandoc.utils.stringify(tblCaptions[idx])
++            end
+           end
+           if #tblLabels[idx] > 0 then
+             captionText = captionText .. " {#" .. tblLabels[idx] .. "}"
+@@ -182,13 +191,22 @@ function applyTableCaptions(el, tblCaptions, tblLabels)
+           end
+         elseif hasPagedHtmlTable(raw) then
+           if #tblCaptions[idx] > 0 then
+-            local captionText = pandoc.utils.stringify(tblCaptions[idx])
++            local captionText
++            if _quarto.format.isHtmlOutput() then
++              captionText = pandoc.write(pandoc.Pandoc(tblCaptions[idx]), "html")
++              captionText = captionText:gsub("^%s*<p>(.-)</p>%s*$", "%1")
++            elseif _quarto.format.isLatexOutput() then
++              captionText = pandoc.write(pandoc.Pandoc(tblCaptions[idx]), "latex")
++              captionText = captionText:gsub("^%s*\\par%s*", "")
++            else
++              captionText = pandoc.utils.stringify(tblCaptions[idx])
++            end
+             if #tblLabels[idx] > 0 then
+               captionText = captionText .. " {#" .. tblLabels[idx] .. "}"
+             end
+-            local pattern = "(<div data[-]pagedtable=\"false\">)"
+-            -- we don't have a table to insert a caption to, so we'll wrap the caption with a div and the right class instead
+-            local replacement = "%1 <div class=\"table-caption\"><caption>" .. captionText:gsub("%%", "%%%%") .. "</caption></div>"
++            local pattern = "(<div data[-]pagedtable=\\"false\\">)"
++            -- we don\'t have a table to insert a caption to, so we\'ll wrap the caption with a div and the right class instead
++            local replacement = "%1 <div class=\\"table-caption\\"><caption>" .. captionText:gsub("%%", "%%%%") .. "</caption></div>"
+             raw.text = raw.text:gsub(pattern, replacement)
+           end
+         end
+@@ -210,7 +228,12 @@ function applyLatexTableCaption(latex, tblCaption, tblLabel, tablePattern)
+   -- apply table caption and label
+   local beginCaption, captionText, endCaption = latex:match(latexCaptionPattern)
+   if #tblCaption > 0 then
+-    captionText = pandoc.utils.stringify(tblCaption)
++    if _quarto.format.isLatexOutput() then
++      captionText = pandoc.write(pandoc.Pandoc(tblCaption), "latex")
++      captionText = captionText:gsub("^%s*\\par%s*", "")
++    else
++      captionText = pandoc.utils.stringify(tblCaption)
++    end
+   end
+   -- escape special characters for LaTeX
+   captionText = stringEscape(captionText, "latex")

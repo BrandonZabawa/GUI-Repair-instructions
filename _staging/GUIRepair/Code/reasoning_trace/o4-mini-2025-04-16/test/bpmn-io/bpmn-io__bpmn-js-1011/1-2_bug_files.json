@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/ordering/BpmnOrderingProvider.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/PathMap.js"
+        ],
+        "explanation": "\u2022 lib/features/ordering/BpmnOrderingProvider.js: This module assigns z\u2010index/order priorities to BPMN elements. The group shape currently doesn\u2019t get the top\u2010most priority here, causing it to be drawn too early and then covered by subsequently drawn shapes.\n\n\u2022 lib/draw/BpmnRenderer.js: The renderer processes shapes in the order defined by the ordering provider. Changing how or when it injects group shapes into the SVG drawing sequence will ensure the group border comes last.\n\n\u2022 lib/draw/PathMap.js: This file defines the SVG path shape for the BPMN Group boundary. While it doesn\u2019t set order itself, any tweaks to render the group with a special CSS class or higher insertion index will rely on the path definitions here. Adjusting the group path settings here (e.g. setting pointer-events or layering attributes) may also be necessary to fully enforce the \"always on top\" behavior.",
+        "bug_scenario": "When you add a new element onto the border of an existing BPMN group, the group\u2019s dashed\u2010border is drawn underneath the new element instead of always staying on top. In the screenshot you can see the circle placed at the right group border appears above the group, while the group\u2019s border is obscured behind it. According to the expected behavior, the dashed group boundary should always be rendered on top of any other shapes."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/ordering/BpmnOrderingProvider.js",
+            "lib/draw/BpmnRenderer.js"
+        ],
+        "explanation": "BpmnOrderingProvider.js is the piece of code that defines the relative z\u2010index for all BPMN elements (shapes, connections, groups, etc.). Right now the \u201cGroup\u201d type lives at a lower priority, so newly added shapes are placed above it. By bumping the Group entry to the highest priority here, we ensure groups always get drawn last. BpmnRenderer.js is responsible for actually inserting the group\u2019s SVG markup into the canvas. If necessary you can also enforce a final call to bring the group container to the front in its rendering routine so that it truly owns the top layer.",
+        "bug_scenario": "When you draw a shape (the small circle) right on the edge of an existing group, that new shape is currently rendered above the group\u2019s dashed border. In other words, the group rectangle is getting painted behind newly created elements instead of always staying on top. Visually you\u2019ll see the circle \u201ccutting through\u201d the group\u2019s border rather than the group masking it. Groups should always be the top\u2010most layer so that nothing can overlap their borders."
+    }
+}

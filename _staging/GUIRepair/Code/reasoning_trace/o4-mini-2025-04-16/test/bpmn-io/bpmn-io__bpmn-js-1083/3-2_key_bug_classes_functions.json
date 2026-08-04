@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/snapping/BpmnConnectSnapping.js//BpmnConnectSnapping"
+        ],
+        "bug_functions": [
+            "lib/features/snapping/BpmnConnectSnapping.js//snapInsideTarget",
+            "lib/features/snapping/BpmnConnectSnapping.js//snapBoundaryEventLoop",
+            "lib/features/snapping/BpmnConnectSnapping.js//snapToPosition"
+        ],
+        "explanation": "The snapping behavior for connections is implemented in BpmnConnectSnapping. Its event handler (triggered on connect.hover, connect.move and connect.end) delegates to snapInsideTarget, snapBoundaryEventLoop and snapToPosition to align endpoints to docking points and boundary event loops. Because docking snapping is missing, these functions (and the main BpmnConnectSnapping wiring) are the correct locations to restore the v3.x behavior.",
+        "bug_scenario": "In v3.x connecting flows would automatically snap the connection endpoint to the element\u2019s docking point (the little gray handle on the boundary). The first GIF shows the connector snapping exactly to that docking point when you hover over it. In v4-beta the same action no longer snaps the endpoint; instead the line floats freely inside the target shape without locking to the docking location."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/snapping/BpmnCreateMoveSnapping.js//BpmnCreateMoveSnapping"
+        ],
+        "bug_functions": [
+            "lib/features/snapping/BpmnCreateMoveSnapping.js//snapBoundaryEvent",
+            "lib/features/snapping/BpmnCreateMoveSnapping.js//setSnappedIfConstrained",
+            "lib/features/snapping/BpmnCreateMoveSnapping.js//BpmnCreateMoveSnapping.prototype.initSnap",
+            "lib/features/snapping/BpmnCreateMoveSnapping.js//BpmnCreateMoveSnapping.prototype.addSnapTargetPoints",
+            "lib/features/snapping/BpmnCreateMoveSnapping.js//BpmnCreateMoveSnapping.prototype.getSnapTargets",
+            "lib/features/snapping/BpmnSnappingUtil.js//getBoundaryAttachment"
+        ],
+        "explanation": "All of the docking\u2010snap behavior lives in BpmnCreateMoveSnapping. Its event listeners fire on create.move, create.end, shape.move.move and shape.move.end to conditionally call snapBoundaryEvent. That helper uses getBoundaryAttachment (from BpmnSnappingUtil) to decide which side you\u2019ve crossed and then setSnapped to lock the event\u2019s x or y to the pool\u2019s TRBL edge. If any of these handlers, methods or the orientation util break, boundary docking no longer happens. Fixing the registration or logic in these methods will restore the old v3.x docking snap behavior.",
+        "bug_scenario": "When you grab an existing BPMN event and drag it into or around the border of a Pool (or other attachable element), it no longer \u201csnaps\u201d to the edge docking point of that container. In v3.x the event would lock onto the correct boundary attachment (top, bottom, left or right) as you crossed the attachment threshold. In v4-beta the event floats freely and never sets its x or y coordinates to the container\u2019s TRBL edges."
+    }
+}

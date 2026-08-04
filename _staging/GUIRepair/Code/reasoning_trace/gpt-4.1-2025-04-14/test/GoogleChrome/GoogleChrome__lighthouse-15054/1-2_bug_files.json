@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "core/audits/bf-cache.js",
+            "core/audits/no-unload-listeners.js",
+            "core/gather/gatherers/global-listeners.js",
+            "core/gather/driver/execution-context.js",
+            "core/gather/driver/driver.js"
+        ],
+        "explanation": "These files are related to detecting unload listeners and bfcache eligibility on pages. 1) 'core/audits/bf-cache.js' contains the logic and reporting for the bfcache audit, which is surfacing the existence of an unload handler. 2) 'core/audits/no-unload-listeners.js' implements the audit which is currently missing unload handlers installed in isolated execution contexts (such as content scripts). 3) 'core/gather/gatherers/global-listeners.js' is responsible for gathering event listeners and would need updating to enumerate listeners across all execution contexts, including the isolated worlds of extensions. 4) 'core/gather/driver/execution-context.js' and 5) 'core/gather/driver/driver.js' manage and enumerate execution contexts, which is needed to cycle through all relevant contexts when looking for 'unload' listeners. These are the files most directly related to fixing detection and reporting of unload listeners in extension-injected or isolated contexts.",
+        "bug_scenario": "The bug scenario is that a page fails the bfcache (Back/Forward Cache) audit claiming there is an 'unload' handler in the main frame, but the 'no-unload-listeners' audit passes, and DevTools provides no visible evidence of such a listener. This occurs because extension content scripts inject 'unload' listeners in isolated contexts undetectable by the standard DOM APIs or the mechanisms used by the 'no-unload-listeners' audit\u2014making it hard to debug for users and developers."
+    },
+    "2": {
+        "bug_files": [
+            "core/audits/bf-cache.js",
+            "core/audits/no-unload-listeners.js",
+            "core/gather/driver/execution-context.js",
+            "core/gather/gatherers/global-listeners.js"
+        ],
+        "explanation": "The bug is related to how Lighthouse audits for 'unload' event listeners: the 'bf-cache.js' audit reports on the bfcache-failure reason of unload listeners, while 'no-unload-listeners.js' specifically audits for unload event listeners in the main frame. The failure occurs because the method for detecting unload listeners does not consider listeners registered in extension or isolated execution contexts. To resolve this, the audits must enumerate or check event listeners across all relevant execution contexts, not just the default page/main frame context. The 'execution-context.js' file handles different execution contexts in gathering, so it is relevant for supporting context enumeration. 'global-listeners.js' is likely used to actually detect or enumerate global event listeners, and would also need updates to detect listeners added in all execution contexts. Fixing the bug involves changes across these files to properly enumerate and check unload handlers across all execution contexts, ensuring both audits return consistent, accurate results.",
+        "bug_scenario": "The bug occurs when an extension injects an 'unload' event listener into the main frame at 'document_start'\u2014in an isolated execution context. This causes the bfcache (back/forward cache) audit to fail due to the presence of the unload handler, but the 'no-unload-listeners' audit to incorrectly pass, as it does not detect unload listeners in these isolated contexts. Users also can't see these listeners in the DevTools panel or via getEventListeners(window) unless they manually select the extension's execution context. This makes the problem very difficult to debug and identify, especially for Lighthouse users running audits on pages where extensions behave this way. The bug is visually confirmed in the first image (bfcache audit fails due to unload handler) while the second image shows the 'no-unload-listeners' audit incorrectly passing (green)."
+    }
+}

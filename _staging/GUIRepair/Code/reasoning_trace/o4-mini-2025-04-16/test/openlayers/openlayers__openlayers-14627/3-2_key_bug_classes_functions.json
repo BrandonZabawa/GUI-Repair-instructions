@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/ol/extent.js//applyTransform",
+            "src/ol/extent.js//isEmpty",
+            "src/ol/proj/epsg3857.js//fromEPSG4326"
+        ],
+        "explanation": "\u2022 applyTransform (in src/ol/extent.js) is responsible for applying the projection transform to all corners of the extent. It currently does not guard against an empty extent and blindly invokes the transform on infinite coordinates, yielding NaN.\n\u2022 isEmpty (in src/ol/extent.js) correctly detects an empty extent ([Infinity, Infinity, -Infinity, -Infinity]) but is not used inside applyTransform to short-circuit transformation of an empty box.\n\u2022 fromEPSG4326 (in src/ol/proj/epsg3857.js) is the transform function registered for EPSG:4326\u2192EPSG:3857. It computes y = RADIUS * log(tan((\u03c0*(lat+90))/360)). When lat=\u00b1Infinity, tan(\u2026) \u2192 Infinity, log(Infinity) \u2192 Infinity, and numeric operations produce NaN. Consequently, applyTransform returns an extent containing NaN, which breaks view.fit().\n\nTo fix the bug, applyTransform should check isEmpty(extent) and if true simply return an empty extent (or bypass the transform), so fromEPSG4326 never sees infinite values.",
+        "bug_scenario": "The user is calling map.getView().fit() on an extent produced by applying a coordinate transform to an empty extent. In the example, createEmpty() yields [Infinity, Infinity, -Infinity, -Infinity]. Passing this into applyTransform with the fromEPSG4326 transform causes Math.tan(Infinity) \u2192 NaN, so the transformed extent contains NaN values. When fit() receives an extent with NaN, it crashes with \u201cCannot read properties of undefined (reading 'length')\u201d."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/extent.js",
+            "src/ol/proj/epsg3857.js"
+        ],
+        "bug_functions": [
+            "src/ol/extent.js//applyTransform",
+            "src/ol/proj/epsg3857.js//fromEPSG4326"
+        ],
+        "explanation": "applyTransform in extent.js blindly applies any transform function (here fromEPSG4326) to the four corners of the extent, even if the extent is empty (its values are \u00b1Infinity). fromEPSG4326 in epsg3857.js computes y = RADIUS * log(tan((input[i+1]+90)*\u03c0/360)), but when input[i+1] is \u00b1Infinity, tan(\u00b1Infinity) \u2192 NaN, and log(NaN) remains NaN. Thus applyTransform returns an extent with NaN, which breaks downstream code (fit()). To fix this, either applyTransform should early-return an empty extent (detect Infinity via isEmpty/extents) or fromEPSG4326 should guard against infinite inputs (skip the log/tan path and propagate \u00b1Infinity).",
+        "bug_scenario": "When calling fit() on an empty extent (created via createEmpty()), applyTransform(extent, fromEPSG4326) is invoked on an extent whose min/max values are \u00b1Infinity. Inside fromEPSG4326, the formula uses Math.tan() and Math.log() on Infinity, producing NaN for the Y coordinates. The resulting extent contains NaN and then map.getView().fit(extent) throws a TypeError."
+    }
+}

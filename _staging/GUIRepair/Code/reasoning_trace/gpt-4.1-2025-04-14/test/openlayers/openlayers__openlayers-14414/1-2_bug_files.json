@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/source/Raster.js",
+            "src/ol/layer/Image.js"
+        ],
+        "explanation": "The files are selected for the following reasons: 1) 'src/ol/source/GeoTIFF.js' manages reading bands/values from the GeoTIFF and may have issues with correct band value retrieval and normalization. 2) 'src/ol/layer/WebGLTile.js' runs custom styles using variables (such as 'level'), so it must properly listen and react to style variable updates like slider changes. 3) 'src/ol/source/Raster.js' processes per-pixel operations (e.g., floodRegion); any issues with value passing, updating, or correct data pipeline flow may reside here, especially around 'beforeoperations' and custom region marking. 4) 'src/ol/layer/Image.js' is responsible for rendering the raster output and ensuring display updates reflect the changed data after a slider change or map interaction. All these files are directly relevant to GeoTIFF pixel value handling, per-pixel operation/detection, and the connection between UI events and updated raster visualization.",
+        "bug_scenario": "The bug scenario involves using OpenLayers with a GeoTIFF source to highlight regions (pixels) below a certain elevation value in a WebGLTileLayer. When increasing the slider (raising the 'level'), the flooding (white color) updates as expected, but when lowering the slider, the highlighted regions do not update correctly. Additionally, console output suggests the pixel value is always zero, which may indicate incorrect band reading or rendering. The image confirms the slider and map update incorrectly, and the console logs show a 'Value: 0' and a performance warning after interaction. This suggests the relevant elevation value is not being accessed or updated as expected when the slider is decreased or on click events. The issues may relate to pixel access, update style mechanics, and how Raster / TileLayer handle style variable or data pipeline updates."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/source/Raster.js",
+            "src/ol/layer/Image.js",
+            "src/ol/source/OSM.js"
+        ],
+        "explanation": "The files are selected based on the architecture and the reported issue breakdown:\n- src/ol/source/GeoTIFF.js: Handles loading and rasterizing of GeoTIFF data; the bug could reside here if data is not properly updated or interpreted according to the slider's level.\n- src/ol/layer/WebGLTile.js: Responsible for the tile layer that supports custom styling and the case expression; issues with updating style variables or visual states could be here.\n- src/ol/source/Raster.js: Implements the RasterSource and its operations (like the floodRegion function in the sample); issues with propagation after state/level changes may exist here.\n- src/ol/layer/Image.js: Directly deals with rendering raster images (like the region growing output); potential problems with updating visuals after the operation could be present.\n- src/ol/source/OSM.js: Included because OSM is layered beneath and interacts with the styled tile layer and could be part of rendering and data flow.\n\nOther core components (like Map.js or View.js) are less likely to introduce this specific bug, since the reported symptoms center on the raster/tiling/style/data path.",
+        "bug_scenario": "The user is trying to perform a Region Growing operation using a GeoTIFF with OpenLayers, where a slider adjusts a 'sea level' threshold and updates the visualization accordingly. Increasing the level makes all pixels below the threshold white as intended, but decreasing the level fails to update the affected pixels, and printed pixel values are not as expected (as shown in the console output and the screenshot). This suggests a problem with how the GeoTIFF data is being accessed, how style variables are updated on the TileLayer, or how RasterSource operations propagate changes."
+    }
+}

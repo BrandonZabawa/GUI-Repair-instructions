@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/table-captions.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/table-captions.lua//tableCaptions",
+            "src/resources/filters/quarto-pre/table-captions.lua//tableCaptionsAndLabels",
+            "src/resources/filters/quarto-pre/table-captions.lua//applyTableCaptions"
+        ],
+        "explanation": "The bug is rooted in how the table captions are extracted and rendered. The key logic for extracting, processing, and applying table captions is in tableCaptions, tableCaptionsAndLabels, and applyTableCaptions functions in 'table-captions.lua'. These functions are responsible for converting the caption attribute into inline elements and inserting them into the final Pandoc AST or HTML/LaTeX output. If markdown is not being parsed or appropriately converted to rich text (i.e., 'markdownToInlines' isn't used, or the output is flattened to plain text), markdown styling will be lost. The figure rendering pipeline must be handling markdown differently, allowing styling, so the fix must ensure table captions are processed similarly to figure captions, likely by adjusting how markdown is parsed/applied in these functions. The classes/functions in 'tables.lua' are helpers for table patterns and caption parsing but the bug's root is in 'table-captions.lua', which directly manages the caption content.",
+        "bug_scenario": "The image and bug report show that markdown formatting (such as italics and superscript) is not rendered in table captions, while it works properly in figure captions. Table captions are displayed as plain text, ignoring markdown syntax, which limits caption styling for tables but not figures."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/table-captions.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/table-captions.lua//applyTableCaptions",
+            "src/resources/filters/quarto-pre/table-captions.lua//applyLatexTableCaption",
+            "src/resources/filters/quarto-pre/table-captions.lua//tableCaptionsAndLabels"
+        ],
+        "explanation": "The file 'src/resources/filters/quarto-pre/table-captions.lua' contains the logic for handling table captions. The key functions are:\n- applyTableCaptions: Responsible for inserting table captions into HTML or LaTeX tables. It currently uses 'pandoc.utils.stringify(tblCaptions[idx])', which converts the caption to plain text, ignoring Markdown formatting.\n- applyLatexTableCaption: Similarly stringifies the caption for LaTeX tables, losing Markdown formatting.\n- tableCaptionsAndLabels: Prepares the caption content, calling 'markdownToInlines' on the caption, but downstream usage strips Markdown formatting.\nThese functions are central to how table captions are processed and why Markdown is not rendered. Fixing the issue likely requires ensuring captions are parsed/rendered as Markdown in these functions before insertion. No relevant logic for caption rendering appears in 'src/resources/filters/common/tables.lua'; it provides only utility functions.",
+        "bug_scenario": "The bug scenario is that Markdown styling (such as italics and superscript) does not work in table captions, despite working in figure captions. In the provided screenshot, the table caption is rendered as plain text, while the figure caption correctly applies Markdown styling (italics and superscript). This indicates that table captions are not being processed as Markdown and are instead inserted as plain strings."
+    }
+}

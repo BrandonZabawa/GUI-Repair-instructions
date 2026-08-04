@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-basic.js//Prism.languages.basic",
+            "components/prism-basic.min.js//Prism.languages.basic"
+        ],
+        "bug_functions": [
+            "components/prism-basic.js//string.pattern",
+            "components/prism-basic.min.js//string.pattern"
+        ],
+        "explanation": "The root of the problem is the regular expression that defines how Prism recognizes string literals in the basic language definition (which VB.NET extends). In both prism-basic.js and its minified version, the pattern for the 'string' token only allows a specific set of characters inside quotes\u2014'@' is not included. As a result, when an '@' appears, the regex fails to match the opening quote and the rest of the text is not treated as part of the string. To fix this, '@' must be added to the allowed character class in the 'string.pattern' regex.",
+        "bug_scenario": "In VB.NET code, when a string literal contains an '@' character (for example, \"Select * from test Where Code=@Code\"), Prism\u2019s VB.NET syntax highlighter fails to recognize the opening quote and highlights the remainder of the line as code rather than as a string. Strings without '@' work correctly."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-basic.js//Prism.languages.basic",
+            "components/prism-basic.min.js//Prism.languages.basic"
+        ],
+        "bug_functions": [
+            "components/prism-basic.js//string",
+            "components/prism-basic.min.js//string"
+        ],
+        "explanation": "The root of the bug is in the definition of the \u2018string\u2019 token in the basic language (components/prism-basic.js and its minified counterpart). The regex character class for matching the contents of a quoted string does not include the '@' symbol, so strings containing '@' are cut off at that point. Since prism-vbnet.js simply extends Prism.languages.basic without overriding the string pattern, VB.NET inherits the same faulty regex. To fix the issue, update the character class in the \u2018string\u2019 pattern to include '@', ensuring that any string literal containing '@' is recognized and highlighted correctly.",
+        "bug_scenario": "In VB.NET code samples containing SQL strings with an '@' parameter (e.g. \"Select * from test Where Code=@Code\"), Prism\u2019s syntax highlighter fails to recognize the opening quote as part of a valid string literal once it hits the '@' character. As a result the rest of the line is highlighted as code rather than as part of the string. The second example without '@' highlights correctly."
+    }
+}

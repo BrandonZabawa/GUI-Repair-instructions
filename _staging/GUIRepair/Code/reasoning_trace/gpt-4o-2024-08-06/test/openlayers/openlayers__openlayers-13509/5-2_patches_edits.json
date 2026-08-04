@@ -1,0 +1,349 @@
+{
+    "1/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "render(frameState, target) {",
+                    "this.rendered = true;",
+                    "const viewState = frameState.viewState;",
+                    "const sources = this.getSources(frameState.extent, viewState.resolution);",
+                    "let ready = true;"
+                ],
+                "REPLACE": [
+                    "render(frameState, target) {",
+                    "this.rendered = true;",
+                    "const viewState = frameState.viewState;",
+                    "const sources = this.getSources(frameState.extent, viewState.resolution);",
+                    "let ready = true;",
+                    "",
+                    "// Check the visibility of the parent group layer",
+                    "if (!this.getLayerState().visible) {",
+                    "return null; // Do not render if the parent group is not visible",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "renderFrame(frameState) {",
+                    "this.frameState_ = frameState;",
+                    "this.renderComplete = true;",
+                    "const gl = this.helper.getGL();",
+                    "...",
+                    "const tileLayer = this.getLayer();"
+                ],
+                "REPLACE": [
+                    "renderFrame(frameState) {",
+                    "this.frameState_ = frameState;",
+                    "this.renderComplete = true;",
+                    "const gl = this.helper.getGL();",
+                    "",
+                    "// Adding visibility check",
+                    "const layerState = this.getLayer().getLayerState();",
+                    "if (!layerState.visible) {",
+                    "return null; // Ensure the layer isn't rendered if not visible",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "renderFrame(frameState) {",
+                    "this.frameState_ = frameState;",
+                    "this.renderComplete = true;",
+                    "const gl = this.helper.getGL();",
+                    "this.preRender(gl, frameState);",
+                    "",
+                    "const viewState = frameState.viewState;",
+                    "const tileLayer = this.getLayer();"
+                ],
+                "REPLACE": [
+                    "renderFrame(frameState) {",
+                    "this.frameState_ = frameState;",
+                    "this.renderComplete = true;",
+                    "const gl = this.helper.getGL();",
+                    "this.preRender(gl, frameState);",
+                    "",
+                    "const viewState = frameState.viewState;",
+                    "const tileLayer = this.getLayer();",
+                    "",
+                    "if (!tileLayer.getVisible()) {",
+                    "return this.helper.getCanvas();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "if (!source) {",
+                    "return false;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (!source || !this.getLayer().getVisible()) {",
+                    "return false;",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.rendered = true;",
+                    "const viewState = frameState.viewState;",
+                    "const sources = this.getSources(frameState.extent, viewState.resolution);",
+                    "let ready = true;"
+                ],
+                "REPLACE": [
+                    "this.rendered = this.getVisible();",
+                    "const viewState = frameState.viewState;",
+                    "const sources = this.getSources(",
+                    "frameState.extent,",
+                    "viewState.resolution",
+                    ");",
+                    "let ready = this.rendered;"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/layer/Group.js": [
+            {
+                "SEARCH": [
+                    "layerState.visible = layerState.visible && ownLayerState.visible;",
+                    "layerState.maxResolution = Math.min(",
+                    "layerState.maxResolution,",
+                    "ownLayerState.maxResolution"
+                ],
+                "REPLACE": [
+                    "layerState.visible = ownLayerState.visible && layerState.visible;",
+                    "layerState.maxResolution = Math.min(",
+                    "ownLayerState.maxResolution,",
+                    "layerState.maxResolution"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "this.rendered = true;",
+                    "const viewState = frameState.viewState;",
+                    "const sources = this.getSources(frameState.extent, viewState.resolution);"
+                ],
+                "REPLACE": [
+                    "this.rendered = true;",
+                    "const viewState = frameState.viewState;",
+                    "const sources = this.getSources(frameState.extent, viewState.resolution);",
+                    "",
+                    "const layerState = this.getLayerState();",
+                    "if (!layerState.visible) {",
+                    "return null;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/layer/Group.js": [
+            {
+                "SEARCH": [
+                    "layerState.visible = layerState.visible && ownLayerState.visible;",
+                    "layerState.maxResolution = Math.min(",
+                    "layerState.maxResolution,",
+                    "ownLayerState.maxResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// Ensure child layers do not render if the group itself is invisible",
+                    "layerState.visible = ownLayerState.visible && layerState.visible;",
+                    "layerState.maxResolution = Math.min(",
+                    "ownLayerState.maxResolution,",
+                    "layerState.maxResolution",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayer extends BaseTileLayer {",
+                    "...",
+                    "render(frameState, target) {",
+                    "this.rendered = true;"
+                ],
+                "REPLACE": [
+                    "render(frameState, target) {",
+                    "// Check if the layer is visible",
+                    "if (!this.getLayerState().visible) {",
+                    "return null;",
+                    "}",
+                    "this.rendered = true;"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const tileLayer = this.getLayer();",
+                    "const tileSource = tileLayer.getRenderSource();"
+                ],
+                "REPLACE": [
+                    "const tileLayer = this.getLayer();",
+                    "if (!tileLayer.getLayerState().visible) {",
+                    "return;",
+                    "}",
+                    "const tileSource = tileLayer.getRenderSource();"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/layer/Group.js": [
+            {
+                "SEARCH": [
+                    "handleLayerChange_() {",
+                    "this.changed();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "handleLayerChange_() {",
+                    "this.changed();",
+                    "",
+                    "// Propagate visibility change to child layers",
+                    "this.getLayers().forEach(layer => {",
+                    "layer.setVisible(this.getVisible() && layer.getVisible());",
+                    "});",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "render(frameState, target) {",
+                    "this.rendered = true;",
+                    "const viewState = frameState.viewState;",
+                    "const sources = this.getSources(frameState.extent, viewState.resolution);",
+                    "let ready = true;"
+                ],
+                "REPLACE": [
+                    "render(frameState, target) {",
+                    "this.rendered = true;",
+                    "",
+                    "// Check visibility with parent layer group",
+                    "if (!this.getVisible() || !this.getLayerState().visible) {",
+                    "return;",
+                    "}",
+                    "",
+                    "const viewState = frameState.viewState;",
+                    "const sources = this.getSources(frameState.extent, viewState.resolution);",
+                    "let ready = true;"
+                ]
+            }
+        ],
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const layer = this.getLayer();",
+                    "const source = layer.getRenderSource();",
+                    "if (!source) {",
+                    "return false;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const layer = this.getLayer();",
+                    "",
+                    "// Ensure visibility is respected",
+                    "if (!layer.getVisible() || !layer.getLayerState().visible) {",
+                    "return false;",
+                    "}",
+                    "",
+                    "const source = layer.getRenderSource();",
+                    "if (!source) {",
+                    "return false;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "prepareFrameInternal(frameState) {",
+                    "const layer = this.getLayer();",
+                    "const source = layer.getRenderSource();",
+                    "if (!source) {",
+                    "return false;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "prepareFrameInternal(frameState) {",
+                    "const layer = this.getLayer();",
+                    "const source = layer.getRenderSource();",
+                    "",
+                    "// Check if any parent layer is not visible",
+                    "let currentLayer = layer;",
+                    "while (currentLayer) {",
+                    "if (!currentLayer.getVisible()) {",
+                    "this.renderComplete = true;",
+                    "return false;",
+                    "}",
+                    "currentLayer = currentLayer.get('parentLayer');",
+                    "}",
+                    "",
+                    "if (!source) {",
+                    "return false;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/renderer/webgl/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "...",
+                    "prepareFrameInternal(frameState) {",
+                    "const layer = this.getLayer();",
+                    "const source = layer.getRenderSource();",
+                    "if (!source) {",
+                    "return false;",
+                    "}",
+                    "",
+                    "if (isEmpty(getRenderExtent(frameState, frameState.extent))) {",
+                    "return false;",
+                    "}",
+                    "return source.getState() === State.READY;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "class WebGLTileLayerRenderer extends WebGLLayerRenderer {",
+                    "...",
+                    "prepareFrameInternal(frameState) {",
+                    "const layer = this.getLayer();",
+                    "const source = layer.getRenderSource();",
+                    "if (!source || !layer.getVisible()) { // Check visibility",
+                    "return false;",
+                    "}",
+                    "",
+                    "if (isEmpty(getRenderExtent(frameState, frameState.extent))) {",
+                    "return false;",
+                    "}",
+                    "return source.getState() === State.READY;",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

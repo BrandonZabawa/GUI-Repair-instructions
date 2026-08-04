@@ -1,0 +1,38 @@
+diff --git a/clients/devtools/devtools-entry.js b/clients/devtools/devtools-entry.js
+index 3cbd6db47..d607c3f80 100644
+--- a/clients/devtools/devtools-entry.js
++++ b/clients/devtools/devtools-entry.js
+@@ -40,7 +40,7 @@ function createConfig(categoryIDs, device) {
+     onlyCategories: categoryIDs,
+     // In DevTools, emulation is applied _before_ Lighthouse starts (to deal with viewport emulation bugs). go/xcnjf
+     // As a result, we don't double-apply viewport emulation.
+-    screenEmulation: {disabled: true},
++    screenEmulation: {disabled: false},
+   };
+   if (device === 'desktop') {
+     settings.throttling = constants.throttling.desktopDense4G;
+diff --git a/core/lib/emulation.js b/core/lib/emulation.js
+index 288a67755..6efd125bb 100644
+--- a/core/lib/emulation.js
++++ b/core/lib/emulation.js
+@@ -71,14 +71,12 @@ async function emulate(session, settings) {
+     });
+   }
+   // See devtools-entry for one usecase for disabling screenEmulation
+-  if (settings.screenEmulation.disabled !== true) {
+-    const {width, height, deviceScaleFactor, mobile} = settings.screenEmulation;
+-    const params = {width, height, deviceScaleFactor, mobile};
+-    await session.sendCommand('Emulation.setDeviceMetricsOverride', params);
+-    await session.sendCommand('Emulation.setTouchEmulationEnabled', {
+-      enabled: params.mobile,
+-    });
+-  }
++  const {width, height, deviceScaleFactor, mobile} = settings.screenEmulation;
++  const params = {width, height, deviceScaleFactor, mobile};
++  await session.sendCommand('Emulation.setDeviceMetricsOverride', params);
++  await session.sendCommand('Emulation.setTouchEmulationEnabled', {
++    enabled: params.mobile,
++  });
+ }
+ 
+ /**

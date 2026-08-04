@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/ImageArcGISRest.js//ImageArcGISRest",
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/source/ImageArcGISRest.js//constructor",
+            "src/ol/source/ImageArcGISRest.js//getImageInternal",
+            "src/ol/renderer/canvas/ImageLayer.js//renderFrame"
+        ],
+        "explanation": "ImageArcGISRest\u2019s constructor sets this.ratio_ to 1.5 by default. In getImageInternal, whenever ratio_ != 1, the code expands the requested extent by ratio_ and then computes new integer width/height\u2014this padding causes the returned image to cover a region larger than the actual viewport. CanvasImageLayerRenderer.renderFrame then draws that oversized image using its own transforms (which assume a tight fit to the viewport), so the layer appears shifted or scaled incorrectly. After map rotation the same mismatch occurs but compounded by the rotation transform, leading to visible misalignment between the ArcGISRest layer and the base map. Forcing ratio to 1 bypasses the extent expansion in getImageInternal and restores correct alignment.",
+        "bug_scenario": "When using ImageArcGISRest in OpenLayers 7.4 with the default ratio of 1.5 (or any value other than 1), tiles requested from an ArcGIS MapServer get a larger bounding box than the map viewport. On displays with browser zoom/OS scaling \u2260100% (for example 150%), the layer image is requested and rendered at the wrong size/position. After rotating the map, the same ratio\u2010based extent increase causes the layer to be misaligned further, since the CanvasImageLayerRenderer\u2019s renderFrame transform does not compensate for the extra padding introduced in getImageInternal."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/ImageArcGISRest.js//ImageArcGISRest"
+        ],
+        "bug_functions": [
+            "src/ol/source/ImageArcGISRest.js//constructor",
+            "src/ol/source/ImageArcGISRest.js//getImageInternal"
+        ],
+        "explanation": "The bug originates in ImageArcGISRest: in its constructor the option `ratio` defaults to 1.5, and in getImageInternal that ratio is used to expand the requested bbox. On a high-DPI or scaled display (hidpi_=true), pixelRatio is also >1, so combining pixelRatio and a hardcoded ratio of 1.5 yields an incorrect request size and misaligned imagery. Adjusting the default ratio (or the logic that applies it in getImageInternal) is necessary to restore proper layer-map alignment, both before and after rotation.",
+        "bug_scenario": "When viewing an ArcGISRest image source on a display with OS/browser zoom or scaling \u2260 100% (for example at 150%), the ImageArcGISRest source\u2019s default ratio of 1.5 causes its requested image extent to be enlarged by that factor. As a result the layer no longer lines up with the map, and this misalignment persists or even worsens when the map is rotated. Forcing the ratio down to 1 fixes the problem."
+    }
+}

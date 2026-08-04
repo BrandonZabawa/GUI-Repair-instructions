@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/reproj/Triangulation.js//Triangulation",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/Triangulation.js//Triangulation (constructor)",
+            "src/ol/reproj/Triangulation.js//addQuad_",
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_"
+        ],
+        "explanation": "The missing\u2010tile gap appears because the reprojection engine splits each target tile into triangles/quads in the source projection (Triangulation), but the logic that detects and shifts coordinates across the \u00b1180\u00b0 wrap is too conservative. In `Triangulation`'s constructor it may refuse to shift triangles when the extent spans the prime meridian and dateline, and in `addQuad_` it doesn\u2019t correctly subdivide quads crossing the wrap. As a result, source\u2010projection areas on the \u2018other side\u2019 of the antimeridian aren\u2019t covered by any triangles. In addition, `ReprojTile.reproject_` uses the triangulation and source tiles to draw onto a canvas; if triangles are missing then rendering omits those regions. Fixing the wrap\u2010X detection and quad subdivision in `Triangulation` (and ensuring `ReprojTile` uses the wrapped tile coordinate to compute extents) will allow tiles to render seamlessly across the antimeridian.",
+        "bug_scenario": "When reprojecting a GeoTIFF into a stereographic projection and displaying it in a WebGLTileLayer, tiles that cross the antimeridian (the \u00b1180\u00b0 longitude seam) are not rendered. The map shows a black gap along the dateline because the reprojection triangulation fails to generate triangles across the world\u2010wrap boundary."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/reproj/Triangulation.js//Triangulation",
+            "src/ol/reproj/Tile.js//ReprojTile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/Triangulation.js//addQuad_",
+            "src/ol/reproj/Triangulation.js//addTriangle_",
+            "src/ol/reproj/Tile.js//reproject_"
+        ],
+        "explanation": "Triangulation is responsible for subdividing each target tile into triangles (and quads) and mapping them back to the source projection. Its addQuad_ and addTriangle_ methods contain special logic to detect and shift extents that cross the projection\u2019s wrap-around meridian (using modulo arithmetic). A flaw in this wrapping/shifting logic near the antimeridian causes no triangles to be generated for that slice of the target extent, so renderReprojected in ReprojTile.reproject_ has no geometry to draw\u2014producing the visible gaps. Fixing or improving the handling in Triangulation.addQuad_/addTriangle_ (and related modulo calculations) ensures continuous coverage across the dateline.",
+        "bug_scenario": "When reprojection of GeoTIFF tiles to a custom stereographic projection crosses the antimeridian, WebGLTileLayer fails to generate or render the necessary triangles on the far side of the dateline. As a result, you see black gaps (missing tiles) along the antimeridian boundary, whose size varies with tile size and zoom level."
+    }
+}

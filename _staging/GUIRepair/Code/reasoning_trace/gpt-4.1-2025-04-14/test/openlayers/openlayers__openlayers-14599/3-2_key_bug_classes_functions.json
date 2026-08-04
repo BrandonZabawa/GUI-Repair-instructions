@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Group.js//LayerGroup",
+            "src/ol/layer/Layer.js//Layer",
+            "src/ol/control/Attribution.js//Attribution"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Group.js//getLayerStatesArray",
+            "src/ol/layer/Layer.js//getAttributions",
+            "src/ol/control/Attribution.js//collectSourceAttributions_"
+        ],
+        "explanation": "The bug is related to how attributions are collected and displayed for layers in a group. The LayerGroup class (src/ol/layer/Group.js) manages visibility and state propagation down to child layers. Its getLayerStatesArray function combines the visibility and state of the group and sub-layers, but if not implemented correctly, it may fail to suppress sub-layer attributions when the group is invisible. The Layer class (src/ol/layer/Layer.js) is responsible for providing attributions, but should not provide them if not visible in the current map state. The Attribution class (src/ol/control/Attribution.js) collects and renders attributions; its collectSourceAttributions_ function aggregates attributions from all visible layers but may not respect group visibility correctly. These classes and functions are critical to fixing the bug: ensuring attributions are not displayed for sub-layers of invisible groups.",
+        "bug_scenario": "The image and bug report describe a UI scenario where a group layer ('SEZON OFF/ON', 1) is set to invisible, but a sub-layer ('budynki sezon', 2) is visible. Despite the group being invisible, the attribution ('SEZON: Budynki', 3) from the visible sub-layer still appears in the attribution control (bottom right). The expected behavior is that attributions for sub-layers should not be displayed if their parent group layer is invisible, even if the sub-layer itself is visible."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/Group.js//LayerGroup"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Layer.js//getAttributions",
+            "src/ol/control/Attribution.js//Attribution.collectSourceAttributions_"
+        ],
+        "explanation": "The core of the bug is that attributions for sub-layers remain visible even when their parent group is hidden. The most relevant class is 'LayerGroup' in src/ol/layer/Group.js, since it manages group and sub-layer visibility. The function 'getAttributions' in src/ol/layer/Layer.js is responsible for fetching attributions for a layer, but likely doesn't account for parent group visibility. The 'collectSourceAttributions_' method in src/ol/control/Attribution.js compiles attributions from all layers for display, and would need to check not just sub-layer visibility but also parent (group) visibility, to ensure attributions are only shown if both are visible. These are the key locations that would need to be edited to fix the issue.",
+        "bug_scenario": "The scenario depicted in the image and described in the bug report is as follows: The 'SEZON OFF/ON' group layer (1) is set to invisible, but its sub-layer 'budynki sezon' (2) is still individually visible. Despite the group layer being invisible, the attribution text of the sub-layer (3) is still displayed in the info popup and attribution control. This is incorrect behavior\u2014when the parent group layer is hidden, the attribution for any visible child layers should not be shown."
+    }
+}

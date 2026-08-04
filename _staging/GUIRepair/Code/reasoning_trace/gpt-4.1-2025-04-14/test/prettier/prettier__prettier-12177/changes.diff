@@ -1,0 +1,48 @@
+diff --git a/src/language-js/print/statement.js b/src/language-js/print/statement.js
+index b8575744f..5993428f2 100644
+--- a/src/language-js/print/statement.js
++++ b/src/language-js/print/statement.js
+@@ -164,6 +164,43 @@ function printSwitchCaseConsequent(path, options, print) {
+   return printStatementSequence(path, options, print, "consequent");
+ }
+ 
++// Patch: Ensure default: // comment stays on the same line as default:
++const { builders: { concat, line, ifBreak, group } } = require("../../document");
++
++function printSwitchCase(path, options, print) {
++  const node = path.getValue();
++  const parts = [];
++
++  if (node.test) {
++    // case ...
++    parts.push("case ", path.call(print, "test"), ":");
++  } else {
++    // default
++    parts.push("default:");
++  }
++
++  // Attach trailing comment to the same line for default:
++  if (
++    !node.test &&
++    node.comments &&
++    node.comments.length > 0 &&
++    node.comments[node.comments.length - 1].trailing
++  ) {
++    // Find the trailing comment
++    const trailingComment = node.comments[node.comments.length - 1];
++    parts.push(" ", printComment(trailingComment));
++  }
++
++  parts.push(
++    path.call(
++      (consequentPath) => printSwitchCaseConsequent(consequentPath, options, print),
++      "consequent"
++    )
++  );
++
++  return group(concat(parts));
++}
++
+ const isClassProperty = ({ type }) =>
+   type === "ClassProperty" ||
+   type === "PropertyDefinition" ||

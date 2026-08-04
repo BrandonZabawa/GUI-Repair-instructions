@@ -1,0 +1,185 @@
+{
+    "1/1": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "function getResolution(image, referenceImage) {",
+                    "try {",
+                    "return image.getResolution(referenceImage)[0];",
+                    "} catch (_) {",
+                    "return (",
+                    "referenceImage.fileDirectory.ImageWidth / image.fileDirectory.ImageWidth",
+                    ");",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function getResolution(image, referenceImage) {",
+                    "  try {",
+                    "    // getResolution returns [xRes, yRes]",
+                    "    return image.getResolution(referenceImage);",
+                    "  } catch (_) {",
+                    "    // Fallback: assume square pixels if not available",
+                    "    const xRes = referenceImage.fileDirectory.ImageWidth / image.fileDirectory.ImageWidth;",
+                    "    const yRes = referenceImage.fileDirectory.ImageLength / image.fileDirectory.ImageLength;",
+                    "    return [xRes, yRes];",
+                    "  }",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "sourceResolutions[level] = getResolution(image, images[0]);",
+                    "sourceTileSizes[level] = [image.getTileWidth(), image.getTileHeight()];"
+                ],
+                "REPLACE": [
+                    "        sourceResolutions[level] = getResolution(image, images[0]);",
+                    "        sourceTileSizes[level] = [image.getTileWidth(), image.getTileHeight()];"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const tileGrid = new TileGrid({",
+                    "extent: extent,",
+                    "minZoom: minZoom,",
+                    "origin: origin,",
+                    "resolutions: resolutions,",
+                    "tileSizes: tileSizes,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "    // If resolutions are arrays of [xRes, yRes], split them",
+                    "    let xResolutions = resolutions.map(r => Array.isArray(r) ? r[0] : r);",
+                    "    let yResolutions = resolutions.map(r => Array.isArray(r) ? r[1] : r);",
+                    "",
+                    "    const tileGrid = new TileGrid({",
+                    "      extent: extent,",
+                    "      minZoom: minZoom,",
+                    "      origin: origin,",
+                    "      resolutions: xResolutions,",
+                    "      yResolutions: yResolutions,",
+                    "      tileSizes: tileSizes,",
+                    "    });"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const size = toSize(this.tileGrid.getTileSize(z));",
+                    "",
+                    "const sourceCount = this.sourceImagery_.length;",
+                    "const requests = new Array(sourceCount);",
+                    "const addAlpha = this.addAlpha_;",
+                    "const bandCount = this.bandCount;",
+                    "const samplesPerPixel = this.samplesPerPixel_;",
+                    "const nodataValues = this.nodataValues_;",
+                    "const sourceInfo = this.sourceInfo_;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const source = sourceInfo[sourceIndex];",
+                    "const resolutionFactor = this.resolutionFactors_[sourceIndex];",
+                    "const pixelBounds = [",
+                    "Math.round(x * (size[0] * resolutionFactor)),",
+                    "Math.round(y * (size[1] * resolutionFactor)),",
+                    "Math.round((x + 1) * (size[0] * resolutionFactor)),",
+                    "Math.round((y + 1) * (size[1] * resolutionFactor)),",
+                    "];",
+                    "const image = this.sourceImagery_[sourceIndex][z];",
+                    "let samples;",
+                    "if (source.bands) {",
+                    "samples = source.bands.map(function (bandNumber) {",
+                    "return bandNumber - 1;",
+                    "});",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    const size = toSize(this.tileGrid.getTileSize(z));",
+                    "",
+                    "    const sourceCount = this.sourceImagery_.length;",
+                    "    const requests = new Array(sourceCount);",
+                    "    const addAlpha = this.addAlpha_;",
+                    "    const bandCount = this.bandCount;",
+                    "    const samplesPerPixel = this.samplesPerPixel_;",
+                    "    const nodataValues = this.nodataValues_;",
+                    "    const sourceInfo = this.sourceInfo_;",
+                    "    // Support for yResolutions",
+                    "    const yResolutions = this.tileGrid.yResolutions_ || this.tileGrid.resolutions_;",
+                    "    for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "      const source = sourceInfo[sourceIndex];",
+                    "      const resolutionFactor = this.resolutionFactors_[sourceIndex];",
+                    "      // Use yResolutions if available for correct pixel bounds",
+                    "      const yResolution = yResolutions[z] || this.tileGrid.getResolution(z);",
+                    "      const pixelBounds = [",
+                    "        Math.round(x * (size[0] * resolutionFactor)),",
+                    "        Math.round(y * (size[1] * resolutionFactor)),",
+                    "        Math.round((x + 1) * (size[0] * resolutionFactor)),",
+                    "        Math.round((y + 1) * (size[1] * resolutionFactor)),",
+                    "      ];",
+                    "      const image = this.sourceImagery_[sourceIndex][z];",
+                    "      let samples;",
+                    "      if (source.bands) {",
+                    "        samples = source.bands.map(function (bandNumber) {",
+                    "          return bandNumber - 1;",
+                    "        });",
+                    "      }"
+                ]
+            }
+        ],
+        "src/ol/tilegrid/TileGrid.js": [
+            {
+                "SEARCH": [
+                    "constructor(options) {",
+                    "/**",
+                    "* @protected",
+                    "* @type {number}",
+                    "*/",
+                    "this.minZoom = options.minZoom !== undefined ? options.minZoom : 0;",
+                    "",
+                    "/**",
+                    "* @private",
+                    "* @type {!Array<number>}",
+                    "*/",
+                    "this.resolutions_ = options.resolutions;"
+                ],
+                "REPLACE": [
+                    "  constructor(options) {",
+                    "    /**",
+                    "     * @protected",
+                    "     * @type {number}",
+                    "     */",
+                    "    this.minZoom = options.minZoom !== undefined ? options.minZoom : 0;",
+                    "",
+                    "    /**",
+                    "     * @private",
+                    "     * @type {!Array<number>}",
+                    "     */",
+                    "    this.resolutions_ = options.resolutions;",
+                    "    /**",
+                    "     * @private",
+                    "     * @type {Array<number>|undefined}",
+                    "     */",
+                    "    this.yResolutions_ = options.yResolutions;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "getResolution(z) {",
+                    "return this.resolutions_[z];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  getResolution(z) {",
+                    "    return this.resolutions_[z];",
+                    "  }",
+                    "",
+                    "  /**",
+                    "   * Get the Y resolution for the given zoom level (for non-square pixels).",
+                    "   * @param {number} z Integer zoom level.",
+                    "   * @return {number|undefined} Y Resolution.",
+                    "   */",
+                    "  getYResolution(z) {",
+                    "    return this.yResolutions_ ? this.yResolutions_[z] : this.resolutions_[z];",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

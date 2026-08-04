@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/LabelBehavior.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js"
+        ],
+        "explanation": "\u2022 LabelLayoutUtil.js: at line 116 it accesses a segmentIndex on a segment returned by the drop logic. When the drop logic passes an undefined or out-of-range segment, this file blows up.  \n\u2022 LabelBehavior.js: orchestrates label placement after connection layout and invokes LabelLayoutUtil. It doesn\u2019t guard against missing segment data, propagating the error.  \n\u2022 DropOnFlowBehavior.js: computes the insertion index (segmentIndex) and splits/reconnects the flow\u2019s waypoints when you drop a shape on it. A bug here can produce an undefined segmentIndex, which then surfaces in LabelLayoutUtil.js.",
+        "bug_scenario": "When dropping a gateway onto an existing sequence flow (in this repro, the green \u201cNO\u201d-labeled flow) the editor throws a TypeError \u201cCannot read properties of undefined (reading 'segmentIndex')\u201d and the diagram becomes unusable. The crash happens because the drop handler computes the segment index on the flow\u2019s waypoints to insert the new shape, and the downstream label layout logic then tries to lay out connection labels against that undefined segment."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/LabelBehavior.js",
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/Modeling.js"
+        ],
+        "explanation": "\u2022 LabelLayoutUtil.js: at line 116 the util unconditionally accesses connection.segments[segmentIndex], but when a flow is reconnected via DropOnFlowBehavior without recomputing segments first, that array or the index is undefined.\n\n\u2022 LabelBehavior.js: wires up automatic label repositioning on connection layout. It calls into LabelLayoutUtil and fails when the util assumes complete segment data.\n\n\u2022 DropOnFlowBehavior.js: performs the gateway insertion by breaking and reconnecting the flow. It invokes modeling.reconnect/reconnectEnd leading to layoutConnection before the flow\u2019s routing data (segments/waypoints) has been updated.\n\n\u2022 Modeling.js: layoutConnection is the entry point that fires the LabelBehavior and ultimately calls LabelLayoutUtil. The crash propagates through Modeling.layoutConnection when it doesn\u2019t guard missing segment data.\n\nTogether these files form the flow from user action (DropOnFlowBehavior) through layout (Modeling.layoutConnection and LabelBehavior) down to the crash site (LabelLayoutUtil). To fix the bug one must ensure that segments/waypoints are up-to-date before calling LabelLayoutUtil, or guard against undefined segmentIndex in the util.",
+        "bug_scenario": "When the user drags and drops a new gateway onto an existing (green) sequence flow that already has a label (\u2018NO\u2019), the editor attempts to reconnect the broken flow and re\u2010layout its label. During that layout the code in LabelLayoutUtil.js tries to index into a segments array that doesn\u2019t exist or hasn\u2019t been recomputed yet, so segmentIndex is undefined and the editor crashes with \u201cCannot read properties of undefined (reading 'segmentIndex')\u201d. After the error the modeler is left in an unusable state."
+    }
+}

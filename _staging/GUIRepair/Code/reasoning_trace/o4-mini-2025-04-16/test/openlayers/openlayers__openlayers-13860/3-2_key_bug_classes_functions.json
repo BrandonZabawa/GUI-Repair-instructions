@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/geom/MultiPolygon.js//MultiPolygon",
+            "src/ol/format/GeoJSON.js//GeoJSON"
+        ],
+        "bug_functions": [
+            "src/ol/geom/MultiPolygon.js//setCoordinates",
+            "src/ol/format/GeoJSON.js//readMultiPolygonGeometry"
+        ],
+        "explanation": "MultiPolygon.setCoordinates is directly responsible for turning the nested coordinate arrays into flat coordinate buffers and end-indices; an incorrect length calculation here leads to assigning an invalid flatCoordinates.length and thus the RangeError. The GeoJSON format implementation (GeoJSON.readMultiPolygonGeometry) is what invokes the MultiPolygon constructor with the raw GeoJSON coordinates. Fixing the shape or nesting level of the array passed in (or adjusting how deflateMultiCoordinatesArray/endss are computed) in these two functions is necessary to avoid creating an absurdly large array length.",
+        "bug_scenario": "When loading a GeoJSON file containing multi\u2010polygon features, OpenLayers v6.14.1 throws \u201cUncaught RangeError: Invalid array length\u201d at MultiPolygon.js:473. The console stack trace shows that GeoJSON.readFeatures \u2192 GeoJSON.readFeatureFromObject \u2192 GeoJSON.readGeometry \u2192 new MultiPolygon(...) \u2192 MultiPolygon.setCoordinates is where the error occurs. The map never draws, whereas in Leaflet and QGIS the same .geojson renders fine."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/geom/MultiPolygon.js//MultiPolygon",
+            "src/ol/format/GeoJSON.js//GeoJSON"
+        ],
+        "bug_functions": [
+            "src/ol/geom/MultiPolygon.js//constructor",
+            "src/ol/geom/MultiPolygon.js//setCoordinates",
+            "src/ol/format/GeoJSON.js//readMultiPolygonGeometry"
+        ],
+        "explanation": "The RangeError originates in MultiPolygon.setCoordinates when it flattens a deeply nested coordinate array into a 1D flatCoordinates buffer. The constructor logic in MultiPolygon.js routes GeoJSON coordinate arrays into setCoordinates (instead of setFlatCoordinates) when opt_layout and opt_endss are undefined. A malformed or deeply nested GeoJSON ring\u2010and\u2010hole array can produce an end index so large that flatCoordinates.length = lastEnds[lastEnds.length - 1] overflows and triggers an invalid array length. The GeoJSON class\u2019s readMultiPolygonGeometry is responsible for converting the raw geojson.coordinates into a MultiPolygon, so it ultimately drives the bad input into MultiPolygon. Fixing this likely requires adjusting either GeoJSON.readMultiPolygonGeometry (to normalize or split very large coordinate arrays) or enhancing MultiPolygon.setCoordinates/deflateMultiCoordinatesArray to guard against runaway end indices and reject or chunk excessively large inputs.",
+        "bug_scenario": "When loading a large GeoJSON file of multipolygon contours into an OpenLayers 6.14.1 vector source, the map console throws \u201cUncaught RangeError: Invalid array length\u201d at MultiPolygon.js:473 (inside setCoordinates). In QGIS and Leaflet the same file displays correctly. The error occurs as soon as the GeoJSON loader constructs a MultiPolygon and calls setCoordinates on its nested coordinate arrays. The two attached screenshots show: (1) the console stack trace pointing at MultiPolygon.setCoordinates, GeoJSON.readGeometryFromObject and the featureloader XHR onload; (2) the Leaflet/QGIS render of the same data, confirming the geometry itself is valid."
+    }
+}

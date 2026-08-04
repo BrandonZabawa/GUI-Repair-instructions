@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//render"
+        ],
+        "explanation": "All of the broken ARIA attributes and naming are coming from the React Dropdown component\u2019s render method. In render(), getButtonProps is used to wire up the trigger <ListBox.Field>, which ends up emitting invalid aria-owns/aria-controls (because the menu id generated in <ListBox.Menu> does not match) and an aria-label that does not include the visible label text. Additionally, the menu is never wired up with Downshift\u2019s getMenuProps, so the id handed to the menu and the id referenced by the button become out of sync. Fixing this requires updating render(): \u2022 spread getMenuProps onto <ListBox.Menu> and ensure its id matches the one used by getButtonProps, \u2022 adjust the aria-label passed to the button (via getButtonProps or translateWithId) so it includes the visible label text, and \u2022 align the menu id naming to be a valid value for aria-owns/aria-controls.",
+        "bug_scenario": "When using the React version of the Carbon Dropdown component with VoiceOver (and other accessibility tooling), two accessibility violations are reported: 1) \u201cARIA attributes must conform to valid values,\u201d specifically aria-owns and aria-controls pointing at an invalid or mismatched menu id; and 2) \u201cAccessible name does not contain the visible label text,\u201d because the button\u2019s accessible name (e.g. \u201copen menu\u201d) doesn\u2019t include the dropdown\u2019s visible label (e.g. \u201cDropdown menu options\u201d). The screenshots show the inspector highlighting a <div role=\"button\"> with aria-haspopup, aria-expanded, aria-owns and aria-controls set to a generated id (carbon-dropdown-example__menu) that doesn\u2019t match a valid ID on the menu, and whose aria-label (\u201copen menu\u201d) fails to reference the visible text."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//render"
+        ],
+        "explanation": "The Accessibility violations stem from the render() method in Dropdown.js. In that function the component uses Downshift\u2019s getButtonProps on ListBox.Field to render a <div role=\"button\" \u2026>, passing through aria-controls/aria-owns (pointing at the menu id built as `${id}__menu`) and an aria-label that doesn\u2019t reflect the visible text. Because the generated ID (\u2018carbon-dropdown-example__menu\u2019) doesn\u2019t conform to ARIA identifier syntax, and the aria-label fails to include the actual label, the accessibility rules are broken. Fixing this requires editing the render() logic in Dropdown.js to generate a compliant ID and to compute an accessible name that includes the visible label text.",
+        "bug_scenario": "When the React-based Carbon Dropdown is rendered, the trigger element (<div role=\"button\">) is injected with invalid ARIA attributes (aria-owns and aria-controls point at an ID containing double underscores), and its aria-label (\u201copen menu\u201d) does not include the visible label text (\u201cDropdown menu options\u201d), causing two DAP violations: \u201cARIA attributes must conform to valid values\u201d and \u201cAccessible name does not contain the visible label text.\u201d"
+    }
+}

@@ -1,0 +1,71 @@
+diff --git a/packages/react/src/components/Tooltip/Tooltip.js b/packages/react/src/components/Tooltip/Tooltip.js
+index f49bdc01..c4a96a0f 100644
+--- a/packages/react/src/components/Tooltip/Tooltip.js
++++ b/packages/react/src/components/Tooltip/Tooltip.js
+@@ -366,34 +366,40 @@ class Tooltip extends Component {
+     );
+   };
+ 
+-  handleMouse = (evt) => {
+-    evt.persist();
+-    const state = {
+-      focus: 'over',
+-      blur: 'out',
+-      click: 'click',
+-    }[evt.type];
+-    const hadContextMenu = this._hasContextMenu;
+-    if (evt.type === 'click' || evt.type === 'contextmenu') {
+-      this._hasContextMenu = evt.type === 'contextmenu';
+-    }
++handleMouse = (evt) => {
++evt.persist();
++const state = {
++focus: 'over',
++blur: 'out',
++click: 'click',
++mouseenter: 'over', // Added mouseenter to handle hover
++mouseleave: 'out',  // Added mouseleave to handle hover out
++}[evt.type];
++const hadContextMenu = this._hasContextMenu;
++if (evt.type === 'click' || evt.type === 'contextmenu') {
++this._hasContextMenu = evt.type === 'contextmenu';
++}
+ 
+-    if (this._hasContextMenu) {
+-      this._handleUserInputOpenClose(evt, { open: false });
+-      return;
+-    }
++if (this._hasContextMenu) {
++this._handleUserInputOpenClose(evt, { open: false });
++return;
++}
+ 
+-    if (state === 'click') {
+-      evt.stopPropagation();
+-      evt.preventDefault();
+-      const shouldOpen = this.isControlled
+-        ? !this.props.open
+-        : !this.state.open;
+-      this._handleUserInputOpenClose(evt, { open: shouldOpen });
+-    } else if (state && (state !== 'out' || !hadContextMenu)) {
+-      this?._debouncedHandleFocus(state, evt);
+-    }
+-  };
++if (state === 'click') {
++evt.stopPropagation();
++evt.preventDefault();
++const shouldOpen = this.isControlled
++? !this.props.open
++: !this.state.open;
++this._handleUserInputOpenClose(evt, { open: shouldOpen });
++} else if (state && (state !== 'out' || !hadContextMenu)) {
++this?._debouncedHandleFocus(state, evt);
++} else if (state === 'over') {
++this._handleUserInputOpenClose(evt, { open: true });
++} else if (state === 'out') {
++this._handleUserInputOpenClose(evt, { open: false });
++}
++};
+ 
+   handleClickOutside = (evt) => {
+     const shouldPreventClose =

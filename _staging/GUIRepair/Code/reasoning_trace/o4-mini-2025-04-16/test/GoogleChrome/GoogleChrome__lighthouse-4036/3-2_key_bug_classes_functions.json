@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js//AnchorsWithNoRelNoopener",
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js//ExternalAnchorsUseRelNoopenerAudit"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js//AnchorsWithNoRelNoopener.afterPass",
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js//ExternalAnchorsUseRelNoopenerAudit.audit"
+        ],
+        "explanation": "AnchorsWithNoRelNoopener.afterPass is responsible for gathering all <a target=\"_blank\"> elements missing rel=\"noopener\". It currently does not filter out mailto: links, so mailto: anchors are reported and later modified. ExternalAnchorsUseRelNoopenerAudit.audit consumes those anchors and flags them as failures, leading to rel=\"noopener\" being suggested (and applied) to mailto: links. To fix the bug, both the gatherer (to skip mailto: schemes in its selector or post-filter) or the audit (to exclude hrefs starting with \"mailto:\") must be updated so that mailto: links are ignored and not subject to the noopener rule.",
+        "bug_scenario": "The \u201cexternal-anchors-use-rel-noopener\u201d audit is flagging and enforcing rel=\"noopener\" on mailto: links opened in a new tab. When rel=\"noopener\" is applied to mailto: links on Chrome for Android and iOS Safari, the link no longer launches the device\u2019s mail client, resulting in a broken mailto: flow."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js//ExternalAnchorsUseRelNoopenerAudit",
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js//AnchorsWithNoRelNoopener"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js//ExternalAnchorsUseRelNoopenerAudit.audit",
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js//AnchorsWithNoRelNoopener.afterPass"
+        ],
+        "explanation": "These two files form the core of the \u2018noopener\u2019 audit: the gatherer (AnchorsWithNoRelNoopener.afterPass) selects all <a target=\"_blank\"> elements that lack rel~=\"noopener\"\u2014including mailto: links\u2014and the audit (ExternalAnchorsUseRelNoopenerAudit.audit) further filters them by comparing the link\u2019s URL host to the page host, but doesn\u2019t special-case mailto: schemes. Because new URL('mailto:\u2026') produces no web host, mailto links are treated as external and flagged. To fix, both the selector/filtering logic in the gatherer and/or audit should explicitly ignore hrefs that start with \u201cmailto:\u201d.",
+        "bug_scenario": "The Lighthouse audit \u201cexternal-anchors-use-rel-noopener\u201d is incorrectly flagging mailto: links that open in a new tab with \u2018rel=\"noopener\"\u2019. When the user adds rel=\"noopener\" to a mailto: link, Chrome for Android and iOS Safari fail to launch the mail client and instead just open a blank page. The screenshots show the audit reporting mailto:sales@\u2026 and mailto:support@\u2026 as missing noopener, then on Chrome for Android the mailto:support@\u2026 link with noopener breaks."
+    }
+}

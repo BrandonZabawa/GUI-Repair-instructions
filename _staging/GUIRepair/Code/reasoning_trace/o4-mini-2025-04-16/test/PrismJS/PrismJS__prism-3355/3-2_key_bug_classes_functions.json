@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-cshtml.js//nested",
+            "components/prism-cshtml.js//block",
+            "components/prism-cshtml.js//value"
+        ],
+        "explanation": "All of the mis\u2010highlighting stems from the cshtml grammar defined in prism-cshtml.js.  \n1. The helper directive (@helper) isn\u2019t included in the \u2018block\u2019 pattern, so Prism never recognizes or styles it as a Razor block.  \n2. The \u2018value\u2019 pattern, responsible for matching @expressions inside text and attribute contexts, doesn\u2019t fully account for namespaced method calls with nested parentheses and quotes (e.g. @Localize.GetLabelHtml(\"\u2026\")).  \n3. The nested() helper function builds the bracket patterns (round, square, angle, curly) used by both \u2018block\u2019 and \u2018value\u2019; any deficiency here propagates into all patterns relying on it.  \nTo fix the issue, you must update the \u2018block\u2019 definition to include a case for @helper, enhance the \u2018value\u2019 regex to handle dot-qualified method calls with nested string literals, and/or refine nested() so it correctly respects quoted strings and embedded parentheses in attribute expressions.",
+        "bug_scenario": "When highlighting Razor (.cshtml) code with Prism, certain C# constructs inside HTML attributes and helper directives are not recognized correctly. In the screenshots, the placeholder attribute value \u201c@Localize.GetLabelHtml(\"PLACEHOLDER\")\u201d is treated as plain markup/string instead of C# code, and the \u201c@helper TrialHelper(string name){\u2026}\u201d block isn\u2019t tokenized as a Razor block at all."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-cshtml.js//Prism.languages.cshtml",
+            "components/prism-cshtml.js//csharpWithHtml"
+        ],
+        "bug_functions": [
+            "components/prism-cshtml.js//nested",
+            "components/prism-cshtml.js//block token definition",
+            "components/prism-cshtml.js//directive token definition",
+            "components/prism-cshtml.js//value token definition",
+            "components/prism-cshtml.js//tagRegion"
+        ],
+        "explanation": "All of the incorrect highlighting stems from the cshtml language definition in components/prism-cshtml.js. The \u2018nested\u2019 helper builds bracket patterns but explicitly omits HTML expressions, so expressions inside attributes (e.g. placeholder=\"@Localize\u2026\") are never passed to the C# highlighter. The \u2018block\u2019 token covers @{\u2026} and control\u2010flow constructs but does not include @helper, so helper blocks are not recognized as Razor code. The \u2018directive\u2019 pattern lists only a fixed set of @keywords (addTagHelper, inject, section, etc.) and omits @helper. Finally the \u2018value\u2019 pattern is only applied at the top level (not inside HTML attributes) and thus misses calls like @Localize.GetLabelHtml(\u2026) in tag contexts. All of these patterns live in the Prism.languages.insertBefore('cshtml','prolog',\u2026) call that defines razor-comment, block, directive, value and delegate-operator tokens. To fix the bug you must adjust the tagRegion/html grammar to pass attribute values through the C# highlighter and extend the block/directive patterns to recognize @helper.",
+        "bug_scenario": "When Prism highlights .cshtml (Razor) files it mis-colors valid Razor constructs such as the @helper directive and interpolated expressions inside HTML attributes (e.g. placeholder=\"@Localize.GetLabelHtml(\u2026)\" ). In the screenshots you can see that P rism treats those @\u2026 calls as plain markup or text, whereas Visual Studio highlights them as C# code. The gist of the problem is that the cshtml language definition in Prism (components/prism-cshtml.js) does not recognize @helper blocks and does not apply the C# \u201cvalue\u201d pattern inside tag attributes."
+    }
+}

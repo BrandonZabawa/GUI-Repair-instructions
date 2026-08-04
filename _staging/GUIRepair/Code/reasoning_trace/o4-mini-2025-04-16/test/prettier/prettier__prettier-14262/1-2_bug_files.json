@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-js/needs-parens.js",
+            "src/language-js/printer-estree.js",
+            "src/language-js/print/call-arguments.js",
+            "src/language-js/print/comment.js"
+        ],
+        "explanation": "These files are responsible for deciding when to wrap AST nodes in parentheses, how to print JSDoc comments, and how to format call-expression arguments:\n\n\u2022 src/language-js/needs-parens.js determines whether a given node requires parentheses around it. It currently doesn\u2019t treat a JSDoc cast comment the same way it does Flow or TypeScript casts, so it drops the parens.\n\n\u2022 src/language-js/printer-estree.js orchestrates the overall printing of JavaScript/TypeScript ESTree nodes, including inserting parentheses when needs-parens says so. It needs to be aware of JSDoc \u201c@satisfies\u201d comments.\n\n\u2022 src/language-js/print/call-arguments.js prints the argument list for call expressions (and assignments via function calls). It prints the inner object literal without reinserting the original parentheses, so the cast comment ends up on a bare block.\n\n\u2022 src/language-js/print/comment.js handles placement of leading comments. It must carry along the JSDoc cast and trigger the parenthesization logic so that those parentheses are preserved in the output.",
+        "bug_scenario": "When formatting a module export that\u2019s wrapped in parentheses with a JSDoc \u201c@satisfies\u201d comment, Prettier strips out the parentheses and prints the object literal as a bare block. For example, this input:\n\n```js\nmodule.exports = /** @satisfies {Record<string, string>} */ ({\n  hello: 1337,\n});\n```\n\nis reformatted to\n\n```js\nmodule.exports = /** @satisfies {Record<string, string>} */ {\n  hello: 1337,\n};\n```\n\nRemoving the parentheses breaks both the runtime semantics (turning the object into a block) and editor intellisense for the JSDoc type cast.\n\nIn the GIF, you can see the parentheses vanish immediately after formatting, and VS Code no longer offers type information for the exported object."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-js/utils/is-type-cast-comment.js",
+            "src/language-js/needs-parens.js"
+        ],
+        "explanation": "\u2022 src/language-js/utils/is-type-cast-comment.js is where Prettier recognizes JSDoc comments that should act as type casts (e.g. `@type`, `@flow`, `@ts-check`). It currently doesn\u2019t include `@satisfies`, so our new tag slips through as a plain comment. Adding `satisfies` to its detection regex will mark it as a type\u2010cast comment.  \n\n\u2022 src/language-js/needs-parens.js is responsible for deciding when to emit parentheses around expressions. Once `@satisfies` is treated as a type\u2010cast comment, this module will apply the existing \u201calways parenthesize after a type\u2010cast comment\u201d rule, preserving the user\u2019s `(\u2026)` and keeping IntelliSense alive.",
+        "bug_scenario": "In the user\u2019s example they write\n\n```js\nmodule.exports = /** @satisfies {Record<string, string>} */ ({\n  hello: 1337,\n});\n```\n\nBut when Prettier runs it emits\n\n```js\nmodule.exports = /** @satisfies {Record<string, string>} */ {\n  hello: 1337,\n};\n```\n\nBy dropping the parentheses around the object literal, VS Code loses the JSDoc context and no longer provides the intended IntelliSense typing from the `@satisfies` tag. We need to teach Prettier to treat `@satisfies` exactly like other JSDoc type\u2010cast comments so that the parentheses are preserved.\n"
+    }
+}

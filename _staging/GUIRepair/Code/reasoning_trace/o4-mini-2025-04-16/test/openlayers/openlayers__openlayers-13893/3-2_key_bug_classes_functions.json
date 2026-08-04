@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Graticule.js//Graticule"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Graticule.js//Graticule#getInterval_",
+            "src/ol/layer/Graticule.js//Graticule#createGraticule_",
+            "src/ol/layer/Graticule.js//Graticule#addMeridian_",
+            "src/ol/layer/Graticule.js//Graticule#addParallel_",
+            "src/ol/layer/Graticule.js//Graticule#drawLabels_",
+            "src/ol/layer/Graticule.js//Graticule#getMeridianPoint_",
+            "src/ol/layer/Graticule.js//Graticule#getParallelPoint_",
+            "src/ol/coordinate.js//degreesToStringHDMS"
+        ],
+        "explanation": "The Graticule class in src/ol/layer/Graticule.js is responsible for choosing angular intervals (getInterval_) and generating the grid and labels (createGraticule_, addMeridian_, addParallel_, drawLabels_, getMeridianPoint_, getParallelPoint_). Any slight floating-point imprecision in selecting the interval or the index arithmetic for label placement will propagate into the text positions. The default label formatter (degreesToStringHDMS in src/ol/coordinate.js) then converts decimal degrees into DMS, using Math.ceil on the seconds component, which can introduce off-by-one second values (e.g. 2.999\u2033 \u2192 3.00\u2033 or 2.59\u2033). Together these lead to labels that don\u2019t line up on the exact uniform grid spacing, producing the strange 3\u203201\u2033 or 2\u203259\u2033 values.",
+        "bug_scenario": "In the OpenLayers graticule example the grid lines are drawn at uniform pixel intervals, but the latitude/longitude labels at the top of the map appear at irregular angular intervals (e.g. 0\u00b015\u203200\u2033W, 0\u00b012\u203200\u2033W, 0\u00b009\u203201\u2033W, 0\u00b006\u203200\u2033W, 0\u00b003\u203201\u2033W, etc.), giving the impression of non-uniform spacing and odd second values (3\u203201\u2033, 2\u203259\u2033). The cells themselves are regular, so the mismatch points to how the labeling step and formatting are calculated and rounded."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/Graticule.js//Graticule"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Graticule.js//getInterval_",
+            "src/ol/layer/Graticule.js//createGraticule_",
+            "src/ol/coordinate.js//degreesToStringHDMS"
+        ],
+        "explanation": "The core of the issue lives in the Graticule layer:\n\u2022 getInterval_ picks a degree interval based on view resolution but can return non-integer minute/second values when converted to degrees.\n\u2022 createGraticule_ (together with addMeridian_/addParallel_) uses that interval to lay out lines at those uneven steps.\nOnce those values reach the label formatter, degreesToStringHDMS in ol/coordinate.js uses Math.ceil and zero fractional-digit precision, which bumps seconds up irregularly (e.g. 0.016666\u2026\u00b0 \u2192 1\u2032 \u2192 1\u2033). Because getInterval_ and degreesToStringHDMS aren\u2019t aligned to clean DMS boundaries, labels like \u201c3\u2032\u2009.01\u2033\u201d or \u201c2\u2032\u2009.59\u2033\u201d appear. Adjusting getInterval_ to choose round DMS intervals or tweaking degreesToStringHDMS rounding logic will restore consistent label spacing.",
+        "bug_scenario": "In the Graticule example the grid lines themselves are drawn at regular pixel intervals but the latitude/longitude labels along the top show odd, non-round minute/second values (e.g. \u201c0\u00b0 12\u2032 00\u2033 W\u201d, \u201c0\u00b0 09\u2032 01\u2033 W\u201d, \u201c0\u00b0 06\u2032 00\u2033 W\u201d, \u201c0\u00b0 03\u2032 01\u2033 W\u201d etc.). In other words, the label formatter or interval calculation is producing irregular 3\u2032.01\u2033 or 2\u2032.59\u2033 offsets instead of clean multiples of minutes."
+    }
+}

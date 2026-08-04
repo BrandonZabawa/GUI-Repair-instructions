@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-markup.js",
+            "components/prism-markup.min.js"
+        ],
+        "explanation": "Prism\u2019s HTML grammar lives in prism-markup.js (and its minified counterpart). In that file, the \u201cattr-value\u201d token is defined with an \u201cinside\u201d grammar that marks all quotation marks as punctuation (via a regex like /[\"']/). Because it doesn\u2019t distinguish between the outer delimiter (single quote in this case) and nested quotes, the inner double quotes are wrongly classified as punctuation. Updating the regex in prism-markup.js to only match the attribute\u2019s delimiter or otherwise avoid matching quotes inside the value will fix the highlighting.",
+        "bug_scenario": "When Prism highlights an HTML element with a data attribute that contains a JSON string wrapped in single quotes, the double\u2010quotes inside that JSON (e.g. around \u201cMonth\u201d and \u201cDays\u201d) get tokenized as punctuation and colored as if they were HTML syntax\u2014despite being part of the attribute\u2019s string. In our example:\n\n    <google-chart data='[[\"Month\", \"Days\"], [\"Jan\", 31]]'></google-chart>\n\nthe inner double quotes around Month, Days, etc., are shown in the same style as the surrounding attribute delimiters, which is misleading."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-markup.js",
+            "components/prism-markup.min.js"
+        ],
+        "explanation": "Both of these files define the Prism \u2018markup\u2019 language, including the regular expressions that match attribute values and punctuation. The current attribute-value pattern and the separate punctuation token for quotes cause the inner double quotes in a single-quoted attribute to be treated as punctuation. To fix the bug, the attribute-value regex (and/or the punctuation rule) in prism-markup.js must be adjusted so that double quotes inside a single-quoted attribute value are not tokenized as punctuation.",
+        "bug_scenario": "When you use a single-quoted HTML attribute that itself contains double-quoted strings (e.g. data='[[\"Month\", \"Days\"], [\"Jan\", 31]]'), Prism\u2019s markup grammar breaks the inner double quotes out as punctuation tokens instead of leaving them as part of the attribute value."
+    }
+}

@@ -1,0 +1,93 @@
+{
+    "1/1": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "class GeoTIFFSource extends DataTile {",
+                    "/**",
+                    "* @param {Options} options Data tile options.",
+                    "*/",
+                    "constructor(options) {",
+                    "super({",
+                    "state: State.LOADING,",
+                    "tileGrid: null,",
+                    "projection: null,",
+                    "opaque: options.opaque,",
+                    "transition: options.transition,",
+                    "interpolate: options.interpolate !== false,",
+                    "wrapX: options.wrapX,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "class GeoTIFFSource extends DataTile {",
+                    "  /**",
+                    "   * @param {Options} options Data tile options.",
+                    "   */",
+                    "  constructor(options) {",
+                    "    // ---- NEW: pyramid via urlTemplate + tileGrid ----",
+                    "    if (options.urlTemplate !== undefined && options.tileGrid !== undefined) {",
+                    "      super({",
+                    "        state: State.READY,",
+                    "        tileGrid: options.tileGrid,",
+                    "        projection: options.projection || null,",
+                    "        opaque: options.opaque,",
+                    "        transition: options.transition,",
+                    "        interpolate: options.interpolate !== false,",
+                    "        wrapX: options.wrapX,",
+                    "      });",
+                    "      /** @private @type {string} */",
+                    "      this.urlTemplate_ = options.urlTemplate;",
+                    "      // reuse the existing loader signature",
+                    "      this.setLoader(this.loadTileTemplate_.bind(this));",
+                    "      return;",
+                    "    }",
+                    "    // ---- end new pyramid branch, fall through to original ----",
+                    "    super({",
+                    "      state: State.LOADING,",
+                    "      tileGrid: null,",
+                    "      projection: null,",
+                    "      opaque: options.opaque,",
+                    "      transition: options.transition,",
+                    "      interpolate: options.interpolate !== false,",
+                    "      wrapX: options.wrapX,",
+                    "    });"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "loadTile_(z, x, y) {",
+                    "const size = toSize(this.tileGrid.getTileSize(z));",
+                    "// ... existing implementation",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  /**",
+                    "   * @private",
+                    "   * Load a single\u2010tile GeoTIFF via the provided URL template and compose it",
+                    "   * using the existing loadTile_ routine.",
+                    "   */",
+                    "  loadTileTemplate_(z, x, y) {",
+                    "    const url = this.urlTemplate_",
+                    "      .replace('{z}', z)",
+                    "      .replace('{x}', x)",
+                    "      .replace('{y}', y);",
+                    "    return tiffFromUrl(url)",
+                    "      .then(getImagesForTIFF)",
+                    "      .then((images) => {",
+                    "        // set up the internal structures as a single\u2010source pyramid:",
+                    "        this.sourceImagery_    = [images.reverse()];",
+                    "        this.resolutionFactors_ = [1];",
+                    "        this.samplesPerPixel_  = images[0].getSamplesPerPixel();",
+                    "        this.nodataValues_     = [images.map(img => img.getGDALNoData() || NaN)];",
+                    "        this.metadata_         = [images.map(img => img.getGDALMetadata())];",
+                    "        // delegate to the standard loader for compositing",
+                    "        return this.loadTile_(z, x, y);",
+                    "      });",
+                    "  }",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/Immediate.js"
+        ],
+        "explanation": "\u2022 src/ol/style/Text.js defines and exposes the textAlign option on the Text style (defaulting to 'start'), so any regression here will alter downstream rendering.\n\u2022 src/ol/render/canvas/TextBuilder.js reads the style\u2019s textAlign value and emits draw instructions using it; a misplaced mapping for 'start'/'end' here will build incorrect canvas commands.\n\u2022 src/ol/render/canvas/Immediate.js actually sets the CanvasRenderingContext2D.textAlign property when executing those draw instructions; if the incoming align value is wrong, the text will be painted on the wrong side.\n\nTogether these three files control how logical 'start'/'end' alignments are translated into concrete canvas align values, and are where the regression must be fixed.",
+        "bug_scenario": "In a recent update the handling of the Text style\u2019s textAlign property regressed so that 'start' and 'end' are no longer being mapped to the correct canvas textAlign values. In the `test/rendering/cases/text-style-linestring-nice` rendering test the labels \u201cSmall text\u201d and \u201cnegative offsetX\u201d are drawn at the opposite edge from where they should be (they\u2019re aligned to the wrong side)."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/Executor.js"
+        ],
+        "explanation": "\u2014 src/ol/style/Text.js defines and exposes the `textAlign` property on text styles (including the `start` and `end` keywords).  \n\u2014 src/ol/render/canvas/TextBuilder.js reads the style\u2019s `textAlign` and computes offsets and placement instructions for both straight and line-following text.  \n\u2014 src/ol/render/canvas/Executor.js takes those instructions and sets the canvas context\u2019s `textAlign` before drawing.  \nA change in one or more of these modules caused the mapping of `start` and `end` to be inverted, so labels are drawn on the opposite side of their intended alignment.",
+        "bug_scenario": "In the `text-style-linestring-nice` rendering test, labels with `textAlign: 'start'` and `textAlign: 'end'` are aligned on the wrong ends of the line. For example, the string \u201cSmall text\u201d (which should be at the start of the line) is drawn at the far end, and \u201cnegative offsetX\u201d (which should be at the end) is drawn at the beginning. This indicates a regression in how the `start`/`end` values of the `textAlign` style are interpreted and applied."
+    }
+}

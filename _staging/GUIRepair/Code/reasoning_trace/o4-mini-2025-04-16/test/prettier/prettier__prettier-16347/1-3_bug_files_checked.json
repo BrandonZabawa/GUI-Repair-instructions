@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-markdown/unified-plugins/front-matter.js",
+            "src/language-markdown/printer-markdown.js",
+            "src/utils/front-matter/parse.js",
+            "src/utils/front-matter/print.js"
+        ],
+        "explanation": "All four files participate in parsing and re-printing YAML front-matter inside Markdown. unified-plugins/front-matter.js injects the front-matter parser into the remark pipeline, parse.js reads the raw YAML and hands it off to a JS object, and print.js stringifies that object back to YAML\u2014unfortunately normalizing away blank lines. Finally printer-markdown.js glues the printed YAML back into the Markdown document. The blank-line removal happens because parse.js/print.js rely on a YAML stringifier that drops inter-item spacing, and printer-markdown.js simply splices that output back without preserving the original empty lines.",
+        "bug_scenario": "When running Prettier 3.3.0 on a Markdown file that contains YAML front-matter with intentionally spaced-out list items, Prettier\u2019s formatting pipeline silently strips all blank lines inside the front-matter sequence. In our example (the \u201cReal Projects\u201d front-matter), the empty lines between `- name: Mr.Hope\u2019s Blog`, `- name: Mo7\u2019s Blog`, and `- name: Guo\u2019s Page` are removed after `prettier.format(input, { parser: \"markdown\" })`. We lose visual separation between entries even though the user deliberately inserted those blank lines."
+    },
+    "2": {
+        "bug_files": [
+            "src/utils/front-matter/parse.js",
+            "src/utils/front-matter/print.js",
+            "src/language-markdown/unified-plugins/front-matter.js"
+        ],
+        "explanation": "All three files are part of the frontmatter pipeline.  \n\n\u2022 src/utils/front-matter/parse.js: This splits the raw Markdown into frontmatter and content but (mistakenly) trims or discards leading/trailing blank lines inside the YAML block.  \n\n\u2022 src/utils/front-matter/print.js: This reassembles the frontmatter block for output. Because the parser already removed blank lines, the printer never reintroduces them, leading to missing empty lines in the final formatted output.  \n\n\u2022 src/language-markdown/unified-plugins/front-matter.js: This plugin hooks the frontmatter into the Markdown AST. It uses the parse/print utilities above and may normalize or overwrite the raw YAML node value\u2014further preventing preservation of the user\u2019s original blank lines.  \n\nFixing the bug requires adjusting `parse.js` to preserve all empty lines inside the `---` section and updating `print.js` to emit them verbatim, and ensuring the unified plugin does not strip them out during AST transformations.",
+        "bug_scenario": "When formatting Markdown files containing YAML frontmatter, Prettier 3.3.0 incorrectly removes some of the user\u2019s blank lines inside the `---` header block. In the reproduction, the user had intentional empty lines before the `blogs:` section (and between its items), but after running `prettier --parser markdown`, those empty lines were gone.\n\nThe attached screenshots illustrate a site (Mo7\u2019s blog demo) built from Markdown files: you can see the author\u2019s intended spacing in the YAML frontmatter is no longer reflected on the page after formatting."
+    }
+}

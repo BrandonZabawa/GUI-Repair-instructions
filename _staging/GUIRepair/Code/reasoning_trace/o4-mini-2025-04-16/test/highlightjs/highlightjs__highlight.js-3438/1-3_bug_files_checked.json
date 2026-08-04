@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/cpp.js",
+            "src/languages/c.js"
+        ],
+        "explanation": "1. src/languages/cpp.js: this file defines the C++ grammar, including handling of templates (\u2018<\u2019, \u2018>\u2019) and operators like \u2018<<\u2019. The failure to parse the Eigen::VectorXd line and the chained \u2018<<1,2,3,4,5;\u2019 sequence stems from a mismatch or conflict in the regex/rules for template parameters vs. shift operators.\n2. src/languages/c.js: the C grammar contains the core definitions for shift operators and generics that cpp.js inherits or extends. A bug in c.js\u2019s bitshift/operator or angle\u2010bracket handling can propagate to the C++ mode, so it must also be updated to distinguish template parameter lists from stream insertion or bitshift operations.",
+        "bug_scenario": "The user is trying to highlight a C++ sample that uses Eigen library syntax (e.g. the stream insertion operator \u2018<<\u2019 chained after a template-instantiated variable name like VectorXd vector(5); vector<<1,2,3,4,5;) but the highlighter fails to render or drops those lines entirely. In the screenshots you can see the code around \u201cvector<<1,2,3,4,5;\u201d is not being output or highlighted correctly when using hljs.highlight(..., {language: 'cpp'})."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/cpp.js",
+            "src/languages/c.js"
+        ],
+        "explanation": "Both c.js and cpp.js define the core C-style and C++-style grammars for highlight.js. The C++ file (cpp.js) extends the C grammar (c.js) and includes rules for operators and template parameters. Currently it does not correctly recognize Eigen\u2019s overloaded operator<< (used for value streaming into matrices) nor does it support comma-separated template arguments inside <> (e.g. float,3,5). Because these constructs aren\u2019t matched by any rule, the parser falls out and produces no output for the offending lines. Patches to cpp.js (and the base c.js if needed) to add or relax rules around bitshift operators and multi-argument templates will restore proper rendering of these C++ snippets.",
+        "bug_scenario": "When using highlight.js\u2019s explicit \u201ccpp\u201d mode to render C++ code that uses Eigen\u2019s operator<< for matrix value assignment and C++ templates with multiple parameters (e.g. Matrix<float,3,5>), the highlighter fails to parse those constructs and ends up not producing any output for the affected lines (the code simply doesn\u2019t show up). In particular the lines \u201cvector<<1,2,3,4,5;\u201d and \u201cEigen::Matrix<float,3,5> B = \u2026\u201d break the C++ grammar and prevent rendering."
+    }
+}

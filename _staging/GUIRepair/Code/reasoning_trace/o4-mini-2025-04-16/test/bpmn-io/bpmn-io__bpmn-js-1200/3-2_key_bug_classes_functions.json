@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//DropOnFlowBehavior",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//ReplaceConnectionBehavior",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//replaceReconnectedConnection",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js//postExecuted('element.updateProperties') callback",
+            "lib/features/modeling/BpmnUpdater.js//updateConnection"
+        ],
+        "explanation": "DropOnFlowBehavior.insertShape is responsible for splitting and reconnecting the original sequence flow through the newly dropped intermediate event \u2013 but it simply calls modeling.reconnectStart/End without preserving custom BPMN properties like conditionExpression. ReplaceConnectionBehavior intercepts reconnect events (replaceReconnectedConnection) and property updates (postExecuted('element.updateProperties')), and in doing so may clear or fail to carry over the conditionExpression when flows are reattached or default/conditional flow logic runs. Finally, BpmnUpdater.updateConnection writes changes back to the underlying XML/DI and must ensure it does not drop the <conditionExpression> child when rebuilding the sequenceFlow element. Editing these classes/functions to explicitly copy over or retain the original conditionExpression on reconnect will fix the bug.",
+        "bug_scenario": "When a Timer Intermediate Catch Event is dropped onto an existing sequence flow that has a conditionExpression defined, the flow is reconnected through the new event but its <model:conditionExpression> element disappears from the BPMN XML. In the attached GIF and screenshot you can see the sequence flow originally has a formalExpression condition, you drag the timer event onto that flow, and after the drop the conditionExpression node is gone."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js"
+        ],
+        "bug_functions": [
+            "DropOnFlowBehavior//insertShape",
+            "ReplaceConnectionBehavior//replaceReconnectedConnection",
+            "ReplaceConnectionBehavior//fixConnection"
+        ],
+        "explanation": "All of the connection-relinking logic for inserting or replacing shapes ends up creating brand-new SequenceFlow instances (or reconnecting via modeling.connect) without carrying over the existing conditionExpression from the old flow. \n\n\u2022 In DropOnFlowBehavior.insertShape the original flow is split: the incoming side is reconnected via modeling.reconnectEnd (preserving the old object), but the outgoing side is always created with modeling.connect({ type, waypoints }) \u2014 never copying conditionExpression.  \n\n\u2022 In ReplaceConnectionBehavior.replaceReconnectedConnection (preExecute on reconnectStart/reconnectEnd) if the flow needs replacing, it calls modeling.connect(source, target, { type, waypoints }) and then drops the old connection \u2014 again losing any conditionExpression.  \n\n\u2022 In ReplaceConnectionBehavior.fixConnection (post move) switching between SequenceFlow and MessageFlow re-creates connections the same way, also without propagating existing flow attributes.  \n\nTo fix the bug these routines must merge or forward the old connection.businessObject.conditionExpression into the attrs passed to modeling.connect/reconnect so the expression survives the drop/morph.",
+        "bug_scenario": "When you morph or drop a Timer Intermediate Catch Event onto an existing conditional Sequence Flow, the Sequence Flow\u2019s conditionExpression is unexpectedly wiped out. In the GIF you see a Sequence Flow that carries an expression, you drop/morph a Timer Catch Event onto it, and after the operation the underlying BPMN XML no longer has the <conditionExpression> on that flow."
+    }
+}

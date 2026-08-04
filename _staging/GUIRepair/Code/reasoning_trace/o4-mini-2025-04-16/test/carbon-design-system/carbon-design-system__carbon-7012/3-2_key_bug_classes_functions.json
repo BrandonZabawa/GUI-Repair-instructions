@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/components/src/components/button/button.config.js",
+            "packages/react/src/components/Button/Button.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Button/Button.js//Button (React.forwardRef)",
+            "packages/react/src/components/Button/Button.js//Button.propTypes.size"
+        ],
+        "explanation": "1. button.config.js: this file lists all button variants (primary, secondary, etc.) but does not include new \u2018large\u2019 or \u2018xl\u2019 entries. Adding name/context entries for the two new sizes here will surface them in the style guide and Storybook.  \n2. Button.js (Button component): the classNames block conditions only cover size==='field' and size==='small' (via the small prop) but doesn\u2019t handle size==='large' or size==='xl'. We need to add new className entries (e.g. `${prefix}--btn--large` when size==='large', and `${prefix}--btn--xl` when size==='xl`).  \n3. Button.propTypes.size: currently only accepts oneOf(['default','field','small']). We must extend this to include 'large' and 'xl' so that the new props are validated and documented.  \nTogether, these are the key places to update so that the Button component recognizes, validates, and applies the correct CSS classes for the new size variants.",
+        "bug_scenario": "The screenshots show a \u2018Next\u2019 primary button rendered at two new heights: an extra-large button at 80px (10rem) and a large button at 64px (8rem), matching the modal\u2019s 64px buttons. The existing Button component only supports sizes \u201cdefault\u201d, \u201cfield\u201d and \u201csmall\u201d, and the button.config.js variants only list primary, secondary, tertiary, danger and ghost (with field and small variants), so the new xl (80px) and large (64px) size options aren\u2019t recognized or styled."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/components/src/components/button/button.config.js",
+            "packages/react/src/components/Button/Button.js",
+            "packages/react/src/components/Button/Button-test.js"
+        ],
+        "bug_functions": [
+            "packages/components/src/components/button/button.config.js//module.exports.variants",
+            "packages/react/src/components/Button/Button.js//Button (forwardRef)",
+            "packages/react/src/components/Button/Button.js//Button.propTypes",
+            "packages/react/src/components/Button/Button-test.js//describe('Small Button') block"
+        ],
+        "explanation": "1. packages/components/src/components/button/button.config.js//module.exports.variants  \n   \u2022 This file drives the static storybook variants for each size; it only lists \"field\" and \"small\" sizes. We need to add entries for \"large\" and \"xl\" so the docs and generated site surface those new options.  \n2. packages/react/src/components/Button/Button.js//Button (forwardRef)  \n   \u2022 The classNames call only checks for size==='field' or size==='small' (or the deprecated small prop). We must extend it to map size==='large' \u2192 `${prefix}--btn--lg` and size==='xl' \u2192 `${prefix}--btn--xl` so the correct CSS height rules kick in.  \n3. packages/react/src/components/Button/Button.js//Button.propTypes  \n   \u2022 The PropTypes.oneOf for the size prop only permits [\"default\",\"field\",\"small\"]. It must include 'large' and 'xl' so that users passing those props don\u2019t trigger a prop-type warning and are accepted by the component.  \n4. packages/react/src/components/Button/Button-test.js//describe('Small Button') block  \n   \u2022 The existing test suite verifies only the small-size behavior. We need to add parallel tests for size=\"large\" and size=\"xl\" asserting that the rendered <button> has the new `${prefix}--btn--lg` and `${prefix}--btn--xl` classes respectively.  \n\nTogether, these changes will enable the Button component, its documentation, and its tests to fully support the new \"large\" and \"xl\" height variants in line with the design spec.",
+        "bug_scenario": "The design spec calls for two new Button size variants\u2014\u201cxl\u201d (80px / 10rem height) and \u201clarge\u201d (64px / 8rem height, matching modal buttons)\u2014but the existing Button component only knows about \"default\", \"field\", and \"small\" sizes.  Passing size=\"large\" or size=\"xl\" today falls back to the default height, so the rendered buttons don\u2019t meet the new spec."
+    }
+}

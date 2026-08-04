@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/index.js//getPeerDependentsMap",
+            "components/index.js//getPeerDependents",
+            "components/index.js//loadLanguages",
+            "examples.js//buildContentsHeader",
+            "examples.js//loadLanguage",
+            "examples.js//update"
+        ],
+        "explanation": "All of these functions participate in discovering, loading and rendering language definitions in Prism. \n\n\u2022 getPeerDependentsMap and getPeerDependents in components/index.js calculate which other language modules must be reloaded when a given language changes. \n\n\u2022 loadLanguages in components/index.js is the central loader that `require()`s prism-<lang> files (e.g. prism-gcode.js) and hooks them into Prism.languages.\n\n\u2022 buildContentsHeader in examples.js builds the HTML header for a language\u2019s examples, referencing its alias and dependencies. To support \u2018gcode\u2019 you must add appropriate metadata so this function produces the correct headings and usage instructions.\n\n\u2022 loadLanguage (examples.js) fetches the actual language script (via $u.script), and update (examples.js) triggers code highlighting on newly loaded examples. Both must be able to handle the new gcode identifier so that Prism.highlightElement is invoked on G-code snippets.",
+        "bug_scenario": "The user wants Prism to support G-code (\u201cgcode\u201d) syntax highlighting. In the provided screenshot you can see typical G-code commands (e.g. \u201cG1 X0 Y0 ; Home X and Y\u2026\u201d, \u201cM109 S200 ; Heat hotend\u2026\u201d) rendered as plain text. The bug is that Prism does not yet recognize or highlight these G- and M-commands, nor the coordinate/property tokens (X, Y, Z, E, F, etc.), so adding a new Prism language definition (e.g. prism-gcode.js) and wiring it into Prism\u2019s loader is required."
+    },
+    "2": {
+        "bug_classes": [
+            "components/index.js",
+            "examples.js"
+        ],
+        "bug_functions": [
+            "components/index.js//loadLanguages(arr, withoutDependencies)",
+            "examples.js//loadLanguage(lang)"
+        ],
+        "explanation": "Prism\u2019s architecture requires each language to have a component file named prism-<language>.js and be registered in the components metadata. The loadLanguages function in components/index.js is responsible for loading prism-<language>.js based on the language identifier; since \u201cgcode\u201d isn\u2019t listed in components.languages, loadLanguages never requests prism-gcode.js. Similarly, the examples.js script iterates over components.languages to populate the Examples page and then calls loadLanguage(lang) for each enabled language; because gcode isn\u2019t known, update() never highlights it. To fix the bug, you must: 1) Add a prism-gcode.js language definition (with comment, keyword and property patterns) alongside the other prism-<language>.js files. 2) Register gcode in the project\u2019s components metadata so that components/index.js\u2019s loadLanguages can discover and require prism-gcode.js. 3) Ensure examples.js sees gcode in components.languages and calls loadLanguage('gcode') so that highlightElement can apply the new syntax rules.",
+        "bug_scenario": "The user is requesting that Prism add syntax highlighting support for G-code (the NC programming language used by CNC and 3D-printer firmware) under the language identifier \u201cgcode.\u201d In the screenshot we see lines such as \u201cG1 X0 Y0 \u2026\u201d rendered with no special highlighting (just plain text), demonstrating that Prism currently does not know about or load any \u201cprism-gcode.js\u201d component. As a result, comments, G/M codes and coordinates are not colorized."
+    }
+}

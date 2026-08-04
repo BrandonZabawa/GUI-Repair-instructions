@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//computeWaste",
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//audit_"
+        ],
+        "explanation": "The OffscreenImages class in offscreen-images.js is responsible for detecting images with wasted pixels. Its static computeWaste method computes wastedRatio by dividing visiblePixels by totalPixels, but when totalPixels is zero (as with an SVG reporting zero width/height), wastedRatio becomes non-finite and computeWaste returns an Error. audit_ captures that Error and surfaces the debugString, flagging the SVG as offscreen. To fix the bug, computeWaste (or audit_) needs an early filter to ignore images whose mimeType is 'image/svg+xml' (or otherwise skip items with zero intrinsic dimensions) before reaching the non-finite division path.",
+        "bug_scenario": "When running the offscreen-images audit against an SVG whose clientWidth and clientHeight are both zero, computeWaste does a division by zero (totalPixels = 0) and produces a non-finite wastedRatio. That triggers the Error path in computeWaste, causing the audit to emit \u201cInvalid image sizing information \u2026ring.svg\u201d and flag the SVG as offscreen\u2014even though we\u2019d rather simply ignore SVGs in this audit."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages.computeWaste",
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js//OffscreenImages.audit_"
+        ],
+        "explanation": "The OffscreenImages class is responsible for detecting offscreen images. Its static method computeWaste calculates totalPixels and throws an Error when the image has zero area (as with an offscreen SVG), which bubbles up into audit_ as a debugString. The audit_ method then includes that SVG in the results even though SVGs should be skipped. To fix this, computeWaste (or audit_) needs to short-circuit when image.networkRecord.mimeType is 'image/svg+xml', preventing the error and excluding SVGs from the offscreen-image audit.",
+        "bug_scenario": "When running the offscreen-images audit on a page containing an SVG that reports zero width and height, the audit computes totalPixels as 0 and computeWaste throws an Error (\u201cInvalid image sizing information \u2026img/ring.svg\u201d), resulting in the SVG being flagged as an offscreen image\u2014even though the intent is to ignore vector images."
+    }
+}

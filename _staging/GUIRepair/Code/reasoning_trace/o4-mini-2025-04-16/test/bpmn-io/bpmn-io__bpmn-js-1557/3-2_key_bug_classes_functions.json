@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateDiParent",
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater.prototype.updateParent"
+        ],
+        "bug_functions": [
+            "lib/features/replace/BpmnReplace.js//replaceElement",
+            "lib/features/rules/BpmnRules.js//canReplace"
+        ],
+        "explanation": "\u2022 BpmnUpdater.prototype.updateDiParent: This is where the TypeError originates \u2013 it assumes a non\u2010null parentDi and calls .get() on it. We need to guard against undefined parent DI.  \n\u2022 BpmnUpdater.prototype.updateParent: This method invokes updateDiParent and must be updated to skip DI updates when the new visual parent has no DI element (e.g., artifacts outside of a pool).  \n\u2022 BpmnReplace.replaceElement: This routine creates a bare { di: {} } object for the new element. Because it is not a proper DI moddle element, downstream DI updates break. It should instead create or attach a valid DI element or defer to BpmnUpdater.  \n\u2022 BpmnRules.canReplace: Currently there is no rule preventing a DataStoreReference\u2192DataObjectReference morph outside of a pool. By adding a rule here we can either disallow the morph in that context or provide correct defaults so that no undefined DI parent is passed into BpmnUpdater.",
+        "bug_scenario": "In the BPMN.io editor a DataStoreReference is placed outside of any pool (i.e. at the root collaboration level) and then morphed into a DataObjectReference. During the morph operation the framework fires its DI\u2010update logic in BpmnUpdater.updateDiParent, but because the element\u2019s parent has no DI (there is no pool DI container) it ends up calling .get() on undefined and throws a TypeError."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnUpdater.js//BpmnUpdater",
+            "lib/features/replace/BpmnReplace.js//BpmnReplace",
+            "lib/features/rules/BpmnRules.js//BpmnRules"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnUpdater.js//updateDiParent",
+            "lib/features/modeling/BpmnUpdater.js//updateParent",
+            "lib/features/replace/BpmnReplace.js//replaceElement",
+            "lib/features/rules/BpmnRules.js//canReplace"
+        ],
+        "explanation": "\u2022 BpmnUpdater.updateDiParent (and its caller updateParent) are directly where the exception occurs: when there is no parent DI element (because the shape sits outside a Process pool), updateDiParent is invoked with parentDi undefined, causing the .get() call to fail.\n\u2022 BpmnReplace.replaceElement is the core of the morph operation (DataStoreReference \u2192 DataObjectReference) and is responsible for triggering the BPMN update lifecycle\u2014including updateParent/updateDiParent\u2014so it must be adjusted to either guard against missing parent DI or to prevent invalid morphs.\n\u2022 BpmnRules.canReplace contains the rules that decide whether a given element type can be morphed to another type; to avoid runtime errors the rule set for DataStoreReference \u2192 DataObjectReference outside of a pool should either disallow the morph or adjust hints so that BpmnUpdater has the correct parent context.\nTogether, these classes and functions form the morph pipeline: rules decide if a morph is legal (BpmnRules), the replacement is carried out (BpmnReplace), and the underlying XML + DI is updated to reflect the new shape (BpmnUpdater). Adjusting any of these stages will be necessary to fix or guard against this error.",
+        "bug_scenario": "When a user models a collaboration on a blank diagram, drags a DataStoreReference onto the canvas (outside any Process pool) and then morphs that DataStoreReference into a DataObjectReference, the framework throws a TypeError in the console. The GIF shows the user adding a DataStoreReference outside a pool, immediately clicking the replace (morph) tool to convert it to a DataObjectReference, at which point the console logs: \u201cCannot read properties of undefined (reading \u2018get\u2019) at BpmnUpdater.updateDiParent \u2026\u201d."
+    }
+}

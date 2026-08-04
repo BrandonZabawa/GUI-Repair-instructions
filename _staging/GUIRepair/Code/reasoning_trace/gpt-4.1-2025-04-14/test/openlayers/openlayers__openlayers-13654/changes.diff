@@ -1,0 +1,64 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index 13940d6cf9..9dd7631c99 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -336,8 +336,10 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     const viewState = frameState.viewState;
+     const tileLayer = this.getLayer();
+     const tileSource = tileLayer.getRenderSource();
+-    const tileGrid = tileSource.getTileGridForProjection(viewState.projection);
+-    const gutter = tileSource.getGutterForProjection(viewState.projection);
++    const sourceProj = tileSource.getProjection();
++    const viewProj = viewState.projection;
++    const tileGrid = tileSource.getTileGridForProjection(viewProj);
++    const gutter = tileSource.getGutterForProjection(viewProj);
+ 
+     const tileSourceKey = getUid(tileSource);
+     if (!(tileSourceKey in frameState.wantedTiles)) {
+@@ -383,18 +385,31 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+           /** @type {import("../../webgl/TileTexture").TileType} */
+           let tile;
+ 
++          // --- BEGIN PATCH: handle reprojection ---
+           if (tileTextureCache.containsKey(cacheKey)) {
+             tileTexture = tileTextureCache.get(cacheKey);
+             tile = tileTexture.tile;
+           }
+           if (!tileTexture || tileTexture.tile.key !== tileSource.getKey()) {
+-            tile = tileSource.getTile(
+-              z,
+-              x,
+-              y,
+-              frameState.pixelRatio,
+-              viewState.projection
+-            );
++            if (sourceProj && !sourceProj.equals(viewProj)) {
++              // Use OpenLayers reprojection tile if projections differ
++              tile = tileSource.getReprojTile(
++                z,
++                x,
++                y,
++                frameState.pixelRatio,
++                viewProj,
++                sourceProj
++              );
++            } else {
++              tile = tileSource.getTile(
++                z,
++                x,
++                y,
++                frameState.pixelRatio,
++                viewProj
++              );
++            }
+             if (!tileTexture) {
+               tileTexture = new TileTexture({
+                 tile: tile,
+@@ -415,6 +430,7 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+               }
+             }
+           }
++          // --- END PATCH ---
+ 
+           addTileTextureToLookup(tileTexturesByZ, tileTexture, z);
+ 

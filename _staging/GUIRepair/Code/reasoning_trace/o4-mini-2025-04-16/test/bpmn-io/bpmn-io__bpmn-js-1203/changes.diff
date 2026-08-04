@@ -1,0 +1,34 @@
+diff --git a/lib/features/modeling/behavior/CreateBoundaryEventBehavior.js b/lib/features/modeling/behavior/CreateBoundaryEventBehavior.js
+index a4685049..7af5c141 100644
+--- a/lib/features/modeling/behavior/CreateBoundaryEventBehavior.js
++++ b/lib/features/modeling/behavior/CreateBoundaryEventBehavior.js
+@@ -2,7 +2,7 @@ import inherits from 'inherits';
+ 
+ import CommandInterceptor from 'diagram-js/lib/command/CommandInterceptor';
+ 
+-import { is } from '../../../util/ModelUtil';
++import { is, getBusinessObject } from '../../../util/ModelUtil';
+ 
+ 
+ /**
+@@ -30,11 +30,17 @@ export default function CreateBoundaryEventBehavior(
+     };
+ 
+     if (host && is(shape, 'bpmn:IntermediateThrowEvent')) {
+-      attrs.attachedToRef = host.businessObject;
++        attrs.attachedToRef = host.businessObject;
+ 
+-      businessObject = bpmnFactory.create('bpmn:BoundaryEvent', attrs);
++        businessObject = bpmnFactory.create('bpmn:BoundaryEvent', attrs);
+ 
+-      boundaryEvent = {
++        // copy over extensionElements from the original intermediate event
++        var oldBo = getBusinessObject(shape);
++        if (oldBo.extensionElements) {
++          businessObject.extensionElements = oldBo.extensionElements;
++        }
++
++        boundaryEvent = {
+         type: 'bpmn:BoundaryEvent',
+         businessObject: businessObject
+       };

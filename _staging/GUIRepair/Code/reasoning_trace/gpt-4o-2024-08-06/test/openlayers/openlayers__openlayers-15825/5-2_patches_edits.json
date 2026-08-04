@@ -1,0 +1,398 @@
+{
+    "1/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[0] = clamp(",
+                    "sourceExtent[0],",
+                    "maxSourceExtent[0],",
+                    "maxSourceExtent[2],",
+                    ");",
+                    "sourceExtent[2] = clamp(",
+                    "sourceExtent[2],",
+                    "maxSourceExtent[0],",
+                    "maxSourceExtent[2],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;"
+                ],
+                "REPLACE": [
+                    "let limitedTargetExtent = maxTargetExtent",
+                    "? getIntersection(targetExtent, maxTargetExtent)",
+                    ": targetExtent;",
+                    "",
+                    "if (sourceProj.canWrapX() && limitedTargetExtent) {",
+                    "wrapX(limitedTargetExtent, targetProj.getExtent());",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (this.triangulation_.getTriangles().length === 0) {",
+                    "// no valid triangles -> EMPTY",
+                    "this.state = TileState.EMPTY;",
+                    "return;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (this.triangulation_.getTriangles().length === 0) {",
+                    "// no valid triangles -> EMPTY",
+                    "if (sourceProj.canWrapX()) {",
+                    "this.triangulation_.wrapTriangles(sourceProj.getExtent());",
+                    "}",
+                    "",
+                    "if (this.triangulation_.getTriangles().length === 0) {",
+                    "this.state = TileState.EMPTY;",
+                    "return;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (maxSourceExtent) {",
+                    "let wrappedSourceExtent = sourceExtent.slice();",
+                    "if (sourceProj.canWrapX()) {",
+                    "wrappedSourceExtent = [",
+                    "sourceExtent[0],",
+                    "clamp(sourceExtent[1], maxSourceExtent[1], maxSourceExtent[3]),",
+                    "sourceExtent[2],",
+                    "clamp(sourceExtent[3], maxSourceExtent[1], maxSourceExtent[3])",
+                    "];",
+                    "}",
+                    "if (!getArea(wrappedSourceExtent)) {",
+                    "this.state = TileState.EMPTY;",
+                    "} else {",
+                    "sourceExtent = getIntersection(wrappedSourceExtent, maxSourceExtent || sourceProj.getExtent());",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "sourceExtent,",
+                    "maxSourceExtent,",
+                    "sourceResolution * errorThresholdInPixels,",
+                    "targetResolution,",
+                    ");",
+                    "",
+                    "if (this.triangulation_.getTriangles().length === 0) {",
+                    "// no valid triangles -> EMPTY",
+                    "this.state = TileState.EMPTY;",
+                    "return;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "sourceExtent,",
+                    "maxSourceExtent,",
+                    "sourceResolution * errorThresholdInPixels,",
+                    "targetResolution,",
+                    ");",
+                    "",
+                    "// Check for valid triangles and extent crossing boundaries like the antimeridian",
+                    "if (this.triangulation_.getTriangles().length === 0 || !getArea(sourceExtent)) {",
+                    "this.state = TileState.EMPTY;",
+                    "this.wrappedTileCoord_ = wrapTileCoord(this.wrappedTileCoord_);",
+                    "return;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent = [",
+                    "clamp(sourceExtent[0], maxSourceExtent[0], maxSourceExtent[2]),",
+                    "clamp(sourceExtent[1], maxSourceExtent[1], maxSourceExtent[3]),",
+                    "clamp(sourceExtent[2], maxSourceExtent[0], maxSourceExtent[2]),",
+                    "clamp(sourceExtent[3], maxSourceExtent[1], maxSourceExtent[3]),",
+                    "];",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (sourceProj.canWrapX()) {",
+                    "// Handle wrapping at the antimeridian",
+                    "if (sourceExtent[0] < maxSourceExtent[0]) {",
+                    "sourceExtent[0] += 360;",
+                    "}",
+                    "if (sourceExtent[2] > maxSourceExtent[2]) {",
+                    "sourceExtent[2] -= 360;",
+                    "}",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[0] = ((sourceExtent[0] + 180) % 360) - 180;",
+                    "sourceExtent[2] = ((sourceExtent[2] + 180) % 360) - 180;",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);"
+                ],
+                "REPLACE": [
+                    "// Adjust sourceExtent for X-axis wrapping",
+                    "if (sourceProj.canWrapX() && getArea(sourceExtent) > 0) {",
+                    "// Wrap sourceExtent on X if it exceeds maxSourceExtent",
+                    "const width = maxSourceExtent[2] - maxSourceExtent[0];",
+                    "const leftBoundExceeded = sourceExtent[0] < maxSourceExtent[0];",
+                    "const rightBoundExceeded = sourceExtent[2] > maxSourceExtent[2];",
+                    "",
+                    "if (leftBoundExceeded) {",
+                    "sourceExtent[0] += width;",
+                    "sourceExtent[2] += width;",
+                    "} else if (rightBoundExceeded) {",
+                    "sourceExtent[0] -= width;",
+                    "sourceExtent[2] -= width;",
+                    "}",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "sourceExtent[1] = clamp(",
+                    "sourceExtent[1],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "sourceExtent[3] = clamp(",
+                    "sourceExtent[3],",
+                    "maxSourceExtent[1],",
+                    "maxSourceExtent[3],",
+                    ");",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (maxSourceExtent) {",
+                    "if (sourceProj.canWrapX()) {",
+                    "// Correctly handle extents that cross the antimeridian",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "[sourceExtent[0], sourceExtent[2]] = [",
+                    "Math.max(sourceExtent[0], maxSourceExtent[0] - 360),",
+                    "Math.min(sourceExtent[2], maxSourceExtent[2] + 360),",
+                    "];",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (maxSourceExtent[0] > maxSourceExtent[2]) {",
+                    "// Handle wrapping of the extent over the antimeridian",
+                    "const left = getIntersection(sourceExtent, [maxSourceExtent[0], -Infinity, Infinity, Infinity]);",
+                    "const right = getIntersection(sourceExtent, [-Infinity, -Infinity, maxSourceExtent[2], Infinity]);",
+                    "sourceExtent = [...left, ...right];",
+                    "} else {",
+                    "sourceExtent = getIntersection(sourceExtent, maxSourceExtent);",
+                    "}",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "extent = sourceExtent;",
+                    "} else {",
+                    "getIntersection(extent, sourceExtent, extent);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "extent = sourceExtent;",
+                    "} else if (extent[0] > extent[2]) {",
+                    "// Handle wrapping of extent over the antimeridian",
+                    "const left = getIntersection(sourceExtent, [extent[0], -Infinity, Infinity, Infinity]);",
+                    "const right = getIntersection(sourceExtent, [-Infinity, -Infinity, extent[2], Infinity]);",
+                    "extent = [...left, ...right];",
+                    "} else {",
+                    "getIntersection(extent, sourceExtent, extent);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

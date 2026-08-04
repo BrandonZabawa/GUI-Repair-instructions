@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "core/lib/tracehouse/trace-processor.js"
+        ],
+        "explanation": "The bug relates specifically to how frame events and process/thread IDs are extracted and resolved in the trace data. The file 'core/lib/tracehouse/trace-processor.js' is directly responsible for processing Chrome tracing events and extracting the relevant process and thread IDs. The code snippet and the debugger screenshot show that 'findMainFramePids' fails when processPseudoId is present instead of processId, leading to an empty or undefined process ID list. This is where the error is thrown and would need to be updated to handle the new event format or missing field correctly.",
+        "bug_scenario": "The bug occurs when Lighthouse processes Chrome traces and the 'FrameCommittedInBrowser' event, instead of including a numeric processId, contains a processPseudoId (e.g., seen in the mainFramePids and corresponding to the screenshot and context). As a result, Lighthouse is unable to associate renderer thread IDs and throws an error: 'Unable to determine tid for renderer process', because the renderer process ID cannot be resolved due to this mismatch."
+    },
+    "2": {
+        "bug_files": [
+            "core/lib/tracehouse/trace-processor.js"
+        ],
+        "explanation": "The screenshot and bug report focus on the logic inside core/lib/tracehouse/trace-processor.js, specifically around processing 'FrameCommittedInBrowser' trace events to extract process/thread IDs. The event in the screenshot contains only a processPseudoId and no processId, which the current code does not handle, resulting in an error. Thus, this file contains the functions and code sections central to the bug and would need to be updated to handle cases where only processPseudoId is present.",
+        "bug_scenario": "The bug occurs when running Lighthouse on a site and encountering a 'FrameCommittedInBrowser' event that only contains a processPseudoId instead of the expected processId. As a result, mainFramePids only contains 'undefined', leading to an error: 'Unable to determine tid for renderer process'. The screenshot shows a paused debugger at the code in core/lib/tracehouse/trace-processor.js, with frameCommittedEvts containing such an event, and the code failing when trying to find the main frame PID. This appears to be tied to changes in Chrome's DevTools trace events and likely relates to mismatches or unhandled event fields in the codebase when Chrome emits processPseudoId."
+    }
+}

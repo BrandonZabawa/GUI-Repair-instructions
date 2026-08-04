@@ -1,0 +1,60 @@
+diff --git a/packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js b/packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js
+index 3cd85525..8342356d 100644
+--- a/packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js
++++ b/packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js
+@@ -15,6 +15,10 @@ import { match, keys } from '../../internal/keyboard';
+ const { prefix } = settings;
+ 
+ export default class OverflowMenuItem extends React.Component {
++  state = {
++    focusVisible: false,
++  };
++
+   static propTypes = {
+     /**
+      * The CSS class name to be placed on the button element
+@@ -100,6 +104,23 @@ export default class OverflowMenuItem extends React.Component {
+     }
+   };
+ 
++  handleFocus = evt => {
++    // Only show focus if focus is from keyboard (not mouse)
++    if (evt && evt.type === 'focus' && evt.target === evt.currentTarget) {
++      this.setState({ focusVisible: true });
++    }
++    if (this.props.onFocus) {
++      this.props.onFocus(evt);
++    }
++  };
++
++  handleBlur = evt => {
++    this.setState({ focusVisible: false });
++    if (this.props.onBlur) {
++      this.props.onBlur(evt);
++    }
++  };
++
+   handleClick = evt => {
+     const { onClick, closeMenu } = this.props;
+     onClick(evt);
+@@ -138,7 +159,10 @@ export default class OverflowMenuItem extends React.Component {
+ 
+     const overflowMenuBtnClasses = classNames(
+       `${prefix}--overflow-menu-options__btn`,
+-      className
++      className,
++      {
++        [`${prefix}--overflow-menu-options__btn--focus`]: this.state.focusVisible,
++      }
+     );
+     const overflowMenuItemClasses = classNames(
+       `${prefix}--overflow-menu-options__option`,
+@@ -176,6 +200,8 @@ export default class OverflowMenuItem extends React.Component {
+             this.setTabFocus(evt);
+             onKeyDown(evt);
+           }}
++          onFocus={this.handleFocus}
++          onBlur={this.handleBlur}
+           ref={this.overflowMenuItem}
+           title={requireTitle ? itemText : null}
+           tabIndex="-1"

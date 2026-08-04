@@ -1,0 +1,46 @@
+diff --git a/lib/cli.js b/lib/cli.js
+index 4216126b6..e317b259f 100644
+--- a/lib/cli.js
++++ b/lib/cli.js
+@@ -301,25 +301,25 @@ const cli = {
+             await ESLint.outputFixes(results);
+         }
+ 
+-        if (options.quiet) {
+-            debug("Quiet mode enabled - filtering out warnings");
+-            results = ESLint.getErrorResults(results);
+-        }
++const { errorCount, warningCount } = countErrors(results);
++const tooManyWarnings =
++options.maxWarnings >= 0 && warningCount > options.maxWarnings;
+ 
+-        if (await printResults(engine, results, options.format, options.outputFile)) {
+-            const { errorCount, warningCount } = countErrors(results);
+-            const tooManyWarnings =
+-                options.maxWarnings >= 0 && warningCount > options.maxWarnings;
++if (options.quiet) {
++debug("Quiet mode enabled - filtering out warnings");
++results = ESLint.getErrorResults(results);
++}
+ 
+-            if (!errorCount && tooManyWarnings) {
+-                log.error(
+-                    "ESLint found too many warnings (maximum: %s).",
+-                    options.maxWarnings
+-                );
+-            }
++if (await printResults(engine, results, options.format, options.outputFile)) {
++if (!errorCount && tooManyWarnings) {
++log.error(
++"ESLint found too many warnings (maximum: %s).",
++options.maxWarnings
++);
++}
+ 
+-            return (errorCount || tooManyWarnings) ? 1 : 0;
+-        }
++return (errorCount || tooManyWarnings) ? 1 : 0;
++}
+ 
+         return 2;
+     }

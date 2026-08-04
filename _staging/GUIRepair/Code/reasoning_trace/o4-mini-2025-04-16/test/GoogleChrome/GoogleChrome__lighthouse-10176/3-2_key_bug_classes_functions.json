@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "lighthouse-core/lib/stack-collector.js//detectLibraries",
+            "lighthouse-core/lib/stack-collector.js//collectStacks",
+            "lighthouse-core/lib/stack-packs.js//getStackPacks"
+        ],
+        "explanation": "The duplication bug stems from detectLibraries (in stack-collector.js) running both the original detector and the new Fast Path detector, each returning a {id: 'react'} entry. collectStacks then blindly wraps every detected library into a stack entry (so you get two entries for React). Finally, getStackPacks (in stack-packs.js) iterates over every pageStack and emits a stack pack for each matching entry, without deduplicating by pack id. To fix this: give each detector a unique id or filter duplicate IDs in detectLibraries/collectStacks, and/or dedupe the array in getStackPacks before returning.",
+        "bug_scenario": "When running Lighthouse (or PageSpeed Insights) against https://abcnews.go.com/ and inspecting the \u201cMinify JavaScript\u201d audit under Best Practices, there are two identical React stack-pack entries rendered and two identical items in the JSON lhr.stackPacks array (both with id \u201creact\u201d). One comes from the original js-library-detector check and one from the new \u201cFast Path\u201d experimental check."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/lib/stack-collector.js",
+            "lighthouse-core/lib/stack-packs.js"
+        ],
+        "bug_functions": [
+            "lighthouse-core/lib/stack-collector.js//detectLibraries",
+            "lighthouse-core/lib/stack-collector.js//collectStacks",
+            "lighthouse-core/lib/stack-packs.js//getStackPacks"
+        ],
+        "explanation": "The duplicated React entries arise because detectLibraries (in stack-collector.js) gathers both the original and the new \u201cFast Path\u201d detector results, producing two pageStacks entries with the same id. collectStacks then passes both into stack-packs.js, where getStackPacks loops over each pageStack and matches on id, pushing two identical React packs. To fix this, we need to either dedupe pageStacks (in collectStacks) or enhance getStackPacks to ignore duplicate pack ids, or assign distinct ids to the Fast Path tests so only one React pack is matched.",
+        "bug_scenario": "When running Lighthouse (or PageSpeed Insights) on https://abcnews.go.com/ and inspecting the \u201cMinify JavaScript\u201d audit under the \u201cBest Practices\u201d category, you\u2019ll see two identical React stack-pack entries (same icon and title) rendered one after the other. In the JSON output, lhr.stackPacks contains two items both with id \u201creact\u201d."
+    }
+}

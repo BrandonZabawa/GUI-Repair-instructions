@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/ImageLayer.js",
+            "src/ol/layer/Image.js",
+            "src/ol/source/Image.js",
+            "src/ol/source/ImageWMS.js"
+        ],
+        "explanation": "- src/ol/renderer/canvas/ImageLayer.js: This is the specific renderer code for canvas rendering of image layers. The bug centers on how the renderer determines the canvas size relative to the pixel ratio of the image source and display. This file is crucial to investigate and modify the canvas creation logic.\n\n- src/ol/layer/Image.js: This is the default layer class for image sources. It's likely involved in passing rendering hints, pixel ratio handling, and configuration from the layer API down to the renderer.\n\n- src/ol/source/Image.js: The base class for image-type sources. It defines how an 'image source' (like WMS) is created, including metadata such as source pixel ratio, which is important for the renderer's correct sizing.\n\n- src/ol/source/ImageWMS.js: This is a concrete image source (WMS) implementation mentioned in the report, so it's directly affected by and relevant to the bug. It may contain or propagate the pixel ratio configuration involved in triggering the incorrect canvas sizing.\n\nThese files are all tied together in the process of image source configuration, pixel ratio management, and canvas rendering for image layers, thus all are relevant to investigating and fixing this memory usage bug.",
+        "bug_scenario": "When loading an image source (like WMS) with a pixel ratio of 1, the renderer creates a canvas sized for the display pixel ratio (i.e., for HiDPI screens), rather than matching the image's own pixel ratio. This causes the generated canvas to be larger than necessary \u2014 for HiDPI devices, it's double in each dimension, thus four times the memory footprint \u2014 rather than only as big as the source image. This unnecessary upscaling wastes memory and can degrade performance."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/renderer/canvas/ImageLayer.js",
+            "src/ol/layer/Image.js",
+            "src/ol/source/Image.js"
+        ],
+        "explanation": "The issue specifically concerns how images from sources like WMS are rendered and how their canvases are sized, using display pixel ratio instead of the source's image pixel ratio. \n\n- src/ol/renderer/canvas/ImageLayer.js: This file handles the rendering of image layers using canvas, including creation and sizing of the canvas element. It is the most likely place where the canvas is created at the wrong size regarding pixel ratio.\n- src/ol/layer/Image.js: This is the class for image layers. It may interact with or pass parameters about pixel ratios to the renderer, so an adjustment in logic could be needed here.\n- src/ol/source/Image.js: This source class is the base for image-based sources, like WMS. It is likely responsible for defining or storing the image pixel ratio (such as from WMS responses), which the renderer should use when creating the canvas.\n\nThese files together govern the way image layers are sourced, managed, and rendered to canvas, including the problematic sizing logic described in the bug report.",
+        "bug_scenario": "The bug is about the canvas for image sources (such as WMS) being created at a size corresponding to the display pixel ratio, rather than the pixel ratio of the image source itself. On HiDPI (high pixel density) devices, this leads to the canvas being much larger than necessary, which results in excessive memory use (for example, a 2x pixel ratio results in 4x the area and thus 4x the memory use). The renderer should match the source image pixel ratio, not the display pixel ratio, when sizing canvases for image layers."
+    }
+}

@@ -1,0 +1,351 @@
+{
+    "1/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "const stitchScale = pixelRatio / sourceResolution;",
+                    "",
+                    "sources.forEach(function (src, i, arr) {",
+                    "const xPos = src.extent[0] - sourceDataExtent[0];",
+                    "const yPos = -(src.extent[3] - sourceDataExtent[3]);",
+                    "const srcWidth = getWidth(src.extent);",
+                    "const srcHeight = getHeight(src.extent);"
+                ],
+                "REPLACE": [
+                    "const sourceResolutionX = sourceResolution; // Assuming sourceResolution is for x",
+                    "const sourceResolutionY = sourceResolution * (3 / 2); // Adjust for aspect ratio 3km by 2km",
+                    "const stitchScaleX = pixelRatio / sourceResolutionX;",
+                    "const stitchScaleY = pixelRatio / sourceResolutionY;",
+                    "",
+                    "sources.forEach(function (src, i, arr) {",
+                    "const xPos = src.extent[0] - sourceDataExtent[0];",
+                    "const yPos = -(src.extent[3] - sourceDataExtent[3]);",
+                    "const srcWidth = getWidth(src.extent);",
+                    "const srcHeight = getHeight(src.extent);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "stitchContext.drawImage(",
+                    "src.image,",
+                    "gutter,",
+                    "gutter,",
+                    "src.image.width - 2 * gutter,",
+                    "src.image.height - 2 * gutter,",
+                    "xPos * stitchScale,",
+                    "yPos * stitchScale,",
+                    "srcWidth * stitchScale,",
+                    "srcHeight * stitchScale",
+                    ");"
+                ],
+                "REPLACE": [
+                    "stitchContext.drawImage(",
+                    "src.image,",
+                    "gutter,",
+                    "gutter,",
+                    "src.image.width - 2 * gutter,",
+                    "src.image.height - 2 * gutter,",
+                    "xPos * stitchScaleX,",
+                    "yPos * stitchScaleY,",
+                    "srcWidth * stitchScaleX,",
+                    "srcHeight * stitchScaleY",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/reproj.js": []
+    },
+    "3/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "const stitchScale = pixelRatio / sourceResolution;"
+                ],
+                "REPLACE": [
+                    "const targetAspectRatio = getWidth(targetExtent) / getHeight(targetExtent);",
+                    "const sourceAspectRatio = getWidth(sourceExtent) / getHeight(sourceExtent);",
+                    "const widthScale = targetAspectRatio / sourceAspectRatio;",
+                    "const stitchScale = (pixelRatio / sourceResolution) * widthScale;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "context.scale(",
+                    "sourceResolution / pixelRatio,",
+                    "-sourceResolution / pixelRatio",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const targetAspectRatio = getWidth(targetExtent) / getHeight(targetExtent);",
+                    "const sourceAspectRatio = getWidth(sourceExtent) / getHeight(sourceExtent);",
+                    "const scaleX = sourceResolution / pixelRatio;",
+                    "const scaleY = sourceResolution * (sourceAspectRatio / targetAspectRatio) / pixelRatio;",
+                    "",
+                    "context.scale(scaleX, -scaleY);"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "const stitchContext = createCanvasContext2D(",
+                    "Math.round((pixelRatio * canvasWidthInUnits) / sourceResolution),",
+                    "Math.round((pixelRatio * canvasHeightInUnits) / sourceResolution),",
+                    "canvasPool",
+                    ");",
+                    "",
+                    "const stitchScale = pixelRatio / sourceResolution;"
+                ],
+                "REPLACE": [
+                    "const sourceResolutionWidth = sourceResolution * (sourceProj.getUnit() === 'degrees' ? 2 : 1); // Assuming width stretch factor, adjust as needed",
+                    "const sourceResolutionHeight = sourceResolution; // Assuming height is consistent as-is",
+                    "",
+                    "const stitchContext = createCanvasContext2D(",
+                    "Math.round((pixelRatio * canvasWidthInUnits) / sourceResolutionWidth),",
+                    "Math.round((pixelRatio * canvasHeightInUnits) / sourceResolutionHeight),",
+                    "canvasPool",
+                    ");",
+                    "",
+                    "const stitchScaleWidth = pixelRatio / sourceResolutionWidth;",
+                    "const stitchScaleHeight = pixelRatio / sourceResolutionHeight;"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "context.scale(",
+                    "sourceResolution / pixelRatio,",
+                    "-sourceResolution / pixelRatio",
+                    ");"
+                ],
+                "REPLACE": [
+                    "context.scale(",
+                    "sourceResolutionX / pixelRatio,",
+                    "-sourceResolutionY / pixelRatio",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourceResolutionX = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "[limitedTargetExtent[0], limitedTargetExtent[1], limitedTargetExtent[2], limitedTargetExtent[1] + 1],",
+                    "targetResolution",
+                    ");",
+                    "const sourceResolutionY = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "[limitedTargetExtent[0], limitedTargetExtent[1], limitedTargetExtent[0] + 1, limitedTargetExtent[3]],",
+                    "targetResolution",
+                    ");"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "context.scale(",
+                    "sourceResolution / pixelRatio,",
+                    "-sourceResolution / pixelRatio",
+                    ");"
+                ],
+                "REPLACE": [
+                    "context.scale(",
+                    "sourceResolutionX / pixelRatio,",
+                    "-sourceResolutionY / pixelRatio",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "// calculate the ideal resolution of the source data",
+                    "let sourceResolution = getPointResolution(",
+                    "targetProj,",
+                    "targetResolution,",
+                    "targetCenter",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// calculate the ideal resolution of the source data considering aspect ratio",
+                    "const targetPixelWidth = targetProj.getMetersPerUnit() * targetResolution;",
+                    "const srcPixelAspectRatio = 3 / 2; // Assuming 3km x 2km as per bug report",
+                    "let sourceResolution = getPointResolution(",
+                    "targetProj,",
+                    "targetResolution * srcPixelAspectRatio,",
+                    "targetCenter",
+                    ");"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "context.scale(pixelRatio, pixelRatio);"
+                ],
+                "REPLACE": [
+                    "// Apply non-square pixel scaling",
+                    "const aspectRatio = 3 / 2; // Assuming 3km x 2km as per bug report",
+                    "context.scale(pixelRatio * aspectRatio, pixelRatio);"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "let sourceResolution = getPointResolution(",
+                    "targetProj,",
+                    "targetResolution,",
+                    "targetCenter",
+                    ");"
+                ],
+                "REPLACE": [
+                    "let sourceResolution = getPointResolution(",
+                    "targetProj,",
+                    "targetResolution,",
+                    "targetCenter",
+                    ");",
+                    "",
+                    "// Adjust sourceResolution based on pixel aspect ratio from sourceProj if available",
+                    "const sourcePixelAspectRatio = sourceProj.getPixelAspectRatio && sourceProj.getPixelAspectRatio();",
+                    "if (sourcePixelAspectRatio !== undefined) {",
+                    "// Assuming that aspectRatio is the width/height of the pixels",
+                    "sourceResolution *= sourcePixelAspectRatio;",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const stitchContext = createCanvasContext2D(",
+                    "Math.round((pixelRatio * canvasWidthInUnits) / sourceResolution),",
+                    "Math.round((pixelRatio * canvasHeightInUnits) / sourceResolution),",
+                    "canvasPool",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const sourcePixelAspectRatio = sources[0].image.getPixelAspectRatio && sources[0].image.getPixelAspectRatio();",
+                    "const adjustedSourceResolutionX = sourcePixelAspectRatio !== undefined ? sourceResolution / sourcePixelAspectRatio : sourceResolution;",
+                    "const adjustedSourceResolutionY = sourceResolution;",
+                    "",
+                    "// Adjust stitch canvas dimensions to account for non-square pixels",
+                    "const stitchContext = createCanvasContext2D(",
+                    "Math.round((pixelRatio * canvasWidthInUnits) / adjustedSourceResolutionX),",
+                    "Math.round((pixelRatio * canvasHeightInUnits) / adjustedSourceResolutionY),",
+                    "canvasPool",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "context.scale(",
+                    "sourceResolution / pixelRatio,",
+                    "-sourceResolution / pixelRatio",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// Separate scaling for width and height",
+                    "const sourceResolutionX = sourceResolution; // Assuming sourceResolution originally represents horizontal resolution",
+                    "const sourceResolutionY = sourceResolution * (3/2); // Adjust for 3km by 2km pixel scale issue",
+                    "",
+                    "context.scale(",
+                    "sourceResolutionX / pixelRatio,",
+                    "-sourceResolutionY / pixelRatio",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/reproj.js": [
+            {
+                "SEARCH": [
+                    "context.scale(sourceResolution / pixelRatio, -sourceResolution / pixelRatio);",
+                    "",
+                    "context.transform(",
+                    "affineCoefs[0],",
+                    "affineCoefs[2],",
+                    "affineCoefs[1],",
+                    "affineCoefs[3],",
+                    "u0,",
+                    "v0",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// Adjust the scale to avoid assuming square pixels",
+                    "const pixelAspectRatio = targetResolution / sourceResolution;",
+                    "context.scale(sourceResolution / pixelRatio * pixelAspectRatio, -(sourceResolution / pixelRatio));",
+                    "",
+                    "context.transform(",
+                    "affineCoefs[0] * pixelAspectRatio,",
+                    "affineCoefs[2] * pixelAspectRatio,",
+                    "affineCoefs[1],",
+                    "affineCoefs[3],",
+                    "u0,",
+                    "v0",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/reproj/Image.js": [
+            {
+                "SEARCH": [
+                    "const width = getWidth(this.targetExtent_) / this.targetResolution_;",
+                    "const height = getHeight(this.targetExtent_) / this.targetResolution_;"
+                ],
+                "REPLACE": [
+                    "// Adjust width and height based on adjusted target resolution to maintain aspect ratio",
+                    "const adjustedTargetResolution = this.targetResolution_ * pixelAspectRatio;",
+                    "const width = getWidth(this.targetExtent_) / adjustedTargetResolution;",
+                    "const height = getHeight(this.targetExtent_) / adjustedTargetResolution;"
+                ]
+            }
+        ],
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// Calculate adjusted target resolution",
+                    "const pixelAspectRatio = targetResolution / sourceResolution;",
+                    "const sourceResolution = calculateSourceExtentResolution(",
+                    "sourceProj,",
+                    "targetProj,",
+                    "limitedTargetExtent,",
+                    "targetResolution * pixelAspectRatio",
+                    ");"
+                ]
+            }
+        ]
+    }
+}

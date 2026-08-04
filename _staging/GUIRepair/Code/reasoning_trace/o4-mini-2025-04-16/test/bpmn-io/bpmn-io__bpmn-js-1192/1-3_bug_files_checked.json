@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js"
+        ],
+        "explanation": "1) lib/features/rules/BpmnRules.js defines the element.copy rule that currently blocks copying of any attached event (including boundary events). 2) lib/features/copy-paste/BpmnCopyPaste.js orchestrates the copy/paste lifecycle and needs to honor the copying of boundary events and their attachToRef. 3) lib/features/copy-paste/ModdleCopy.js handles the deep copy of the BPMN moddle elements, including the attachToRef relationship on boundary events \u2013 it must be tweaked to preserve and rewire that reference when copying.",
+        "bug_scenario": "When trying to copy a boundary event that is attached to an activity, the operation is silently prevented by the built-in copy rule. In the screenshot you can see the user selecting a boundary event, hitting copy/paste, and nothing happening. If you disable the element.copy rule in BpmnRules.js, the boundary event will in fact copy and reattach correctly to its host (as shown in the gif), which proves that the rule is overly restrictive."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/rules/BpmnRules.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js",
+            "lib/features/copy-paste/ModdleCopy.js"
+        ],
+        "explanation": "1. lib/features/rules/BpmnRules.js  \u2013 This file defines the \u2018element.copy\u2019 rule that explicitly prevents copying of boundary events. The disallowed check for boundary event attachment is located around line 902. Modifying or extending this rule is required to allow copying of boundary events.  \n\n2. lib/features/copy-paste/BpmnCopyPaste.js  \u2013 This module orchestrates the copy and paste life cycle for BPMN shapes, including docking and reattachment logic. If boundary events become copyable, this file may need adjustments to ensure they are correctly deep\u2010copied, reattached (docked) to their host activity on paste, and that positioning offsets are applied.  \n\n3. lib/features/copy-paste/ModdleCopy.js  \u2013 Implements the deep clone of BPMN moddle elements during copy. Boundary events carry references (dockers, host associations), so the cloning logic here must preserve or rewire those associations. If attachments aren\u2019t retained after copy, ModdleCopy is the place to adjust the cloning of those references.",
+        "bug_scenario": "When trying to copy and paste a boundary event (an intermediate/catch/throw event attached to the side of an activity), nothing happens. The copy operation is prevented by the element.copy rule in BpmnRules.js. As a result, boundary events cannot be duplicated via the normal copy\u2013paste workflow."
+    }
+}

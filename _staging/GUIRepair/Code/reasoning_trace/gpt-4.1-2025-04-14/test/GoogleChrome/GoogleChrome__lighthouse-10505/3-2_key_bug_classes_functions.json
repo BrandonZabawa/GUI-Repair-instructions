@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/computed/metrics/interactive.js//Interactive"
+        ],
+        "bug_functions": [
+            "lighthouse-core/computed/metrics/interactive.js//Interactive.findOverlappingQuietPeriods",
+            "lighthouse-core/computed/metrics/interactive.js//Interactive._findCPUQuietPeriods",
+            "lighthouse-core/computed/metrics/interactive.js//Interactive.computeObservedMetric"
+        ],
+        "explanation": "The source of the bug is Lighthouse's calculation of TTI when there is a slow FCP but immediate CPU idleness after FCP. The key logic for this is in the Interactive class in 'lighthouse-core/computed/metrics/interactive.js'. The function 'findOverlappingQuietPeriods' is directly responsible for finding periods of overlapping CPU and network idleness, and throws the NO_TTI_CPU_IDLE_PERIOD error if it cannot find a long enough CPU quiet window after FCP. '_findCPUQuietPeriods' is responsible for identifying all CPU quiet periods and could miss a valid period if the logic does not account for idleness that starts immediately after FCP. 'computeObservedMetric' calls these methods to get the observed TTI and thus would be affected by any bug in their logic. The other files (such as the audit wrapper and trace processor) do not directly contain the logic for detecting the quiet periods or for throwing this specific error, so they are not the primary points to edit to fix this bug.",
+        "bug_scenario": "The bug scenario described is that when running Lighthouse in DevTools or CLI with 'provided' (not simulated) throttling, a page with a delayed First Contentful Paint (FCP) but that is idle immediately after FCP causes Lighthouse to fail calculating Time To Interactive (TTI). The error shown is NO_TTI_CPU_IDLE_PERIOD, resulting in no performance score and an error for both TTI and Total Blocking Time. The screenshot shows these errors even though FCP, Speed Index, and LCP are reported correctly. The expected behavior is that TTI should be calculated and no error should occur, since the page is idle after FCP."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/computed/metrics/interactive.js//Interactive"
+        ],
+        "bug_functions": [
+            "lighthouse-core/computed/metrics/interactive.js//Interactive.findOverlappingQuietPeriods",
+            "lighthouse-core/computed/metrics/interactive.js//Interactive._findCPUQuietPeriods",
+            "lighthouse-core/computed/metrics/interactive.js//Interactive.computeObservedMetric"
+        ],
+        "explanation": "The class 'Interactive' in 'lighthouse-core/computed/metrics/interactive.js' is responsible for calculating the Time To Interactive (TTI) metric. The functions 'findOverlappingQuietPeriods', '_findCPUQuietPeriods', and 'computeObservedMetric' are directly involved in identifying periods of CPU and network idleness and determining TTI. The bug is triggered when the algorithm fails to find a long enough CPU idle period immediately after a delayed FCP, incorrectly throwing a NO_TTI_CPU_IDLE_PERIOD error. Fixing this bug will likely require modifying how these functions determine and handle idle periods relative to FCP, ensuring that immediate idleness after FCP is correctly recognized as a valid TTI window.",
+        "bug_scenario": "The bug scenario involves running a Lighthouse performance audit on a page with a delayed First Contentful Paint (FCP). When using 'provided' throttling (not simulated), Lighthouse sometimes fails to compute the Time to Interactive (TTI), resulting in an error: NO_TTI_CPU_IDLE_PERIOD. The error occurs when there is a slow FCP but the page becomes idle immediately after, causing Lighthouse to not find a sufficiently long CPU quiet window after FCP. The screenshot shows that while other metrics are reported, TTI and Total Blocking Time both error out due to this issue."
+    }
+}

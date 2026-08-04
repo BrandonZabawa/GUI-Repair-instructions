@@ -1,0 +1,9 @@
+{
+    "1": {
+        "bug_file": "src/resources/filters/quarto-finalize/mediabag.lua",
+        "compressed": "NO",
+        "line_numbers": 28,
+        "compressed_line_numbers": 28,
+        "compressed_bug_file_content": "-- quarto-finalize.lua\n-- Copyright (C) 2022 Posit Software, PBC\n\nfunction mediabag()\n  return {\n    -- mediabag entries need to be re-routed to the filesystem\n    -- if this isn't an office doc (as those formats automatically\n    -- scoop up mediabag files)\n    Image = function(el)\n      if not _quarto.format.isWordProcessorOutput() and\n         not _quarto.format.isPowerPointOutput() then\n        local mt, contents = pandoc.mediabag.lookup(el.src)\n        if contents ~= nil then\n          \n          local mediabagDir = param(\"mediabag-dir\", nil)\n          local mediaFile = pandoc.path.join{mediabagDir, el.src}\n\n          local file = _quarto.file.write(mediaFile, contents)\n          if not file then\n            warn('failed to write mediabag entry: ' .. mediaFile)\n          end\n          el.src = mediaFile\n          return el\n        end\n      end\n    end\n  }\nend"
+    }
+}

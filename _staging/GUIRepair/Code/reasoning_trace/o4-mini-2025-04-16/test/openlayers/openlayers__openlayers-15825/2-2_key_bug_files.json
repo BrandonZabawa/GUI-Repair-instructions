@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/reproj/Triangulation.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/source/GeoTIFF.js"
+        ],
+        "explanation": "1. src/ol/reproj/Triangulation.js  \n   \u2022 This module builds the triangle mesh used to reproject each tile.  Its logic that detects and shifts triangles across the source extent\u2019s \u00b1180\u00b0 boundary (to minimize world wrapping distance) is incomplete, so when the target extent straddles the antimeridian, some triangles aren\u2019t generated or shifted correctly, leaving black holes.  \n\n2. src/ol/reproj/Tile.js  \n   \u2022 ReprojTile uses the Triangulation to compute the source extent and then selects source tiles to load.  It does not account for wrapping X in the source projection when computing the range of source tile coordinates, so tiles on the \u201cother side\u201d of the antimeridian are omitted from the reprojection pipeline.  \n\n3. src/ol/source/GeoTIFF.js  \n   \u2022 By default GeoTIFFSource.wrapX is false and the internal tile grid does not wrap.  Even if the projection can wrap X, the source never requests tiles across the antimeridian, so reprojection cannot stitch them together.  Adjusting the default or honoring wrapX on GeoTIFFSource is required to fix the missing-tile gap.  ",
+        "bug_scenario": "When reprojecting a GeoTIFF source into a stereographic projection (e.g. \u201cstereo-sib\u201d), tiles near the antimeridian (around \u00b1180\u00b0 longitude) fail to fill in, producing black gaps whose width varies with source tile size and zoom (as shown in the provided screenshot).  In effect, the reprojection code does not correctly handle source tiles or triangle meshes that cross the wrap-around boundary."
+    }
+}

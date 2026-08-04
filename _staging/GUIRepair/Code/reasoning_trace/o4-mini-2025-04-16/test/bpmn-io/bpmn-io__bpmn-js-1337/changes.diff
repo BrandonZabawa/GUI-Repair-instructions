@@ -1,0 +1,34 @@
+diff --git a/lib/features/rules/BpmnRules.js b/lib/features/rules/BpmnRules.js
+index cf323041..13bae6c8 100644
+--- a/lib/features/rules/BpmnRules.js
++++ b/lib/features/rules/BpmnRules.js
+@@ -24,10 +24,11 @@ import {
+ import {
+   isExpanded,
+   isEventSubProcess,
+-  isInterrupting,
++import {
+   hasErrorEventDefinition,
+   hasEscalationEventDefinition,
+-  hasCompensateEventDefinition
++  hasCompensateEventDefinition,
++  isEventSubProcess
+ } from '../../util/DiUtil';
+ 
+ import RuleProvider from 'diagram-js/lib/features/rules/RuleProvider';
+@@ -443,6 +444,15 @@ function canConnect(source, target, connection) {
+ function canDrop(element, target, position) {
+ 
+   // can move labels and groups everywhere
++
++  // disallow typed StartEvent inside non-event-based SubProcess
++  if ( is(element, 'bpmn:StartEvent') &&
++       is(target, 'bpmn:SubProcess') &&
++       !isEventSubProcess(target) &&
++       // hasNoEventDefinition returns true for an untyped StartEvent
++       !hasNoEventDefinition(element) ) {
++    return false;
++  }
+   if (isLabel(element) || isGroup(element)) {
+     return true;
+   }

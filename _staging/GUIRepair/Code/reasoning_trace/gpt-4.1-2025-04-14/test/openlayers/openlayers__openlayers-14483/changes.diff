@@ -1,0 +1,65 @@
+diff --git a/src/ol/render/canvas/Executor.js b/src/ol/render/canvas/Executor.js
+index 3da9d5f7fc..a366a1a142 100644
+--- a/src/ol/render/canvas/Executor.js
++++ b/src/ol/render/canvas/Executor.js
+@@ -409,7 +409,8 @@ class Executor {
+     snapToPixel,
+     padding,
+     fillStroke,
+-    feature
++    feature,
++    contextTransform // <-- new optional parameter
+   ) {
+     anchorX *= scale[0];
+     anchorY *= scale[1];
+@@ -436,16 +437,30 @@ class Executor {
+ 
+     let transform;
+     if (rotation !== 0) {
+-      transform = composeTransform(
+-        createTransform(),
+-        centerX,
+-        centerY,
+-        1,
+-        1,
+-        rotation,
+-        -centerX,
+-        -centerY
+-      );
++      // Compose the rotation with the context transform if provided
++      if (contextTransform) {
++        transform = composeTransform(
++          contextTransform.slice(), // base transform (e.g., translation for spyglass)
++          centerX,
++          centerY,
++          1,
++          1,
++          rotation,
++          -centerX,
++          -centerY
++        );
++      } else {
++        transform = composeTransform(
++          createTransform(),
++          centerX,
++          centerY,
++          1,
++          1,
++          rotation,
++          -centerX,
++          -centerY
++        );
++      }
+ 
+       applyTransform(transform, p1);
+       applyTransform(transform, p2);
+@@ -885,7 +900,8 @@ class Executor {
+               snapToPixel,
+               padding,
+               backgroundFill || backgroundStroke,
+-              feature
++              feature,
++              transform // pass the current context transform for correct translation
+             );
+             /** @type {ReplayImageOrLabelArgs} */
+             const args = [

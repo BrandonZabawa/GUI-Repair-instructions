@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Pagination/Pagination.js",
+            "packages/react/src/components/Pagination/Pagination-test.js",
+            "packages/react/src/components/Pagination/Pagination-story.js"
+        ],
+        "explanation": "All of the bug symptoms trace back to the React Pagination component\u2019s handling of the pageSizes prop. \n\n\u2022 Pagination.js contains the core logic that maps pageSizes into dropdown options and computes the numeric range and total pages. It currently assumes each entry is a Number, so if you pass an object it ends up trying to do arithmetic on undefined and yields NaN. This file needs to be updated to accept both numbers and { value, text } objects, extract the numeric value for calculations, and use the text for display. \n\n\u2022 Pagination-test.js enforces the old API shape (array of numbers) in its PropTypes tests and unit tests around range calculations. It must be expanded to accept the new object form and include tests for the custom label case so we prevent regressions. \n\n\u2022 Pagination-story.js is the documentation example that demonstrates usage of the component. It should be updated to showcase the new object\u2010form pageSizes (including an \u201cAll\u201d option) and confirm that the visual output now matches the intended UI without showing NaN values.",
+        "bug_scenario": "When a developer passes a custom \u201cAll\u201d option into the Pagination component\u2019s pageSizes array (e.g. [{ value: totalItems, text: 'All' }]), the dropdown correctly shows \u201cAll,\u201d but everything else breaks: the page\u2010range label reads \u201cNaN\u2013NaN of 200 items\u201d and the page count at the right shows \u201cof NaN pages.\u201d Internally Pagination expects each entry in pageSizes to be a number and uses it to calculate ranges, so supplying an object with a custom text field causes numeric computations to fail."
+    },
+    "2": {
+        "bug_files": [
+            "packages/components/src/components/pagination/pagination.js",
+            "packages/components/src/components/pagination/pagination.config.js",
+            "packages/react/src/components/Pagination/Pagination.js"
+        ],
+        "explanation": "\u2022 pagination.js (vanilla): This file contains the core logic for rendering and calculating pagination for plain JS. It currently maps pageSizes to numbers only, so it must be updated to detect objects and extract .value and .text separately.\n\u2022 pagination.config.js: Defines the prop types and documentation defaults for the Pagination component in the style guide. It must be updated to show that pageSizes can be an array of numbers or objects with value/text.\n\u2022 React Pagination.js: The React wrapper duplicates similar logic to map pageSizes into internal state and render the Select dropdown. It also only handles numbers today, so it needs to branch on object entries, rendering option text from entry.text while using entry.value for page arithmetic.\n\u2022 React Pagination.test.js: The existing unit tests assume numeric-only pageSizes. They must be extended (or rewritten) to include a test case for object entries, verifying that \u2018All\u2019 renders correctly and arithmetic still works.\n\u2022 React Pagination.story.js: The storybook example must be updated to demonstrate the new API, e.g. passing an array of { value, text } objects, including an \u201cAll\u201d entry.",
+        "bug_scenario": "The Pagination component currently only accepts a flat array of numeric page sizes (e.g. [5, 10, 15]). If you try to provide an array of objects with separate value and text fields (e.g. { value: totalItems, text: 'All' }), the component still tries to treat every entry as a number. That causes the rendered \u201cstart\u2013end of total\u201d labels to become NaN\u2013NaN and the page count to break, as shown in the screenshot. We need to accept both numbers and { value, text } objects for pageSizes, render the dropdown labels from the object\u2019s text, and use the object\u2019s numeric value for pagination calculations."
+    }
+}

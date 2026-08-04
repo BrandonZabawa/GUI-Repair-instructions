@@ -1,0 +1,130 @@
+diff --git a/packages/react/src/components/RadioTile/RadioTile.tsx b/packages/react/src/components/RadioTile/RadioTile.tsx
+index 36dbd92f..9331d05a 100644
+--- a/packages/react/src/components/RadioTile/RadioTile.tsx
++++ b/packages/react/src/components/RadioTile/RadioTile.tsx
+@@ -81,6 +81,11 @@ export interface RadioTileProps {
+    * Specify the value of the underlying `<input>`.
+    */
+   value: string | number;
++
++  /**
++   * Specify whether the input is required.
++   */
++  required?: boolean;
+ }
+ 
+ const RadioTile = React.forwardRef(function RadioTile(
+@@ -95,6 +100,7 @@ const RadioTile = React.forwardRef(function RadioTile(
+     id,
+     onChange = noopFn,
+     tabIndex = 0,
++    required = false,
+     ...rest
+   }: RadioTileProps,
+   ref: React.Ref<HTMLInputElement>
+@@ -153,6 +159,7 @@ const RadioTile = React.forwardRef(function RadioTile(
+         type="radio"
+         value={value}
+         ref={ref}
++        required={required}
+       />
+       <label {...rest} htmlFor={inputId} className={className}>
+         <span className={`${prefix}--tile__checkmark`}>{icon()}</span>
+@@ -220,6 +227,11 @@ RadioTile.propTypes = {
+    * Specify the value of the underlying `<input>`.
+    */
+   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
++
++  /**
++   * Specify whether the input is required.
++   */
++  required: PropTypes.bool,
+ };
+ 
+ export default RadioTile;
+diff --git a/packages/react/src/components/TileGroup/TileGroup.tsx b/packages/react/src/components/TileGroup/TileGroup.tsx
+index a5da20ce..7fbd6027 100644
+--- a/packages/react/src/components/TileGroup/TileGroup.tsx
++++ b/packages/react/src/components/TileGroup/TileGroup.tsx
+@@ -55,6 +55,11 @@ export interface TileGroupProps
+    * Specify the value that is currently selected in the group
+    */
+   valueSelected?: string | number;
++
++  /**
++   * Specify whether the group is required
++   */
++  required?: boolean;
+ }
+ 
+ const TileGroup = (props) => {
+@@ -67,6 +72,8 @@ const TileGroup = (props) => {
+     name,
+     onChange = noopFn,
+     valueSelected,
++    required = false,
++    ...rest
+   } = props;
+   const prefix = usePrefix();
+ 
+@@ -96,6 +103,7 @@ const TileGroup = (props) => {
+               value={value}
+               onChange={handleChange}
+               checked={value === selected}
++              required={required}
+             />
+           );
+         } else if (child.props && child.props.children) {
+@@ -127,12 +135,39 @@ const TileGroup = (props) => {
+     }
+   };
+ 
++  // Render a visually hidden input for native validation
++  const hiddenInputStyle = {
++    position: 'absolute',
++    bottom: 0,
++    left: '50%',
++    transform: 'translateX(-50%)',
++    opacity: 0,
++    width: 1,
++    height: 1,
++    pointerEvents: 'none',
++    zIndex: -1,
++  };
++
+   return (
+     <fieldset
+       className={className ?? `${prefix}--tile-group`}
+-      disabled={disabled}>
++      disabled={disabled}
++      style={{ position: 'relative' }}
++      {...rest}
++    >
+       {renderLegend(legend)}
+       <div>{getRadioTilesWithWrappers(children)}</div>
++      <input
++        type="radio"
++        tabIndex={-1}
++        aria-hidden="true"
++        style={hiddenInputStyle}
++        name={name}
++        required={required}
++        checked={!!selected}
++        onChange={() => {}}
++        value={selected || ''}
++      />
+     </fieldset>
+   );
+ };
+@@ -178,6 +213,11 @@ TileGroup.propTypes = {
+    * Specify the value that is currently selected in the group
+    */
+   valueSelected: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
++
++  /**
++   * Specify whether the group is required
++   */
++  required: PropTypes.bool,
+ };
+ 
+ TileGroup.displayName = 'TileGroup';

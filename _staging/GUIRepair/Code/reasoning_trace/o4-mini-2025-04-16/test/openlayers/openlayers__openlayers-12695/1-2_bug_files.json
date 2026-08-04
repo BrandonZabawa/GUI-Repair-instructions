@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/format/KML.js",
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconAnchorUnits.js",
+            "src/ol/style/IconImage.js"
+        ],
+        "explanation": "\u2022 src/ol/format/KML.js parses the KML <IconStyle> hotSpot and <scale> elements, but its readHotSpot/scale implementation misinterprets the units or origin, so anchors and size are computed incorrectly.\n\u2022 src/ol/style/IconAnchorUnits.js defines the conversion between unit strings (fraction, pixels) and the model used by Icon; if the KML units are mapped incorrectly here, the anchor y-offset will be wrong (bottom vs. center).\n\u2022 src/ol/style/Icon.js takes the parsed anchor, units and scale and applies them when creating the IconImage; any mis-translation here will shift or scale the symbol incorrectly.\n\u2022 src/ol/style/IconImage.js actually handles the underlying image load, scale, and anchor offset when the image is drawn; a mismatch in how the image\u2019s width/height and anchor are applied leads to the oversized and misaligned rendering.",
+        "bug_scenario": "When dragging the provided KML/KMZ into the drag-and-drop example, the point symbols are positioned too low (anchored at the center-bottom) rather than centered on the point, and the icons render much larger than in Google Earth.  The two star symbols (AZUP/AZST) appear hanging below the true location and are oversized compared to the reference."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/format/KML.js",
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js"
+        ],
+        "explanation": "1. src/ol/format/KML.js handles reading <IconStyle> entries (including <hotSpot> and <scale>) from the KML and translating them into an ol/style/Icon configuration. A mistake here can produce incorrect anchor coordinates or apply the wrong units when setting anchorXUnits and anchorYUnits.  2. src/ol/style/Icon.js is the style class that stores the anchor, size, and scale parameters passed from the KML parser. If the values coming in are wrong or are interpreted with the wrong default units, the rendered icons will be offset incorrectly.  3. src/ol/style/IconImage.js is responsible for loading the image, applying the scale, and computing the pixel anchor internally. Errors here in combining the raw image size with the declared hotspot and scale will cause both the oversized rendering and the shifted placement. Together, these three files control how KML icon anchors and sizes are interpreted and drawn, and fixes must span from the KML parser through to the icon image renderer.",
+        "bug_scenario": "When loading the provided KML into the drag-and-drop KML example, the point symbols (stars, red squares, parking icon, etc.) appear too large and are anchored at their center-bottom rather than centered on the point coordinate. In Google Earth the same KML places and scales those icons correctly."
+    }
+}

@@ -1,0 +1,59 @@
+diff --git a/src/resources/filters/quarto-pre/panel-tabset.lua b/src/resources/filters/quarto-pre/panel-tabset.lua
+index 34d87e2ab..655f07740 100644
+--- a/src/resources/filters/quarto-pre/panel-tabset.lua
++++ b/src/resources/filters/quarto-pre/panel-tabset.lua
+@@ -59,9 +59,10 @@ function render_tabset(attr, tabs, renderer)
+   local tabsetid = "tabset-" .. tabsetidx
+   tabsetidx = tabsetidx + 1
+ 
+-  -- init tab navigation 
+-  local nav = pandoc.List()
+-  nav:insert(pandoc.RawInline('html', '<ul ' .. renderer.ulAttribs(tabsetid) .. '>'))
++-- init tab navigation 
++local nav = pandoc.List()
++-- pass the container's classes into ulAttribs so nav-fill/nav-justified will be honored
++nav:insert(pandoc.RawInline('html', '<ul ' .. renderer.ulAttribs(tabsetid, attr.classes) .. '>'))
+ 
+   -- init tab panes
+   local panes = pandoc.Div({}, attr)
+@@ -248,18 +249,27 @@ _quarto.ast.add_handler({
+ --       pandoc.Plain(nav),
+ --       panes
+ --     }, div.attr:clone())
+-
+---   end 
+--- end
+-
+ function bootstrapTabs() 
+   return {
+-    ulAttribs = function(tabsetid)
+-      return 'class="nav nav-tabs" role="tablist"'
++    -- now accept the container classes and inject nav-fill / nav-justified if present
++    ulAttribs = function(tabsetid, classes)
++      local cls = {"nav", "nav-tabs"}
++      -- the Attr.classes:find method checks for exact class matches
++      if classes:find("nav-fill") then
++        table.insert(cls, "nav-fill")
++      end
++      if classes:find("nav-justified") then
++        table.insert(cls, "nav-justified")
++      end
++      return 'class="' .. table.concat(cls, " ") .. '" role="tablist"'
+     end,
+     liAttribs = function(tabid, isActive)
+       return 'class="nav-item" role="presentation"'
+     end,
++    ...
++  }
++end
++    end,
+     liLinkAttribs = function(tabid, isActive)
+       local tablinkid = tabid .. "-tab"
+       local active = ""
+@@ -348,4 +358,4 @@ end
+ --   end
+ 
+ --   return div_content
+--- end
+\ No newline at end of file
++-- end

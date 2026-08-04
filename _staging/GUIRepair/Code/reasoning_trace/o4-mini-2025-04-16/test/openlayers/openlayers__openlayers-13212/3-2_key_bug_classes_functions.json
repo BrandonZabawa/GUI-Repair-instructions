@@ -1,0 +1,35 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/source/WMTS.js//WMTS",
+            "src/ol/tilegrid/TileGrid.js//TileGrid"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.constructor",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.configure_",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.loadTile_",
+            "src/ol/source/GeoTIFF.js//getImagesForSource",
+            "src/ol/source/GeoTIFF.js//getWorkerPool",
+            "src/ol/source/WMTS.js//createFromWMTSTemplate"
+        ],
+        "explanation": "The GeoTIFFSource class is the heart of the current GeoTIFF implementation. Its constructor, configure_ and loadTile_ methods allocate per\u2010tile canvases and contexts and must be extended to accept a URL template and external TileGrid. The helper functions getImagesForSource and getWorkerPool orchestrate image loading and worker threads; they too need adaptation to request tiles by grid coordinates rather than individual file URLs. The WMTS.createFromWMTSTemplate function demonstrates how to build URL functions from a template and should be reused or adapted in the new GeoTIFF pyramid source. Finally, the TileGrid class defines resolution levels, origins and tile extents and will be passed into the GeoTIFFSource to drive pyramid requests and ensure all tiles share one WebGL context per layer.",
+        "bug_scenario": "When rendering large pyramids of GeoTIFF data with WebGLTileLayers, each tile currently creates its own WebGL context. As the number of pyramid levels (and thus tiles) grows, browsers quickly exhaust available contexts, causing context\u2010loss errors, missing tiles and drastic framerate drops. The proposed fix is to introduce a dedicated GeoTIFF pyramid source that takes a URL template and a TileGrid (like WMTS) so that all tiles share a single canvas/WebGL context per layer."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/tilegrid/TileGrid.js//TileGrid",
+            "src/ol/source/WMTS.js//WMTS"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//constructor",
+            "src/ol/source/GeoTIFF.js//configure_",
+            "src/ol/source/GeoTIFF.js//loadTile_",
+            "src/ol/source/GeoTIFF.js//getImagesForSource",
+            "src/ol/source/GeoTIFF.js//getImagesForTIFF"
+        ],
+        "explanation": "1. GeoTIFFSource class in GeoTIFF.js is the core of GeoTIFF tile rendering: its constructor sets up sources and options; configure_ builds the tile grid and band mappings; loadTile_ is responsible for pulling raster data and drawing into a canvas. To support a multi\u2010level pyramid URL template and reuse a single canvas/WebGL context, these methods must be extended to accept a TileGrid parameter, compute which pyramid level(s) (GeoTIFFs) overlap a requested tile, fetch those via getImagesForSource/getImagesForTIFF, composite them, and render into one canvas.\n2. getImagesForSource and getImagesForTIFF are helpers that list all TIFF images (overviews) for a source. For pyramid support, they must be used to gather the right resolution images per tile request.\n3. TileGrid in TileGrid.js defines how tiles are organized over zoom levels; pyramid support requires the source to honor a provided TileGrid rather than retrieving tile layout from each GeoTIFF\u2019s internal tiling.\n4. The WMTS class in WMTS.js demonstrates a similar pattern: it takes a tileGrid option plus a URL template and implements createFromWMTSTemplate to fetch the right tile. It serves as a blueprint for adding a GeoTIFF pyramid source\u2014so reviewing WMTS helps align the GeoTIFF source methods with how WMTS does templated requests and single\u2010canvas rendering.",
+        "bug_scenario": "The built\u2010in GeoTIFF source in OpenLayers works tile by tile by spawning one WebGL canvas/context per tile. When you try to visualize a deep pyramid (many zoom levels) by stacking many WebGLTileLayers, each tile ends up with its own WebGL context. Browsers cannot sustain that many contexts, so contexts are lost, tiles stop rendering, and performance collapses. The goal is to introduce a GeoTIFF \u201cpyramid\u201d source, analogous to WMTS, that takes a URL template and a TileGrid, reads the appropriate overview (pyramid) tiles for any zoom, and draws them into a single canvas per layer/renderer\u2014eliminating the explosion of contexts."
+    }
+}

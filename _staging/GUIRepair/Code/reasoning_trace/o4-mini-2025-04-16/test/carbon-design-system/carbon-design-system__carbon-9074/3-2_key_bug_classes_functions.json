@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/FormGroup/FormGroup.js//FormGroup",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//RadioButtonGroup"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/FormGroup/FormGroup.js//FormGroup (functional component)",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//render()"
+        ],
+        "explanation": "The FormGroup component is responsible for rendering the <fieldset> and its <legend>, but currently only spreads extra props onto the fieldset and never adds an id to the legend. To support custom legend IDs and aria-labelledby, you need to extend FormGroup\u2019s signature (e.g. add a legendId prop) and insert id={legendId} on the <legend> and aria-labelledby={legendId} on the <fieldset>. Similarly, RadioButtonGroup renders its own fieldset and legend in its render() method but does not allow passing any custom attributes to either element. You must update RadioButtonGroup\u2019s propTypes (e.g. legendId and ariaLabelledBy) and its render() so that it applies those props to the legend and fieldset, thereby enabling correct aria labelling for screen readers.",
+        "bug_scenario": "In the screenshot the developer is rendering a fieldset of radio buttons with a custom legend id (\"row-height-label\") and expects that id to be applied to the <legend> (so that it can be referenced by the fieldset\u2019s aria-labelledby). However, neither FormGroup nor RadioButtonGroup supports supplying a legendId prop or aria-labelledby properly: FormGroup spreads extra props only onto the <fieldset>, and always renders the <legend> without an id; RadioButtonGroup doesn\u2019t accept or forward any custom props for legend or fieldset. As a result, the rendered DOM is missing the legend id and/or aria-labelledby on the fieldset, which breaks screen-reader accessibility."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/FormGroup/FormGroup.js//FormGroup",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//RadioButtonGroup"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/FormGroup/FormGroup.js//FormGroup (functional component)",
+            "packages/react/src/components/RadioButtonGroup/RadioButtonGroup.js//render"
+        ],
+        "explanation": "The FormGroup component (a functional component) currently only accepts legendText and splats remaining props to the fieldset; it never takes a legendId prop or sets an id on the <legend> or an aria-labelledby on the <fieldset>. The RadioButtonGroup class similarly renders a <fieldset> and <legend> inside its render() method but does not accept legendId or aria-labelledby props. To fix the a11y issue, both components must be updated to declare a legendId prop (and propType), pass it as the id on the <legend>, and apply aria-labelledby to the enclosing <fieldset>.",
+        "bug_scenario": "In the Carbon React components, neither FormGroup nor RadioButtonGroup let you supply a custom id on the <legend>, nor do they wire that id up via aria-labelledby on the <fieldset>. As a result, when you render a form group or radio-button group with a user-provided legendId, the legend lacks an id and the fieldset lacks aria-labelledby, preventing screen readers from correctly associating the legend with its fieldset."
+    }
+}

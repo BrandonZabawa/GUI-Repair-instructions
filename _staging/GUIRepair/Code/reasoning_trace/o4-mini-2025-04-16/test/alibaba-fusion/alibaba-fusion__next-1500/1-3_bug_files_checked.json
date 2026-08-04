@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/table/base/header.jsx",
+            "src/table/base/filter.jsx",
+            "src/table/base/resize.jsx",
+            "src/table/fixed/header.jsx",
+            "src/table/fixed/wrapper.jsx"
+        ],
+        "explanation": "\n1. src/table/base/header.jsx \u2013 renders each <th> including filter icons; it needs to coordinate with fixedHeader and resizing styles.\n2. src/table/base/filter.jsx \u2013 controls the filter dropdown behavior and placement; the dropdown open/close is triggering a header reflow under fixedHeader.\n3. src/table/base/resize.jsx \u2013 implements the resizable handle and adjusts column width; it also toggles table-layout to fixed, which interacts poorly with fixedHeader wrapper.\n4. src/table/fixed/header.jsx \u2013 renders the fixed header container separately from the body; its CSS/layout assumptions are invalidated when the filter panel changes header size.\n5. src/table/fixed/wrapper.jsx \u2013 splits the table into synchronized header and body scroll areas; mis-measured header height when filters open causes the wrapper to shift content.\n6. src/table/main.scss \u2013 contains key table layout and overflow styles (including fixed header) that govern how header cells and overflow panels are rendered. Adjustments here may be required to prevent the filter panel from pushing the header content down.",
+        "bug_scenario": "In a Table configured with both fixedHeader and resizable columns, clicking the filter icon on a column header causes the entire header section to resize and shift downward rather than simply opening the filter dropdown overlay. The fixed header\u2019s structure (split header/body) in combination with the resizable logic appears to re-flow the header row height when the filter menu is toggled, breaking the expected fixedHeader layout."
+    },
+    "2": {
+        "bug_files": [
+            "src/table/base/resize.jsx",
+            "src/table/base/filter.jsx",
+            "src/table/fixed/header.jsx",
+            "src/table/fixed/wrapper.jsx"
+        ],
+        "explanation": "All of these files participate in rendering and laying out a resizable, fixed header with filters. \n\n\u2022 src/table/base/resize.jsx implements the resizable handles and switches the table into a fixed-layout mode. Its positioning and mouse-move logic can alter cell widths and heights, which in turn affects the fixed header rendering. \n\n\u2022 src/table/base/filter.jsx generates the filter popover inside a header cell. In fixedHeader mode, the popover\u2019s container is still the base header cell, which can be clipped or mis-positioned if the header has overflow:hidden or unexpected positioning. \n\n\u2022 src/table/fixed/header.jsx renders the header in its own fixed wrapper. It duplicates the base header rows into a separate DOM subtree. Any styling or event handling in the base filter or resize implementation won\u2019t automatically carry over correctly here, causing the misplacement when both features are on. \n\n\u2022 src/table/fixed/wrapper.jsx wraps both header and body in scrollable containers when fixedHeader is true. It applies overflow and positioning styles that can clip child elements (like the filter menu) or interfere with dynamic width changes triggered by resize. Adjustments here are needed to allow filter menus to escape the overflow or recalc positioning after a resize. \n\n\u2022 src/table/main.scss contains the core styles for .next-table-fixed-header and related wrappers. The overflow and z-index rules here govern whether the dropdown is visible and correctly layered above the table. Currently the fixed header wrapper hides overflowing content from filter menus, so tweaking this style is necessary.",
+        "bug_scenario": "When the Table is configured with both fixedHeader and resizable columns and you click on a column\u2019s filter icon, the filter dropdown appears but the fixed header is re-rendered incorrectly: the header cell shifts, the dropdown gets clipped or misplaced and the column header layout breaks."
+    }
+}

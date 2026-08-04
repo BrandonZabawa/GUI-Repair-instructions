@@ -1,0 +1,45 @@
+diff --git a/src/resources/filters/common/figures.lua b/src/resources/filters/common/figures.lua
+index c212b2112..924460fdb 100644
+--- a/src/resources/filters/common/figures.lua
++++ b/src/resources/filters/common/figures.lua
+@@ -48,13 +48,22 @@ function discoverFigure(el, captionRequired)
+   if captionRequired == nil then
+     captionRequired = true
+   end
+-  if #el.content == 1 and el.content[1].t == "Image" then
+-    local image = el.content[1]
+-    if not captionRequired or #image.caption > 0 then
+-      return image
+-    else
++  -- Only treat as a figure if there is exactly one image and all other elements are empty strings or spaces
++  local image = nil
++  for i, elem in ipairs(el.content) do
++    if elem.t == "Image" then
++      if image ~= nil then
++        -- More than one image, not a single figure
++        return nil
++      end
++      image = elem
++    elseif elem.t ~= "Str" and elem.t ~= "Space" then
++      -- Non-image, non-empty, non-space element
+       return nil
+     end
++  end
++  if image ~= nil and (not captionRequired or #image.caption > 0) then
++    return image
+   else
+     return nil
+   end
+diff --git a/src/resources/filters/crossref/figures.lua b/src/resources/filters/crossref/figures.lua
+index 38c75d73e..b9e5410a2 100644
+--- a/src/resources/filters/crossref/figures.lua
++++ b/src/resources/filters/crossref/figures.lua
+@@ -16,7 +16,7 @@ function crossrefFigures()
+ 
+     Para = function(el)
+       local image = discoverFigure(el)
+-      if image and isFigureImage(image) then
++      if image and isFigureImage(image) and #image.caption > 0 then
+         processFigure(image, image.caption)
+       end
+       return el

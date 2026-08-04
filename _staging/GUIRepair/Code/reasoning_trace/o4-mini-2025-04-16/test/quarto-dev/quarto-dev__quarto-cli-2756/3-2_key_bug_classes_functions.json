@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/crossref/theorems.lua//preprocessTheorems",
+            "src/resources/filters/crossref/theorems.lua//theorems",
+            "src/resources/filters/quarto-pre/theorems.lua//theorems"
+        ],
+        "explanation": "All three functions live in the two Crossref-related Lua filter modules that rewrite theorem and proof Divs.  preprocessTheorems() hooks into Div to force headers inside theorems to be unnumbered, and theorems() constructs and prepends an HTML or LaTeX caption to the first child block of the Div.  When that first block is not a Para (for example a CodeBlock) .content is nil, so tprepend fails.  Likewise, neither filter tests for Header vs. List vs. CodeBlock at that position, so the generated caption can be treated as a list item instead of standalone text.  Fixing both issues requires augmenting these two functions to check el.content[1].t before calling tprepend or inserting classes, and to ensure list markers do not eat the caption span.",
+        "bug_scenario": "When a \u201cTheorem\u201d or \u201cProof\u201d div contains only a code block (no explicit header/label), the Crossref Lua filter\u2019s Div-walk in src/resources/filters/crossref/theorems.lua attempts to treat the first child as a paragraph and call tprepend on its .content field, but in fact it\u2019s a CodeBlock (which has no .content), so caption.content is nil and insert blows up.  In a related situation, if you immediately start an unordered (*) or ordered (1.) list inside a theorem, the generated <Span class=\"theorem-title\"> caption gets absorbed as the first list item rather than kept separate.  Both of these behaviors stem from the same two Lua filters not guarding on block type."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/crossref/theorems.lua",
+            "src/resources/filters/quarto-pre/theorems.lua",
+            "src/resources/filters/common/theorems.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/crossref/theorems.lua//preprocessTheorems",
+            "src/resources/filters/crossref/theorems.lua//theorems",
+            "src/resources/filters/quarto-pre/theorems.lua//theorems"
+        ],
+        "explanation": "1. In src/resources/filters/crossref/theorems.lua: \n   - preprocessTheorems() is meant to tag embedded Headers \u201cunnumbered\u201d so they don\u2019t get numbered, but it doesn\u2019t guard against cases where there is no Header at all (e.g. a lone code block).\n   - theorems() then unconditionally does:\n       local caption = el.content[1]\n       tprepend(caption.content, \u2026)\n     If caption is nil (or not a Para), caption.content is nil, so tprepend fails with a nil table.\n   A proper fix would check that el.content[1] exists and has a content table (or inject a dummy Para) before calling tprepend.\n\n2. In src/resources/filters/quarto-pre/theorems.lua: \n   - theorems() marks the first child Header as \u201cunnumbered\u201d and \u201cunlisted,\u201d but when that Header is followed immediately by a bullet/list element, Pandoc still treats it as part of the list, so the theorem title bubbles into the list.  The filter needs to isolate the caption from list contexts (for example by moving the caption out of the list or wrapping it in a block that prevents list parsing).\n\n3. src/resources/filters/common/theorems.lua defines hasTheoremRef and proofType; while not directly causing the nil insert, it underpins the identification of theorem Divs, so it is part of the chain that triggers the broken code in theorems.lua filters.",
+        "bug_scenario": "When a theorem/proof Div has no explicit heading caption or label (for example it contains only a code block) the crossref/theorems.lua filter tries to grab the first element (el.content[1]) as a \u2018caption\u2019 Paragraph, but it may be nil (or not a Para) and so tprepend is called on nil, leading to the \u201cbad argument #1 to 'insert' (table expected, got nil)\u201d error. In a separate but related symptom, using bullet or numbered lists immediately after a theorem heading causes that heading to be captured as a list item, because the quarto-pre/theorems.lua filter marks a Header \u201cunnumbered\u201d/\u201cunlisted\u201d but does not prevent it from being interpreted as a list item."
+    }
+}

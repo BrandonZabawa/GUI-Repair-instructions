@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-css-extras.js",
+            "components/prism-css-extras.min.js"
+        ],
+        "explanation": "The CSS-extras plugin (prism-css-extras.js and its minified counterpart) extends the core CSS grammar with a rule to tokenize \u201c!important\u201d. Its current regex only matches when \u201c!important\u201d is preceded by whitespace or other delimiters. Declarations like \u201cvalue!important\u201d lack that delimiter, so the token rule never fires. Updating the regex in these files to allow matching \u201c!important\u201d without a leading space (for example by making the look-behind optional or by matching /!important\\b/ globally) will fix the bug.",
+        "bug_scenario": "When you write a CSS declaration with \u201c!important\u201d immediately after the value\u2014without any intervening space\u2014Prism does not recognize \u201c!important\u201d as a separate token. For example:\n\n  \u2022 ul{position:absolute!important}   \u2190 \u201c!important\u201d is rendered as part of the value\n  \u2022 <div style=\"position:relative!important;\"> \u2026  \u2190 again not highlighted as the \u201cimportant\u201d token\n\nHowever, if you add a space before the exclamation mark (e.g. \u201cposition: relative !important\u201d), Prism\u2019s CSS\u2010extras plugin will pick it up correctly. The root cause is the regular expression in the CSS\u2010extras component, which only matches \u201c!important\u201d when it follows whitespace or certain punctuation. \u201cAbsolute!important\u201d (no space) thus fails."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-css.js",
+            "components/prism-css.min.js"
+        ],
+        "explanation": "The core CSS grammar in prism-css.js defines the pattern for matching the \u201c!important\u201d token. In the current implementation the regular expression requires a whitespace or start\u2010of\u2010string before the exclamation mark (e.g. /(^|\\s)!important\\b/), so \u201c!important\u201d glued directly to a value (no space) isn\u2019t matched. To fix it, the pattern should be simplified to /!important\\b/, allowing the parser to recognize \u201c!important\u201d regardless of surrounding whitespace. Both the source file (prism-css.js) and its minified counterpart must be updated.",
+        "bug_scenario": "When highlighting CSS code with Prism, a declaration like \u201cposition:absolute!important;\u201d (no space before \u201c!important\u201d) is not correctly tokenized. Instead of splitting the value and the \u201c!important\u201d flag, Prism treats \u201cabsolute!important\u201d as a single plain text token. When there is a space before \u201c!important\u201d (e.g. \u201cposition: absolute !important\u201d), Prism recognizes and highlights the flag correctly."
+    }
+}

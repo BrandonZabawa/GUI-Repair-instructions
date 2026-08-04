@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains",
+            "lighthouse-core/lib/dependency-graph/network-node.js//NetworkNode",
+            "lighthouse-core/gather/computed/page-dependency-graph.js//PageDependencyGraphArtifact"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains.audit",
+            "lighthouse-core/lib/dependency-graph/network-node.js//NetworkNode.hasRenderBlockingPriority",
+            "lighthouse-core/gather/computed/page-dependency-graph.js//PageDependencyGraphArtifact.linkNetworkNodes"
+        ],
+        "explanation": "1) CriticalRequestChains.audit is responsible for building and reporting the chain. It currently treats any high\u2010priority resource the same, without special-casing preload links. 2) NetworkNode.hasRenderBlockingPriority is the method that flags network requests as \u201crender-blocking\u201d when their priority is VeryHigh or High (for scripts). Preloaded CSS requests are being classified as High priority, so they leak into the critical chains. 3) PageDependencyGraphArtifact.linkNetworkNodes is what wires up initiator relationships and builds the tree that the audit traverses. Because preloads use the same dependency logic as stylesheet loads, they end up in the graph as children of the HTML navigation request. To fix the bug you need to modify one or more of these methods\u2014to detect rel=preload (for styles) and exclude or reclassify those nodes so they no longer count as a critical chain.",
+        "bug_scenario": "The screenshot shows Lighthouse\u2019s Performance > Diagnostics panel reporting a \u201cCritical Request Chains\u201d entry for a stylesheet that was fetched via <link rel=\"preload\" as=\"style\" onload=\"this.rel='stylesheet'\">. In our test, /slow.css is deliberately delayed by 5 s and contains no real CSS, yet Lighthouse still lists it as a blocking chain (5,128 ms) under \u201cInitial Navigation,\u201d even though rel=preload should not block rendering."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains",
+            "lighthouse-core/lib/dependency-graph/network-node.js//NetworkNode",
+            "lighthouse-core/gather/computed/page-dependency-graph.js//PageDependencyGraphArtifact"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains.audit",
+            "lighthouse-core/audits/critical-request-chains.js//CriticalRequestChains.flattenRequests",
+            "lighthouse-core/lib/dependency-graph/network-node.js//NetworkNode.hasRenderBlockingPriority",
+            "lighthouse-core/gather/computed/page-dependency-graph.js//PageDependencyGraphArtifact.linkNetworkNodes"
+        ],
+        "explanation": "The `CriticalRequestChains` audit is responsible for identifying high-priority (i.e. render-blocking) resources by walking the dependency graph and flattening request chains, but it never filters out preloaded CSS\u2014so the delayed preload shows up as a blocking chain. The `NetworkNode.hasRenderBlockingPriority()` method defines what counts as render-blocking, and is used (or should be) when building the chains. Finally, `PageDependencyGraphArtifact.linkNetworkNodes()` wires up the request graph (including preload requests) based solely on initiators, without respecting render-blocking priority. To fix this bug, the audit or the graph linker must be updated to exclude `rel=preload` CSS links (or any non-blocking requests) by consulting `hasRenderBlockingPriority()` when traversing and flattening the chains.",
+        "bug_scenario": "On page load, a stylesheet is fetched using `<link rel=\"preload\" as=\"style\" onload=\"this.rel='stylesheet'\">`, with the server delaying the CSS response by 5\u2009s. In Lighthouse\u2019s Performance > Diagnostics panel, that `slow.css` preload request shows up under \u201cCritical Request Chains,\u201d reporting a multi-second blocking chain\u2014even though rel=preload should not block rendering and the CSS is empty."
+    }
+}

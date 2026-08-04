@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/hitdetect.js",
+            "rendering/cases/icon-scale/main.js"
+        ],
+        "explanation": "1. src/ol/style/Icon.js: This is the main class representing icon styling, including scale and anchor. Bugs with negative scale values might stem from how this class passes scale information to the renderer or computes anchor positions.\n2. src/ol/style/IconImage.js: Handles the internal image state, caching, and actual image data used for rendering the icon. Image flipping or mirroring behavior due to negative scale would require changes here.\n3. src/ol/render/canvas/ImageBuilder.js: This is responsible for rendering images (including icons) onto the canvas. If negative scale causes the icon to disappear at map edges, the bug may be in the render transformations, which are handled here.\n4. src/ol/render/canvas/hitdetect.js: Implements hit detection on the canvas for rendered features. Hit detection not working when scale is negative indicates a likely bug in how the hit area is computed with negative scale.\n5. rendering/cases/icon-scale/main.js: This is the rendering case demo for icon-scale; it's likely used for testing or illustrating the bug and may need adjustment to handle negative scales correctly or to add test-cases/fixes for them.",
+        "bug_scenario": "The bug involves incorrect hit detection and rendering when an icon's scale is negative and rotation is zero. Specifically, hit detection fails (clicks on the icon don't register), and the icon is not rendered properly at the map's edge; instead of being partially visible, it disappears entirely. This happens only when negative scaling is applied, which implies the issue is with how negative scale is handled in both the rendering and hit detection logic for icons."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/render/canvas/hitdetect.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/style/Style.js",
+            "src/ol/render/canvas/Executor.js",
+            "rendering/cases/icon-scale/main.js"
+        ],
+        "explanation": "1. src/ol/style/Icon.js: Manages icon style properties such as scale, rotation, and anchor; most likely where negative scale logic needs special handling for rendering and hit detection.\n2. src/ol/style/IconImage.js: Handles the image resource used by Icon style, including rendering calculations that may be affected by negative scaling (such as image flipping, anchor adjustment, and hit extent calculation).\n3. src/ol/render/canvas/hitdetect.js: Responsible for determining if a user-interaction (e.g., click) occurs within the rendered icon; hit accuracy is directly affected by how scale and transformations are handled here.\n4. src/ol/render/canvas/ImageBuilder.js: Builds canvas instructions for drawing images (icons); needs to handle negative scale correctly for placement, rotation, and possible flipping.\n5. src/ol/style/Style.js: Top-level style object, linking features to icon/image style objects; may include logic that aggregates style scale/rotation affecting rendering/hit detection.\n6. src/ol/render/canvas/Executor.js: Executes the drawing instructions which includes rendering the icon on the canvas with the specified scale and rotation, possibly missing logic for negative scale handling or boundary clipping.\n7. rendering/cases/icon-scale/main.js: Example code specifically related to icon scale (as per repo structure); likely sets up the scenario showing this bug in live rendering, and is useful for testing and validating fixes.\n\nThese files are directly responsible for the icon image drawing, transformation, its style (scaling/rotation), or hit detection on the map. Any issue with negative scales requires coordination between the style, rendering, and hit detection modules.",
+        "bug_scenario": "When using an icon style with a negative scale and zero rotation, hit detection fails (clicking the icon has no effect) and rendering at the map edge fails (icon disappears instead of being clipped). This is demonstrated when interacting with an icon having negative scale: expected hit detection doesn't happen and part of the icon doesn't render appropriately at map boundaries."
+    }
+}

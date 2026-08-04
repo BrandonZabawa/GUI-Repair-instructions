@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/BpmnLayouter.js"
+        ],
+        "bug_functions": [
+            "DropOnFlowBehavior//insertShape",
+            "BpmnLayouter//layoutConnection"
+        ],
+        "explanation": "The drop-on-flow feature is implemented in DropOnFlowBehavior. Its insertShape(...) function calculates the split point on the existing connection (using getApproxIntersection), then calls modeling.reconnectEnd, modeling.reconnectStart and modeling.connect to rewire the two new segments. If that split point is computed or applied incorrectly, the new flow waypoints are lost and layout falls back to a default two-point connection. After reconnection, BpmnLayouter.layoutConnection is invoked to re-compute waypoints for sequence flows. Its fallback for missing waypoints is simply [ start, end ] (often defaulting to the top-left corner if docking information is missing). Fixing the bug requires correcting how insertShape determines and pushes the dockingPoint into waypointsBefore/waypointsAfter (or how it hands docking hints to modeling), and/or ensuring layoutConnection receives proper source/target docking hints so that it does not collapse to the canvas origin.",
+        "bug_scenario": "When the user drags and drops a new BPMN element (e.g. a task) onto an existing sequence flow, the library should split that flow into two segments and dock the new element between them. Instead, after dropping, the sequence flow endpoints collapse to a single corner (top-left of the diagram canvas), breaking the routing and resulting in only a straight two-point connection from that corner to the new shape\u2014as shown in the provided GIF."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//DropOnFlowBehavior",
+            "lib/features/modeling/BpmnLayouter.js//BpmnLayouter"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape",
+            "lib/features/modeling/BpmnLayouter.js//layoutConnection"
+        ],
+        "explanation": "The DropOnFlowBehavior class (in DropOnFlowBehavior.js) is responsible for splitting an existing Sequence Flow and reconnecting its ends when you drop a new shape onto it. Its insertShape() function calculates the new waypoints and calls modeling.reconnectEnd/reconnectStart to rewire the flow segments. Any error in waypoint calculation or omission of a docking hint here will cause the new flow to lose its proper docking information. \n\nThe BpmnLayouter class (in BpmnLayouter.js) implements layoutConnection(), which recomputes the Manhattan\u2010style route for any Sequence Flow and determines its docking point via getConnectionDocking(). If layoutConnection() does not respect the original docking hint (for example, not preserving the dock point passed in hints), it will default to using the shape\u2019s top-left midpoint, explaining why the new incoming flow snaps there. Together, these two areas must be corrected: insertShape must capture and forward the correct docking hints, and layoutConnection must honor those hints when laying out the new flow segments.",
+        "bug_scenario": "When you drag and drop a new BPMN element (e.g. a task) onto an existing Sequence Flow, the system attempts to split the flow into two segments and dock the new element in between. After dropping, however, the newly created incoming Sequence Flow always snaps its start docking point to the top-left corner of the diagram (instead of preserving its connection point on the source shape), resulting in a broken, misrouted layout."
+    }
+}

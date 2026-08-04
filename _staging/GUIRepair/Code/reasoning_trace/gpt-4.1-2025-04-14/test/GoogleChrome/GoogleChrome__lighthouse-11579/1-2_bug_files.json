@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_files": [
+            "clients/extension/",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/driver/execution-context.js",
+            "lighthouse-core/gather/runner.js",
+            "lighthouse-core/gather/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/gather/computed/metrics/first-meaningful-paint.js",
+            "lighthouse-core/gather/computed/metrics/speed-index.js",
+            "lighthouse-core/gather/computed/metrics/interactive.js",
+            "lighthouse-core/lib/emulation.js",
+            "lighthouse-core/lib/lh-error.js"
+        ],
+        "explanation": "The bug is directly related to the Chrome extension (clients/extension/) since it only occurs there. The gathering and trace process (lighthouse-core/gather/) is critical for collecting performance metrics; gather-runner.js and driver.js manage tracing, load events, and page states. Metric computation files (e.g., computed/metrics/first-contentful-paint.js) are necessary as they're responsible for extracting metrics from traces\u2014these will fail if traces are missing or incomplete. emulation.js may be relevant if the foreground/background state or emulated conditions impact tracing. lh-error.js is involved in surfacing and reporting errors like NO_FCP. Ensuring these files account for the possibility of missing trace data (due to background tab state) is crucial to resolve or mitigate this bug.",
+        "bug_scenario": "The bug report and screenshot describe a situation where running Lighthouse from the Chrome extension (not CLI) fails to record the trace necessary to compute key performance metrics (e.g., First Contentful Paint), ultimately resulting in a NO_FCP error. This occurs specifically when the browser tab is in the background, which prevents proper tracing and performance evaluation. The screenshot shows performance metrics marked as 'Error!' and a warning stating 'Something went wrong with recording the trace over your page load. Please run Lighthouse again. (NO_FCP)'. This suggests the bug is related to how trace recording and metric extraction are handled when tabs are backgrounded, primarily impacting the extension's gather/trace pipeline."
+    },
+    "2": {
+        "bug_files": [
+            "clients/extension/",
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/computed/metrics/first-contentful-paint.js",
+            "lighthouse-core/audits/metrics/first-contentful-paint.js",
+            "lighthouse-core/lib/emulation.js"
+        ],
+        "explanation": "1. 'clients/extension/': This directory contains the extension code. Since the bug appears only when running as a Chrome extension and not with CLI, the extension code itself is a prime suspect. There may be extension-specific logic or API limitations when backgrounded.\n2. 'lighthouse-core/gather/driver.js': This file manages interactions with the Chrome debugging protocol to collect traces and performance data. If background tab states prevent certain protocol events, it could cause NO_FCP.\n3. 'lighthouse-core/gather/gather-runner.js': Coordinates the gathering process, including tracing and metric collection. Failures here could lead to missing FCP and related metrics if, for example, tracing does not start or page load events are missed.\n4. 'lighthouse-core/computed/metrics/first-contentful-paint.js' and 'lighthouse-core/audits/metrics/first-contentful-paint.js': These handle FCP calculation and audit. If there is an issue detecting or reporting FCP due to tab visibility or trace issues, it would manifest here.\n5. 'lighthouse-core/lib/emulation.js': Handles device and network emulation. FCP and performance metrics might rely on accurate emulation; if something about background tabs disables/affects emulation, this file may be involved.\nIf the bug is due to Chrome not emitting timing information for backgrounded tabs, the fix would involve handling this scenario more gracefully or alerting the user. Thus, these files are most related to the failure to collect FCP and related metrics when the extension is run on a backgrounded tab.",
+        "bug_scenario": "The bug scenario is that when running Lighthouse (LH) as a Chrome extension, and the tab is in the background, all performance metrics fail to be collected (showing as 'Error!'), and an error message 'Something went wrong with recording the trace over your page load. Please run Lighthouse again. (NO_FCP)' appears. This means First Contentful Paint (FCP) and all related performance measurements are missing. The bug also does not occur in the CLI but only in the extension, as per the user's report. The issue likely originates in how page tracing and metric gathering is executed, and possibly in how background tabs and browser visibility affect metric collection."
+    }
+}

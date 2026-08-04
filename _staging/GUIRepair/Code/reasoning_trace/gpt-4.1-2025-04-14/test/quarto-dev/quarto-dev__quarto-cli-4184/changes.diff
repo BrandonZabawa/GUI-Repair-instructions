@@ -1,0 +1,44 @@
+diff --git a/src/resources/filters/quarto-pre/panel-tabset.lua b/src/resources/filters/quarto-pre/panel-tabset.lua
+index 34d87e2ab..84f6ab127 100644
+--- a/src/resources/filters/quarto-pre/panel-tabset.lua
++++ b/src/resources/filters/quarto-pre/panel-tabset.lua
+@@ -59,9 +59,21 @@ function render_tabset(attr, tabs, renderer)
+   local tabsetid = "tabset-" .. tabsetidx
+   tabsetidx = tabsetidx + 1
+ 
++  -- collect extra nav classes (e.g., nav-fill, nav-justified)
++  local navExtraClasses = {}
++  for _, class in ipairs(attr.classes) do
++    if class ~= "panel-tabset" and (class:match("^nav%-")) then
++      table.insert(navExtraClasses, class)
++    end
++  end
++  local navClassAttr = "nav nav-tabs"
++  if #navExtraClasses > 0 then
++    navClassAttr = navClassAttr .. " " .. table.concat(navExtraClasses, " ")
++  end
++
+   -- init tab navigation 
+   local nav = pandoc.List()
+-  nav:insert(pandoc.RawInline('html', '<ul ' .. renderer.ulAttribs(tabsetid) .. '>'))
++  nav:insert(pandoc.RawInline('html', '<ul class="' .. navClassAttr .. '" role="tablist">'))
+ 
+   -- init tab panes
+   local panes = pandoc.Div({}, attr)
+@@ -255,7 +267,8 @@ _quarto.ast.add_handler({
+ function bootstrapTabs() 
+   return {
+     ulAttribs = function(tabsetid)
+-      return 'class="nav nav-tabs" role="tablist"'
++      -- This function is now unused, see render_tabset for nav class logic
++      return ''
+     end,
+     liAttribs = function(tabid, isActive)
+       return 'class="nav-item" role="presentation"'
+@@ -348,4 +361,4 @@ end
+ --   end
+ 
+ --   return div_content
+--- end
+\ No newline at end of file
++-- end

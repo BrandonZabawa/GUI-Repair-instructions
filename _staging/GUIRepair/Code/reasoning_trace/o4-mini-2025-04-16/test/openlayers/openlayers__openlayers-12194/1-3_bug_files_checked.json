@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/canvas.js"
+        ],
+        "explanation": "The heart of the bug lies in the CanvasImmediate implementation (src/ol/render/canvas/Immediate.js): setStyle applies pixelRatio scaling to lineWidth and lineDashOffset but passes the raw lineDash array to context.setLineDash, so dashes remain unscaled. The toContext helper in src/ol/render/canvas.js forwards pixelRatio to the CanvasImmediate constructor, but because Immediate.js never multiplies each dash length by that pixelRatio, the pattern is wrong. Fixing Immediate.js to clone and scale the lineDash entries (and its tests/examples in canvas.js) will correct the discrepancy between map and immediate rendering.",
+        "bug_scenario": "When using CanvasImmediate rendering via ol.render.toContext with a pixelRatio > 1, geometries (coordinates, stroke width, dash offset, etc.) are scaled correctly but the dash pattern (the contents of the lineDash array) is not multiplied by the pixelRatio. On high-DPI devices the dashes become too short (or disappear entirely), whereas the same style rendered on a normal map (which uses the regular executor/replay pipeline) does scale the dash segments, producing the expected result."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/render/canvas.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/VectorContext.js"
+        ],
+        "explanation": "\u2022 src/ol/render/canvas.js defines toContext() and passes pixelRatio into both Immediate and VectorContext but does not hook pixelRatio into the dash\u2010scaling path.  \n\u2022 src/ol/render/canvas/Immediate.js wraps the raw CanvasRenderingContext2D API for immediate drawing; its setLineDash call simply forwards the unscaled dash array and never multiplies it by pixelRatio.  \n\u2022 src/ol/render/VectorContext.js applies style properties when drawing geometries (including context.setLineDash(dashArray)). Because it uses the raw lineDash from the style and does not factor in the pixelRatio, the dashes are drawn too small.  \nBy updating Immediate.js (or VectorContext.js) so that the dash lengths are multiplied by the pixelRatio before calling setLineDash, dashed strokes will render consistently sharp at all device pixel ratios.",
+        "bug_scenario": "When you render a dashed stroke with ol.render.toContext(ctx,{pixelRatio}), the geometry coordinates are scaled by the device pixel ratio but the dash lengths in the style\u2019s lineDash array remain unmodified. On high\u2010DPR devices the dashes become so small that they run together into a solid line (especially with round caps). In contrast, map rendering scales both coordinates and dash lengths."
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/aggregator/aggregate.js"
+        ],
+        "explanation": "All of the logic for computing aggregation scores lives in lighthouse-core/aggregator/aggregate.js. This file takes the individual audit results, sums the weights of those that match the expectedValue, and divides by the total weight to produce the overall score. A flaw in how failing audits are counted (or how weights are accumulated) causes it to ignore failed items and end up with a score of 1.0. Fixing this function will correct the weighted average calculation so that a mix of passing and failing audits yields a non-perfect top-level score.",
+        "bug_scenario": "When you feed one passing audit (aria-attributes-valid) and one failing audit (color-contrast) into an Accessibility aggregation with equal weights, the top-level score is still computed as 1.0 (green pass) instead of the correct weighted average (0.5). In the UI you see the \u201cAccessibility\u201d category marked as passing even though one of its sub-audits has failed."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/aggregator/aggregate.js"
+        ],
+        "explanation": "The bug lies in the aggregation algorithm itself, which is implemented in `lighthouse-core/aggregator/aggregate.js`. This module is responsible for reading the expected values and weights for each audit, summing up passed vs. total weights, and computing the final score. Because it currently reports 1.0 in the repro (ignoring the failing audit\u2019s weight), it must be updated here to correctly calculate and return the weighted average rather than defaulting to a full pass when any sub\u2010item passes.",
+        "bug_scenario": "In the Lighthouse report UI (and when calling the aggregation logic directly in Node), a top\u2010level aggregation (\u201cAccessibility\u201d) is being marked as a full pass (score of 1.0 / green) even though one of its sub\u2010audits (\u201cBackground and foreground colors have a sufficient contrast ratio\u201d) has failed. In the screenshot you can see the red \u201cx\u201d for the color-contrast audit but the overall category still shows a green check. Reproducing with a minimal script that defines two audits (one passing, one failing) with equal weight and feeding them into `Aggregate.aggregate()` prints an overall score of 1.0 instead of the expected weighted average of 0.5."
+    }
+}

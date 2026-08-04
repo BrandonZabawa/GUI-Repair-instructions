@@ -1,0 +1,46 @@
+diff --git a/src/ol/renderer/webgl/TileLayer.js b/src/ol/renderer/webgl/TileLayer.js
+index ec85963a46..f1b9e8b7f3 100644
+--- a/src/ol/renderer/webgl/TileLayer.js
++++ b/src/ol/renderer/webgl/TileLayer.js
+@@ -293,6 +293,12 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     const tileLayer = this.getLayer();
+     const tileSource = tileLayer.getSource();
+     const tileGrid = tileSource.getTileGridForProjection(viewState.projection);
++
++    // If no tile grid is available for the current projection, do not enqueue tiles
++    if (!tileGrid) {
++      return;
++    }
++
+     const tileTextureCache = this.tileTextureCache_;
+     const tileRange = tileGrid.getTileRangeForExtentAndZ(
+       extent,
+@@ -384,6 +390,18 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+     const tileLayer = this.getLayer();
+     const tileSource = tileLayer.getSource();
+     const tileGrid = tileSource.getTileGridForProjection(viewState.projection);
++
++    // If no tile grid is available for the current projection, do not render
++    if (!tileGrid) {
++      this.helper.finalizeDraw(
++        frameState,
++        this.dispatchPreComposeEvent,
++        this.dispatchPostComposeEvent
++      );
++      this.postRender(gl, frameState);
++      return this.helper.getCanvas();
++    }
++
+     const extent = getRenderExtent(frameState, frameState.extent);
+     const z = tileGrid.getZForResolution(
+       viewState.resolution,
+@@ -621,6 +639,9 @@ class WebGLTileLayerRenderer extends WebGLLayerRenderer {
+    * @private
+    */
+   findAltTiles_(tileGrid, tileCoord, altZ, tileTexturesByZ) {
++    if (!tileGrid) {
++      return false;
++    }
+     const tileRange = tileGrid.getTileRangeForTileCoordAndZ(
+       tileCoord,
+       altZ,

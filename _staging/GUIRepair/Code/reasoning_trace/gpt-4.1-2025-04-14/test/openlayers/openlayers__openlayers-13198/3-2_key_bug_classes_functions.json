@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer.configureSource",
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer.onStyleLoad",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer.renderFrame"
+        ],
+        "explanation": "The issue is specific to rendering vector layers with backgrounds layered above other map layers. The MapboxVectorLayer class in src/ol/layer/MapboxVector.js is directly responsible for configuring and managing Mapbox vector style layers, including backgrounds, via its configureSource and onStyleLoad methods. These methods determine how backgrounds are applied and rendered. The CanvasVectorLayerRenderer class in src/ol/renderer/canvas/VectorLayer.js actually performs the rendering logic for vector layers, with renderFrame being the function that executes the frame rendering, which is where compositing and background rendering logic is handled. Given the stacktrace in the bug report and the mention of 'useContainer' and 'renderFrame' in the error trace, both the configuration and rendering logic in these classes/functions are critical to the bug. The error likely arises from an incorrect handling of the background layer compositing or container logic when a vector layer is rendered over another layer.",
+        "bug_scenario": "When rendering a Mapbox vector layer that has a background over another map layer (like an OSM tile layer), the rendering fails and throws an AssertionError. This began in release 6.10, likely as a result of changes from #13085. The bug appears when a Mapbox vector layer with a background is composited over other layers, blocking the expected overlay rendering."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer.configureSource",
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer.onStyleLoad",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer.renderFrame"
+        ],
+        "explanation": "The MapboxVectorLayer class in src/ol/layer/MapboxVector.js is central to the problem since it manages the Mapbox vector layer, including handling of style backgrounds (see the configureSource and onStyleLoad methods, which deal with setting up the source and the background feature for the layer). If a background is mishandled or not rendered correctly, it can interfere with overlaying other layers, leading to assertion errors. The CanvasVectorLayerRenderer class in src/ol/renderer/canvas/VectorLayer.js is responsible for the actual rendering of vector layers on the canvas, including the renderFrame method, which is directly referenced in the stack trace. If this renderer does not properly handle backgrounds or compositing with other layers, it could also cause the observed assertion error. Together, these classes and functions are the most likely places where changes would be needed to ensure vector layers with backgrounds can be correctly rendered over other layers.",
+        "bug_scenario": "The bug scenario occurs when attempting to render a Mapbox vector layer with a background over another layer (e.g., an OSM layer). This results in an assertion error during rendering, preventing the expected behavior where vector layers with backgrounds can overlay other layers. The error trace points to rendering logic, particularly in the handling of backgrounds and style application for vector layers."
+    }
+}

@@ -1,0 +1,52 @@
+diff --git a/src/dialog/dialog.jsx b/src/dialog/dialog.jsx
+index 5ed513a6b..cc1949d9a 100644
+--- a/src/dialog/dialog.jsx
++++ b/src/dialog/dialog.jsx
+@@ -4,6 +4,7 @@ import Overlay from '../overlay';
+ import zhCN from '../locale/zh-cn';
+ import { focus, obj, func, events, dom } from '../util';
+ import Inner from './inner';
++import ConfigProvider from '../config-provider';
+ 
+ const noop = () => {};
+ const { limitTabRange } = focus;
+@@ -390,18 +391,29 @@ export default class Dialog extends Component {
+         // useCSS && hasMask : isFullScreen 并且 有mask的模式下，为了解决 next-overlay-backdrop 覆盖mask，使得点击mask关闭页面的功能不生效的问题，需要开启 Overlay 的 isChildrenInMask 功能，并且把 next-dialog-container 放到 next-overlay-backdrop上
+         // useCSS && !hasMask : isFullScreen 并且 没有mask的情况下，需要关闭 isChildrenInMask 功能，以防止children不渲染
+         // 其他模式下维持 mask 与 children 同级的关系
++
++        // Wrap dialog content with ConfigProvider to set popupContainer to the dialog overlay node
++        const getPopupContainer = () => {
++            if (this.overlay && this.overlay.getInstance) {
++                return this.overlay.getInstance().getContentNode();
++            }
++            return null;
++        };
++
+         return (
+             <Overlay {...newOverlayProps}>
+-                {useCSS && !hasMask ? (
+-                    <div
+-                        className={`${prefix}dialog-container`}
+-                        dir={rtl ? 'rtl' : undefined}
+-                    >
+-                        {inner}
+-                    </div>
+-                ) : (
+-                    inner
+-                )}
++                <ConfigProvider popupContainer={getPopupContainer}>
++                    {useCSS && !hasMask ? (
++                        <div
++                            className={`${prefix}dialog-container`}
++                            dir={rtl ? 'rtl' : undefined}
++                        >
++                            {inner}
++                        </div>
++                    ) : (
++                        inner
++                    )}
++                </ConfigProvider>
+             </Overlay>
+         );
+     }

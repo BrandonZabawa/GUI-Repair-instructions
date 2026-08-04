@@ -1,0 +1,57 @@
+diff --git a/src/ol/geom/Circle.js b/src/ol/geom/Circle.js
+index 37721d808d..cd434da9c0 100644
+--- a/src/ol/geom/Circle.js
++++ b/src/ol/geom/Circle.js
+@@ -150,19 +150,24 @@ class Circle extends SimpleGeometry {
+    */
+   intersectsExtent(extent) {
+     const circleExtent = this.getExtent();
+-    if (intersects(extent, circleExtent)) {
+-      const center = this.getCenter();
++if (intersects(extent, circleExtent)) {
++const center = this.getCenter();
++const radius = this.getRadius();
+ 
+-      if (extent[0] <= center[0] && extent[2] >= center[0]) {
+-        return true;
+-      }
+-      if (extent[1] <= center[1] && extent[3] >= center[1]) {
+-        return true;
+-      }
++// Check if the circle's center is within the extent
++if (extent[0] <= center[0] && extent[2] >= center[0] &&
++extent[1] <= center[1] && extent[3] >= center[1]) {
++return true;
++}
+ 
+-      return forEachCorner(extent, this.intersectsCoordinate.bind(this));
+-    }
+-    return false;
++// Check if any corner of the extent is within the circle
++return forEachCorner(extent, this.intersectsCoordinate.bind(this)) ||
++this.containsXY(extent[0], extent[1]) ||
++this.containsXY(extent[2], extent[3]) ||
++this.containsXY(extent[0], extent[3]) ||
++this.containsXY(extent[2], extent[1]);
++}
++return false;
+   }
+ 
+   /**
+diff --git a/src/ol/render/VectorContext.js b/src/ol/render/VectorContext.js
+index b560cee2e3..dd1943f3ec 100644
+--- a/src/ol/render/VectorContext.js
++++ b/src/ol/render/VectorContext.js
+@@ -43,7 +43,11 @@ class VectorContext {
+    * @param {import("../Feature.js").default} feature Feature.
+    * @param {import("../style/Style.js").default} style Style.
+    */
+-  drawFeature(feature, style) {}
++drawFeature(feature, style) {
++// Assuming drawGeometry already handles extent checks correctly
++this.setStyle(style);
++this.drawGeometry(feature.getGeometry());
++}
+ 
+   /**
+    * @param {import("../geom/GeometryCollection.js").default} geometryCollectionGeometry Geometry collection.

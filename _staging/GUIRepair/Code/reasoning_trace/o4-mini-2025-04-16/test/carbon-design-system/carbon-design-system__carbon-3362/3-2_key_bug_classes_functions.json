@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/FileUploader/FileUploader.js//FileUploaderButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/FileUploader/FileUploader.js//FileUploaderButton.render"
+        ],
+        "explanation": "The root of the violation is in FileUploaderButton.render: it declares a static role=\"button\" on the <label> but then also spreads a dynamic role={role} from props (via {...other}), which can override or inject an empty/invalid ARIA role into the DOM. This produces the DAP error because the resulting role attribute isn\u2019t guaranteed to be a valid WAI-ARIA role. Removing the dynamic role prop (and any role PropType) from the label element ensures that only the intended, valid role=\"button\" is present and clears the accessibility violation.",
+        "bug_scenario": "When running DAP against a page containing the FileUploaderButton component, the audit flags the <label> element as an invalid ARIA role because it\u2019s being rendered with a dynamic role prop that may be empty or invalid. In the screenshot you can see the DOM node for the button label (<label role= tabindex=\u2026) is flagged with \u201cElements that use 'role' must reference a valid WAI-ARIA role.\u201d The report even notes \u201cTo fix this issue remove \u2018role\u2019 from the label.\u201d"
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/FileUploader/FileUploader.js//FileUploaderButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/FileUploader/FileUploader.js//FileUploaderButton.render"
+        ],
+        "explanation": "The FileUploaderButton class is the component that renders the offending <label>. Inside its render() method you see two \"role\" props on the label (one hard-coded and one passed in), which is what triggers the accessibility violation. Removing the role attribute from the <label> in FileUploaderButton.render (and removing the corresponding propType definition) will fix the invalid-role DAP error.",
+        "bug_scenario": "When you render the FileUploaderButton component, its root <label> element is being given a \"role\" attribute (in this case \"button\") which is not a valid ARIA role for a <label>. The attached DevTools screenshot shows the DAP panel flagging \u201cElements that use 'role' must reference a valid WAI-ARIA role,\u201d pointing at the <label role=\"button\">. To eliminate the violation, the hard-coded \"role\" on the label must be removed (and the propType for it deprecated or deleted)."
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/canvas/ExecutorGroup.js//ExecutorGroup",
+            "src/ol/render/canvas/Executor.js//Executor",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/ExecutorGroup.js//forEachFeatureAtCoordinate",
+            "src/ol/render/canvas/Executor.js//executeHitDetection",
+            "src/ol/renderer/canvas/VectorLayer.js//forEachFeatureAtCoordinate"
+        ],
+        "explanation": "These classes and functions are directly responsible for feature rendering, event hit detection, and style application on canvas-based vector layers. Performance issues during pointermove are typically rooted in inefficient hit detection or style application logic. Specifically:\n\n- ExecutorGroup and Executor are the core classes managing rendering and hit detection for vector features; forEachFeatureAtCoordinate (in ExecutorGroup) and executeHitDetection (in Executor) are invoked during pointermove to determine which features are under the cursor, and may have become less efficient in 6.4.0, particularly with non-cached styles.\n- CanvasVectorLayerRenderer manages the interaction between the rendered features and the map UI, including forEachFeatureAtCoordinate, which coordinates hit detection and style evaluation during pointer events.\n\nPerformance regression in these areas would manifest as the sluggish pointer feedback observed in the bug scenario, especially when many features exist and styles are not cached.",
+        "bug_scenario": "The provided images and bug report describe a significant performance regression in the handling of pointermove events when interacting with a map containing 1000 features styled with non-cached styles. In version 6.4.0, pointermove (hover/cursor) responsiveness is notably slower compared to 6.3.1. This regression leads to laggy cursor feedback and sluggish interactions such as zooming and panning, which are especially visible when hovering over dense feature sets."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/canvas/ExecutorGroup.js//ExecutorGroup",
+            "src/ol/render/canvas/Executor.js//Executor",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/ExecutorGroup.js//forEachFeatureAtCoordinate",
+            "src/ol/render/canvas/ExecutorGroup.js//execute",
+            "src/ol/render/canvas/Executor.js//execute_",
+            "src/ol/render/canvas/Executor.js//executeHitDetection",
+            "src/ol/renderer/canvas/VectorLayer.js//forEachFeatureAtCoordinate"
+        ],
+        "explanation": "The performance regression on pointermove is likely related to how features are hit-detected and rendered in response to pointer events. The core logic for iterating features at a coordinate (for hit detection and style application) is handled in ExecutorGroup.forEachFeatureAtCoordinate and CanvasVectorLayerRenderer.forEachFeatureAtCoordinate. The Executor and ExecutorGroup classes are responsible for batching, executing, and drawing feature instructions on the canvas, so their execute and execute_ methods are critical for performance. The executeHitDetection function in Executor is likely invoked during pointermove to determine which features are under the cursor, and inefficiencies here would directly affect pointermove responsiveness. The regression is especially pronounced with non-cached styles, suggesting that style evaluation or feature iteration has become more expensive between versions. These methods and classes encapsulate the affected logic, making them the key areas for investigation and fixing the performance issue.",
+        "bug_scenario": "The scenario depicted in the images and the report is a significant pointermove (mouse move) performance regression in OpenLayers version 6.4.0 compared to 6.3.1 when rendering 1000 vector features with non-cached styles. The images show a clustered set of features on a world map, where pointer interactions (like moving the cursor) are much slower and laggy in the newer version, affecting user interactions such as cursor changes, zoom, and panning."
+    }
+}

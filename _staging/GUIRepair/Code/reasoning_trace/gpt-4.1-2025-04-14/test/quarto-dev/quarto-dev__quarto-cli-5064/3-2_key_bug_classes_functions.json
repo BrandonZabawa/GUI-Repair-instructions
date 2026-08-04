@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/code-annotation.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/code-annotation.lua//annoteProvider",
+            "src/resources/filters/quarto-pre/code-annotation.lua//resolveCellAnnotes",
+            "src/resources/filters/quarto-pre/code-annotation.lua//processAnnotation",
+            "src/resources/filters/quarto-pre/code-annotation.lua//code"
+        ],
+        "explanation": "The code-annotation.lua file is responsible for handling code annotation processing for different languages. The key bug-related elements are:\n- annoteProvider: This function generates language-specific logic for detecting and stripping annotation comments based on comment syntax. If the logic for languages like VHDL (\"--\") and C/C++ (\"//\" or \"/* ... */\") is incorrect or incomplete, it will fail to detect/strip these annotations.\n- resolveCellAnnotes: This function parses code blocks, uses the annotation provider, and processes lines to extract and strip annotations. If it doesn't properly handle languages with different comment styles (single vs block comments), annotation comments will remain in the output.\n- processAnnotation: This function is used to strip annotations from code lines. If it doesn't work as intended for certain comment syntaxes, the bug will manifest.\n- code: The main filter function that coordinates annotation processing for code blocks and their associated ordered lists. Errors or omissions here could cause specific languages to be missed or processed incorrectly.\n\nThe problem likely lies in the handling of comment syntaxes in annoteProvider and the subsequent annotation-stripping logic in resolveCellAnnotes and processAnnotation, specifically for C/C++ (which can use both // and /* ... */) and VHDL (which uses --). Ensuring these functions accurately parse and remove annotation markers for all supported languages should resolve the bug.",
+        "bug_scenario": "The bug scenario is that code annotation markers (like -- <1> in VHDL and // <1> in C/C++) in code blocks are not replaced by the expected circle numbering format in the rendered output. Instead, the annotation comments are left intact next to the code lines, rather than being processed into the expected annotation display. This issue occurs for C/C++ and VHDL, but works correctly for R and Python code blocks. The provided images show that the annotation comments remain in the rendered output for C/C++ and VHDL code, while for R and Python, the annotations are displayed correctly as intended."
+    },
+    "2": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/code-annotation.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/code-annotation.lua//annoteProvider",
+            "src/resources/filters/quarto-pre/code-annotation.lua//resolveCellAnnotes",
+            "src/resources/filters/quarto-pre/code-annotation.lua//processAnnotation"
+        ],
+        "explanation": "The problem centers on how annotation comments are detected and replaced/removed for different languages in the code annotation filter. The key bug-related elements are:\n\n- src/resources/filters/quarto-pre/code-annotation.lua//annoteProvider: This function constructs the language-specific logic for identifying and stripping/replacing annotation comments. If the regular expressions or comment character mappings are incorrect or incomplete for C/C++ and VHDL, annotation handling will fail.\n\n- src/resources/filters/quarto-pre/code-annotation.lua//resolveCellAnnotes: This function applies the annotation logic to code blocks. If the provider does not properly strip or replace annotations for certain languages, the comments will remain visible.\n\n- src/resources/filters/quarto-pre/code-annotation.lua//processAnnotation: This function is responsible for stripping the annotation from the code line. If it fails, the annotation comment will remain.\n\nThe root cause is likely a mismatch or incomplete handling of comment syntax for C/C++ and VHDL in the logic that detects and removes annotation tags. The relevant logic and possible regular expressions for these languages in these functions should be reviewed and fixed to ensure correct annotation replacement.",
+        "bug_scenario": "The bug scenario is that code annotations for C/C++ and VHDL are not handled correctly in Quarto documents. While annotations work as expected for R and Python (with comments replaced by circled numbers), in C/C++ and VHDL code blocks, the annotation comments (e.g., // <1> or -- <1>) are not replaced with circle numbering, and the comments remain visible in the rendered output. The provided images show that, for C/C++ and VHDL, annotation comments are left next to the code, rather than being replaced/hidden as intended, in contrast to the correct behavior seen with R and Python code."
+    }
+}

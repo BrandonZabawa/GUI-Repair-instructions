@@ -1,0 +1,21 @@
+diff --git a/lighthouse-cli/run.js b/lighthouse-cli/run.js
+index cc8c717f1..091af8eb2 100644
+--- a/lighthouse-cli/run.js
++++ b/lighthouse-cli/run.js
+@@ -79,7 +79,15 @@ function printProtocolTimeoutErrorAndExit() {
+  * @return {never}
+  */
+ function printRuntimeErrorAndExit(err) {
+-  console.error('Runtime error encountered:', err.friendlyMessage || err.message);
++  // Ensure we always print a user-friendly, translated message.
++  let message = err.friendlyMessage;
++  if (!message || typeof message !== 'string') {
++    // Fallback to err.message, but avoid printing internal file paths or codes.
++    message = err.message && typeof err.message === 'string'
++      ? err.message
++      : 'A runtime error occurred. Please check your input and try again.';
++  }
++  console.error('Runtime error encountered:', message);
+   if (err.stack) {
+     console.error(err.stack);
+   }

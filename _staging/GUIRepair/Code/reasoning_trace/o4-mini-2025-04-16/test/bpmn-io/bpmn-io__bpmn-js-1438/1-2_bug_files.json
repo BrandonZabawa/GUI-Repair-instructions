@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/import/BpmnImporter.js",
+            "lib/import/BpmnTreeWalker.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js",
+            "lib/draw/TextRenderer.js",
+            "lib/util/LabelUtil.js"
+        ],
+        "explanation": "\u2022 lib/import/BpmnImporter.js & BpmnTreeWalker.js:  These two coordinate the import of BPMNDI for edges and embedded message markers.  Currently they only import the MessageFlow DI but drop the separate message\u2010marker DI (and thus never create a label for the message name).  Fixes here must detect the marker DI for bpmn:Message and register a label shape under the connection.  \n\n\u2022 lib/draw/BpmnRenderer.js:  Responsible for drawing connections and invoking label rendering.  It must be extended so that thrown/caught message elements on a Message Flow not only render the envelope icon but also ask TextRenderer to draw the message name at the correct anchor.  \n\n\u2022 lib/draw/BpmnRenderUtil.js:  Defines the SVG symbol paths (envelope) and default label placement routines for BPMN visuals.  It needs to provide a positioning helper for message\u2010element labels on flows (just as it does for message events).  \n\n\u2022 lib/draw/TextRenderer.js:  The core text\u2010drawing engine.  It must be called by BpmnRenderer for the new message\u2010element labels, and the styling/line\u2010breaking options may need slight extension to handle small names under a small icon.  \n\n\u2022 lib/util/LabelUtil.js:  Provides shared logic for computing label bounds/positions.  It will likely need a new branch to calculate the offset for a message icon on a connection so the name appears just below the envelope.",
+        "bug_scenario": "In the supplied BPMN diagram, every message element (the little envelope icon that sits on a Message Flow) carries its own \u201cmessage name\u201d in the XML, but these names are never painted on the canvas.  In other words, the importer never creates a label shape for the message\u2010icon DI and/or the renderer ignores it, so you see a bare envelope but no text underneath.  Meanwhile the Message Flow itself can also have its own BPMN label, which must be handled alongside the message name.  The end result is missing message\u2010element names on the canvas."
+    },
+    "2": {
+        "bug_files": [
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js",
+            "lib/draw/TextRenderer.js",
+            "lib/import/BpmnImporter.js"
+        ],
+        "explanation": "\u2022 lib/draw/BpmnRenderer.js  \n  \u2022 This is where the envelope marker for message flows is drawn. The drawConnection method handles all edge decorations (sequence flows, associations, messages). Since the logic currently only draws the icon, not its name, it needs to be extended to request and position a text label for the <bpmn:Message>.  \n\n\u2022 lib/draw/BpmnRenderUtil.js  \n  \u2022 Houses utility routines for appending labels to shapes and paths. You\u2019ll need to add a helper to compute the proper positioning (below the envelope) and styling for a message name, and invoke it from BpmnRenderer.  \n\n\u2022 lib/draw/TextRenderer.js  \n  \u2022 Responsible for generating <text> elements in the SVG. It must support rendering labels on connection decorations (not just on the main connection line), so may need to be updated to accept an explicit (x,y) coordinate for message names.  \n\n\u2022 lib/import/BpmnImporter.js  \n  \u2022 During import, the <bpmn:Message> definitions currently map only to markers on the flow, not to separate label data. This file must pull the name property off the BPMN model, propagate it onto the graphical element (e.g. as labelTarget or businessObject.name), so that the renderer has the text to draw.  \n\nTogether, these files cover the import of the message name, its storage in the diagram element, and the actual SVG rendering of text below the envelope marker on the message flow.",
+        "bug_scenario": "When rendering BPMN diagrams with message flows, the little envelope icon appears on the dashed line but any user-defined name on the corresponding <bpmn:Message> element (or messageFlow) is not shown under the envelope marker. In the supplied example, all of the message envelopes appear on the swimlane lanes, but their textual names (e.g. \u201c\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e\u201d, \u201c\u041f\u043e\u043b\u0443\u0447\u0435\u043d\u043e\u201d, etc.) don\u2019t render anywhere on the canvas. The ask is to render the name of the message element beneath its envelope marker, taking into account that the message flow itself can also carry a separate label."
+    }
+}

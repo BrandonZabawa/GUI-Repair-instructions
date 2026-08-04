@@ -1,0 +1,461 @@
+{
+    "1/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ],
+                "REPLACE": [
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");",
+                    "// Adjust for rotation precision",
+                    "if (Math.abs(rotation % (Math.PI / 2)) < 0.01) {",
+                    "this.pixelTransform[0] = Math.round(this.pixelTransform[0]);",
+                    "this.pixelTransform[3] = Math.round(this.pixelTransform[3]);",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const transform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(transform, pixelScale, -pixelScale);",
+                    "translateTransform(transform, -tileExtent[0], -tileExtent[3]);"
+                ],
+                "REPLACE": [
+                    "const transform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(transform, pixelScale, -pixelScale);",
+                    "translateTransform(transform, -tileExtent[0], -tileExtent[3]);",
+                    "// Adjust for rotation precision",
+                    "if (Math.abs(this.renderedRotation_ % (Math.PI / 2)) < 0.01) {",
+                    "transform[0] = Math.round(transform[0]);",
+                    "transform[3] = Math.round(transform[3]);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "resolution,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2"
+                ],
+                "REPLACE": [
+                    "resolution,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "(Math.abs(rotation - Math.PI / 2) < 0.01 || Math.abs(rotation - 3 * Math.PI / 2) < 0.01) ? Math.round(rotation / (Math.PI / 2)) * (Math.PI / 2) : rotation,",
+                    "-width / 2,",
+                    "-height / 2"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "scaleTransform(transform, pixelScale, -pixelScale);",
+                    "translateTransform(transform, -tileExtent[0], -tileExtent[3]);"
+                ],
+                "REPLACE": [
+                    "const modRotation = (Math.abs(rotation - Math.PI / 2) < 0.01 || Math.abs(rotation - 3 * Math.PI / 2) < 0.01) ? Math.round(rotation / (Math.PI / 2)) * (Math.PI / 2) : rotation;",
+                    "scaleTransform(transform, Math.cos(modRotation) * pixelScale, -Math.sin(modRotation) * pixelScale);",
+                    "translateTransform(transform, -tileExtent[0], -tileExtent[3]);"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "// set forward and inverse pixel transforms",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// set forward and inverse pixel transforms, adjusting with precision for specific rotations",
+                    "const adjustedRotation = (Math.abs(rotation % (Math.PI / 2)) < Number.EPSILON)",
+                    "? Math.round(rotation / (Math.PI / 2)) * (Math.PI / 2)",
+                    ": rotation;",
+                    "",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "adjustedRotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const canvasScale =",
+                    "((tileResolution / viewResolution) * pixelRatio) / tilePixelRatio;",
+                    "",
+                    "// set forward and inverse pixel transforms",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const canvasScale =",
+                    "((tileResolution / viewResolution) * pixelRatio) / tilePixelRatio;",
+                    "",
+                    "// Adjust scale to improve rendering at high rotations",
+                    "if (Math.abs(rotation) % (Math.PI / 2) === 0) {",
+                    "canvasScale *= Math.cos(rotation);",
+                    "}",
+                    "",
+                    "// set forward and inverse pixel transforms",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const renderScale = pixelRatio / renderPixelRatio;",
+                    "if (renderScale !== 1) {",
+                    "const canvasTransform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(canvasTransform, renderScale, renderScale);",
+                    "context.setTransform.apply(context, canvasTransform);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "let renderScale = pixelRatio / renderPixelRatio;",
+                    "if (Math.abs(rotation) % (Math.PI / 2) === 0) {",
+                    "renderScale *= Math.cos(rotation);",
+                    "}",
+                    "",
+                    "if (renderScale !== 1) {",
+                    "const canvasTransform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(canvasTransform, renderScale, renderScale);",
+                    "context.setTransform.apply(context, canvasTransform);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const adjustedRotation = Math.abs(rotation % (Math.PI / 2)) < 0.001 ? 0 : rotation;",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "adjustedRotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const canvasTransform = toTransformString(this.pixelTransform);",
+                    "...",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const fixedRotation = (Math.abs(rotation - Math.PI / 2) < 0.01 || Math.abs(rotation - (3 * Math.PI) / 2) < 0.01) ? 0 : rotation;",
+                    "const canvasTransform = toTransformString(this.pixelTransform);",
+                    "...",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "fixedRotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "renderTileImage_(tile, frameState) {",
+                    "...",
+                    "const renderScale = pixelRatio / renderPixelRatio;",
+                    "if (renderScale !== 1) {",
+                    "const canvasTransform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(canvasTransform, renderScale, renderScale);",
+                    "context.setTransform.apply(context, canvasTransform);",
+                    "}",
+                    "..."
+                ],
+                "REPLACE": [
+                    "renderTileImage_(tile, frameState) {",
+                    "...",
+                    "const fixedRotation = (Math.abs(rotation - Math.PI / 2) < 0.01 || Math.abs(rotation - (3 * Math.PI) / 2) < 0.01) ? 0 : rotation;",
+                    "const renderScale = pixelRatio / renderPixelRatio;",
+                    "if (renderScale !== 1) {",
+                    "const canvasTransform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(canvasTransform, renderScale, renderScale);",
+                    "context.setTransform.apply(context, canvasTransform);",
+                    "}",
+                    "..."
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const transform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(transform, pixelScale, -pixelScale);",
+                    "translateTransform(transform, -tileExtent[0], -tileExtent[3]);"
+                ],
+                "REPLACE": [
+                    "const transform = resetTransform(this.tmpTransform_);",
+                    "scaleTransform(transform, pixelScale, pixelScale);",
+                    "translateTransform(transform, -tileExtent[0], -tileExtent[1]);"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// Adjust scale transformation to improve rotational precision",
+                    "const adjustedScale = rotation ? Math.cos(rotation) : 1;",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "adjustedScale / pixelRatio,",
+                    "adjustedScale / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const image = this.getTileImage(tile);",
+                    "if (!image) {",
+                    "return;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "// Ensure the image is recalibrated for high rotation contexts",
+                    "const image = this.getTileImage(tile);",
+                    "if (!image) {",
+                    "return;",
+                    "}",
+                    "const resolutionDiff = Math.abs(frameState.viewState.resolution - tile.wantedResolution);",
+                    "if (resolutionDiff > 0.0001) {",
+                    "tile.wantedResolution = frameState.viewState.resolution; // Adjust the wanted resolution",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const adjustedRotation = Math.round(rotation / (Math.PI / 2)) * (Math.PI / 2);",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "adjustedRotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/renderer/canvas/TileLayer.js": [
+            {
+                "SEARCH": [
+                    "const canvasScale =",
+                    "((tileResolution / viewResolution) * pixelRatio) / tilePixelRatio;",
+                    "",
+                    "// set forward and inverse pixel transforms",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "rotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ],
+                "REPLACE": [
+                    "let adjustedRotation = rotation;",
+                    "if (Math.abs(rotation) === Math.PI / 2 || Math.abs(rotation) === 3 * Math.PI / 2) {",
+                    "adjustedRotation -= 0.0001; // apply minor corrective measure for 90/270 degrees",
+                    "}",
+                    "",
+                    "const canvasScale =",
+                    "((tileResolution / viewResolution) * pixelRatio) / tilePixelRatio;",
+                    "",
+                    "// set forward and inverse pixel transforms",
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "adjustedRotation,",
+                    "-width / 2,",
+                    "-height / 2",
+                    ");"
+                ]
+            }
+        ],
+        "src/ol/renderer/canvas/VectorTileLayer.js": [
+            {
+                "SEARCH": [
+                    "const renderPixelRatio =",
+                    "(frameState.pixelRatio / tile.wantedResolution) * tileResolution;",
+                    "",
+                    "const resolution = tileGrid.getResolution(z);",
+                    "const context = tile.getContext(layer);",
+                    "",
+                    "// Increase tile size when overzooming",
+                    "pixelRatio = Math.round(",
+                    "Math.max(pixelRatio, renderPixelRatio / pixelRatio)",
+                    ");"
+                ],
+                "REPLACE": [
+                    "let adjustedRotation = frameState.viewState.rotation;",
+                    "if (Math.abs(adjustedRotation) === Math.PI / 2 || Math.abs(adjustedRotation) === 3 * Math.PI / 2) {",
+                    "adjustedRotation -= 0.0001; // apply minor corrective measure for 90/270 degrees",
+                    "}",
+                    "",
+                    "const renderPixelRatio =",
+                    "(frameState.pixelRatio / tile.wantedResolution) * tileResolution;",
+                    "",
+                    "const resolution = tileGrid.getResolution(z);",
+                    "const context = tile.getContext(layer);",
+                    "",
+                    "// Increase tile size when overzooming",
+                    "pixelRatio = Math.round(",
+                    "Math.max(pixelRatio, renderPixelRatio / pixelRatio)",
+                    ");"
+                ]
+            }
+        ]
+    }
+}

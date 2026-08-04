@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js//RenderBlockingResources"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js//getNodesAndTimingByUrl",
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js//computeResults"
+        ],
+        "explanation": "The class RenderBlockingResources drives the audit. Its helper getNodesAndTimingByUrl collects all network-type nodes by URL without excluding file:// schemes, and computeResults then iterates over artifacts.TagsBlockingFirstPaint (which includes <link>/<script> tags regardless of protocol) to build the list of blocking resources. Because neither function filters out local file URLs, file:///some/local/style.css and similar entries end up in the results and are presented as render-blocking when they should be ignored.",
+        "bug_scenario": "When auditing a simple HTML page served over HTTP that includes <link> and <script> tags pointing to file:/// URLs, Lighthouse\u2019s \u201cEliminate render-blocking resources\u201d audit incorrectly flags those local file:// resources as network-based, render-blocking assets\u2014even though they cannot load over the network and thus never actually block render."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js//RenderBlockingResources"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js//getNodesAndTimingByUrl",
+            "lighthouse-core/audits/byte-efficiency/render-blocking-resources.js//RenderBlockingResources.computeResults"
+        ],
+        "explanation": "The audit logic in render-blocking-resources.js builds a map of network nodes by URL (getNodesAndTimingByUrl) and then iterates over TagsBlockingFirstPaint in computeResults without excluding file:// URLs. Because neither getNodesAndTimingByUrl nor computeResults filters out local file:// protocols, any <link> or <script> pointing at file:/// will be treated as a network resource and flagged as render-blocking. To fix the bug, these functions need to skip or ignore URLs whose protocol is file://.",
+        "bug_scenario": "The screenshot and audit details show that Lighthouse\u2019s \u201cEliminate render-blocking resources\u201d audit is incorrectly listing a local file:// URL (e.g. file:///some/local/file) as a render-blocking network resource, even though file:// requests never load over the network and thus cannot block rendering."
+    }
+}

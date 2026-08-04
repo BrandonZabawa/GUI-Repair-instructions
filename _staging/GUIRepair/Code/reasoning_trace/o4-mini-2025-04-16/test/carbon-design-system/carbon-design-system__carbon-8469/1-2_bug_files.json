@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Toggle/Toggle.js",
+            "packages/react/src/components/ToggleSmall/ToggleSmall.js"
+        ],
+        "explanation": "These two files define the Toggle and ToggleSmall components in carbon-components-react. In both, the component destructures aria-label from props but spreads the remaining props onto a wrapper <div> instead of onto the interactive element (<input> or the <span role=\\\"switch\\\">). They always set aria-labelledby on the switch span (linking to the hidden labelA/labelB text) so an aria-label prop is never applied to the accessible control. To fix this, aria-label should be passed directly to the switch element (and aria-labelledby omitted when aria-label is present).",
+        "bug_scenario": "When a Toggle is rendered with only labelA, labelB, and a required aria-label, the screen reader does not pick up the aria-label. In VoiceOver (macOS/Chrome) the control reads simply \u201cBluetooth, unticked, Tick box\u201d (or the default aria-labelledby on the switch) instead of the provided aria-label, so aria-label has no effect. The Toggle component always applies aria-labelledby to the switch element (pointing at the hidden labelA/labelB span) and never applies the aria-label prop to the interactive element."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Toggle/Toggle.js",
+            "packages/react/src/components/ToggleSmall/ToggleSmall.js"
+        ],
+        "explanation": "Both Toggle.js and ToggleSmall.js destructure props and spread unknown props (including aria-label) on a wrapper element or label rather than propagating them to the actual <input type=checkbox> control. Because screen readers look for aria attributes on the form control itself, placing aria-label elsewhere means it\u2019s ignored. Fixing the bug requires updating these two component files so that any aria-* props passed in (aria-label, aria-checked, etc.) are forwarded directly to the <input> element.",
+        "bug_scenario": "When you supply an aria-label prop to the Carbon React Toggle (either the regular Toggle or the small variant), the prop is never applied to the underlying <input> element. As a result, VoiceOver doesn\u2019t announce the toggle\u2019s label when you rely on aria-label alone. Only the non-required labelText (or the visual labelA/labelB) gets rendered, so aria-label\u2014which is marked as required\u2014has no effect in screen readers."
+    }
+}

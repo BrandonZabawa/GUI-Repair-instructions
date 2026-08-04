@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DetachEventBehavior.js",
+            "lib/features/modeling/behavior/BoundaryEventBehavior.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/cmd/UpdateFlowNodeRefsHandler.js"
+        ],
+        "explanation": "\u2022 DetachEventBehavior.js: contains the logic that listens for move events and decides whether a boundary event should be detached when moved out of its host. The bug indicates that this logic is not firing correctly in batch moves.  \n\u2022 BoundaryEventBehavior.js: enforces special rules around boundary events, including attach/detach constraints. It may need an update to handle batch\u2010move contexts.  \n\u2022 BpmnUpdater.js: responsible for updating the underlying BPMN semantic model when the diagram changes. After detachment, the event must be converted from a BoundaryEvent to an IntermediateEvent; that type conversion lives here.  \n\u2022 UpdateFlowNodeRefsHandler.js: updates the attachedToRef semantic relationship when elements are reparented. In a batch move, it is not clearing the old parent reference, so the boundary event remains attached. All four together coordinate the geometric detach, rule enforcement, semantic parent update, and element type conversion needed to support moving boundary events in batch operations.",
+        "bug_scenario": "When selecting and dragging multiple boundary events away from their host in a single batch operation, the boundary events remain attached (they retain their attachedToRef) instead of being detached and converted into intermediate events on the canvas. The expected behavior is that moving a boundary event off its host should either be disallowed in a batch or automatically detach the event and change it into an intermediate event on the main canvas."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DetachEventBehavior.js",
+            "lib/features/modeling/behavior/AttachEventBehavior.js",
+            "lib/features/modeling/behavior/BoundaryEventBehavior.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/features/modeling/cmd/UpdateSemanticParentHandler.js"
+        ],
+        "explanation": "\u2022 DetachEventBehavior.js is supposed to watch for moves of boundary events off of their host and fire the detach/convert logic; it currently only handles single moves and ignores batched moves.\n\u2022 AttachEventBehavior.js contains the mirror logic for re\u2010attaching events to shapes and needs to be aware of batch detaches to avoid re\u2010binding orphaned events.\n\u2022 BoundaryEventBehavior.js defines the special handling rules for boundary events (e.g. interrupting vs non\u2010interrupting); it should participate in batch move checks to trigger conversion to intermediate events when no host remains.\n\u2022 BpmnUpdater.js drives the semantic updates in the underlying BPMN model (removing eventReferences, updating parent relationships); without a proper detach call it never downgrades the event type from boundary to intermediate.\n\u2022 UpdateSemanticParentHandler.js executes the actual parent\u2010switch in the command stack when an element is moved; it needs to detect when a boundary event loses its host and ensure its BPMN type is updated accordingly.",
+        "bug_scenario": "When selecting more than one BPMN Boundary Event (i.e. the small circles attached to the side of an activity) and dragging them together onto the empty canvas, they remain in \u201cboundary\u201d state (still attached to their original host), rather than detaching and converting into free\u2010standing intermediate catch events. In other words, a batch move of boundary events out of their host does not trigger the detach/convert logic, leading to orphaned boundary event shapes and invalid semantics."
+    }
+}

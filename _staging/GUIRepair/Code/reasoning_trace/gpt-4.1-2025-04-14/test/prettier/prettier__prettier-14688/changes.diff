@@ -1,0 +1,24 @@
+diff --git a/src/language-js/print/type-parameters.js b/src/language-js/print/type-parameters.js
+index c681f9a79..dcb1229c8 100644
+--- a/src/language-js/print/type-parameters.js
++++ b/src/language-js/print/type-parameters.js
+@@ -71,13 +71,16 @@ function printTypeParameters(path, options, print, paramsKey) {
+   // Keep comma if the file extension is .tsx and
+   // has one type parameter that isn't extend with any types.
+   // Because, otherwise formatted result will be invalid as tsx.
++  // Also, keep comma for .mts/.cts files with a single unconstrained type parameter.
++  const isMtsOrCtsFile = options.filepath && (options.filepath.endsWith(".mts") || options.filepath.endsWith(".cts"));
+   const trailingComma =
+     node.type === "TSTypeParameterInstantiation" // https://github.com/microsoft/TypeScript/issues/21984
+       ? ""
+       : getFunctionParameters(node).length === 1 &&
+-        isTSXFile(options) &&
+-        !node[paramsKey][0].constraint &&
+-        path.parent.type === "ArrowFunctionExpression"
++        (
++          (isTSXFile(options) && !node[paramsKey][0].constraint && path.parent.type === "ArrowFunctionExpression") ||
++          (isMtsOrCtsFile && !node[paramsKey][0].constraint)
++        )
+       ? ","
+       : shouldPrintComma(options)
+       ? ifBreak(",")

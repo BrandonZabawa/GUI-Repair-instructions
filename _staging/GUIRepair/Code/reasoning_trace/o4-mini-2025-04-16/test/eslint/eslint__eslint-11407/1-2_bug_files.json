@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/rules/implicit-arrow-linebreak.js",
+            "lib/util/rule-fixer.js",
+            "lib/util/source-code-fixer.js"
+        ],
+        "explanation": "\u2022 lib/rules/implicit-arrow-linebreak.js implements the rule and contains the fixer logic that inserts parentheses around arrow bodies when the arrow and its body are on different lines. It doesn\u2019t handle cases where a comment immediately follows the arrow, causing it to compute wrong ranges and insert extra parentheses.\n\u2022 lib/util/rule-fixer.js is responsible for gathering fixes from rules and passing them to the low-level fixer. If a rule\u2019s fix range overlaps a comment boundary, its logic can produce malformed combined edits.\n\u2022 lib/util/source-code-fixer.js applies and merges all fixes into the final text. It doesn\u2019t detect the mis-nested parentheses around comments introduced by the implicit-arrow-linebreak fixer, so it commits the broken edits unchanged.",
+        "bug_scenario": "When the implicit-arrow-linebreak rule is run with --fix on code that has a comment on the first line of an arrow\u2010function\u2019s body, the autofixer wraps the body (and sometimes the trailing .catch clause) in extra parentheses, nesting them incorrectly around the comment. The result is unbalanced parentheses and invalid JavaScript (as shown in the snippet and the screenshot of a large file)."
+    },
+    "2": {
+        "bug_files": [
+            "lib/rules/implicit-arrow-linebreak.js"
+        ],
+        "explanation": "The only place in ESLint\u2019s codebase that implements and autofixes the implicit-arrow-linebreak rule is lib/rules/implicit-arrow-linebreak.js. The bug lies in that rule\u2019s fix function: it computes the wrong insertion points for parentheses when comments precede the returned expression, so the leading comment shifts the positions and the fixer ends up emitting extra or unmatched parentheses. Adjustments need to be made in this file\u2019s fixer logic (range calculations, comment handling, and parenthesis insertion) to resolve the issue.",
+        "bug_scenario": "The user is getting broken JavaScript after running eslint --fix with the implicit-arrow-linebreak rule enabled. When an arrow callback\u2019s body is broken onto a new line and preceded by a comment, the autofixer inserts and repositions parentheses incorrectly (both around the expression and around object literals in the catch), leading to unmatched or misplaced parentheses and invalid code."
+    }
+}

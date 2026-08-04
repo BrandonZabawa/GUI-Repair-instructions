@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/imagevector.js",
+            "src/ol/layer/image.js",
+            "src/ol/layer/vector.js",
+            "src/ol/source/vector.js",
+            "src/ol/interaction/draw.js",
+            "src/ol/render/canvas/imagereplay.js",
+            "src/ol/renderer/canvas/vectorlayer.js"
+        ],
+        "explanation": "These files are closely related to the bug for the following reasons: 1) 'src/ol/source/imagevector.js' is directly related because it is the deprecated component, so upgrade involves legacy support and any compatibility changes; 2) 'src/ol/layer/image.js' and 'src/ol/layer/vector.js' are the core layer implementations where render modes and drawing logic converge; 3) 'src/ol/source/vector.js' now is the primary source for vector rendering, especially as the code migrated from ImageVector; 4) 'src/ol/interaction/draw.js' manages drawing interactions and is directly responsible for draw performance and rendering; 5) 'src/ol/render/canvas/imagereplay.js' is involved in rendering images for canvas, an area which could bottleneck when switching render modes; 6) 'src/ol/renderer/canvas/vectorlayer.js' is the renderer implementation for vector layers in canvas mode, and likely contains logic for 'renderMode: image'. These files together encompass the rendering pipeline and draw interaction logic most relevant to the bug described, and are primary candidates for analysis and fixes to resolve the slow performance issue in 4.6.2.",
+        "bug_scenario": "The reported bug is about low performance when using the drawing interaction with ImageVector layers in OpenLayers. After upgrading from version 4.4.2 to 4.6.2 and switching from 'image vector' to 'renderMode: image' (due to deprecation of ol.source.ImageVector), draw interactions (like drawing triangles) exhibit noticeably slower rendering and interaction, particularly when handling large datasets or complex shapes, as illustrated in the scenario image."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/imagevector.js",
+            "src/ol/source/vector.js",
+            "src/ol/layer/vector.js",
+            "src/ol/render/canvas/imagereplay.js",
+            "src/ol/interaction/draw.js"
+        ],
+        "explanation": "These files are highly relevant to the bug as described: (1) src/ol/source/imagevector.js implements the (now deprecated/removed) ImageVector source in OpenLayers 4.6+, which is at the heart of the performance regression; (2) src/ol/source/vector.js is the general vector data source used in drawing and rendering; (3) src/ol/layer/vector.js manages the vector layer itself and its rendering modes, controlling how vectors are drawn; (4) src/ol/render/canvas/imagereplay.js contains the image rendering logic for canvas, most relevant for 'renderMode: image'; and (5) src/ol/interaction/draw.js implements the interaction logic for drawing shapes like the triangle in the screenshot. Issues in any of these files could lead to degraded drawing performance when using vectors in image render mode after upgrading from OpenLayers 4.4.2 to 4.6.2.",
+        "bug_scenario": "The bug scenario here involves drawing vector features (a triangle is shown in the image) on a map using OpenLayers 4.6.2 with a vector layer in 'image' render mode. With this version, the draw interaction is noticeably slow (low performance) compared to version 4.4.2, especially when using 'renderMode: image'. The screenshot shows a complex vector rendering scenario (many red points/polygons, a drawn triangle) where such sluggishness would become apparent."
+    }
+}

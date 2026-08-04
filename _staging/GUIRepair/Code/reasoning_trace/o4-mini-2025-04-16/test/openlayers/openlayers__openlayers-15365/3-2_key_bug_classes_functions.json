@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Group.js//LayerGroup",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer",
+            "src/ol/renderer/webgl/VectorTileLayer.js//WebGLVectorTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "LayerGroup.getLayerStatesArray",
+            "CanvasVectorTileLayerRenderer.prepareFrame",
+            "CanvasVectorTileLayerRenderer.postRender",
+            "WebGLVectorTileLayerRenderer.beforeTilesRender",
+            "WebGLVectorTileLayerRenderer.applyUniforms_"
+        ],
+        "explanation": "1. LayerGroup.getLayerStatesArray computes a composite opacity (child opacity \u00d7 group opacity) and stores it in each layerState.opacity.  \n2. However, both the CanvasVectorTileLayerRenderer and WebGLVectorTileLayerRenderer do not read that state opacity when rendering labels:  \n   \u2022 CanvasVectorTileLayerRenderer.prepareFrame/postRender use the layer\u2019s own getOpacity() or hard-coded alpha instead of frameState.layerStatesArray[n].opacity, so group opacity never applies to the feature replay builder (including text).  \n   \u2022 WebGLVectorTileLayerRenderer.beforeTilesRender and applyUniforms_ always drive GLOBAL_ALPHA from the tile\u2019s own alpha or even a constant (1), ignoring the state opacity.  \nAs a result, group opacity changes do not propagate into the shader uniform or canvas globalAlpha used for label drawing. The fix is for those renderer methods to read and apply layerState.opacity (which already includes the group opacity) rather than only the individual layer\u2019s opacity.",
+        "bug_scenario": "When a LayerGroup\u2019s overall opacity is changed (via setOpacity()), child vector-tile layers\u2019 labels do not fade in/out with the group\u2014even though fill colors in the same tiles do. Adjusting a vector-tile layer\u2019s own opacity works as expected, but the group opacity is not picked up for label rendering."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/Group.js//LayerGroup",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer",
+            "src/ol/renderer/webgl/VectorTileLayer.js//WebGLVectorTileLayerRenderer",
+            "src/ol/renderer/Composite.js//CompositeMapRenderer"
+        ],
+        "bug_functions": [
+            "LayerGroup.getLayerStatesArray",
+            "CanvasVectorTileLayerRenderer.renderDeclutter",
+            "WebGLVectorTileLayerRenderer.renderDeclutter",
+            "CompositeMapRenderer.flushDeclutterItems"
+        ],
+        "explanation": "LayerGroup.getLayerStatesArray is responsible for multiplying each child\u2019s opacity by the group opacity and should drive all rendering. CanvasVectorTileLayerRenderer.renderDeclutter and WebGLVectorTileLayerRenderer.renderDeclutter create a separate declutter canvas for text labels rather than drawing into the layer\u2019s main canvas, so they never receive the adjusted alpha from getLayerStatesArray. CompositeMapRenderer.flushDeclutterItems then appends those declutter canvases directly to the map container, outside any per\u2010layer canvas whose CSS opacity has been set, meaning the group opacity has no effect on vector\u2010tile labels.",
+        "bug_scenario": "In the sandbox, dragging the \u201cgroup\u201d opacity slider correctly fades the fill and vector layer labels in that layer group, but the labels generated for the vector\u2010tile layer remain at full opacity. In other words, a LayerGroup setOpacity() call multiplies into child vector layers (and their canvases), but the decluttered text drawn for vector\u2010tile labels is rendered in its own canvas outside that per\u2010layer canvas and never inherits the group\u2019s alpha."
+    }
+}

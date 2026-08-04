@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/TileLayer.js//CanvasTileLayerRenderer",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/TileLayer.js//renderFrame",
+            "src/ol/render/canvas/Immediate.js//constructor",
+            "src/ol/render/canvas/Immediate.js//setTransform"
+        ],
+        "explanation": "The rendering bug is related to how the vector context is handled when drawing on a tile layer at certain rotations. The class CanvasTileLayerRenderer in src/ol/renderer/canvas/TileLayer.js is key because it is responsible for rendering tile layers on a canvas, and the renderFrame function within it handles the actual drawing logic for each frame, including applying transforms related to map rotation. Any mishandling in this function can cause the observed artifacts with stroke width, text, and geometry precision.\n\nOn the other hand, CanvasImmediateRenderer in src/ol/render/canvas/Immediate.js is the immediate vector context used for direct rendering to a canvas. Its constructor accepts a transform and a viewRotation, and setTransform allows setting the transformation matrix used for further drawing. If this transform does not correctly account for rotation (especially at edge cases like 90 and 270 degrees), it can lead to the rendering inconsistencies described. Therefore, both the constructor (where initial transforms are set up) and setTransform (which can adjust these transforms) are crucial to the bug. These elements are directly related to how geometries are transformed and drawn on the canvas in rotated views, making them central to fixing the rendering bug.",
+        "bug_scenario": "The bug scenario involves incorrect rendering of vector features on a tile layer when the map view is rotated close to 90 or 270 degrees. Specifically, visual aspects such as stroke width, text scale, and geometry precision are rendered incorrectly in the vector context of tile layers at these rotations. This inconsistency does not occur when rendering in the vector context of vector layers, which behave as expected. The issue can be observed by comparing the two scenarios (tile layer vs. vector layer) in the provided CodeSandbox links or in the Flight Animation example, where the in-progress flight animation (rendered on the tile layer's vector context) appears distorted at high rotation angles."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/TileLayer.js//CanvasTileLayerRenderer",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/TileLayer.js//renderFrame",
+            "src/ol/render/canvas/Immediate.js//constructor",
+            "src/ol/render/canvas/Immediate.js//setTransform"
+        ],
+        "explanation": "The main class for rendering tile layers on canvas is CanvasTileLayerRenderer in src/ol/renderer/canvas/TileLayer.js. Its renderFrame method is responsible for rendering the layer, including handling transforms, scaling, and positioning of tiles. Since the bug involves issues with rotation and rendering precision, this method is a key candidate for investigation and fixes. \n\nAdditionally, CanvasImmediateRenderer in src/ol/render/canvas/Immediate.js is the class for the vector context rendering, which is directly mentioned in the bug report as having different behavior between tile and vector layers. The constructor of CanvasImmediateRenderer takes the transform and view rotation as arguments, and the setTransform method allows updating the transform. Both are highly relevant for ensuring that the transform used for rendering is consistent and correct, especially at problematic rotations. Any mismatch or incorrect application of transforms here could lead to the observed rendering bugs. These classes and functions are therefore central to diagnosing and fixing the bug.",
+        "bug_scenario": "The bug scenario involves incorrect rendering when using the vector context of tile layers in OpenLayers, specifically when the map view is rotated close to 90 or 270 degrees. This causes issues with stroke width, text scaling, and geometry precision. The rendering is expected to be consistent between vector and tile layers, but currently, tile layers display inconsistencies and artifacts at these rotations, whereas vector layers render correctly."
+    }
+}

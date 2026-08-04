@@ -1,0 +1,57 @@
+diff --git a/components/cascader-select/cascader-select.tsx b/components/cascader-select/cascader-select.tsx
+index 49be8bf38..72af59247 100644
+--- a/components/cascader-select/cascader-select.tsx
++++ b/components/cascader-select/cascader-select.tsx
+@@ -570,6 +570,21 @@ class CascaderSelect extends Component<CascaderSelectProps, CascaderSelectState>
+             this.refreshValueDataCache(value);
+         }
+ 
++        // --- PATCH: auto-clear search if all filtered results are selected in multiple mode ---
++        if (multiple && searchValue) {
++            // get all filtered paths
++            const filteredPaths = this.filterItems();
++            // get all filtered leaf values
++            const filteredLeafValues = filteredPaths
++                .map(path => path[path.length - 1]?.value)
++                .filter(Boolean);
++            // check if all filtered leaf values are selected
++            const allSelected = filteredLeafValues.length > 0 && filteredLeafValues.every(v => value.includes(v));
++            if (allSelected) {
++                st.searchValue = '';
++            }
++        }
++
+         if (!('value' in this.props)) {
+             st.value = value;
+         }
+@@ -770,9 +785,30 @@ class CascaderSelect extends Component<CascaderSelectProps, CascaderSelectState>
+ 
+     renderPopupContent() {
+         const { prefix, header, footer } = this.props;
++        const { searchValue } = this.state;
+         return (
+             <div className={`${prefix}cascader-select-dropdown`}>
+                 {header}
++                {/* PATCH: Add clear search button when searching */}
++                {searchValue ? (
++                    <div style={{ padding: '4px 8px', textAlign: 'right' }}>
++                        <button
++                            type="button"
++                            style={{
++                                background: 'none',
++                                border: 'none',
++                                color: '#3086f6',
++                                cursor: 'pointer',
++                                fontSize: 12,
++                                outline: 'none',
++                                padding: 0,
++                            }}
++                            onClick={() => this.handleSearch('')}
++                        >
++                            清除搜索
++                        </button>
++                    </div>
++                ) : null}
+                 {this.renderCascader()}
+                 {footer}
+             </div>

@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/html/renderer/performance-category-renderer.js//PerformanceCategoryRenderer",
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/html/renderer/performance-category-renderer.js//_renderOpportunity",
+            "lighthouse-core/report/html/renderer/category-renderer.js//populateAuditValues"
+        ],
+        "explanation": "The layout glitch stems from how opportunity audits are rendered and how they fall back to the default audit layout when certain conditions aren\u2019t met. \n\n\u2022 PerformanceCategoryRenderer._renderOpportunity is responsible for creating each opportunity row, overriding the display text and sparkline width when audit.result.details.type === 'opportunity'. If details are missing or don\u2019t match, it simply returns the template populated by populateAuditValues. \n\n\u2022 CategoryRenderer.populateAuditValues fills in the generic audit template, including the long displayValue text (\u201cPotential savings of 1,550 ms\u201d). That longer string wraps onto two lines in the narrow savings column and the row collapses in height because the Opportunity template CSS expects a single numeric value inserted by _renderOpportunity. \n\nTo fix the squished redirect row you\u2019ll need to adjust PerformanceCategoryRenderer._renderOpportunity (and possibly its guard around audit.result.details) so it always applies the single-value layout for opportunity audits. You may also need to tweak populateAuditValues or the #tmpl-lh-opportunity template to enforce the same CSS grid or flex styling used by all other opportunity rows.",
+        "bug_scenario": "In the Lighthouse \u201cOpportunities\u201d section (Performance category), the last row\u2014\u201cAvoid multiple page redirects\u201d\u2014renders in a compressed, two-line layout (with the words \u201cPotential savings\u201d on one line and \u201c1,550 ms\u201d on the next) and the row height shrinks compared to the other opportunity rows. Instead of using the same single-line savings text and consistent row height, this redirect-audit row falls back to a squished layout."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/html/renderer/performance-category-renderer.js//PerformanceCategoryRenderer",
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/html/renderer/performance-category-renderer.js//PerformanceCategoryRenderer._renderOpportunity",
+            "lighthouse-core/report/html/renderer/performance-category-renderer.js//PerformanceCategoryRenderer.render",
+            "lighthouse-core/report/html/renderer/category-renderer.js//CategoryRenderer.populateAuditValues"
+        ],
+        "explanation": "The layout and content of each opportunity row are constructed in PerformanceCategoryRenderer._renderOpportunity and assembled in PerformanceCategoryRenderer.render. _renderOpportunity is responsible for cloning the opportunity template, inserting the sparkline and savings text, and overriding the displayValue, but it doesn\u2019t correctly handle the special \u201credirects\u201d audit\u2019s multi-line default displayValue or inject the sparkline bar for that row. The overall grouping and base HTML structure for all audits come from CategoryRenderer.populateAuditValues, which populates the .lh-audit__display-text and may be clipping or wrapping the text incorrectly for this one case. Fixing the layout requires adjusting these methods to treat the redirects opportunity consistently with other rows (e.g. forcing a single-line savings text and ensuring the sparkline bar is rendered).",
+        "bug_scenario": "When you generate a Lighthouse performance report for a page that has multiple redirects, the \u201cAvoid multiple page redirects\u201d opportunity row in the \u201cOpportunities\u201d section collapses into a compressed layout. The sparkline bar is missing, the savings text (\u201cPotential savings of 1,550 ms\u201d) is wrapped onto two lines, and the row height shrinks compared to the other rows."
+    }
+}

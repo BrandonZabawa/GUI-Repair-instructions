@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/NameValueList/NameValueList.js//NameValueList",
+            "src/js/components/NameValuePair/NameValuePair.js//NameValuePair"
+        ],
+        "bug_functions": [],
+        "explanation": "The misalignment arises because NameValueList uses a CSS Grid (via the Grid component) to create two columns but does not set any vertical alignment on the grid cells. Meanwhile, NameValuePair for row layout chooses a Fragment container (no Box) for dt and dd, so neither the label nor the value is being wrapped in a container with an align prop. To fix the vertical centering, one must modify NameValueList to pass an appropriate align (e.g. align=\"center\") to its Grid or wrap NameValuePair\u2019s row contents in a Box with align=\"center\". Thus the two key components to adjust are NameValueList (for grid alignment) and NameValuePair (for wrapping dt/dd in a Box when in row mode).",
+        "bug_scenario": "In a NameValueList rendered in \u201ccolumn\u201d layout with pairProps.direction set to \u201crow\u201d, the <dt> (name, \u201cFile log level\u201d) and the <dd> (value, the Select component showing \u201cDebug\u201d) are rendered in two grid columns but are not vertically centered relative to each other. In the screenshot, the red horizontal line through the center of the value cell (Select) does not align with the green line through the center of the text label. The name sits higher than the value, resulting in a misaligned appearance."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/NameValuePair/NameValuePair.js//NameValuePair",
+            "src/js/components/NameValueList/NameValueList.js//NameValueList"
+        ],
+        "bug_functions": [
+            "src/js/components/NameValuePair/NameValuePair.js//NameValuePair"
+        ],
+        "explanation": "The misalignment stems from how NameValuePair and NameValueList render their dt/dd elements inside a CSS grid without any vertical centering. In NameValueList, the Grid container never receives an alignItems or justifyContent prop, so its children stretch by default. In NameValuePair, when pairProps.direction is \"row\", it uses a Fragment (no Box wrapper) so neither the dt nor the dd get a flex container that could vertically center their contents. The Box used for the dd only handles horizontal alignment (align prop) and Text for the dt only sets textAlign, so there\u2019s no vertical centering on the row axis. To fix this, NameValueList should allow passing an alignItems prop (e.g., align=\"center\") to its Grid, or NameValuePair should wrap dt/dd in a Box with align=\"center\" or alignSelf=\"center\" so both label and value sit in the vertical middle of their grid row.",
+        "bug_scenario": "The user wants the label (dt) and the value control (dd) in a NameValueList rendered in row direction to be vertically centered with respect to each other. In the screenshot, the green line marks the top of the label Text and the red line marks the top of the Select control. They are misaligned: the Select is sitting lower than the label, instead of both being middle-aligned on the same grid row."
+    }
+}

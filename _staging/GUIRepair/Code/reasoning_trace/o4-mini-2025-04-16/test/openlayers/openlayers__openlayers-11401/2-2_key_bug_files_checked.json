@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/render/canvas/hitdetect.js"
+        ],
+        "explanation": "1. src/ol/style/Icon.js holds and exposes the raw scale and origin logic. Negative scale values propagate through its getScale(), getAnchor(), and getOrigin() methods without any flip\u2010specific adjustments to the anchor or origin points. 2. src/ol/render/canvas/ImageBuilder.js (CanvasImageBuilder) packages the style into DRAW_IMAGE instructions, passing through the negative scale array and unmodified width/height. Because it never compensates for a flipped image at the tile\u2010edge it can end up drawing nothing when part of the icon crosses the viewport boundary. 3. src/ol/render/canvas/Executor.js implements replayImageOrLabel_ (the actual drawImage call). It applies drawImage with positive width/height but neglects to call context.scale(\u20131,1) when a negative scale is passed, so the flipped icon either isn\u2019t drawn or is culled entirely. 4. src/ol/render/canvas/hitdetect.js builds a separate hit\u2010detection canvas by cloning the Icon with the same negative scale and then replaying via CanvasImmediateRenderer. Because the flipped hit image never reaches the hit\u2010detection buffer at the correct coordinates, all pointer events miss the feature.",
+        "bug_scenario": "In the repro the user applies a negative icon scale (scale = -1) with zero rotation. Visually the penguin icon flips horizontally. When you pan it so part of it goes off the map edge you expect to see a clipped portion of the flipped icon and for hit\u2010tests (clicks) anywhere on the icon to register. Instead, the icon vanishes as soon as any part leaves the view and clicks never register\u2014hit detection always misses."
+    }
+}

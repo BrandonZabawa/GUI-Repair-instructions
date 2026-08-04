@@ -1,0 +1,56 @@
+diff --git a/lib/linter/code-path-analysis/code-path-analyzer.js b/lib/linter/code-path-analysis/code-path-analyzer.js
+index b60e55c16..8e1aeb711 100644
+--- a/lib/linter/code-path-analysis/code-path-analyzer.js
++++ b/lib/linter/code-path-analysis/code-path-analyzer.js
+@@ -292,14 +292,16 @@ function preprocess(analyzer, node) {
+             }
+             break;
+ 
+-        case "LogicalExpression":
+-            if (
+-                parent.right === node &&
+-                isHandledLogicalOperator(parent.operator)
+-            ) {
+-                state.makeLogicalRight();
+-            }
+-            break;
++case "LogicalExpression":
++if (parent.right === node) {
++if (parent.operator === "&&") {
++state.forkPath();
++}
++if (isHandledLogicalOperator(parent.operator)) {
++state.makeLogicalRight();
++}
++}
++break;
+ 
+         case "AssignmentExpression":
+             if (
+@@ -485,14 +487,18 @@ function processCodePathToEnter(analyzer, node) {
+             if (node.optional === true) {
+                 state.makeOptionalNode();
+             }
+-            break;
+-
+-        case "LogicalExpression":
+-            if (isHandledLogicalOperator(node.operator)) {
+-                state.pushChoiceContext(
+-                    node.operator,
+-                    isForkingByTrueOrFalse(node)
+-                );
++case "LogicalExpression":
++if (isHandledLogicalOperator(node.operator)) {
++if (node.operator === "&&") {
++state.pushChoiceContext("&&", true);
++} else {
++state.pushChoiceContext(
++node.operator,
++isForkingByTrueOrFalse(node)
++);
++}
++}
++break;
+             }
+             break;
+ 

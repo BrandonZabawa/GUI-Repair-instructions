@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/draw/PathMap.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/import/BpmnImporter.js",
+            "lib/features/context-pad/ContextPadProvider.js",
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "explanation": "PathMap.js: needs a new SVG path definition for the three-bar collection marker (analogous to TASK_MULTI_INSTANCE_PARALLEL). BpmnRenderer.js: must be extended to draw that marker on DataObject shapes when b_obj.isCollection===true. BpmnImporter.js: must read the isCollection attribute from the BPMN XML and set it on the DataObject businessObject. ContextPadProvider.js: must register a new toggle action for DataObject elements so users can click the \u2018collection\u2019 icon, similar to the multi-instance toggle on tasks, and hook it into modeling. BpmnUpdater.js: must listen for changes to a DataObject\u2019s isCollection property and schedule a shape update so the renderer picks up and redraws the three-bar marker.",
+        "bug_scenario": "According to the BPMN 2.0 spec, a DataObject (reference, input or output) may be marked as a collection \u2013 in the diagram this is shown by three parallel bars at the bottom of the DataObject shape. In the screenshots we see: (1) the specification figure showing a DataObject with the collection marker, and (2) the bpmn-js palette/context-pad for a task showing the existing multi-instance (\u201cIII\u201d) toggles. The user requests the same toggle and rendering support for DataObjects. At the moment bpmn-js neither draws the three-bar collection marker on DataObject shapes nor offers a context-pad entry to switch on/off the isCollection flag."
+    },
+    "2": {
+        "bug_files": [
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js",
+            "lib/import/BpmnImporter.js",
+            "lib/features/context-pad/ContextPadProvider.js",
+            "lib/features/modeling/cmd/UpdatePropertiesHandler.js",
+            "lib/features/modeling/BpmnFactory.js",
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "explanation": "\u2022 lib/draw/BpmnRenderer.js + BpmnRenderUtil.js: the renderer must be extended to draw the collection marker on DataObject / DataInput / DataOutput shapes when their businessObject.isCollection flag is true.  \n\u2022 lib/import/BpmnImporter.js: during import the importer must read the isCollection attribute from the BPMN XML and attach it to the businessObject so it can be rendered.  \n\u2022 lib/features/context-pad/ContextPadProvider.js: add a new toggle-button entry (with the triple-bar icon) for DataObject shapes that executes a modeling command to flip the isCollection property.  \n\u2022 lib/features/modeling/cmd/UpdatePropertiesHandler.js: supports setting arbitrary semantic properties; will be invoked by the context-pad\u2019s action to update the isCollection flag.  \n\u2022 lib/features/modeling/BpmnFactory.js: ensure that when creating a DataObject/DataObjectReference/DataStoreReference the factory initializes a default isCollection value, and supports creating commands that set this property.  \n\u2022 lib/features/modeling/BpmnUpdater.js: after the isCollection property changes, update the BPMN DI (shape attributes) so that re-layout and export will include the marker state.",
+        "bug_scenario": "According to the BPMN 2.0 spec, a DataObject (and its input/output variants) may carry an \u201cisCollection\u201d marker \u2013 the little triple-bar drawn at the bottom of the shape \u2013 indicating it represents a collection of items. In the existing bpmn-js toolkit this marker is neither rendered nor toggleable via the context-pad. The request is to add a toggle button (with the vertical-bar icon) to the data-object context-pad, just as the multiple/ad-hoc markers are toggled on user-task shapes, and wire that toggle through rendering, import and the modeling command stack."
+    }
+}

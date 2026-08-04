@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "explanation": "The issue is specific to accessibility and keyboard navigation of dropdown options. The main bug is that elements with role='option' (the dropdown items) must be tabbable when the dropdown is open, but currently are not. In the compressed files:\n\n1. 'Dropdown' (in packages/react/src/components/Dropdown/Dropdown.js) is the primary React component that renders the dropdown and its items. It decides how the options are rendered and what props/roles/attributes are set. It uses Downshift to manage state and keyboard interactions, and is responsible for ensuring proper accessibility roles and keyboard navigation.\n\n2. 'ListBoxMenuItem' (in packages/react/src/components/ListBox/ListBoxMenuItem.js) represents the individual menu items (options) inside the dropdown. This component is where role='option' is likely set, and where tabIndex and focusability should be managed to ensure at least the highlighted/selected option is tabbable when the dropdown is open.\n\nThese two elements are directly responsible for rendering the dropdown options and their accessibility properties. Fixing the bug will require changes to how ListBoxMenuItem sets tabIndex (e.g., making the highlighted/selected option have tabIndex=0 and the rest -1) and ensuring Dropdown manages focus and keyboard navigation correctly. Other files (like ListBox.js) are more container-level and less likely to need direct changes for this specific bug.",
+        "bug_scenario": "The bug scenario involves an accessibility violation detected by the IBM Equal Access Accessibility Checker when opening a dropdown menu. The error states that none of the descendant elements with the 'option' role inside the dropdown's listbox are tabbable, which means users cannot use the keyboard to tab through the dropdown options, violating accessibility standards (WCAG 2.1). The screenshots show the dropdown component open with the accessibility checker flagging this issue on the listbox."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js//ListBoxMenuItem"
+        ],
+        "explanation": "The core accessibility problem is that dropdown options (with role=\"option\") are not tabbable, which is required for keyboard navigation. In React, the 'Dropdown' component (packages/react/src/components/Dropdown/Dropdown.js) renders the dropdown menu and its options, and is responsible for passing props to the menu items. The ListBoxMenuItem component (packages/react/src/components/ListBox/ListBoxMenuItem.js) is used for each dropdown option. In the skeleton, ListBoxMenuItem is rendered as a <div> with tabIndex=\"-1\". For accessibility, at least one option should have tabIndex=\"0\" (making it tabbable) when the menu is open. Thus, the bug is likely in how Dropdown determines and passes tabbable state to ListBoxMenuItem, and in how ListBoxMenuItem sets tabIndex. These files and functions/classes are directly responsible for dropdown item rendering and focusability, and must be updated to ensure at least one option is tabbable per ARIA and accessibility standards.",
+        "bug_scenario": "The bug scenario involves the Carbon Design System's Dropdown component failing an accessibility check in Firefox on MacOS. When the dropdown list is open, the IBM Equal Access Accessibility Checker reports a critical violation: 'None of the descendent elements with \"option\" role is tabbable'. This means users cannot tab into dropdown options, breaking accessibility requirements for keyboard users. The screenshots confirm that despite the dropdown rendering options, no option element is tabbable, leading to the accessibility issue."
+    }
+}

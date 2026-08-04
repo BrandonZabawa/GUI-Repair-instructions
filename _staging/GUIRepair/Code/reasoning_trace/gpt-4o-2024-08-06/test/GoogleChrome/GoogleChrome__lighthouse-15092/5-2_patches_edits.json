@@ -1,0 +1,60 @@
+{
+    "1/1": {
+        "core/gather/runner-helpers.js": [
+            {
+                "SEARCH": [
+                    "const phaseToPriorPhase = {",
+                    "startInstrumentation: undefined,",
+                    "startSensitiveInstrumentation: 'startInstrumentation',",
+                    "stopSensitiveInstrumentation: 'startSensitiveInstrumentation',",
+                    "stopInstrumentation: 'stopSensitiveInstrumentation',",
+                    "getArtifact: 'stopInstrumentation',",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const phaseToPriorPhase = {",
+                    "  startInstrumentation: undefined,",
+                    "  startSensitiveInstrumentation: 'startInstrumentation',",
+                    "  stopSensitiveInstrumentation: 'startSensitiveInstrumentation',",
+                    "  stopInstrumentation: 'stopSensitiveInstrumentation',",
+                    "  getArtifact: 'stopInstrumentation',",
+                    "  trace: 'startInstrumentation', // Ensure trace gatherers are included",
+                    "};"
+                ]
+            }
+        ],
+        "core/gather/navigation-runner.js": [
+            {
+                "SEARCH": [
+                    "const artifactDefinitions = [devtoolsLogArtifactDefn, traceArtifactDefn].filter(",
+                    "defn => Boolean(defn)",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const artifactDefinitions = [devtoolsLogArtifactDefn, traceArtifactDefn].filter(",
+                    "  defn => Boolean(defn)",
+                    ");",
+                    "",
+                    "if (!traceArtifactDefn) {",
+                    "  throw new Error('Trace gatherer is not defined. Ensure it is included in the configuration.');",
+                    "}"
+                ]
+            }
+        ],
+        "core/lib/lh-error.js": [
+            {
+                "SEARCH": [
+                    "if (dependencyArtifact === undefined) throw new Error(`\"${dependency.id}\" did not run`);"
+                ],
+                "REPLACE": [
+                    "if (dependencyArtifact === undefined) {",
+                    "  throw new LighthouseError({",
+                    "    code: 'MISSING_GATHERER',",
+                    "    message: `The gatherer \"${dependency.id}\" did not run. Ensure it is configured correctly.`,",
+                    "  });",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

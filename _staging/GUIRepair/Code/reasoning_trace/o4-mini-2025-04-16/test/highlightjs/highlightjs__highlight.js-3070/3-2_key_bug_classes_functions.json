@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/lib/html_renderer.js//HTMLRenderer",
+            "src/lib/ext/multi_class.js//MultiClass",
+            "src/languages/php.js//<anonymous default export>"
+        ],
+        "bug_functions": [
+            "src/lib/html_renderer.js//openNode",
+            "src/lib/html_renderer.js//expandClassName"
+        ],
+        "explanation": "\u2022 HTMLRenderer (html_renderer.js) is responsible for emitting wrapping <span> tags and for applying CSS classes (openNode calls expandClassName).  Its logic around class prefixes directly affects how language and scope classes appear.  \u2022 expandClassName controls how dot-separated class names are split and prefixed; a bug or missing branch here can allow an un-prefixed alias to slip through.  \u2022 The MultiClass extension (multi_class.js) alters modes when mode.begin is an array, marking modes as multi-class.  If PHP\u2019s definition somehow triggers multi-class logic, you end up with an extra literal \u201cphp\u201d token in the className.  \u2022 The PHP language definition (php.js) registers PHP under the alias \u201cphp\u201d but doesn\u2019t explicitly configure how that alias should be prefixed or suppressed; fixing this (for example adding an explicit aliases array or adjusting its preprocessor mode) will prevent the stray \u201cphp\u201d class from being appended.",
+        "bug_scenario": "In the browser screenshot the user has a <code> element annotated with \u201clanguage-php\u201d and hljs.highlightAll() is called.  Highlight.js correctly colors the PHP code but it appends an extra un\u2013prefixed \u201cphp\u201d class on the <code> tag (so class=\"language-php hljs php\").  Some themes then style that second \u201cphp\u201d class and conflict with the theme\u2019s intended selectors.  The expected behavior is that highlighting \u201clanguage-php\u201d should not add the extra un-prefixed \u201cphp\u201d class."
+    },
+    "2": {
+        "bug_classes": [
+            "src/lib/html_renderer.js//HTMLRenderer",
+            "src/lib/ext/multi_class.js//MultiClass"
+        ],
+        "bug_functions": [
+            "src/lib/html_renderer.js//expandClassName",
+            "src/lib/html_renderer.js//openNode"
+        ],
+        "explanation": "\u2022 HTMLRenderer (html_renderer.js): This class is responsible for walking the parse tree and emitting the final HTML. Its openNode method and the helper expandClassName determine exactly which CSS classes get added to each span (and indirectly which classes end up on the <code> element when sublanguages or top-level modes emit their language name). Fixing or adjusting logic here (for example, detecting and suppressing a bare language name when a prefixed version already exists) will stop that unwanted extra \u201cphp\u201d class.  \n\n\u2022 MultiClass (multi_class.js): Although this extension\u2019s primary job is to let one mode produce multiple CSS classes, it also manipulates a mode\u2019s className property. If a language definition were using multi-class syntax or an object for className, this code could inadvertently leave a raw language name behind. Auditing/safeguarding its transformation will ensure only prefixed or intended classes survive.",
+        "bug_scenario": "When you call highlightAll on a <code> block that already has \u201clanguage-php\u201d assigned, the resulting output ends up with three classes: \u201clanguage-php hljs php\u201d. In other words, highlight.js happily applies its own un-prefixed \u201cphp\u201d class in addition to the prefixed \u201chljs-php\u201d token spans. Some themes then look at the bare \u201cphp\u201d selector and mis-style or override rules, so you end up with double or missing highlighting."
+    }
+}

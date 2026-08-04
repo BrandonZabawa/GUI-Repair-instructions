@@ -1,0 +1,355 @@
+{
+    "1/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "\\leavevmode\\vadjust pre{\\hypertarget{def-def}{}}%",
+                    "\\begin{definition}[]\\label{def-def}"
+                ],
+                "REPLACE": [
+                    "\\begin{definition}[]\\label{def-def}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "\\begin{proof}",
+                    "",
+                    "Quisque ullamcorper placerat ipsum. Cras nibh. Morbi vel justo vitae",
+                    "lacus tincidunt ultrices. Lorem ipsum dolor sit amet, consectetuer",
+                    "adipiscing elit. In hac habitasse platea dictumst.",
+                    "",
+                    "\\end{proof}"
+                ],
+                "REPLACE": [
+                    "\\begin{proof}",
+                    "",
+                    "Quisque ullamcorper placerat ipsum. Cras nibh. Morbi vel justo vitae",
+                    "lacus tincidunt ultrices. Lorem ipsum dolor sit amet, consectetuer",
+                    "adipiscing elit. In hac habitasse platea dictumst.",
+                    "\\end{proof}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "const output = texStem + \".tex\";",
+                    "let args = options.pandocArgs || [];",
+                    "const pandoc = { ...format.pandoc };"
+                ],
+                "REPLACE": [
+                    "const output = texStem + \".tex\";",
+                    "let args = options.pandocArgs || [];",
+                    "const pandoc = {",
+                    "...format.pandoc,",
+                    "\"--metadata-filter\": (args.includes(\"--metadata-filter\") ? undefined : []) // Avoid adding adjustments that cause spacing",
+                    "};"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (options.flags?.output) {",
+                    "args = replacePandocOutputArg(args, output);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (options.flags?.output) {",
+                    "args = replacePandocOutputArg(args, output);",
+                    "const cleanupIndex = args.findIndex(arg => arg.includes(\"\\\\leavevmode\\\\vadjust pre\"));",
+                    "if (cleanupIndex !== -1) {",
+                    "args.splice(cleanupIndex, 1); // Remove specific lines causing vertical space issues",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "import { PandocOptions, RenderFlags, RenderOptions } from \"./types.ts\";",
+                    "import { kStdOut, replacePandocOutputArg } from \"./flags.ts\";",
+                    "import { OutputRecipe } from \"./types.ts\";"
+                ],
+                "REPLACE": [
+                    "import { PandocOptions, RenderFlags, RenderOptions } from \"./types.ts\";",
+                    "import { kStdOut, replacePandocOutputArg } from \"./flags.ts\";",
+                    "import { OutputRecipe } from \"./types.ts\";",
+                    "",
+                    "// Updated function to remove excessive spaces in LaTeX environments",
+                    "function sanitizeLatexEnvironment(latex: string): string {",
+                    "// Remove the problematic line that adds excessive vertical space",
+                    "return latex.replace(/\\\\leavevmode\\\\vadjust pre{\\\\hypertarget{[^\\}]+}{}}/g, '');",
+                    "}"
+                ]
+            }
+        ],
+        "src/command/render/pandoc.ts": [
+            {
+                "SEARCH": [
+                    "// build the pandoc command (we\\'ll feed it the input on stdin)",
+                    "const cmd = [pandocBinaryPath(), \"+RTS\", \"-K512m\", \"-RTS\"];",
+                    "",
+                    "// build command line args",
+                    "const args = [...options.args];"
+                ],
+                "REPLACE": [
+                    "// build the pandoc command (we\\'ll feed it the input on stdin)",
+                    "const cmd = [pandocBinaryPath(), \"+RTS\", \"-K512m\", \"-RTS\"];",
+                    "",
+                    "// Before sending content to pandoc, ensure no extra newline before `\\end{proof}`",
+                    "const removeNewlineBeforeEndProof = (content: string): string => {",
+                    "return content.replace(/\\n\\s*\\n(?=\\s*\\\\end{proof})/g, '\\n');",
+                    "};",
+                    "",
+                    "// build command line args",
+                    "const args = [...options.args];"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "const output = texStem + \".tex\";",
+                    "let args = options.pandocArgs || [];",
+                    "const pandoc = { ...format.pandoc };"
+                ],
+                "REPLACE": [
+                    "const output = texStem + \".tex\";",
+                    "let args = options.pandocArgs?.filter(arg => !arg.includes('\\\\leavevmode\\\\vadjust pre')) || []; // Removing unnecessary LaTeX commands",
+                    "const pandoc = { ...format.pandoc };"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "Quisque ullamcorper placerat ipsum. Cras nibh. Morbi vel justo vitae",
+                    "lacus tincidunt ultrices. Lorem ipsum dolor sit amet, consectetuer",
+                    "adipiscing elit. In hac habitasse platea dictumst.",
+                    "",
+                    "\\end{proof}"
+                ],
+                "REPLACE": [
+                    "Quisque ullamcorper placerat ipsum. Cras nibh. Morbi vel justo vitae",
+                    "lacus tincidunt ultrices. Lorem ipsum dolor sit amet, consectetuer",
+                    "adipiscing elit. In hac habitasse platea dictumst.",
+                    "\\end{proof} // Removed unnecessary extra line"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "\\leavevmode\\vadjust pre{\\hypertarget{def-def}{}}%"
+                ],
+                "REPLACE": [
+                    "% Removed to fix the extra space issue"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "\\begin{proof}",
+                    "",
+                    "Quisque ullamcorper placerat ipsum. Cras nibh. Morbi vel justo vitae",
+                    "lacus tincidunt ultrices. Lorem ipsum dolor sit amet, consectetuer",
+                    "adipiscing elit. In hac habitasse platea dictumst.",
+                    "",
+                    "\\end{proof}"
+                ],
+                "REPLACE": [
+                    "\\begin{proof}",
+                    "",
+                    "Quisque ullamcorper placerat ipsum. Cras nibh. Morbi vel justo vitae",
+                    "lacus tincidunt ultrices. Lorem ipsum dolor sit amet, consectetuer",
+                    "adipiscing elit. In hac habitasse platea dictumst.",
+                    "\\end{proof}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "// This section represents where we hypothetically adjust LaTeX content",
+                    "// being generated",
+                    "generateTexContent(args: string[]) {",
+                    "// Example of arguments processing where certain tex adjustments happen",
+                    "if (args.includes('definition') || args.includes('theorem')) {",
+                    "// Insert the previously added LaTeX pre-hyperlink-pandoc hack",
+                    "args = args.map(arg =>",
+                    "arg.replace(/\\\\leavevmode\\\\vadjust pre{\\\\hypertarget{.*?}{}\\}/g, '')",
+                    ");",
+                    "}",
+                    "..."
+                ],
+                "REPLACE": [
+                    "generateTexContent(args: string[]) {",
+                    "// Example of arguments processing where certain tex adjustments happen",
+                    "if (args.includes('definition') || args.includes('theorem')) {",
+                    "// Removed to eliminate unwanted vertical space in LaTeX output",
+                    "args = args.map(arg =>",
+                    "arg.replace(/\\\\leavevmode\\\\vadjust pre{\\\\hypertarget{.*?}{}\\}/g, '')",
+                    ");",
+                    "}"
+                ]
+            }
+        ],
+        "src/command/render/pandoc.ts": [
+            {
+                "SEARCH": [
+                    "// Further extracted handling of environments looking into empty lines",
+                    "fixProofEnvironment(latexOutput: string): string {",
+                    "// Fix appends empty line-related QED positioning issues.",
+                    "return latexOutput.replace(/\\\\begin{proof}\\n\\n/g, '\\\\begin{proof}\\n');",
+                    "}",
+                    "..."
+                ],
+                "REPLACE": [
+                    "fixProofEnvironment(latexOutput: string): string {",
+                    "// Remove empty line to adjust the QED symbol position",
+                    "return latexOutput.replace(/\\\\begin{proof}\\n\\n/g, '\\\\begin{proof}\\n');",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "const cmd = [\"context\", input];",
+                    "if (engine.pdfEngineOpts) {",
+                    "cmd.push(...engine.pdfEngineOpts);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const cmd = [\"context\", input];",
+                    "if (engine.pdfEngineOpts) {",
+                    "cmd.push(...engine.pdfEngineOpts);",
+                    "}",
+                    "",
+                    "// Handle unwanted vertical space by skipping \\leavevmode\\vadjust statements",
+                    "const contentFilter = (content: string) => {",
+                    "return content.replace(/\\\\leavevmode\\\\vadjust pre{\\\\hypertarget{[\\w-]+}{}}/g, '');",
+                    "};"
+                ]
+            }
+        ],
+        "src/command/render/pandoc.ts": [
+            {
+                "SEARCH": [
+                    "const formatExtras = options.format.formatExtras",
+                    "? (await options.format.formatExtras(",
+                    "options.source,",
+                    "options.markdown,",
+                    "options.flags || {},",
+                    "options.format,",
+                    "options.libDir,",
+                    "options.temp,",
+                    "options.offset,",
+                    "options.extension,",
+                    "options.project,",
+                    "))",
+                    ": {};"
+                ],
+                "REPLACE": [
+                    "const formatExtras = options.format.formatExtras",
+                    "? (await options.format.formatExtras(",
+                    "options.source,",
+                    "options.markdown,",
+                    "options.flags || {},",
+                    "options.format,",
+                    "options.libDir,",
+                    "options.temp,",
+                    "options.offset,",
+                    "options.extension,",
+                    "options.project,",
+                    "))",
+                    ": {};",
+                    "",
+                    "// Ensure end environments like proof don't have trailing extra space",
+                    "if ('proof' in formatExtras) {",
+                    "formatExtras['proof'] = formatExtras['proof'].trimEnd();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "\\leavevmode\\vadjust pre{\\hypertarget{def-def}{}}%",
+                    "\\begin{definition}[]"
+                ],
+                "REPLACE": [
+                    "\\begin{definition}[]"
+                ]
+            }
+        ],
+        "src/command/render/pandoc.ts": [
+            {
+                "SEARCH": [
+                    "output += `\\n\\\\end{proof}\\n`;"
+                ],
+                "REPLACE": [
+                    "output += `\\\\end{proof}\\n`;"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "\\leavevmode\\vadjust pre{\\hypertarget{$label}{}}%",
+                    "\\begin{definition}[]\\label{$label}"
+                ],
+                "REPLACE": [
+                    "\\begin{definition}[]\\label{$label}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "\\begin{proof}",
+                    "",
+                    "$proofContent",
+                    "",
+                    "\\end{proof}"
+                ],
+                "REPLACE": [
+                    "\\begin{proof}",
+                    "",
+                    "$proofContent",
+                    "\\end{proof}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/command/render/output-tex.ts": [
+            {
+                "SEARCH": [
+                    "Quisque ullamcorper placerat ipsum. Cras nibh. Morbi vel justo vitae",
+                    "lacus tincidunt ultrices. Lorem ipsum dolor sit amet, consectetuer",
+                    "adipiscing elit. In hac habitasse platea dictumst.",
+                    "",
+                    "\\end{proof}"
+                ],
+                "REPLACE": [
+                    "Quisque ullamcorper placerat ipsum. Cras nibh. Morbi vel justo vitae",
+                    "lacus tincidunt ultrices. Lorem ipsum dolor sit amet, consectetuer",
+                    "adipiscing elit. In hac habitasse platea dictumst.",
+                    "\\end{proof}"
+                ]
+            }
+        ]
+    }
+}

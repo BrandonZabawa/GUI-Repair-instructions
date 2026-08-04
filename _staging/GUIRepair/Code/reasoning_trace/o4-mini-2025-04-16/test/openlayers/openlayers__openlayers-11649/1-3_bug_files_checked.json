@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Units.js",
+            "src/ol/proj/Projection.js"
+        ],
+        "explanation": "\u2022 proj4.js: the register function creates new Projection instances from proj4.defs without supplying default units or axisOrientation when the proj string lacks them.\n\u2022 Units.js: defines available units but doesn\u2019t provide a default \u201cdegrees\u201d unit for geographic CRSs registered via proj4.\n\u2022 Projection.js: unconditionally defaults axisOrientation to \u201cenu\u201d and leaves units undefined if not passed in options. To fix, proj4.js should detect a geographic CRS and assign default units of \u201cdegrees\u201d and axisOrientation \u201cneu\u201d, while Units.js and Projection.js ensure those defaults are supported and applied.",
+        "bug_scenario": "When a proj4js definition is registered via ol.proj.proj4.register(proj4), OpenLayers creates a new Projection for codes like \u201cEPSG:4258\u201d but doesn\u2019t pick up required defaults. The console screenshot shows ol.proj.get('EPSG:4258') returning units: undefined, extent: null, axisOrientation: \"enu\" even though proj4.defs('EPSG:4258', '+proj=longlat ... +no_defs') defines a geographic CRS. Geographic CRSs need default units of \u201cdegrees\u201d and an axisOrientation of \u201cneu\u201d (north\u2013east\u2013up) when no axis is specified; instead OL falls back to undefined units and enu, resulting in broken map reprojections."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/proj/proj4.js",
+            "src/ol/proj/Projection.js",
+            "src/ol/proj/Units.js"
+        ],
+        "explanation": "All of the proj4\u2013OpenLayers integration logic lives in src/ol/proj/proj4.js. That module reads proj4.defs(), creates OL Projection instances but does not supply a default \u201cdegrees\u201d unit when none is defined and fails to derive the correct axisOrientation. Projection.js is responsible for storing units_ and axisOrientation_; its constructor and setters should pick up a \u2018degree\u2019 unit fallback and choose \u2018neu\u2019 for geographic CRSs. Units.js defines the set of valid unit names and conversion factors; without adding \u2018degrees\u2019 there is nowhere for the proj4 fallback to map. Together these three files govern how proj4 definitions become OL Projection objects, so they must be updated to handle missing units and axis orientation properly.",
+        "bug_scenario": "When registering proj4 definitions via ol.proj.proj4.register(proj4) for a geographic CRS that has no explicit \u201c+units\u201d parameter (for example EPSG:4258), OpenLayers creates a Projection object with units_=undefined, metersPerUnit_=undefined and axisOrientation_ defaulting to \u201cenu\u201d. As a result the map reprojection is broken because the unit fallback to degrees never happens and the axis order should be \u201cneu\u201d for lat/long. The console screenshots show the OL Projection lacking units and the proj4.defs result correctly parsed but never fed into OL."
+    }
+}

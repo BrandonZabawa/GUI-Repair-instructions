@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/reproj/Tile.js//ReprojTile",
+            "src/ol/Tile.js//Tile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/Tile.js//ReprojTile.disposeInternal",
+            "src/ol/reproj/Tile.js//ReprojTile.load",
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_",
+            "src/ol/Tile.js//Tile.disposeInternal"
+        ],
+        "explanation": "The class ReprojTile in src/ol/reproj/Tile.js is responsible for managing the process of reprojection and stitching together the underlying source tiles to produce the final tile image. The bug relates to how tiles in certain states (such as ABORT or disposed tiles) are managed or excluded during reprojection, which causes white areas when tiles are missing. The disposeInternal method is directly involved in tile disposal and might be incorrectly disposing tiles that are still needed. The load and reproject_ methods manage the logic for loading and processing tiles, and may not handle disposed tiles correctly. Additionally, the base Tile class in src/ol/Tile.js manages tile states and the disposal process (via disposeInternal), which is likely a key part of the bug since disposed tiles are not included in the reprojection, leading to gaps. Ensuring tiles are not prematurely disposed or can be refetched is central to fixing the issue.",
+        "bug_scenario": "The bug scenario is that when zooming and panning on a map with a reprojected Tile layer, white areas (missing map tiles) appear. This is visible in the screenshot, where large white patches obscure part of the ocean, indicating that some map tiles are not being rendered. According to the report, this happens because the underlying Tile objects have been disposed and are not included in the reprojection process, causing gaps in the displayed map."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/reproj/Tile.js//ReprojTile",
+            "src/ol/Tile.js//Tile"
+        ],
+        "bug_functions": [
+            "src/ol/reproj/Tile.js//ReprojTile.disposeInternal",
+            "src/ol/reproj/Tile.js//ReprojTile.load",
+            "src/ol/reproj/Tile.js//ReprojTile.reproject_",
+            "src/ol/Tile.js//Tile.disposeInternal"
+        ],
+        "explanation": "The bug is related to how tile disposal and state management are handled during tile reprojection. The ReprojTile class in src/ol/reproj/Tile.js is responsible for managing reprojected tiles, including which source tiles are used and their states. The disposeInternal method in both ReprojTile and Tile is responsible for transitioning tile states (e.g., to ABORT), which is mentioned as problematic in the bug report. The load and reproject_ methods in ReprojTile are responsible for loading source tiles and generating the final canvas, and they may incorrectly exclude tiles that are disposed or aborted, resulting in white areas. Therefore, changes are likely needed in these classes and methods to ensure tiles required for reprojection are not disposed too early and are properly refetched or retained for rendering.",
+        "bug_scenario": "The image shows a map with large white areas where map tiles should be rendered. According to the bug report, when zooming or panning a map with a reprojected Tile layer, some tiles are not displayed, resulting in these blank (white) areas. This happens because the underlying Tile object has been disposed and is excluded from the reprojection stitching process required to render the map view correctly."
+    }
+}

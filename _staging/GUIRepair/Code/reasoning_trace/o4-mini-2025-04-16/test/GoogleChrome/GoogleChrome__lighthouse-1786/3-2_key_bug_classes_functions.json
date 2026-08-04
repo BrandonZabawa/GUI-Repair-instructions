@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/formatters/table.js//Table"
+        ],
+        "bug_functions": [
+            "lighthouse-core/formatters/table.js//Table.getFormatter",
+            "lighthouse-core/formatters/table.js//Table.createTable"
+        ],
+        "explanation": "The Table class in table.js is responsible for wrapping a result\u2019s code field in single backticks (in createTable) and then handing that to Handlebars (via getFormatter('html')) for HTML output. Because Markdown is still applied to that backtick-wrapped string, any underscores or link syntax inside it end up getting parsed. To fix the bug, createTable (or the HTML formatter template it returns) needs to detect when the original string already begins with a backtick and bypass any further Markdown conversion so the snippet is left verbatim.",
+        "bug_scenario": "In both the HTML and pretty-text table output, any underscores or link syntax inside a snippet string that we wrap in backticks are still being fed through a Markdown pass. That means underscores become <em> tags and [text](url) turns into <a> links, even when the snippet itself already starts with a backtick and should have been treated as raw code. The screenshots show \u201c<em>0</em>\u201d around zeroes and an \u201c<a>\u201d around part of the snippet in the rendered HTML, demonstrating that code fencing alone didn\u2019t prevent inner Markdown parsing."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/formatters/table.js//Table"
+        ],
+        "bug_functions": [
+            "lighthouse-core/formatters/table.js//Table.getFormatter",
+            "lighthouse-core/formatters/table.js//Table.createTable"
+        ],
+        "explanation": "All of the rendering logic for both \u2018pretty\u2019 (plain\u2010text) and \u2018html\u2019 outputs lives in the Table class. \u2022 In getFormatter(type), the \u2018pretty\u2019 branch special-cases any column value that both starts and ends with backticks, but the HTML branch just returns the raw Handlebars template without preventing Markdown from running. \u2022 In createTable(), the \u2018code\u2019 case wraps every code string in single backticks (`\u2026`) which guarantees the string will be interpreted as inline Markdown, enabling underscores and link syntax to be parsed instead of preserved. Fixing the bug requires changing one or both of these methods\u2014either stop wrapping user code in raw backticks in createTable or detect leading backticks in getFormatter/html and bypass Markdown processing\u2014so that a snippet that begins with a backtick is treated as literal code only.",
+        "bug_scenario": "When a code\u2010snippet string that begins with a backtick contains underscores (\"_\") or Markdown link syntax (\"[text](url)\"), the Table formatter still feeds it through Markdown, producing <em> tags around underscores and <a> tags around links. The screenshots show parts of the JavaScript snippet being rendered as emphasis and links instead of verbatim code, even though the snippet was deliberately wrapped in backticks."
+    }
+}

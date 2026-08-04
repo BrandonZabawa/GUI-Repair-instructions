@@ -1,0 +1,258 @@
+{
+    "1/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const config = require('./webpack.config');",
+                    "const webpackMiddleware = require('webpack-dev-middleware');",
+                    "const http = require('http');",
+                    "const path = require('path');",
+                    "const png = require('pngjs');"
+                ],
+                "REPLACE": [
+                    "const config = require('../test/rendering/webpack.config');",
+                    "const webpackMiddleware = require('../test/rendering/webpack-dev-middleware');",
+                    "const http = require('http');",
+                    "const path = require('path');",
+                    "const png = require('pngjs');"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const config = require('./webpack.config');"
+                ],
+                "REPLACE": [
+                    "const config = require('./webpack.config');",
+                    "const additionalTests = require('../test/rendering/extraCases');"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "async function main(entries, options) {",
+                    "if (!options.force && !options.match) {",
+                    "entries = await getOutdated(entries, options);",
+                    "}",
+                    "if (options.match) {",
+                    "const exp = new RegExp(options.match);",
+                    "entries = entries.filter(entry => exp.test(entry));",
+                    "}",
+                    "if (!options.interactive && entries.length === 0) {",
+                    "return;",
+                    "}",
+                    "",
+                    "const done = await serve(options);",
+                    "try {",
+                    "await render(entries, options);",
+                    "} finally {",
+                    "if (!options.interactive) {",
+                    "done();",
+                    "}",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "async function main(entries, options) {",
+                    "const unifiedEntries = getUnifiedEntries();",
+                    "if (!options.force && !options.match) {",
+                    "entries = await getOutdated([...entries, ...unifiedEntries], options);",
+                    "}",
+                    "if (options.match) {",
+                    "const exp = new RegExp(options.match);",
+                    "entries = entries.filter(entry => exp.test(entry));",
+                    "}",
+                    "if (!options.interactive && entries.length === 0) {",
+                    "return;",
+                    "}",
+                    "",
+                    "const done = await serve(options);",
+                    "try {",
+                    "await render([...entries, ...unifiedEntries], options);",
+                    "} finally {",
+                    "if (!options.interactive) {",
+                    "done();",
+                    "}",
+                    "}",
+                    "}",
+                    "",
+                    "function getUnifiedEntries() {",
+                    "// Logic to grab entries from the `test/rendering` folder",
+                    "const newEntries = globby.sync(['test/rendering/**/*.js']);",
+                    "return newEntries.map(entry => path.join(__dirname, '..', entry));",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const puppeteer = require('puppeteer');",
+                    "const webpack = require('webpack');",
+                    "const config = require('./webpack.config');"
+                ],
+                "REPLACE": [
+                    "const puppeteer = require('puppeteer');",
+                    "const webpack = require('webpack');",
+                    "const config = require('./unified/webpack.config');"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const webpack = require('webpack');",
+                    "const config = require('./webpack.config');",
+                    "const serveStatic = require('serve-static');",
+                    "const staticHandler = serveStatic(__dirname);"
+                ],
+                "REPLACE": [
+                    "const webpack = require('webpack');",
+                    "const config = require('../test/rendering/webpack.config');",
+                    "const serveStatic = require('serve-static');",
+                    "const staticHandler = serveStatic(path.join(__dirname, '../test/rendering'));"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const entries = Object.keys(config.entry).map(key => config.entry[key]);"
+                ],
+                "REPLACE": [
+                    "const entries = [",
+                    "...Object.keys(config.entry).map(key => config.entry[key]),",
+                    "...yourAdditionalEntries // Additional entries loaded from the other test approach",
+                    "];"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "test/render.js": [
+            {
+                "SEARCH": [
+                    "const path = require('path');",
+                    "const log = require('loglevelnext');",
+                    "const config = require('./webpack.config');",
+                    "const compiler = webpack(Object.assign({mode: 'development'}, config));"
+                ],
+                "REPLACE": [
+                    "const path = require('path');",
+                    "const log = require('loglevelnext');",
+                    "const config = require('./webpack.config');",
+                    "",
+                    "// Merge entries from test/render.js into config.entry",
+                    "const testRenderFilePath = path.join(__dirname, '..', 'test', 'render.js');",
+                    "const testRenderEntries = require(testRenderFilePath);  // Hypothetically importing entries",
+                    "config.entry = Object.assign(config.entry, testRenderEntries);",
+                    "",
+                    "const compiler = webpack(Object.assign({mode: 'development'}, config));"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const entries = Object.keys(config.entry).map(key => config.entry[key]);"
+                ],
+                "REPLACE": [
+                    "const renderingEntries = Object.keys(config.entry).map(key => config.entry[key]);",
+                    "const testRenderingEntries = globby.sync(['test/rendering/**/*.js']);",
+                    "const entries = [...renderingEntries, ...testRenderingEntries];"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const puppeteer = require('puppeteer');",
+                    "const webpack = require('webpack');",
+                    "const config = require('./webpack.config');"
+                ],
+                "REPLACE": [
+                    "const renderingTests = require('../test/rendering');",
+                    "const { runTests } = renderingTests;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "async function main(entries, options) {",
+                    "if (!options.force && !options.match) {",
+                    "entries = await getOutdated(entries, options);",
+                    "}",
+                    "if (options.match) {",
+                    "const exp = new RegExp(options.match);",
+                    "entries = entries.filter(entry => exp.test(entry));",
+                    "}",
+                    "if (!options.interactive && entries.length === 0) {",
+                    "return;",
+                    "}",
+                    "",
+                    "const done = await serve(options);",
+                    "try {",
+                    "await render(entries, options);",
+                    "} finally {",
+                    "if (!options.interactive) {",
+                    "done();",
+                    "}",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "async function main(entries, options) {",
+                    "await runTests(entries, options, config);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "rendering/test.js": [
+            {
+                "SEARCH": [
+                    "const puppeteer = require('puppeteer');",
+                    "const webpack = require('webpack');",
+                    "const config = require('./webpack.config');"
+                ],
+                "REPLACE": [
+                    "const puppeteer = require('puppeteer');",
+                    "const webpack = require('webpack');",
+                    "const config = require('../test/rendering/webpack.config'); // Unified configuration path"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const staticHandler = serveStatic(__dirname);",
+                    "",
+                    "const defaultHandler = serveStatic(path.join(__dirname, 'default'));",
+                    "",
+                    "const srcHandler = serveStatic(path.join(__dirname, '..', 'src'));"
+                ],
+                "REPLACE": [
+                    "const staticHandler = serveStatic(path.join(__dirname, '../test/rendering')); // Unifying static files location",
+                    "",
+                    "const defaultHandler = serveStatic(path.join(__dirname, '../test/rendering/default'));",
+                    "",
+                    "const srcHandler = serveStatic(path.join(__dirname, '../test/rendering/src')); // Unifying src files location"
+                ]
+            }
+        ]
+    }
+}

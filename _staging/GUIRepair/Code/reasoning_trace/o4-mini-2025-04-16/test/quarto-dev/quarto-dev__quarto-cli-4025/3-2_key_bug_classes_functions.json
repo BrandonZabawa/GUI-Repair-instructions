@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/common/figures.lua//discoverFigure",
+            "src/resources/filters/common/figures.lua//discoverLinkedFigure",
+            "src/resources/filters/common/figures.lua//discoverFigureDiv",
+            "src/resources/filters/common/figures.lua//discoverLinkedFigureDiv",
+            "src/resources/filters/quarto-pre/figures.lua//Para",
+            "src/resources/filters/quarto-pre/figures.lua//createFigureDiv"
+        ],
+        "explanation": "The core of the problem lies in the figure\u2013discovery and wrapping logic. In common/figures.lua, discoverFigure and discoverLinkedFigure only look for Image or Link nodes inside Para or Div elements (not RawBlock or embedded HTML), and the companion discoverFigureDiv/discoverLinkedFigureDiv routines wrap each match into its own figure div. Then, in quarto-pre/figures.lua, the Para callback invokes these discovery functions and hands off to createFigureDiv to build separate Divs with identifiers and captions. Because a Bokeh plot is output as a block of raw HTML/JavaScript (not a simple Image node), the discovery routines fire multiple times on fragments of the embed and produce multiple empty subfigures. To fix this, the discovery functions must be extended to recognize RawBlock HTML embeds from Bokeh (or the Quarto HTML widget pipeline) as a single figure, and createFigureDiv should preserve grouping rather than splitting the embed into separate subfigure divs.",
+        "bug_scenario": "In the rendered HTML page, a single Bokeh bar\u2010chart is being split into three subfigures (1a, 1b, 1c). Only the first subfigure shows the correct plot and caption; the next two are empty and display \u201c?(caption)\u201d, indicating that the pipeline has misidentified parts of the single embedded Bokeh HTML/JavaScript block as separate figure elements."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/common/figures.lua//discoverFigure",
+            "src/resources/filters/common/figures.lua//discoverLinkedFigure",
+            "src/resources/filters/common/figures.lua//createFigureDiv",
+            "src/resources/filters/quarto-pre/figures.lua//quartoPreFigures (Para handler)",
+            "src/resources/filters/quarto-pre/figures.lua//quartoPreFigures (Div handler)"
+        ],
+        "explanation": "The root of the problem is in how the filters detect and wrap figures. In src/resources/filters/common/figures.lua, discoverFigure and discoverLinkedFigure each return a single Image element when called on a Para, but createFigureDiv then wraps both the original image paragraph and a separate caption paragraph into a single Div. Pandoc treats each child Para of a Div.figure as an individual subfigure, so by inserting two Paras (one for the image and one for the caption), createFigureDiv inadvertently creates two subfigures where only one was intended. \n\nAdditionally, in src/resources/filters/quarto-pre/figures.lua, the Para handler inside quartoPreFigures calls discoverFigure/discoverLinkedFigure and then delegates to createFigureDiv, while the Div handler propagates fig-cap onto the Div. Together they split the single figure+caption into multiple blocks. To fix the bug, createFigureDiv must group the image and its caption into a single Pandoc block (for example by embedding the caption inside a single Para or by using a dedicated subfigure wrapper) so that only one subfigure is generated. Alternatively, the prefilter\u2019s Para/Div handlers should be changed to prevent multiple Paras from being treated as separate subfigures.",
+        "bug_scenario": "The user\u2019s single Bokeh plot (with one caption) is being split into three \u201csubfigures\u201d in the rendered output. The first subfigure (a) correctly shows the plot and caption, but (b) and (c) appear as empty placeholders (\u201c?{caption}\u201d). In other words, Quarto\u2019s filters are mis\u2010identifying multiple Pandoc blocks (the plot paragraph and the caption paragraph) as separate subfigures rather than grouping them into one figure."
+    }
+}

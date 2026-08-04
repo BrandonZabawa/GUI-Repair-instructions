@@ -1,0 +1,37 @@
+diff --git a/lighthouse-core/audits/byte-efficiency/uses-webp-images.js b/lighthouse-core/audits/byte-efficiency/uses-webp-images.js
+index 1b9a290b9..39e50d3c1 100644
+--- a/lighthouse-core/audits/byte-efficiency/uses-webp-images.js
++++ b/lighthouse-core/audits/byte-efficiency/uses-webp-images.js
+@@ -50,16 +50,28 @@ class UsesWebPImages extends ByteEfficiencyAudit {
+     const items = [];
+     const warnings = [];
+     for (const image of images) {
+-      if (image.failed) {
+-        warnings.push(`Unable to decode ${URL.getURLDisplayName(image.url)}`);
++      const urlText = URL.getURLDisplayName(image.url);
++      // Treat .bmp as a legacy format worth flagging
++      const isBmp = /\.bmp(\?.*)?$/i.test(image.url);
++
++      // If it's not BMP and it failed to decode, warn+skip.
++      if (image.failed && !isBmp) {
++        warnings.push(`Unable to decode ${urlText}`);
+         continue;
++      }
++
++      let webpSavings;
++      if (isBmp) {
++        // Record the entire BMP payload as "wasted" since WebP would always be smaller
++        webpSavings = {bytes: image.originalSize, percent: 100};
+       } else if (image.originalSize < image.webpSize + IGNORE_THRESHOLD_IN_BYTES) {
++        // No real savings
+         continue;
++      } else {
++        webpSavings = UsesWebPImages.computeSavings(image);
+       }
+ 
+       const url = URL.elideDataURI(image.url);
+-      const webpSavings = UsesWebPImages.computeSavings(image);
+-
+       items.push({
+         url,
+         fromProtocol: image.fromProtocol,

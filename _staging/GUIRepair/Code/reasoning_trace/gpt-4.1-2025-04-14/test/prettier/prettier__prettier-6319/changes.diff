@@ -1,0 +1,55 @@
+diff --git a/src/language-js/parser-babel.js b/src/language-js/parser-babel.js
+index 0ef8ffb5b..6aa4fb6b1 100644
+--- a/src/language-js/parser-babel.js
++++ b/src/language-js/parser-babel.js
+@@ -5,7 +5,7 @@ const { hasPragma } = require("./pragma");
+ const locFns = require("./loc");
+ const postprocess = require("./postprocess");
+ 
+-function babelOptions(extraPlugins = []) {
++function babelOptions(extraPlugins = [], pipelineProposal = "minimal") {
+   return {
+     sourceType: "module",
+     allowAwaitOutsideFunction: true,
+@@ -30,7 +30,7 @@ function babelOptions(extraPlugins = []) {
+       "optionalCatchBinding",
+       "optionalChaining",
+       "classPrivateProperties",
+-      ["pipelineOperator", { proposal: "minimal" }],
++      ["pipelineOperator", { proposal: pipelineProposal }],
+       "nullishCoalescingOperator",
+       "bigInt",
+       "throwExpressions",
+@@ -52,8 +52,16 @@ function createParse(parseMethod, ...pluginCombinations) {
+     let ast;
+     try {
+       ast = tryCombinations(
+-        (options) => babel[parseMethod](text, options),
+-        pluginCombinations.map(babelOptions)
++        (options) => {
++          // If options is an array, the last element may be the pipeline proposal
++          if (Array.isArray(options) && typeof options[options.length - 1] === "string") {
++            const pipelineProposal = options[options.length - 1];
++            const plugins = options.slice(0, -1);
++            return babel[parseMethod](text, babelOptions(plugins, pipelineProposal));
++          }
++          return babel[parseMethod](text, babelOptions(options));
++        },
++        pluginCombinations
+       );
+     } catch (error) {
+       throw createError(
+@@ -73,7 +81,12 @@ function createParse(parseMethod, ...pluginCombinations) {
+   };
+ }
+ 
+-const parse = createParse("parse", ["jsx", "flow"]);
++const parse = createParse(
++  "parse",
++  // Try both minimal and smart proposals for pipelineOperator
++  (["jsx", "flow"]),
++  (["jsx", "flow"], "smart")
++);
+ const parseFlow = createParse("parse", [
+   "jsx",
+   ["flow", { all: true, enums: true }],

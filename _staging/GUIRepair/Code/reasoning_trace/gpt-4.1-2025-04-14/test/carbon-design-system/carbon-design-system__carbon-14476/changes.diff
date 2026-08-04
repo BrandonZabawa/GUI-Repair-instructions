@@ -1,0 +1,93 @@
+diff --git a/packages/react/src/components/DataTable/DataTable.tsx b/packages/react/src/components/DataTable/DataTable.tsx
+index a8c2bcf9..6065569e 100644
+--- a/packages/react/src/components/DataTable/DataTable.tsx
++++ b/packages/react/src/components/DataTable/DataTable.tsx
+@@ -284,6 +284,16 @@ class DataTable<RowType, ColTypes extends any[]> extends React.Component<
+      */
+     experimentalAutoAlign: PropTypes.bool,
+ 
++    /**
++     * Optional callback for selecting all items across all pages
++     */
++    onSelectAllAcrossPages: PropTypes.func,
++
++    /**
++     * Optional label for the "Select all" button
++     */
++    selectAllLabel: PropTypes.node,
++
+     /**
+      * Optional hook to manually control filtering of the rows from the
+      * TableToolbarSearch component
+@@ -675,13 +685,21 @@ class DataTable<RowType, ColTypes extends any[]> extends React.Component<
+   };
+ 
+   getBatchActionProps = (props = {}) => {
+-    const { shouldShowBatchActions } = this.state;
++    const { shouldShowBatchActions, rowIds, rowsById } = this.state;
+     const totalSelected = this.getSelectedRows().length;
++    const allSelected = totalSelected === rowIds.length;
++    // Show "Select all" if not all are selected and more exist
++    const showSelectAll = !allSelected && typeof this.props.onSelectAllAcrossPages === 'function';
++    const selectAllLabel = showSelectAll && this.props.selectAllLabel
++      ? this.props.selectAllLabel
++      : null;
+     return {
+       ...props,
+       shouldShowBatchActions: shouldShowBatchActions && totalSelected > 0,
+       totalSelected,
+       onCancel: this.handleOnCancel,
++      onSelectAll: showSelectAll ? this.props.onSelectAllAcrossPages : undefined,
++      selectAllLabel,
+     };
+   };
+   /**
+diff --git a/packages/react/src/components/DataTable/TableBatchActions.js b/packages/react/src/components/DataTable/TableBatchActions.js
+index 9f24cf31..a2b4caa4 100644
+--- a/packages/react/src/components/DataTable/TableBatchActions.js
++++ b/packages/react/src/components/DataTable/TableBatchActions.js
+@@ -33,6 +33,8 @@ const TableBatchActions = ({
+   totalSelected,
+   onCancel,
+   translateWithId: t,
++  onSelectAll, // NEW: callback for select all
++  selectAllLabel, // NEW: label for select all
+   ...rest
+ }) => {
+   const [isScrolling, setIsScrolling] = React.useState();
+@@ -64,6 +66,18 @@ const TableBatchActions = ({
+               ? t('carbon.table.batch.items.selected', { totalSelected })
+               : t('carbon.table.batch.item.selected', { totalSelected })}
+           </Text>
++          {onSelectAll && selectAllLabel && (
++            <Button
++              kind="ghost"
++              size="sm"
++              className={`${prefix}--batch-summary__select-all`}
++              onClick={onSelectAll}
++              tabIndex={shouldShowBatchActions ? 0 : -1}
++              style={{ marginLeft: '1rem' }}
++            >
++              {selectAllLabel}
++            </Button>
++          )}
+         </p>
+       </div>
+       <TableActionList>
+@@ -91,6 +105,16 @@ TableBatchActions.propTypes = {
+    */
+   onCancel: PropTypes.func.isRequired,
+ 
++  /**
++   * Optional callback for when the "Select all" button is clicked
++   */
++  onSelectAll: PropTypes.func,
++
++  /**
++   * Optional label for the "Select all" button
++   */
++  selectAllLabel: PropTypes.node,
++
+   /**
+    * Boolean specifier for whether or not the batch action bar should be
+    * displayed

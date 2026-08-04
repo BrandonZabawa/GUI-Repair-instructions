@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/metadata.ts",
+            "src/format/reveal/schemas.ts",
+            "src/resources/filters/layout/html.lua",
+            "src/resources/filters/quarto-post/reveal.lua"
+        ],
+        "explanation": "The bug relates to the interaction between figure, caption, and 'aside' elements in revealjs slides. The following files are likely involved: 1) 'src/format/reveal/format-reveal.ts', 'metadata.ts', and 'schemas.ts' because these manage the structure and metadata for revealjs output, and may dictate how asides, figures, and slide content are composed and rendered; 2) 'resources/filters/layout/html.lua' and 'resources/filters/quarto-post/reveal.lua' since these Lua filters likely manipulate or finalize the HTML structure, including figure, aside, and caption elements; 3) 'resources/formats/revealjs/reveal/css/theme/source/quarto.scss' and 'template/quarto.scss' as these control the CSS/SCSS theme for revealjs presentations, and would be directly responsible for the layout, positioning, and z-index of asides, figures, and captions. The bug is most likely solved by editing some combination of these files, most likely the CSS/SCSS and possibly the filters that assign classes, to ensure asides reserve space and figures are properly sized.",
+        "bug_scenario": "The bug scenario involves rendering a 'revealjs' slide with an 'aside' class at the bottom, and a single figure (with or without caption) on the slide. The reported problem is that the figure is stretched too much, and the aside content overlaps the figure or its caption. Desired behavior is for the aside content to clearly reserve the bottom of the slide, with the figure only stretched up to the top of the aside block (not overlapping). The screenshots show the aside content overlapping with the figure or its caption, rather than being visually separated at the bottom of the slide."
+    },
+    "2": {
+        "bug_files": [
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/format-reveal-theme.ts",
+            "src/format/reveal/constants.ts",
+            "src/resources/filters/layout/figures.lua",
+            "src/resources/filters/layout/layout.lua"
+        ],
+        "explanation": "These files are linked to the generation and styling of reveal.js slides, especially around figures, captions, and aside blocks: 1) src/format/reveal/format-reveal.ts is the entry point for generating reveal.js output and likely interfaces with both HTML structure and CSS class addition, including r-stretch and aside class injection. 2) src/format/reveal/format-reveal-theme.ts and src/format/reveal/constants.ts may be involved in the definition of CSS classes or layout constants used specifically for reveal.js, potentially impacting how asides and figures interact. 3) resources/filters/layout/figures.lua and resources/filters/layout/layout.lua are Lua filters (run by Pandoc) that transform markdown figures, captions, asides, and slide structure into HTML for reveal.js. If asides aren't correctly processed as always reserved-bottom blocks, these files would be the place to adjust that logic. 4) resources/formats/revealjs/reveal/css/theme/template/quarto.scss and resources/formats/revealjs/reveal/css/theme/template/quarto.css are the key SASS/CSS files for theme styling in reveal.js Quarto presentations. Issues with z-index, flex alignment, or inappropriate stretching of figures vs asides would be solved in these files by ensuring the aside section always reserves space and overlays properly. Together, changes to these files can ensure that the layout generator treats aside blocks as layout-bottom priorities and restricts figures from occupying the same bottom space, ensuring a clear and consistent visual boundary as requested in the bug report.",
+        "bug_scenario": "The bug scenario, demonstrated in the screenshots, arises when a slide in a reveal.js presentation has an 'aside' block and a single large figure. The expected behavior is that the aside content always sits at the bottom of the slide, and the figure stretches only up to the top of the aside block. However, as seen in the images, the figure overlaps or abuts the aside content, and captions can even render below the aside text, creating confusion and poor layout. This problem is most likely due to an issue with how the reveal.js format processes and lays out figures in the presence of aside blocks, specifically concerning the CSS/styling or the HTML-generation logic for slides that contain both a main figure (especially using r-stretch class for full-slide figures) and aside content. The layout does not prioritize or reserve the space for the aside block, thereby allowing the figure to encroach, leading to overlap or stacking mistakes."
+    }
+}

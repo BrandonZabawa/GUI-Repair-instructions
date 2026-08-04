@@ -1,0 +1,1150 @@
+{
+    "1/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"SwitchCase\":",
+                    "return [",
+                    "print(\"test\"),",
+                    "\":\",",
+                    "printSwitchCaseConsequent(path, options, print),",
+                    "];"
+                ],
+                "REPLACE": [
+                    "case \"SwitchCase\":",
+                    "  return [",
+                    "    print(\"test\"),",
+                    "    \": \", // Ensure space after colon",
+                    "    printSwitchCaseConsequent(path, options, print),",
+                    "  ];"
+                ]
+            }
+        ],
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = [];",
+                    "",
+                    "  if (node.consequent.length === 0) {",
+                    "    parts.push(hardline);",
+                    "  } else {",
+                    "    path.each((consequentPath) => {",
+                    "      parts.push(print(consequentPath));",
+                    "    }, \"consequent\");",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "  if (path.getValue().comments) {",
+                    "    const comments = path.getValue().comments.map(comment => print(comment));",
+                    "    return [\" \", ...comments, \" \", ...parts];",
+                    "  }",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "3/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}",
+                    "",
+                    "module.exports = {",
+                    "printBody,",
+                    "printSwitchCaseConsequent,",
+                    "};"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = [];",
+                    "",
+                    "  path.each((caseConsequentPath) => {",
+                    "    const caseConsequentNode = caseConsequentPath.getValue();",
+                    "    const printed = print(caseConsequentPath);",
+                    "",
+                    "    if (caseConsequentNode.type === \"ExpressionStatement\" && hasComment(caseConsequentNode)) {",
+                    "      parts.push(join(hardline, printed));",
+                    "    } else {",
+                    "      parts.push(printed);",
+                    "    }",
+                    "  }, \"consequent\");",
+                    "",
+                    "  return parts;",
+                    "}",
+                    "",
+                    "module.exports = {",
+                    "  printBody,",
+                    "  printSwitchCaseConsequent,",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "4/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getNode();",
+                    "  const statements = path.map(print, \"consequent\");",
+                    "  ",
+                    "  const comments = path.map(                ",
+                    "    (commentPath) => print(commentPath),    ",
+                    "    \"comments\"                             ",
+                    "  );                                        ",
+                    "  ",
+                    "  return [...comments, ...statements];",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const isDefaultCase = node.test === null;",
+                    "  ",
+                    "  if (isDefaultCase) {",
+                    "    // Adjust the comment placement for 'default' case to match inline style",
+                    "    const parts = path.map(print, \"consequent\");",
+                    "    return group(concat([print(\"leadingComments\"), parts]));",
+                    "  }",
+                    "  ",
+                    "  return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = [];",
+                    "",
+                    "  if (node.comments && node.comments.length > 0) {",
+                    "    parts.push(printComments(node.comments));",
+                    "  }",
+                    "",
+                    "  parts.push(printStatementSequence(path, options, print, \"consequent\"));",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}",
+                    ""
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  return [",
+                    "    node.trailingComments",
+                    "      ? [printDanglingComments(path, options), hardline]",
+                    "      : \"\",",
+                    "    printStatementSequence(path, options, print, \"consequent\"),",
+                    "  ];",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "  if (options.parser !== \"__vue_event_binding\") {",
+                    "    const node = path.getValue();",
+                    "    // Ensure inline comments formatting",
+                    "    parts.unshift(printLeadingComments(path, options));",
+                    "  }",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "9/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const comments = node.trailingComments || [];",
+                    "  const hasInlineComment = comments.some(",
+                    "    comment => comment.leading === false && comment.type === \"CommentLine\"",
+                    "  );",
+                    "",
+                    "  if (node.type === \"SwitchCase\" && hasInlineComment) {",
+                    "    return [\": \", printStatementSequence(path, options, print, \"consequent\")];",
+                    "  }",
+                    "",
+                    "  return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "",
+                    "  let parts = [];",
+                    "",
+                    "  if (hasComment(node, CommentCheckFlags.Leading)) {",
+                    "    parts.push(printLeadingComment(node, options));",
+                    "  }",
+                    "",
+                    "  parts = parts.concat(printStatementSequence(path, options, print, \"consequent\"));",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "11/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "  // Ensure comment on same line as 'default:'",
+                    "  const node = path.getValue();",
+                    "  if (node.type === \"SwitchCase\" && !node.test && node.leadingComments) {",
+                    "    parts.unshift(\" \");",
+                    "  }",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "12/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "function printPathNoParens(path, options, print, args) {",
+                    "...",
+                    "switch (node.type) {",
+                    "...",
+                    "case \"SwitchCase\": {",
+                    "parts.push(\"case \", print(\"test\"), \":\", hardline);",
+                    "..."
+                ],
+                "REPLACE": [
+                    "function printPathNoParens(path, options, print, args) {",
+                    "  ...",
+                    "  switch (node.type) {",
+                    "    ...",
+                    "    case \"SwitchCase\": {",
+                    "      if (node.test) {",
+                    "        parts.push(\"case \", print(\"test\"), \":\");",
+                    "      } else {",
+                    "        parts.push(\"default:\");",
+                    "      }",
+                    "      ..."
+                ]
+            }
+        ],
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "...",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  ...",
+                    "  if (options.semi) {",
+                    "    parts.push(hardline);",
+                    "  }",
+                    "  return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "13/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  if (",
+                    "    node.type === \"SwitchCase\" &&",
+                    "    node.test === null && // indicating a 'default' case",
+                    "    node.trailingComments",
+                    "  ) {",
+                    "    // Keep the comment on same line with 'default:'",
+                    "    return [\"default: \", ...printStatementSequence(path, options, print, \"consequent\")];",
+                    "  }",
+                    "  return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "14/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "",
+                    "  const node = path.getValue();",
+                    "  if (node.type === \"SwitchCase\" && node.consequent.length === 0) {",
+                    "    // Ensures comments stay inline after `case` and `default`",
+                    "    const comments = node.comments && path.call(print, \"comments\");",
+                    "    if (comments) {",
+                    "      parts.unshift(\" \", comments);",
+                    "    }",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "15/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"SwitchCase\":",
+                    "return [",
+                    "node.test ? [\"case \", print(\"test\"), \":\"] : \"default:\",",
+                    "path.call(printSwitchCaseConsequent, \"consequent\"),",
+                    "];"
+                ],
+                "REPLACE": [
+                    "    case \"SwitchCase\":",
+                    "      return [",
+                    "        node.test ? [\"case \", print(\"test\"), \":\"] : [\"default: \", node.comment ? \"// \" + node.comment : \"\"],",
+                    "        path.call(printSwitchCaseConsequent, \"consequent\"),",
+                    "      ];"
+                ]
+            }
+        ]
+    },
+    "16/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printStatementSequence(path, options, print, property) {",
+                    "const node = path.getValue();",
+                    "const parts = [];",
+                    "const isClassBody = node.type === \"ClassBody\";",
+                    "const lastStatement = getLastStatement(node[property]);",
+                    "",
+                    "path.each((path, index, statements) => {",
+                    "const node = path.getValue();",
+                    "",
+                    "// Skip printing EmptyStatement nodes to avoid leaving stray",
+                    "// semicolons lying around.",
+                    "if (node.type === \"EmptyStatement\") {",
+                    "return;",
+                    "}",
+                    "",
+                    "const printed = print();",
+                    "",
+                    "if (",
+                    "!options.semi &&",
+                    "!isClassBody &&",
+                    "!isTheOnlyJsxElementInMarkdown(options, path) &&",
+                    "statementNeedsASIProtection(path, options)",
+                    ") {",
+                    "if (hasComment(node, CommentCheckFlags.Leading)) {",
+                    "parts.push(print([], { needsSemi: true }));",
+                    "} else {",
+                    "parts.push(\";\", printed);",
+                    "}",
+                    "} else {",
+                    "parts.push(printed);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printStatementSequence(path, options, print, property) {",
+                    "  const node = path.getValue();",
+                    "  const parts = [];",
+                    "  const isClassBody = node.type === \"ClassBody\";",
+                    "  const lastStatement = getLastStatement(node[property]);",
+                    "",
+                    "  path.each((path, index, statements) => {",
+                    "    const node = path.getValue();",
+                    "",
+                    "    if (node.type === \"EmptyStatement\") {",
+                    "      return;",
+                    "    }",
+                    "",
+                    "    let printed = print();",
+                    "",
+                    "    if (",
+                    "      node.type === \"SwitchCase\" &&",
+                    "      !options.semi &&",
+                    "      hasComment(node, CommentCheckFlags.Trailing)",
+                    "    ) {",
+                    "      printed = [printed, \" \", printDanglingComments(path, options)];",
+                    "    }",
+                    "",
+                    "    if (",
+                    "      !options.semi &&",
+                    "      !isClassBody &&",
+                    "      !isTheOnlyJsxElementInMarkdown(options, path) &&",
+                    "      statementNeedsASIProtection(path, options)",
+                    "    ) {",
+                    "      if (hasComment(node, CommentCheckFlags.Leading)) {",
+                    "        parts.push(print([], { needsSemi: true }));",
+                    "      } else {",
+                    "        parts.push(\";\", printed);",
+                    "      }",
+                    "    } else {",
+                    "      parts.push(printed);",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "17/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "  const node = path.getValue();",
+                    "  ",
+                    "  if (node.comments) {",
+                    "    const commentPart = printDanglingComments(path, options, true);",
+                    "    if (commentPart) {",
+                    "      parts.unshift(commentPart);",
+                    "    }",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "18/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "",
+                    "  if (node.comments) {",
+                    "    // Ensure consistent formatting style for comments in default cases",
+                    "    return options.originalText[node.start] === \"default\"",
+                    "      ? [\"default: // \", ...parts]",
+                    "      : parts;",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "19/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "\"default\",",
+                    "print(\"consequent\"),",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "        \"default: \",   // Ensures comments stay inline on default labels",
+                    "        options.cursorNode === node ? \"\" : comments.printDanglingComments(path, options, true),",
+                    "        print(\"consequent\"),",
+                    "      ]);"
+                ]
+            }
+        ]
+    },
+    "20/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  if (node.type === \"SwitchCase\" && node.test === null && node.leadingComments) {",
+                    "    return [lineComment(node.leadingComments[0], options, print), \" \", printStatementSequence(path, options, print, \"consequent\")];",
+                    "  }",
+                    "  return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "21/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"SwitchCase\": {",
+                    "// Some code handling the switch case printing",
+                    "parts.push(\"case \", print(\"test\"), \":\");",
+                    "if (node.consequent.length || hasDanglingComments(node)) {",
+                    "parts.push(indent([hardline, printStatementSequence(path, options, print, \"consequent\")]));",
+                    "}",
+                    "return parts;",
+                    "}",
+                    "case \"SwitchDefault\": {",
+                    "parts.push(\"default:\");",
+                    "if (node.consequent.length || hasDanglingComments(node)) {",
+                    "parts.push(indent([hardline, printStatementSequence(path, options, print, \"consequent\")]));",
+                    "}",
+                    "return parts;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "case \"SwitchCase\": {",
+                    "  // Some code handling the switch case printing",
+                    "  parts.push(\"case \", print(\"test\"), \":\");",
+                    "  if (node.consequent.length || hasDanglingComments(node)) {",
+                    "    parts.push(indent([hardline, printStatementSequence(path, options, print, \"consequent\")]));",
+                    "  }",
+                    "  return parts;",
+                    "}",
+                    "case \"SwitchDefault\": {",
+                    "  parts.push(\"default: \");",
+                    "  if (node.consequent.length || hasDanglingComments(node)) {",
+                    "    parts.push(indent([hardline, printStatementSequence(path, options, print, \"consequent\")]));",
+                    "  }",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "22/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = [];",
+                    "  ",
+                    "  if (node.comments && node.comments.length > 0) {",
+                    "    // Ensuring comments stay in line with the case/default keyword",
+                    "    for (const comment of node.comments) {",
+                    "      parts.push(comment.value.trim());",
+                    "    }",
+                    "  }",
+                    "  ",
+                    "  parts.push(printStatementSequence(path, options, print, \"consequent\"));",
+                    "  return parts.join(\" \");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "23/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"SwitchStatement\":",
+                    "return [",
+                    "\"switch (\",",
+                    "print(\"discriminant\"),",
+                    "\") {\",",
+                    "printSwitchCases(path, options, print),",
+                    "\"}\",",
+                    "];"
+                ],
+                "REPLACE": [
+                    "case \"SwitchStatement\":",
+                    "  return [",
+                    "    \"switch (\",",
+                    "    print(\"discriminant\"),",
+                    "    \") {\",",
+                    "    printSwitchCases(path, options, print, /* maintainSameLineComments = */ true),",
+                    "    \"}\",",
+                    "  ];"
+                ]
+            }
+        ],
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print, maintainSameLineComments = false) {",
+                    "  return printStatementSequence(path, options, print, \"consequent\", maintainSameLineComments);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "24/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = [];",
+                    "  ",
+                    "  if (node.comments) {",
+                    "    parts.push(printLeadingComments(path, options));",
+                    "  }",
+                    "",
+                    "  parts.push(printStatementSequence(path, options, print, \"consequent\"));",
+                    "",
+                    "  if (node.comments) {",
+                    "    parts.push(printTrailingComments(path, options));",
+                    "  }",
+                    "  ",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "25/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "  ",
+                    "  if (node.type === 'SwitchCase' && node.consequent.length === 0) {",
+                    "    const comments = printDanglingComments(path, options, true);",
+                    "    if (comments) {",
+                    "      parts.unshift(\" \", comments);",
+                    "    }",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "26/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "  if (",
+                    "    path.getValue().leadingComments &&",
+                    "    path.getValue().leadingComments.length > 0",
+                    "  ) {",
+                    "    return [\"// \", ...parts];",
+                    "  }",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "27/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "",
+                    "  if (path.getNode().type === \"SwitchCase\") {",
+                    "    const leadingComment = path.getNode().leadingComments;",
+                    "    if (leadingComment) {",
+                    "      parts.unshift(printDanglingComments(path, options, /* sameLine */ true));",
+                    "    }",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "28/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  ",
+                    "  // Handle 'default' like 'case' with inline comments",
+                    "  const parts = node.type === \"SwitchCase\" && node.test === null",
+                    "    ? [node.comments[0].value.trim(), hardline, printStatementSequence(path, options, print, \"consequent\")]",
+                    "    : printStatementSequence(path, options, print, \"consequent\");",
+                    "  ",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "29/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  // Adjust spacing around comments in case and default to keep them inline",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "  ",
+                    "  if (path.getParentNode().type === \"SwitchCase\" && !path.getParentNode().test) {",
+                    "    // It's a default case, remove initial line breaks to keep the comment inline",
+                    "    if (parts[0] === hardline) {",
+                    "      parts.shift();",
+                    "    }",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "30/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = [];",
+                    "  ",
+                    "  path.each((consequentPath, index) => {",
+                    "    if (index === 0) {",
+                    "      // Place comment inline if it's the first statement and a CommentStatement",
+                    "      const statement = consequentPath.getValue();",
+                    "      if (statement.type === \"CommentStatement\") {",
+                    "        parts.push(print([], { needsSemi: false }));",
+                    "        return;",
+                    "      }",
+                    "    }",
+                    "    parts.push(print());",
+                    "  }, \"consequent\"); ",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "31/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "",
+                    "  // Ensure comments are inline with a default case",
+                    "  if (node.type === \"SwitchCase\" && node.test === null) {",
+                    "    const comments = path.getNode().comments;",
+                    "    if (comments && comments.length) {",
+                    "      const [inlineComment] = comments.filter(",
+                    "        (comment) => comment.leading && !comment.trailing",
+                    "      );",
+                    "      if (inlineComment) {",
+                    "        parts.unshift(\" // \", print(\"comments\"));",
+                    "      }",
+                    "    }",
+                    "  }",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "32/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"BreakStatement\":",
+                    "case \"ContinueStatement\":",
+                    "case \"ReturnStatement\":",
+                    "parts.push(\";\"); // Ensure there's a semicolon for these statements",
+                    "case \"ContinueStatement\":",
+                    "case \"ThrowStatement\":",
+                    "if (node.argument) {",
+                    "parts.push(\" \", print(\"argument\"));",
+                    "}",
+                    "break;"
+                ],
+                "REPLACE": [
+                    "    case \"BreakStatement\":",
+                    "    case \"ContinueStatement\":",
+                    "    case \"ReturnStatement\":",
+                    "    case \"ThrowStatement\": {",
+                    "      parts.push(\";\"); // Ensure there's a semicolon for these statements",
+                    "      if (node.argument) {",
+                    "        parts.push(\" \", print(\"argument\"));",
+                    "      }",
+                    "      break;",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "33/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "",
+                    "  if (node.type === \"SwitchCase\" && node.test === null) {",
+                    "    // Ensure default comment stays inline",
+                    "    if (node.leadingComments && node.leadingComments.length > 0) {",
+                    "      parts.unshift(print(\"leadingComments\"));",
+                    "    }",
+                    "  }",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "34/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = [];",
+                    "",
+                    "  if (node.type === \"SwitchCase\" && node.test === null) { // Handle default case",
+                    "    parts.push(print(\"consequent\"));",
+                    "  } else {",
+                    "    parts.push(printStatementSequence(path, options, print, \"consequent\"));",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "35/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "",
+                    "  // Ensure that comments directly follow without breaking the line with \"default:\"",
+                    "  if (node.type === \"SwitchCase\" && node.comments && node.comments.length) {",
+                    "    parts.unshift(printComments(path, options), \" \");",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "36/40": {
+        "src/language-js/print/statement.js": [
+            {
+                "SEARCH": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "return printStatementSequence(path, options, print, \"consequent\");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printSwitchCaseConsequent(path, options, print) {",
+                    "  const node = path.getValue();",
+                    "  const parts = printStatementSequence(path, options, print, \"consequent\");",
+                    "",
+                    "  if (node.comments) {",
+                    "    const commentParts = node.comments.map((comment) => print(comment));",
+                    "    // Insert comment parts right after the case/default line",
+                    "    return [...commentParts, ...parts];",
+                    "  }",
+                    "",
+                    "  return parts;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "37/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"SwitchCase\": {",
+                    "if (!node.consequent.length) {",
+                    "return [print(\"test\"), \":\"];",
+                    "}",
+                    "",
+                    "// Current behavior adds newline before consequent for `default`",
+                    "return [",
+                    "print(\"test\"),",
+                    "\": \",",
+                    "indent([hardline, printStatements(path, options, print)]),",
+                    "];",
+                    "}"
+                ],
+                "REPLACE": [
+                    "case \"SwitchCase\": {",
+                    "  if (!node.consequent.length) {",
+                    "    return [print(\"test\"), \":\"];",
+                    "  }",
+                    "",
+                    "  // Modified to keep comments inline for consistent cases and default formatting",
+                    "  return [",
+                    "    print(\"test\"),",
+                    "    \":\",",
+                    "    node.leadingComments ? \" \" : hardline,  // Add space if there's a leading comment",
+                    "    indent([printStatements(path, options, print)]),",
+                    "  ];",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "38/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "/** @type{Doc[]} */",
+                    "let parts = [];",
+                    "",
+                    "switch (node.type) {",
+                    "case \"JsExpressionRoot\":",
+                    "return print(\"node\");"
+                ],
+                "REPLACE": [
+                    "  /** @type{Doc[]} */",
+                    "  let parts = [];",
+                    "",
+                    "  switch (node.type) {",
+                    "    case \"JsExpressionRoot\":",
+                    "      return print(\"node\");",
+                    "    case 'SwitchCase':",
+                    "      return [",
+                    "        'case ',",
+                    "        node.test ? print('test') : 'default',",
+                    "        ': ',",
+                    "        printSwitchCaseConsequent(path, options, print)",
+                    "      ];"
+                ]
+            }
+        ]
+    },
+    "39/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"SwitchCase\":",
+                    "const isDefaultCase = node.test === null;",
+                    "parts.push(path.call(print, \"test\"));",
+                    "if (isDefaultCase) {",
+                    "parts.push(semi, \" \");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "case \"SwitchCase\":",
+                    "  const isDefaultCase = node.test === null;",
+                    "  if (isDefaultCase) {",
+                    "    parts.push(semi, \" /* \", node.leadingComments[0].value.trim(), \" */\");",
+                    "    node.leadingComments.shift(); // Mark the comment as handled",
+                    "  }",
+                    "  parts.push(path.call(print, \"test\"));"
+                ]
+            }
+        ]
+    },
+    "40/40": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "case \"SwitchCase\": {",
+                    "return group([",
+                    "node.test ? [\"case \", print(\"test\"), \":\"] : \"default:\",",
+                    "node.consequent.length > 0 && !options.bracketSpacing ? \" \" : \"\",",
+                    "printSwitchCaseConsequent(path, options, print),",
+                    "]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    case \"SwitchCase\": {",
+                    "      return group([",
+                    "        node.test ? [\"case \", print(\"test\"), \":\"] : [\"default: \"],",
+                    "        node.consequent.length > 0 && !options.bracketSpacing ? \" \" : \"\",",
+                    "        printSwitchCaseConsequent(path, options, print),",
+                    "      ]);",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,45 @@
+{
+    "1/1": {
+        "lighthouse-core/lib/lh-error.js": [
+            {
+                "SEARCH": [
+                    "constructor(errorDefinition, properties) {",
+                    "super(errorDefinition.code);",
+                    "this.name = 'LHError';",
+                    "this.code = errorDefinition.code;",
+                    "// Insert the i18n reference with errorCode and all additional ICU replacement properties.",
+                    "this.friendlyMessage = str_(errorDefinition.message, {errorCode: this.code, ...properties});",
+                    "this.lhrRuntimeError = !!errorDefinition.lhrRuntimeError;",
+                    "if (properties) Object.assign(this, properties);",
+                    "",
+                    "Error.captureStackTrace(this, LighthouseError);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  constructor(errorDefinition, properties) {",
+                    "    super(errorDefinition.code);",
+                    "    this.name = 'LHError';",
+                    "    this.code = errorDefinition.code;",
+                    "    // Build the friendly message by substituting placeholders in the UIStrings template.",
+                    "    let msg = errorDefinition.message;",
+                    "    // Always replace {errorCode}.",
+                    "    msg = msg.replace(/{errorCode}/g, this.code);",
+                    "    // Replace any additional placeholders with provided properties.",
+                    "    if (properties) {",
+                    "      for (const key of Object.keys(properties)) {",
+                    "        // e.g. replace \"{statusCode}\" or \"{errorDetails}\", etc.",
+                    "        const value = String(properties[key]);",
+                    "        msg = msg.replace(new RegExp(`\\\\{${key}\\\\}`, 'g'), value);",
+                    "        this[key] = properties[key];",
+                    "      }",
+                    "    }",
+                    "    this.friendlyMessage = msg;",
+                    "    this.lhrRuntimeError = !!errorDefinition.lhrRuntimeError;",
+                    "",
+                    "    Error.captureStackTrace(this, LighthouseError);",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

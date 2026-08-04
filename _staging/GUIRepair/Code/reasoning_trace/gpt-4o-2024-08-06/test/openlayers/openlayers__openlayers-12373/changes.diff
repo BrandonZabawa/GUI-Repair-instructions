@@ -1,0 +1,63 @@
+diff --git a/src/ol/source/TileDebug.js b/src/ol/source/TileDebug.js
+index 36353da531..870c5c1985 100644
+--- a/src/ol/source/TileDebug.js
++++ b/src/ol/source/TileDebug.js
+@@ -124,31 +124,33 @@ class TileDebug extends XYZ {
+    * @param {number} y Tile coordinate y.
+    * @return {!LabeledTile} Tile.
+    */
+-  getTile(z, x, y) {
+-    const tileCoordKey = getKeyZXY(z, x, y);
+-    if (this.tileCache.containsKey(tileCoordKey)) {
+-      return /** @type {!LabeledTile} */ (this.tileCache.get(tileCoordKey));
+-    } else {
+-      const tileSize = toSize(this.tileGrid.getTileSize(z));
+-      const tileCoord = [z, x, y];
+-      const textTileCoord = this.getTileCoordForTileUrlFunction(tileCoord);
+-      let text;
+-      if (textTileCoord) {
+-        text =
+-          'z:' +
+-          textTileCoord[0] +
+-          ' x:' +
+-          textTileCoord[1] +
+-          ' y:' +
+-          textTileCoord[2];
+-      } else {
+-        text = 'none';
+-      }
+-      const tile = new LabeledTile(tileCoord, tileSize, text);
+-      this.tileCache.set(tileCoordKey, tile);
+-      return tile;
+-    }
+-  }
++getTile(z, x, y) {
++// Adjust y for inverted coordinates
++const invertedY = this.tileGrid.getTileSize(z)[1] - y - 1;
++const tileCoordKey = getKeyZXY(z, x, invertedY);
++if (this.tileCache.containsKey(tileCoordKey)) {
++return /** @type {!LabeledTile} */ (this.tileCache.get(tileCoordKey));
++} else {
++const tileSize = toSize(this.tileGrid.getTileSize(z));
++const tileCoord = [z, x, invertedY];
++const textTileCoord = this.getTileCoordForTileUrlFunction(tileCoord);
++let text;
++if (textTileCoord) {
++text =
++'z:' +
++textTileCoord[0] +
++' x:' +
++textTileCoord[1] +
++' y:' +
++textTileCoord[2];
++} else {
++text = 'none';
++}
++const tile = new LabeledTile(tileCoord, tileSize, text);
++this.tileCache.set(tileCoordKey, tile);
++return tile;
++}
++}
+ }
+ 
+ export default TileDebug;

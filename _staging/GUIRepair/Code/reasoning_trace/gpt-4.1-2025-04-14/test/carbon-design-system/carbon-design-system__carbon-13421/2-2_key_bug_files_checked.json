@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/index.js",
+            "packages/react/src/index.js"
+        ],
+        "explanation": "The root cause of the bug is related to how DataTable and its subcomponents are exported and attached. In 'packages/react/src/components/DataTable/index.js', subcomponents are attached as properties to the DataTable object (e.g., DataTable.Table = Table), and both named and default exports are provided. In 'packages/react/src/index.js', all DataTable subcomponents are re-exported as named exports. When destructuring from DataTable (i.e., using DataTable.Table), it relies on the subcomponents being attached as properties to the default export. If the build or module system does not preserve these properties, destructuring fails and the components are undefined. Direct named imports work because they are explicitly exported. Therefore, these two files are key to the bug: 'index.js' in DataTable (where the attachment and export logic is defined) and the main 'index.js' (where the exports are re-exposed to consumers). Fixing the bug would require ensuring that destructuring from DataTable works as expected, likely by reviewing how subcomponents are attached and exported in these files.",
+        "bug_scenario": "The bug scenario is that destructuring DataTable and its subcomponents from the main DataTable object (e.g., `const { Table, TableHead, ... } = DataTable;`) causes the application to break, resulting in runtime errors and invalid component types. The error messages indicate that the destructured components are undefined, leading to React warnings and errors. However, importing each component directly from the package (e.g., `import { Table, TableHead, ... } from '@carbon/react'`) works correctly and renders the DataTable as expected. The screenshots show the error messages in the console when destructuring is used, and a working table when direct imports are used."
+    }
+}

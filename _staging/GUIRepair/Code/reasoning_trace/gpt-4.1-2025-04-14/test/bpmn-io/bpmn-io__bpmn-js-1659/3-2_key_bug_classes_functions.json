@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/LabelBehavior.js//LabelBehavior",
+            "lib/features/modeling/behavior/AssociationBehavior.js//AssociationBehavior",
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//LayoutConnectionBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/LabelBehavior.js//LabelBehavior",
+            "lib/features/modeling/behavior/AssociationBehavior.js//AssociationBehavior",
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//LayoutConnectionBehavior"
+        ],
+        "explanation": "The bug is about labels and associations (like text annotations) not reconnecting or moving when the connection (such as a Sequence Flow) is re-laid out after a shape resize. \n\n- In LabelBehavior.js, the LabelBehavior function handles the updating and moving of labels during various modeling operations, including connection layout and shape resize. However, its logic may not fully account for the label position after the connection is relaid out due to shape resize, leading to the label being left behind.\n\n- In AssociationBehavior.js, the AssociationBehavior function is responsible for moving associations (like Text Annotation connectors) when shapes are moved, but it may not correctly update associations when the connected connection/flow itself changes due to a resize.\n\n- In LayoutConnectionBehavior.js, the LayoutConnectionBehavior function manages layout changes for connections and ensures that associated connections are updated when a connection's waypoints are changed. However, it does not appear to handle updating of labels and external associations when the main connection is relaid out.\n\nAll three classes/functions are central to the logic responsible for synchronizing the layout of labels and association connectors with their respective connections and shapes. Edits are likely needed here to ensure that after a connection is re-laid out (e.g., due to resize), both labels and associations are also correctly repositioned and connected.",
+        "bug_scenario": "When resizing a subprocess with a Sequence Flow that has both a label and an associated Text Annotation (association), the connection (flow line) is re-laid out but the label and association (annotation) are left disconnected and do not move together with the sequence flow. The image shows that after resizing the subprocess, the label and annotation are left where they were, while the flow line has been re-laid out, resulting in visual and logical disconnection."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/LabelBehavior.js//LabelBehavior",
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//LayoutConnectionBehavior",
+            "lib/features/modeling/behavior/AssociationBehavior.js//AssociationBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/LabelBehavior.js//LabelBehavior",
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//LayoutConnectionBehavior",
+            "lib/features/modeling/behavior/AssociationBehavior.js//AssociationBehavior"
+        ],
+        "explanation": "The bug is that when a shape (like a subprocess) is resized, the connections (Sequence Flows) are relaid out, but labels and associations (such as text annotations or Association lines) are not repositioned to follow the connection's new layout. \n\n1. lib/features/modeling/behavior/LabelBehavior.js//LabelBehavior: This class/function is responsible for updating and moving labels in response to diagram actions, including shape resize and connection layout. It contains handlers for 'shape.resize', 'connection.layout', and related events. If labels are not moving with connections, logic in this class is likely missing or incomplete for the resize/layout scenario.\n\n2. lib/features/modeling/behavior/LayoutConnectionBehavior.js//LayoutConnectionBehavior: This behavior ensures that connections update their waypoints when their source/target shapes change position or size. It also tries to update connected associations (like attached flows or labels). If associations/labels are not following the connection, this class/function may need to ensure downstream updates to labels/associations.\n\n3. lib/features/modeling/behavior/AssociationBehavior.js//AssociationBehavior: Handles associations (such as BPMN Association lines). Since associations can attach to connections, if they're not repositioned when a connection is relaid out, this class/function is responsible. \n\nAll three are key because they coordinate the movement/layout of labels and associations in response to model changes, and the bug is a failure in that coordination during shape resize or connection relayout.",
+        "bug_scenario": "When resizing a subprocess (a container shape), the connections (Sequence Flows) are correctly relaid out, but any labels or text annotations attached to those flows are not repositioned accordingly. This leaves the labels/associations visually disconnected from the flows, as shown in the provided image: the label and text annotation remain at the old position while the flow is updated."
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js",
+            "lighthouse-core/lib/dependency-graph/simulator/connection-pool.js"
+        ],
+        "explanation": "The problem is in the simulation logic for network requests, specifically how different resource types (including data URIs) are handled. The file 'lighthouse-core/lib/dependency-graph/simulator/simulator.js' is likely orchestrating the simulation process by creating connection pools and running network simulations. The file 'lighthouse-core/lib/dependency-graph/simulator/connection-pool.js' (which is visible in the screenshot) handles connections, assigns RTT and server response times, and interprets the type of each network request, including data URIs. To fix the bug, updates would be needed here to detect 'data:' URIs and ensure they do not generate server response times. Both files together are responsible for how simulation is performed and how connections/timing for specific resource types are processed.",
+        "bug_scenario": "The bug occurs in the Lighthouse simulation of network requests, where 'data:' URIs are being assigned a nonzero 'server response time' even though such resources are not served over the network and cannot have any server-side latency. This leads to an inaccurate simulation, as shown in the debug output where a data URI resource receives RTT and response time values like a normal network request. The image shows the Lighthouse network simulation code logging calculated RTT and server response time for each origin, with 'protocol: data' records displayed in the watcher. The concern is that this treatment is inappropriate for data URIs, which should skip any server response time and likely have a small, fixed RTT."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/lib/dependency-graph/simulator/simulator.js",
+            "lighthouse-core/lib/network-request.js"
+        ],
+        "explanation": "1. lighthouse-core/lib/dependency-graph/simulator/simulator.js : This file (and adjacent files in the same folder) contain the network simulation logic and connection management (including server response timings seen in the screenshot). It's where serverResponseTimeByOrigin is evaluated without special handling for data URIs.\n2. lighthouse-core/lib/network-request.js : This is likely where network requests are parsed, classified, or handled, including their protocol type ('data', 'http', etc.). Adjustments here can help ensure non-network URIs are recognized and flagged so that the simulator code can skip them when calculating network/server times.\nChanges are needed in both places: to recognize data URIs early on, and to ensure they do not receive artificial server response time in the simulator logic.",
+        "bug_scenario": "The bug involves 'data:' URIs (non-network URLs) incorrectly accruing a non-zero server response time in the Lantern simulation, impacting how simulated network performance is calculated. In the bug scenario image, the debugger shows a NetworkRequest with protocol 'data', but server response time is being assigned (the value 30), even for a request that doesn't use the network. The code in question suggests that handling for non-network/data URLs isn't distinguished from real network URLs when assigning server response time or connection reuse."
+    }
+}

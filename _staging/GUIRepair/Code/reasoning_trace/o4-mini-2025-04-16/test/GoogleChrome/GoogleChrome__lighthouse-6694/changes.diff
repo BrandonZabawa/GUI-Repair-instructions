@@ -1,0 +1,52 @@
+diff --git a/lighthouse-core/audits/uses-rel-preconnect.js b/lighthouse-core/audits/uses-rel-preconnect.js
+index f17d1ba58..58e1fdfc5 100644
+--- a/lighthouse-core/audits/uses-rel-preconnect.js
++++ b/lighthouse-core/audits/uses-rel-preconnect.js
+@@ -41,7 +41,7 @@ class UsesRelPreconnectAudit extends Audit {
+       id: 'uses-rel-preconnect',
+       title: str_(UIStrings.title),
+       description: str_(UIStrings.description),
+-      requiredArtifacts: ['devtoolsLogs', 'URL'],
++      requiredArtifacts: ['devtoolsLogs', 'URL', 'LinkElements'],
+       scoreDisplayMode: Audit.SCORING_MODES.NUMERIC,
+     };
+   }
+@@ -97,6 +97,27 @@ class UsesRelPreconnectAudit extends Audit {
+ 
+     const {rtt, additionalRttByOrigin} = loadSimulator.getOptions();
+ 
++    // Gather any <link rel="preconnect"> or <link rel="dns-prefetch"> hints from the HTML
++    const linkElements = artifacts.LinkElements || [];
++    const preconnectedOrigins = new Set(
++      linkElements
++        .filter(el =>
++          // el.rel might be a string or array of strings
++          el.rel === 'preconnect' ||
++          el.rel === 'dns-prefetch' ||
++          (Array.isArray(el.rel) &&
++            (el.rel.includes('preconnect') || el.rel.includes('dns-prefetch')))
++        )
++        .map(el => {
++          try {
++            return new URL(el.href).origin;
++          } catch (_) {
++            return null;
++          }
++        })
++        .filter(origin => origin)
++    );
++
+     /** @type {Map<string, LH.Artifacts.NetworkRequest[]>}  */
+     const origins = new Map();
+     networkRecords
+@@ -113,7 +134,9 @@ class UsesRelPreconnectAudit extends Audit {
+           // filter out all resources where origins are already resolved
+           UsesRelPreconnectAudit.hasAlreadyConnectedToOrigin(record) ||
+           // make sure the requests are below the PRECONNECT_SOCKET_MAX_IDLE (15s) mark
+-          !UsesRelPreconnectAudit.socketStartTimeIsBelowThreshold(record, mainResource)
++          !UsesRelPreconnectAudit.socketStartTimeIsBelowThreshold(record, mainResource) ||
++          // skip any origin the page already hinted via preconnect or dns-prefetch
++          preconnectedOrigins.has(record.parsedURL.securityOrigin)
+         ) {
+           return;
+         }

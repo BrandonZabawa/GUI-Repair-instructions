@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/css.js//export default function(hljs)"
+        ],
+        "explanation": "The root of the problem lies in the CSS language definition in src/languages/css.js. The returned grammar object\u2019s contains array begins with hljs.C_BLOCK_COMMENT_MODE (which highlights normal /* \u2026 */ comments), but the specific mode that handles CSS property values (the object with begin: ':', end: '[;}]' and its contains list) does not include C_BLOCK_COMMENT_MODE. As a result, inline comments inside a value fall under the value mode and never invoke the comment mode. To fix this, the property-value mode\u2019s contains array needs to include hljs.C_BLOCK_COMMENT_MODE so that inline comments are correctly recognized and highlighted.",
+        "bug_scenario": "The two screenshots illustrate how inline CSS comments (/* inline comment */) inside a property value should be styled as comments but, after upgrading to hljs 10.6.0 and using highlightAll(), they are no longer highlighted. In the \u201cExpected\u201d image the inline comment appears in the same gray comment style as a normal block comment. In the \u201cActual\u201d image it is rendered as plain text, losing the comment colorization."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/css.js//export default function(hljs)"
+        ],
+        "explanation": "The default export in src/languages/css.js defines the CSS grammar\u2019s list of contains-modes but does not include hljs.C_BLOCK_COMMENT_MODE inside the value-mode (the object with begin: ':' and end: '[;}]'). Because that group lists only number, string, url, and function modes, inline /*\u2026*/ comments inside property values fall outside C_BLOCK_COMMENT_MODE and thus are not recognized. Adding hljs.C_BLOCK_COMMENT_MODE to the contains array of that value mode will restore correct inline comment highlighting.",
+        "bug_scenario": "In the CSS language definition, comments in block form (/* ... */) at the top\u2010level are still recognized, but comments appearing inline within a property value (e.g. width: /* inline comment */ 50px;) are no longer being highlighted as comments when using the new highlightAll API (introduced in v10.6.0). The expected screenshot shows the inline comment in grey and the \u201c50px\u201d in red; the actual screenshot shows the inline comment not highlighted and the entire segment treated as code."
+    }
+}

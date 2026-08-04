@@ -1,0 +1,31 @@
+diff --git a/lighthouse-core/audits/first-meaningful-paint.js b/lighthouse-core/audits/first-meaningful-paint.js
+index 32718ace1..9f50f84c8 100644
+--- a/lighthouse-core/audits/first-meaningful-paint.js
++++ b/lighthouse-core/audits/first-meaningful-paint.js
+@@ -65,8 +65,8 @@ class FirstMeaningfulPaint extends Audit {
+ 
+       const result = this.calculateScore({
+         navigationStart: tabTrace.navigationStartEvt,
+-        firstMeaningfulPaint: tabTrace.firstMeaningfulPaintEvt,
+-        firstContentfulPaint: tabTrace.firstContentfulPaintEvt
++        firstMeaningfulPaint: tabTrace.firstMeaningfulPaintEvt || {ts: 0},
++        firstContentfulPaint: tabTrace.firstContentfulPaintEvt || {ts: 0}
+       });
+ 
+       return {
+diff --git a/lighthouse-core/gather/computed/trace-of-tab.js b/lighthouse-core/gather/computed/trace-of-tab.js
+index 4ec5cba45..3e7fd785b 100644
+--- a/lighthouse-core/gather/computed/trace-of-tab.js
++++ b/lighthouse-core/gather/computed/trace-of-tab.js
+@@ -78,8 +78,10 @@ class TraceOfTab extends ComputedArtifact {
+       const lastCandidate = frameEvents.filter(e => e.name === fmpCand).pop();
+       if (!lastCandidate) {
+         log.verbose('trace-of-tab', 'No `firstMeaningfulPaintCandidate` events found in trace');
++        firstMeaningfulPaint = {ts: 0}; // Default to prevent undefined access
++      } else {
++        firstMeaningfulPaint = lastCandidate;
+       }
+-      firstMeaningfulPaint = lastCandidate;
+     }
+ 
+     // subset all trace events to just our tab's process (incl threads other than main)

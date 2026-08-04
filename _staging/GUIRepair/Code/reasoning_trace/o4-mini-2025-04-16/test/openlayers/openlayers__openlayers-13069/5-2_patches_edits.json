@@ -1,0 +1,126 @@
+{
+    "1/1": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "let minZoom = 0;",
+                    "",
+                    "const sourceCount = sources.length;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {"
+                ],
+                "REPLACE": [
+                    "    let minZoom = 0;",
+                    "",
+                    "    const sourceCount = sources.length;",
+                    "    const sourceStats = new Array(sourceCount);",
+                    "    for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "} else {",
+                    "assertEqual(",
+                    "tileSizes.slice(minZoom, tileSizes.length),",
+                    "sourceTileSizes,",
+                    "0,",
+                    "`Tile size mismatch for source ${sourceIndex}`,",
+                    "this.viewRejector",
+                    ");",
+                    "}",
+                    "",
+                    "this.sourceImagery_[sourceIndex] = images.reverse();"
+                ],
+                "REPLACE": [
+                    "      } else {",
+                    "        assertEqual(",
+                    "          tileSizes.slice(minZoom, tileSizes.length),",
+                    "          sourceTileSizes,",
+                    "          0,",
+                    "          `Tile size mismatch for source ${sourceIndex}`,",
+                    "          this.viewRejector",
+                    "        );",
+                    "      }",
+                    "",
+                    "      // extract GDAL statistics (if present) for later normalization",
+                    "      const metadata = images[0].getGDALMetadata();",
+                    "      const statsMin = metadata && metadata.STATISTICS_MINIMUM !== undefined ?",
+                    "        Number(metadata.STATISTICS_MINIMUM) : undefined;",
+                    "      const statsMax = metadata && metadata.STATISTICS_MAXIMUM !== undefined ?",
+                    "        Number(metadata.STATISTICS_MAXIMUM) : undefined;",
+                    "      sourceStats[sourceIndex] = {",
+                    "        min: statsMin,",
+                    "        max: statsMax",
+                    "      };",
+                    "",
+                    "      this.sourceImagery_[sourceIndex] = images.reverse();"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.sourceImagery_[sourceIndex] = images.reverse();",
+                    "}",
+                    "",
+                    "for (let i = 0, ii = this.sourceImagery_.length; i < ii; ++i) {"
+                ],
+                "REPLACE": [
+                    "      this.sourceImagery_[sourceIndex] = images.reverse();",
+                    "    }",
+                    "    ",
+                    "    this.sourceStats_ = sourceStats;",
+                    "    for (let i = 0, ii = this.sourceImagery_.length; i < ii; ++i) {"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const normalize = this.normalize_;",
+                    "",
+                    "return Promise.all(requests).then(function (sourceSamples) {"
+                ],
+                "REPLACE": [
+                    "    const normalize = this.normalize_;",
+                    "    const sourceStats = this.sourceStats_;",
+                    "    ",
+                    "    return Promise.all(requests).then(function (sourceSamples) {"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "let min = source.min;",
+                    "let max = source.max;",
+                    "let gain, bias;",
+                    "if (normalize) {",
+                    "if (min === undefined) {",
+                    "min = getMinForDataType(sourceSamples[sourceIndex][0]);",
+                    "}",
+                    "if (max === undefined) {",
+                    "max = getMaxForDataType(sourceSamples[sourceIndex][0]);",
+                    "}",
+                    "",
+                    "gain = 255 / (max - min);",
+                    "bias = -min * gain;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "            let min = source.min;",
+                    "            let max = source.max;",
+                    "            let gain, bias;",
+                    "            if (normalize) {",
+                    "              if (min === undefined) {",
+                    "                min = sourceStats && sourceStats[sourceIndex] && sourceStats[sourceIndex].min !== undefined ?",
+                    "                  sourceStats[sourceIndex].min :",
+                    "                  getMinForDataType(sourceSamples[sourceIndex][0]);",
+                    "              }",
+                    "              if (max === undefined) {",
+                    "                max = sourceStats && sourceStats[sourceIndex] && sourceStats[sourceIndex].max !== undefined ?",
+                    "                  sourceStats[sourceIndex].max :",
+                    "                  getMaxForDataType(sourceSamples[sourceIndex][0]);",
+                    "              }",
+                    "",
+                    "              gain = 255 / (max - min);",
+                    "              bias = -min * gain;",
+                    "            }"
+                ]
+            }
+        ]
+    }
+}

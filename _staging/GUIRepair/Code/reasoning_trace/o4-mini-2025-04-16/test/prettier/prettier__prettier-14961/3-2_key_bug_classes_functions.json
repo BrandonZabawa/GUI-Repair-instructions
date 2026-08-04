@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/language-html/embed/angular-interpolation.js",
+            "src/language-html/embed/angular-attributes.js",
+            "src/language-js/parse/angular.js",
+            "src/plugins/angular.js"
+        ],
+        "bug_functions": [
+            "src/language-html/embed/angular-interpolation.js//printAngularInterpolation",
+            "src/language-html/embed/angular-attributes.js//printAngularAttribute",
+            "src/language-js/parse/angular.js//createParser",
+            "src/language-js/parse/angular.js//__ng_interpolation"
+        ],
+        "explanation": "All of the formatting of Angular interpolation and directive/binding attribute values is funneled through printAngularInterpolation (which wraps the inner expression in a Prettier document group) and createAngularPrinter/printAngularAttribute (which calls formatAttributeValue with the custom __ng_* parsers). Those parser factories (createParser) and the __ng_interpolation parser determine how Angular\u2010pipe expressions are broken down into AST nodes, and the default JavaScript printer then inserts spaces around colon tokens. To change the spacing around pipe arguments, the logic in printAngularInterpolation (or the underlying Angular printer for __ng_interpolation) must be adjusted so that literal string and numeric arguments are emitted without added spaces around the colon separators.",
+        "bug_scenario": "When formatting Angular templates with Prettier 2.8.0, any pipe arguments\u2014regardless of whether they\u2019re string or numeric literals\u2014get padded with spaces around each colon. For example, \u201ccurrency:'CAD'\u201d becomes \u201ccurrency : 'CAD'\u201d and \u201cslice:1:5\u201d becomes \u201cslice : 1 : 5\u201d, even though the Angular docs and common WebStorm display expect no spaces around literal arguments. The screenshot shows a slice pipe whose named arguments (start/end) are also padded with spaces on both sides of the colon, making the code less idiomatic and harder to read."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-html/embed/angular-interpolation.js//printAngularInterpolation",
+            "src/language-html/embed/angular-attributes.js//createAngularPrinter",
+            "src/language-html/embed/angular-attributes.js//printAngularAttribute",
+            "src/language-js/parse/angular.js//__ng_interpolation",
+            "src/language-js/parse/angular.js//createParser"
+        ],
+        "explanation": "printAngularInterpolation is the entry point for formatting the contents of {{ \u2026 }} in Angular templates. It builds a document AST that currently always inserts breakable lines (and thus spaces) around all separators (including the ':' between pipe arguments). createAngularPrinter and printAngularAttribute wire the Angular-specific parser (__ng_interpolation) into the general attribute/value formatting pipeline\u2014so they determine which parser and options (e.g. trailingComma) are used when formatting pipe arguments. The __ng_interpolation parser (via createParser) produces the AST node for interpolation expressions (including pipes). Together, these functions control how pipe argument lists are printed. To fix the bug, their logic must be enhanced to detect literal string/number arguments and suppress the automatic spacing around ':' in those specific cases.",
+        "bug_scenario": "When formatting Angular templates with Prettier\u2019s Angular HTML parser, pipes with literal string or numeric arguments (e.g., currency:'CAD' or slice:1:5) get extra spaces inserted around the colon separators. In WebStorm this breaks the display of named arguments and contradicts the official Angular style (no spaces around literal args). The user would like to preserve no-space formatting for string or number arguments but still add spaces when the argument is a more complex expression."
+    }
+}

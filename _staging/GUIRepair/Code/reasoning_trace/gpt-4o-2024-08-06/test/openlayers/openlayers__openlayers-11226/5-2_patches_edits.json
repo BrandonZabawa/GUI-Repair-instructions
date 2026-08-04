@@ -1,0 +1,322 @@
+{
+    "1/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geom = geometries[i]; // Correct variable name to avoid shadowing",
+                    "const writer = this.SEGMENT_WRITERS_[geom.getType()];",
+                    "if (writer) { // Ensure writer exists",
+                    "writer(feature, geom);",
+                    "}",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "if (writer) {",
+                    "writer(feature, geometry);",
+                    "}",
+                    "}",
+                    "// Handle shared vertices in GeometryCollection",
+                    "const sharedVertices = {};",
+                    "// Loop again to update shared vertices",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const coordinates = geometry.getCoordinates();",
+                    "coordinates.forEach(coordinate => {",
+                    "const key = coordinate.join(',');",
+                    "if (!sharedVertices[key]) {",
+                    "sharedVertices[key] = [];",
+                    "}",
+                    "sharedVertices[key].push({feature, geometry});",
+                    "});",
+                    "}",
+                    "this.sharedVertices_ = sharedVertices;"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const individualGeometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[individualGeometry.getType()];",
+                    "this.rBush_.remove(geometry.getExtent());  // Remove existing data for accuracy",
+                    "writer(feature, individualGeometry);",
+                    "this.rBush_.insert(individualGeometry.getExtent(), {feature: feature, geometry: individualGeometry, segment: [coordinates, coordinates]});",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geom = geometries[i];  // Fixed variable shadowing",
+                    "const writer = this.SEGMENT_WRITERS_[geom.getType()];",
+                    "writer(feature, geom);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const subGeometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[subGeometry.getType()];",
+                    "if (writer) {",
+                    "// Update the segment data correctly for each sub-geometry",
+                    "writer(feature, subGeometry);",
+                    "}",
+                    "}",
+                    "// Ensure any new segments are properly added to the rBush_",
+                    "this.updateGeometryCollectionSegments_(feature, geometry);"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geom = geometries[i]; // Fixed variable name to avoid shadowing",
+                    "const writer = this.SEGMENT_WRITERS_[geom.getType()];",
+                    "if (writer) { // Ensure writer is defined",
+                    "writer(feature, geom);",
+                    "}",
+                    "}",
+                    "this.handleFeatureChange_(); // Ensure changes are tracked and update necessary components",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "'GeometryCollection': this.writeGeometryCollectionGeometry_.bind(this),"
+                ],
+                "REPLACE": [
+                    "'GeometryCollection': this.writeCollectionGeometry_.bind(this),"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "writeCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geom = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geom.getType()];",
+                    "if (writer) {",
+                    "writer(feature, geom);",
+                    "}",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "'GeometryCollection': this.writeGeometryCollectionGeometry_.bind(this),"
+                ],
+                "REPLACE": [
+                    "'GeometryCollection': (feature, geometry) => {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const singleGeometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[singleGeometry.getType()];",
+                    "if (writer) {",
+                    "writer(feature, singleGeometry);",
+                    "}",
+                    "}",
+                    "},"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "export class ModifyEvent extends Event {",
+                    "/**",
+                    "* @param {ModifyEventType} type Type.",
+                    "* @param {Collection<Feature>} features",
+                    "* The features modified.",
+                    "* @param {import(\"../MapBrowserEvent.js\").default} MapBrowserEvent",
+                    "* Associated {@link module:ol/MapBrowserEvent}.",
+                    "*/"
+                ],
+                "REPLACE": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const map = this.getMap();",
+                    "if (map && map.isRendered() && this.getActive()) {",
+                    "this.handlePointerAtPixel_(this.lastPixel_, map);",
+                    "}",
+                    "feature.addEventListener(EventType.CHANGE, this.boundHandleFeatureChange_);",
+                    "}",
+                    "",
+                    "/**",
+                    "* @param {import(\"../Collection.js\").CollectionEvent} evt Event.",
+                    "* @private",
+                    "*/",
+                    "handleFeatureAdd_(evt) {",
+                    "this.addFeature_(/** @type {Feature} */ (evt.element));",
+                    "}"
+                ],
+                "REPLACE": [
+                    "addFeature_(feature) {",
+                    "const geometry = feature.getGeometry();",
+                    "if (geometry) {",
+                    "// Handle GeometryCollection separately",
+                    "const type = geometry.getType();",
+                    "if (type === GeometryType.GEOMETRY_COLLECTION) {",
+                    "this.writeGeometryCollectionGeometry_(feature, geometry);",
+                    "} else {",
+                    "const writer = this.SEGMENT_WRITERS_[type];",
+                    "if (writer) {",
+                    "writer(feature, geometry);",
+                    "}",
+                    "}",
+                    "}",
+                    "const map = this.getMap();",
+                    "if (map && map.isRendered() && this.getActive()) {",
+                    "this.handlePointerAtPixel_(this.lastPixel_, map);",
+                    "}",
+                    "feature.addEventListener(EventType.CHANGE, this.boundHandleFeatureChange_);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/interaction/Modify.js": [
+            {
+                "SEARCH": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geometry = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geometry.getType()];",
+                    "writer(feature, geometry);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "writeGeometryCollectionGeometry_(feature, geometry) {",
+                    "const geometries = geometry.getGeometriesArray();",
+                    "for (let i = 0; i < geometries.length; ++i) {",
+                    "const geom = geometries[i];",
+                    "const writer = this.SEGMENT_WRITERS_[geom.getType()];",
+                    "writer(feature, geom);  // Fix: properly pass each geometry",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

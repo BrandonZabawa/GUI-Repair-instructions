@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "gather/driver-test.js",
+            "gather/fake-driver.js",
+            "gather/gather-runner-test.js",
+            "runner-test.js",
+            "lib/timing-trace-saver-test.js",
+            "config/default-config-test.js"
+        ],
+        "explanation": "To reproduce and understand this regression you need to see exactly how the driver\u2019s loadPage step is implemented and tested (gather/driver-test.js + gather/fake-driver.js), how the gather-runner invokes that step under the defaultPass (gather/gather-runner-test.js), and how Lighthouse\u2019s top-level runner wires everything together and captures .timings (runner-test.js + lib/timing-trace-saver-test.js). Finally, config/default-config-test.js shows the default maxWaitForLoad/trace timeouts in use (35 s and 60 s), which explain why longer FCP waits start causing timeout errors.",
+        "bug_scenario": "The three charts show the evolution of Lighthouse \u201c.timings\u201d for the loadPage-defaultPass phase (the red curve/p75 in the first two images and the heatmap plus percentile lines in the third). Around Jan 30th you see the p75 loadPage timing jump from ~20 s to ~40 s, while the lh:runner:auditing timings remain flat. This coincides with merged changes in PR #6944 (\u201ccore(driver): waitForFCP when tracing\u201d), which extended the FCP wait inside the loadPage step. As a result more runs hit the existing 35 s maxWaitForLoad, then fall back to the 60 s render timeout, driving up the error rate.\n\nThe charts include multiple percentiles (50%, 90%, 95%, 99.9%) over time and a colored background heatmap showing the distribution. They highlight that only loadPage-defaultPass is regressing, pointing at the new waitForFCP behavior."
+    }
+}

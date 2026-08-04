@@ -1,0 +1,434 @@
+{
+    "1/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "const requests = new Array(numSources);",
+                    "for (let i = 0; i < numSources; ++i) {",
+                    "requests[i] = getImagesForSource(this.sourceInfo_[i]);",
+                    "}",
+                    "Promise.all(requests)",
+                    ".then(function (sources) {",
+                    "self.configure_(sources);",
+                    "})",
+                    ".catch(function (error) {",
+                    "console.error(error); // eslint-disable-line no-console",
+                    "self.error_ = error;",
+                    "self.setState(State.ERROR);",
+                    "});"
+                ],
+                "REPLACE": [
+                    "const requests = this.sourceInfo_.map((source) => getImagesForSource(source));",
+                    "Promise.all(requests)",
+                    ".then((sources) => {",
+                    "self.configurePyramid_(sources);",
+                    "})",
+                    ".catch((error) => {",
+                    "console.error(error); // eslint-disable-line no-console",
+                    "self.error_ = error;",
+                    "self.setState(State.ERROR);",
+                    "});"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "configure_(sources) {",
+                    "let extent;",
+                    "let origin;",
+                    "let tileSizes;",
+                    "let resolutions;",
+                    "const samplesPerPixel = new Array(sources.length);",
+                    "const nodataValues = new Array(sources.length);",
+                    "const metadata = new Array(sources.length);",
+                    "let minZoom = 0;"
+                ],
+                "REPLACE": [
+                    "configurePyramid_(sources) {",
+                    "let extent;",
+                    "let origin;",
+                    "let tileSizes;",
+                    "let resolutions;",
+                    "const samplesPerPixel = new Array(sources.length);",
+                    "const nodataValues = new Array(sources.length);",
+                    "const metadata = new Array(sources.length);",
+                    "let minZoom = 0;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const sourceCount = sources.length;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const images = sources[sourceIndex];",
+                    "const imageCount = images.length;"
+                ],
+                "REPLACE": [
+                    "const sourceCount = sources.length;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const images = sources[sourceIndex];",
+                    "const imageCount = images.length;"
+                ]
+            }
+        ]
+    },
+    "2/10": {},
+    "3/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "const sourceIndex = this.sourceImagery_.length;",
+                    "const requests = new Array(sourceIndex);",
+                    "const addAlpha = this.addAlpha_;",
+                    "const bandCount = this.bandCount;"
+                ],
+                "REPLACE": [
+                    "const consolidatedSources = 1;",
+                    "const requests = new Array(consolidatedSources);",
+                    "const addAlpha = this.addAlpha_;",
+                    "const bandCount = this.bandCount;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const additionalBands = this.addAlpha_ ? 1 : 0;",
+                    "this.bandCount =",
+                    "samplesPerPixel.reduce((accumulator, value) => {",
+                    "accumulator += value;",
+                    "return accumulator;",
+                    "}, 0) + additionalBands;"
+                ],
+                "REPLACE": [
+                    "const additionalBands = this.addAlpha_ ? 1 : 0;",
+                    "this.bandCount = samplesPerPixel[0] + additionalBands;"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const tileGrid = new TileGrid({",
+                    "extent: extent,",
+                    "minZoom: minZoom,",
+                    "origin: origin,",
+                    "resolutions: resolutions,",
+                    "tileSizes: tileSizes,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "const tileGrid = new TileGrid({",
+                    "extent: getBoundingBox(this.sourceImagery_[0][0]),",
+                    "minZoom: 0,",
+                    "origin: getOrigin(this.sourceImagery_[0][0]),",
+                    "resolutions: resolutions,",
+                    "tileSizes: tileSizes",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "for (let i = 0; i < numSources; ++i) {",
+                    "requests[i] = getImagesForSource(this.sourceInfo_[i]);",
+                    "}",
+                    "Promise.all(requests)",
+                    ".then(function (sources) {",
+                    "self.configure_(sources);",
+                    "})",
+                    ".catch(function (error) {",
+                    "console.error(error); // eslint-disable-line no-console",
+                    "self.error_ = error;",
+                    "self.setState(State.ERROR);",
+                    "});"
+                ],
+                "REPLACE": [
+                    "for (let i = 0; i < numSources; ++i) {",
+                    "requests[i] = getImagesForSource(this.sourceInfo_[i]);",
+                    "}",
+                    "// New pyramid structure initialization",
+                    "this.pyramid = new GeoTIFFPyramid(this.sourceInfo_);",
+                    "",
+                    "// Use the pyramid structure to configure sources",
+                    "this.pyramid.initialize().then(function () {",
+                    "self.configureFromPyramid_();",
+                    "}).catch(function (error) {",
+                    "console.error(error); // eslint-disable-line no-console",
+                    "self.error_ = error;",
+                    "self.setState(State.ERROR);",
+                    "});"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "configure_(sources) {",
+                    "let extent;",
+                    "let origin;",
+                    "let tileSizes;",
+                    "let resolutions;",
+                    "const samplesPerPixel = new Array(sources.length);",
+                    "const nodataValues = new Array(sources.length);",
+                    "const metadata = new Array(sources.length);",
+                    "let minZoom = 0;"
+                ],
+                "REPLACE": [
+                    "configureFromPyramid_() {",
+                    "const {extent, origin, tileSizes, resolutions, samplesPerPixel, nodataValues, metadata} = this.pyramid.getConfiguration();",
+                    "let minZoom = this.pyramid.getMinZoom();"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "for (let i = 0; i < numSources; ++i) {",
+                    "requests[i] = getImagesForSource(this.sourceInfo_[i]);",
+                    "}",
+                    "Promise.all(requests)",
+                    ".then(function (sources) {",
+                    "self.configure_(sources);",
+                    "})"
+                ],
+                "REPLACE": [
+                    "// Consolidate requests to share WebGL context across layers",
+                    "const combinedRequest = promises = [getImagesForSource(this.sourceInfo_[0])];",
+                    "for (let i = 1; i < numSources; ++i) {",
+                    "combinedRequest.push(getImagesForSource(this.sourceInfo_[i]));",
+                    "}",
+                    "Promise.all(combinedRequest)",
+                    ".then(function (sources) {",
+                    "// Consolidate sources into a single rendering context",
+                    "// We'll modify configure_ to handle it",
+                    "self.configureCombinedSource(sources);",
+                    "})"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "configure_(sources) {",
+                    "let extent;",
+                    "let origin;",
+                    "let tileSizes;",
+                    "let resolutions;",
+                    "const samplesPerPixel = new Array(sources.length);",
+                    "const nodataValues = new Array(sources.length);",
+                    "const metadata = new Array(sources.length);",
+                    "let minZoom = 0;",
+                    "",
+                    "const sourceCount = sources.length;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const images = sources[sourceIndex];",
+                    "// Existing logic...",
+                    "}"
+                ],
+                "REPLACE": [
+                    "configureCombinedSource(sources) {",
+                    "// New method to handle combined source setup",
+                    "let extent;",
+                    "let origin;",
+                    "let tileSizes;",
+                    "let resolutions;",
+                    "const samplesPerPixel = new Array(sources.length);",
+                    "const nodataValues = new Array(sources.length);",
+                    "const metadata = new Array(sources.length);",
+                    "let minZoom = 0;",
+                    "",
+                    "// Flatten single source array for combined resolutions",
+                    "const sourceCount = sources.length;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const images = sources.reduce((allImages, nextImages) => allImages.concat(nextImages), []);",
+                    "// Adjusted logic to handle combined image arrays...",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "const sourceCount = sources.length;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const images = sources[sourceIndex];",
+                    "const imageCount = images.length;",
+                    "",
+                    "let sourceExtent;",
+                    "let sourceOrigin;",
+                    "const sourceTileSizes = new Array(imageCount);",
+                    "const sourceResolutions = new Array(imageCount);"
+                ],
+                "REPLACE": [
+                    "const pyramidSources = createPyramid(sources);",
+                    "const sourceCount = pyramidSources.length;",
+                    "for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {",
+                    "const images = pyramidSources[sourceIndex];",
+                    "rearrangePyramidTiles(images); // Function to rearrange pyramid tiles correctly",
+                    "const imageCount = images.length;",
+                    "",
+                    "let sourceExtent;",
+                    "let sourceOrigin;",
+                    "const sourceTileSizes = new Array(imageCount);",
+                    "const sourceResolutions = new Array(imageCount);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "loadTile_(z, x, y) {",
+                    "const size = toSize(this.tileGrid.getTileSize(z));",
+                    "",
+                    "const sourceCount = this.sourceImagery_.length;",
+                    "const requests = new Array(sourceCount);",
+                    "const addAlpha = this.addAlpha_;"
+                ],
+                "REPLACE": [
+                    "async loadTile_(z, x, y) {",
+                    "const tileGridSize = this.tileGrid.getTileSize(z);",
+                    "const size = toSize(tileGridSize);",
+                    "",
+                    "const pyramidBase = await this.getPyramidBaseLayer(z);",
+                    "const sourceCount = pyramidBase.length;",
+                    "const requests = new Array(sourceCount);",
+                    "const addAlpha = this.addAlpha_;"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "const self = this;",
+                    "const requests = new Array(numSources);",
+                    "for (let i = 0; i < numSources; ++i) {",
+                    "requests[i] = getImagesForSource(this.sourceInfo_[i]);",
+                    "}",
+                    "Promise.all(requests)",
+                    ".then(function (sources) {",
+                    "self.configure_(sources);",
+                    "})"
+                ],
+                "REPLACE": [
+                    "const self = this;",
+                    "const requests = this.sourceInfo_.map(source => getImagesForSource(source));",
+                    "Promise.all(requests)",
+                    ".then(function (sources) {",
+                    "// Assuming we already receive a pyramid structure",
+                    "self.configureWithPyramids_(sources);",
+                    "})"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "const self = this;",
+                    "const requests = new Array(numSources);",
+                    "for (let i = 0; i < numSources; ++i) {",
+                    "requests[i] = getImagesForSource(this.sourceInfo_[i]);",
+                    "}",
+                    "Promise.all(requests)",
+                    ".then(function (sources) {",
+                    "self.configure_(sources);",
+                    "})",
+                    ".catch(function (error) {",
+                    "console.error(error); // eslint-disable-line no-console",
+                    "self.error_ = error;",
+                    "self.setState(State.ERROR);",
+                    "});"
+                ],
+                "REPLACE": [
+                    "const self = this;",
+                    "const requests = new Array(numSources);",
+                    "for (let i = 0; i < numSources; ++i) {",
+                    "requests[i] = getImagesForSource(this.sourceInfo_[i]);",
+                    "}",
+                    "Promise.all(requests)",
+                    ".then(function (sources) {",
+                    "self.configurePyramid_(sources);",
+                    "})",
+                    ".catch(function (error) {",
+                    "console.error(error); // eslint-disable-line no-console",
+                    "self.error_ = error;",
+                    "self.setState(State.ERROR);",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "const image = this.sourceImagery_[sourceIndex][z];",
+                    "let samples;",
+                    "if (source.bands) {",
+                    "samples = source.bands.map(function (bandNumber) {"
+                ],
+                "REPLACE": [
+                    "const pyramidLevel = this.getPyramidLevel_(z, sourceIndex);",
+                    "const image = this.sourceImagery_[sourceIndex][pyramidLevel];",
+                    "let samples;",
+                    "if (source.bands) {",
+                    "samples = source.bands.map((bandNumber) => {"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "Promise.all(requests)",
+                    ".then(function (sources) {",
+                    "self.configure_(sources);"
+                ],
+                "REPLACE": [
+                    "const pyramidRequests = [];",
+                    "pyramidRequests.push(...requests);",
+                    "Promise.all(pyramidRequests)",
+                    ".then((sources) => {",
+                    "self.configurePyramid_(sources);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "configure_(sources) {",
+                    "// Existing configuration logic"
+                ],
+                "REPLACE": [
+                    "configurePyramid_(sources) {",
+                    "// Setup pyramid structure",
+                    "this.setupPyramidStructure(sources);"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "function getImagesForSource(source) {",
+                    "let request;",
+                    "if (source.overviews) {",
+                    "request = tiffFromUrls(source.url, source.overviews);",
+                    "} else {",
+                    "request = tiffFromUrl(source.url);",
+                    "}",
+                    "return request.then(getImagesForTIFF);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function getImagesForSource(source) {",
+                    "let request;",
+                    "if (source.template) {",
+                    "request = tiffFromTemplate(source.template, source.tileGrid);",
+                    "} else if (source.overviews) {",
+                    "request = tiffFromUrls(source.url, source.overviews);",
+                    "} else {",
+                    "request = tiffFromUrl(source.url);",
+                    "}",
+                    "return request.then(getImagesForTIFF);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

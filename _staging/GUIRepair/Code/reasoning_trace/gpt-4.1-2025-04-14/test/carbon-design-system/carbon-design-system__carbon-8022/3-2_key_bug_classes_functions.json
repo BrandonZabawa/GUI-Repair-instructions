@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Button/Button.js//Button",
+            "packages/react/src/components/Tooltip/Tooltip.js//Tooltip",
+            "packages/components/src/components/tooltip/tooltip.js//Tooltip"
+        ],
+        "bug_functions": [
+            "packages/components/src/components/tooltip/tooltip.js//Tooltip._handleClick",
+            "packages/components/src/components/tooltip/tooltip.js//Tooltip.changeState",
+            "packages/components/src/components/tooltip/tooltip.js//Tooltip._hookOn"
+        ],
+        "explanation": "The issue arises from the interaction between icon-only Button components and their associated Tooltip components. The following elements are key:\n\n- packages/react/src/components/Button/Button.js//Button: The Button component is responsible for rendering icon-only buttons and assigning tooltip-related props/classes. Changes here might be necessary to coordinate tooltip visibility or event handling for icon-only cases.\n\n- packages/react/src/components/Tooltip/Tooltip.js//Tooltip: The React Tooltip component manages tooltip open/close behavior in the UI. It needs to ensure that tooltips are mutually exclusive (e.g., closing any open tooltip when another icon-only button is hovered/focused).\n\n- packages/components/src/components/tooltip/tooltip.js//Tooltip: This is the underlying JS implementation of Tooltip logic used by the components, managing tooltip state and event handling. Its methods (_handleClick, changeState, _hookOn) control when tooltips are shown or hidden. The bug likely requires changing how tooltips are hidden when another is triggered, possibly by tracking the currently active tooltip and hiding it before showing the new one.\n\nBy addressing these classes and functions, the fix can ensure that only one tooltip is visible at a time, whether triggered by focus or hover, thus resolving the overlapping tooltips issue.",
+        "bug_scenario": "The images and bug report describe a scenario in which two (or more) icon-only buttons are adjacent on a toolbar. When a user clicks or tabs to focus one button, its tooltip is shown. If the user then hovers over another icon-only button, its tooltip is also shown, resulting in both tooltips being visible and overlapping each other. This is visually confusing and undesirable. The expected behavior is that only one tooltip should be visible at a time: focusing or hovering over a new button should hide the previously visible tooltip."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Button/Button.js//Button",
+            "packages/components/src/components/tooltip/tooltip.js//Tooltip",
+            "packages/react/src/components/Tooltip/Tooltip.js//Tooltip"
+        ],
+        "bug_functions": [
+            "packages/components/src/components/tooltip/tooltip.js//Tooltip.prototype._handleClick",
+            "packages/components/src/components/tooltip/tooltip.js//Tooltip.prototype.changeState"
+        ],
+        "explanation": "The problem is due to the way tooltips are managed for icon-only buttons: a tooltip is shown both on focus (keyboard or mouse click) and on hover, but they do not hide each other, resulting in both being visible and overlapping. The key bug elements are: 1) 'Button' in Button.js, which is responsible for rendering icon-only buttons and connecting them with tooltips; 2) 'Tooltip' in tooltip.js (vanilla JS version) and Tooltip.js (React version), which control when tooltips are shown and hidden. The relevant methods are '_handleClick' and 'changeState' in the vanilla Tooltip, as these handle the show/hide state of tooltips in response to events like click, focus, and blur. The fix will likely involve improving the logic so that when a new tooltip is triggered (by hover or focus), any visible tooltip for another button is hidden, ensuring only one tooltip appears at a time.",
+        "bug_scenario": "The bug scenario involves icon-only buttons (commonly found on toolbars or in table rows for actions like edit/delete) that show tooltips both when focused and when hovered. When one button is focused (for example, after clicking or using Tab), its tooltip stays visible. If the user then hovers over a different button, both the previously focused and the hovered button's tooltips are displayed, causing the tooltips to overlap, which is confusing and cluttered for users. The expectation is that only one tooltip should be visible at a time, either removing the focus-based tooltip when hovering over a new button, or not showing tooltips on focus at all. The provided images illustrate this: one shows several icon-only buttons, and another shows overlapping tooltips for two adjacent buttons."
+    }
+}

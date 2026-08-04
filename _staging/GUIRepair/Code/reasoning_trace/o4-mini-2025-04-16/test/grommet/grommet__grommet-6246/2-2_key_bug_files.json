@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/DataChart/DataChart.js",
+            "src/js/components/Chart/calcs.js",
+            "src/js/components/Chart/utils.js"
+        ],
+        "explanation": "\u2022 src/js/components/DataChart/DataChart.js is the entry point that normalizes series, values, bounds, and passes options (including steps and coarseness) down to the underlying Chart. It doesn\u2019t explicitly guard against negative values, so it relies on Chart/calcs to compute safe bounds.\n\n\u2022 src/js/components/Chart/calcs.js contains the calcBounds function that tries to adjust the y-axis when data crosses zero. When minY < 0 and maxY > 0, it computes a stepInterval by dividing by the number of steps (default steps[1] === 1). For our data (minY = -2, maxY = 47), maxSteps = 47/49 \u2248 0.96, so Math.floor(maxSteps) === 0, causing a divide-by-zero when recalculating stepInterval. That throws or yields invalid bounds, so Chart renders nothing.\n\n\u2022 src/js/components/Chart/utils.js has normalizeBounds, which would normally set up [min, max] for each axis but isn't used here once calcBounds blows up. Fixing calcBounds or falling back to normalizeBounds for negative-crossing data will restore rendering.",
+        "bug_scenario": "When the chart\u2019s data includes a negative y-value, the entire DataChart fails to render. In the positive-only example, you see a line/point chart crossing 0 as expected. As soon as the first value is negative (amount: -2), the chart area is blank \u2014 no axes, no guides, no points or lines."
+    }
+}

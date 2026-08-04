@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/MapboxVector.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/Composite.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/asserts.js",
+            "src/ol/AssertionError.js"
+        ],
+        "explanation": "1. src/ol/layer/MapboxVector.js: Directly involved, as the bug occurs when rendering Mapbox vector layers with backgrounds. 2. src/ol/layer/Vector.js: The bug now affects all vector layers (not just Mapbox vector), so the core Vector layer implementation may be relevant. 3. src/ol/renderer/canvas/VectorLayer.js: Rendering logic for vector layers is here; the stacktrace references 'CanvasVectorLayerRenderer'. 4. src/ol/renderer/Composite.js and 5. src/ol/renderer/Layer.js: Core rendering logic is managed here, and the error stack references these renderers when handling frame compositing and rendering of multiple layers. 6. src/ol/asserts.js and 7. src/ol/AssertionError.js: The stacktrace references assertion failures, which are managed from these files, especially if certain invariants about layer rendering, backgrounds, or styling are violated. These files are all likely to contain code needing review or modification in order to resolve the bug.",
+        "bug_scenario": "When a Mapbox vector layer with a background is rendered over another layer (e.g., OSM), an assertion error occurs and the vector layer fails to render. This issue was introduced after a recent change (since #13085), and now, as of #13178, affects all vector layers with backgrounds, not just Mapbox vector layers. The error arises during rendering, particularly in functions related to vector rendering and style/background handling, possibly in the canvas renderer."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/MapboxVector.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/layer/VectorImage.js",
+            "src/ol/layer/VectorTile.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/Composite.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/renderer/Map.js",
+            "src/ol/renderer/vector.js",
+            "src/ol/VectorRenderTile.js",
+            "src/ol/AssertionError.js",
+            "src/ol/asserts.js"
+        ],
+        "explanation": "The bug is triggered when rendering a vector layer with a background over another layer. The classes involved in rendering such layers include the main vector layer types in OpenLayers: 'MapboxVector.js', 'Vector.js', 'VectorImage.js', and 'VectorTile.js'. Their renderers, especially 'canvas/VectorLayer.js', directly manage how the backgrounds and stacking are implemented. The error is triggered by an assertion, so the error handling and assertion modules ('AssertionError.js' and 'asserts.js') are also relevant. The stacktrace demonstrates the assertion is hit during rendering, so core renderer orchestrators ('Composite.js', 'Layer.js', 'Map.js', and 'renderer/vector.js') are related, as they coordinate the rendering process, background handling, and compositing of multiple layers. Additionally, 'VectorRenderTile.js' is relevant for vector tile-based rendering that may be used in MapboxVector or other vector layers with backgrounds.",
+        "bug_scenario": "When rendering a Mapbox vector layer (or any vector layer with a background) over another layer (e.g., OSM), OpenLayers throws an 'Assertion failed' error from internal renders due to changes since PR #13085. This breaks stacking vector layers with backgrounds, which worked previously."
+    }
+}

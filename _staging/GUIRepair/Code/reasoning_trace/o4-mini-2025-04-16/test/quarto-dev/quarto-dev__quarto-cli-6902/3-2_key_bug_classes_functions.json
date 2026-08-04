@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/resources/filters/quarto-pre/parsefiguredivs.lua",
+            "src/resources/filters/common/figures.lua",
+            "src/resources/filters/crossref/figures.lua"
+        ],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/parsefiguredivs.lua//parse_floats",
+            "src/resources/filters/quarto-pre/parsefiguredivs.lua//parse_float_div",
+            "src/resources/filters/common/figures.lua//isFigureDiv",
+            "src/resources/filters/crossref/figures.lua//crossref_figures"
+        ],
+        "explanation": "parsefiguredivs.lua\u2019s parse_floats (and its helper parse_float_div) is responsible for walking Pandoc divs and turning figure containers into FloatRefTarget nodes. Because sub-images without explicit IDs aren\u2019t assigned sub-float identifiers or converted to subcaption blocks, the filter emits plain \\caption calls instead of \\subcaption. The isFigureDiv function in common/figures.lua marks which Divs to feed into parse_float_div, so any mis-detection here propagates. Finally, crossref_figures in crossref/figures.lua filters out unlabeled floats (skips unlabeled subfigures) when building the float index, so no subref metadata is generated. Together these routines govern detection, labeling, and cross-reference generation for subfigures and thus need adjustment to auto-generate sub-IDs and use subcaption for unlabeled sub-images.",
+        "bug_scenario": "In the minimal working example, a multi-column figure block with two images (subfigures) but no explicit identifiers on the sub-images is rendered in LaTeX as two separate \\caption commands inside the overall figure instead of \\subcaption for each. That is, Quarto\u2019s filter pipeline detects the outer figure container but fails to treat the two child images as subfloats when they lack their own IDs, so in the generated TeX we see two \\caption{} calls (giving them both \u201cFigure 1: Surus\u201d and \u201cFigure 2: Hanno\u201d) instead of \\subcaption for labeled subfigures under a shared parent figure."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/resources/filters/quarto-pre/parsefiguredivs.lua//parse_floats",
+            "src/resources/filters/quarto-pre/parsefiguredivs.lua//parse_float_div",
+            "src/resources/filters/quarto-pre/parsefiguredivs.lua//Figure",
+            "src/resources/filters/common/figures.lua//isFigureDiv",
+            "src/resources/filters/common/figures.lua//discoverFigure",
+            "src/resources/filters/crossref/figures.lua//crossref_figures"
+        ],
+        "explanation": "All of the functions listed participate in identifying, parsing, and emitting figures and subfigures as FloatRefTargets. \u2022 parse_floats defines the Pandoc filter that replaces Div (and Figure) nodes with FloatRefTargets.   \u2022 parse_float_div is responsible for pulling captions and identifiers out of a figure Div; it never special-cases multiple images so unlabeled subimages fall back to empty captions and duplicate IDs.   \u2022 The Figure rule in the same file only handles single Pandoc Figure nodes, not multi-image divs.   \u2022 isFigureDiv and discoverFigure determine what Divs and Paras should be treated as figures, so they must recognize multi\u2010image cases.   \u2022 crossref_figures later collects each FloatRefTarget for indexing, but it skips floats without unique labels, so two subfloats both using the parent\u2019s ID are mis-indexed. Together these routines need to be extended so that when parse_float_div sees a Div with more than one image but no per-image IDs, it auto-generates distinct subrefs and emits \\subcaption rather than full \\caption blocks.",
+        "bug_scenario": "In the MWE the user places two images side-by-side in a single figure div without giving each subfigure its own identifier. In the generated LaTeX, instead of producing \\subcaption entries \u201c(a) Surus\u201d and \u201c(b) Hanno\u201d under the two images, Quarto emits two separate full \\caption{} calls for each image (both accidentally inheriting the parent id) and then a third \\caption for the outer figure. In other words, unlabeled side-by-side images are treated as three independent floats rather than a single float with two subfloats."
+    }
+}

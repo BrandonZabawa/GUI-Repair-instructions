@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/number-picker/number-picker.jsx",
+            "src/number-picker/index.jsx"
+        ],
+        "explanation": "The core logic for handling max/min lives in number-picker.jsx, where the component reads these props only on initialization (in the constructor or getDerivedStateFromProps) but never watches for subsequent prop changes. index.jsx wires up the component and passes props through, but does not provide any mechanism to trigger an update when max/min change. To fix the issue, number-picker.jsx needs to implement componentDidUpdate (or useEffect) to compare previous and current props.max/props.min and adjust its internal state/validation accordingly so that the UI constraints update immediately.",
+        "bug_scenario": "In the demo the parent component\u2019s max (or min) prop is changed at runtime (e.g. by clicking \u201cmax + 1\u201d), but the NumberPicker does not pick up the new prop value immediately. The up/down arrows do not disable themselves when the input value exceeds the updated max, nor does the controlled input update its allowed range in real time."
+    },
+    "2": {
+        "bug_files": [
+            "src/number-picker/number-picker.jsx",
+            "src/number-picker/index.jsx"
+        ],
+        "explanation": "The core logic for handling `min`/`max` and the input value lives in `number-picker.jsx`. This file initializes its own internal state from props only once (on mount) and never listens for subsequent prop changes, so updates to `max` or `min` are ignored. Fixing this requires adding a lifecycle method or effect in `number-picker.jsx` to detect prop changes and update its internal state and validation logic. The `index.jsx` file simply wires up exports and default props; it may need a small tweak to ensure the updated props flow correctly into the enhanced component logic.",
+        "bug_scenario": "In the demo the parent component increments the `max` prop of a NumberPicker at runtime (e.g. clicking \u201cmax + 1\u201d button), but the NumberPicker neither re-validates its current value against the new boundaries nor updates its arrow controls. In other words, after `max` (or `min`) changes, the NumberPicker still uses the old range internally and does not enforce or render the updated limit in real time."
+    }
+}

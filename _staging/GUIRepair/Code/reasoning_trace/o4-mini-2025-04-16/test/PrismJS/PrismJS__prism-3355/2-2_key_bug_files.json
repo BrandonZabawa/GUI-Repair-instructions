@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-cshtml.js",
+            "components/prism-cshtml.min.js",
+            "components/prism-csharp.js"
+        ],
+        "explanation": "1. components/prism-cshtml.js is where the CSHTML (Razor) language is defined. It contains the patterns for Razor comments, blocks, directives, values, and the insertion of C# with embedded HTML. It currently\n   \u2022 Doesn\u2019t have a pattern to recognize \u201c@helper \u2026 { \u2026 }\u201d blocks,\n   \u2022 Uses string-like regex that can\u2019t handle nested quotes inside attribute values, so it prematurely ends the string and wrecks the parsing of the remainder.\n\n2. components/prism-cshtml.min.js is the minified counterpart \u2013 any fixes in the source must also be propagated here.\n\n3. components/prism-csharp.js defines the C# grammar (including string patterns, nested bracket logic, and HTML injection via the tagRegion regex) that Prism uses inside CSHTML. Its string and nested patterns are too simplistic to handle quoted Razor expressions inside attribute values, so they must be refined alongside the CSHTML patterns to avoid breaking on nested quotes.",
+        "bug_scenario": "The test page shows that Prism\u2019s CSHTML grammar is mis-parsing Razor code in two common scenarios:\n\n1. In an HTML attribute value that contains a Razor expression with its own quoted string \u2013\n   placeholder=\"@Localize.GetLabelHtml(\"PLACEHOLDER\")\" \u2013 Prism closes the string at the inner quotes and mis-colors the remainder.\n\n2. A Razor helper block using \u201c@helper TrialHelper(string name){\u2026}\u201d is not recognized as a Razor code block at all, causing the markup and C# inside it to be treated as plain HTML/text and mis-aligned.\n\nIn contrast, Visual Studio\u2019s built-in Razor engine highlights both correctly."
+    }
+}

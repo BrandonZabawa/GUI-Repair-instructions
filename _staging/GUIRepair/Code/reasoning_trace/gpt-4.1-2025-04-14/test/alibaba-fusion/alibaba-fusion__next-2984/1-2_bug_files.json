@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/cascader-select/cascader-select.jsx",
+            "src/cascader-select/index.jsx",
+            "src/cascader/cascader.jsx",
+            "src/cascader/index.jsx",
+            "src/cascader/utils.js"
+        ],
+        "explanation": "These files are likely involved for the following reasons:\n- src/cascader-select/cascader-select.jsx: This is the main implementation of the CascaderSelect component\u2014the component explicitly mentioned in the bug report and used in the reproducing code. It is responsible for handling the dataSource and relays it to the core cascader logic.\n- src/cascader-select/index.jsx: Typically the entry point/re-export for CascaderSelect which may do some prop proxying or wrapping.\n- src/cascader/cascader.jsx: This is the likely implementation for the \"Cascader\" component referred to in the stack trace (cascader.js); since it is a core class, it contains logic for manipulating the data tree and may (incorrectly) be mutating the input props.\n- src/cascader/index.jsx: This entry point could also contain logic related to how Cascader is instantiated or used inside CascaderSelect, including prop forwarding.\n- src/cascader/utils.js: Helper functions related to tree/dataSource parsing that might mutate nodes when generating the cascade data tree for the component.\n\nFixing the bug would require finding and eliminating all points in this code path where mutation of input \"dataSource\" or \"data\" items happens, instead ensuring that all necessary data transformations are done by making copies, not mutating original objects.",
+        "bug_scenario": "The bug occurs when using the CascaderSelect component together with the immer library (with auto-freeze enabled). The CascaderSelect component (internally or via underlying Cascader code) mutates the dataSource/data prop that is passed to it. When that prop is frozen (as by immer), any mutation throws a TypeError: 'Cannot add property value, object is not extensible.' This violates the React best practice of not mutating props, and especially affects users using immutable data patterns. The stack trace in the image confirms the error arises deep in cascader.js."
+    },
+    "2": {
+        "bug_files": [
+            "src/cascader-select/cascader-select.jsx",
+            "src/cascader/cascader.jsx",
+            "src/cascader/utils.js"
+        ],
+        "explanation": "The main files involved are likely the implementation of 'CascaderSelect' and 'Cascader', which are src/cascader-select/cascader-select.jsx and src/cascader/cascader.jsx. These files define the core logic for how the cascader data is processed and rendered. The stack trace in the bug report points directly to cascader.js (likely src/cascader/cascader.jsx in the source directory), and the demo and related documentation confirm that cascader-select is a wrapper or uses cascader internally. Furthermore, src/cascader/utils.js might include helper functions that manipulate the data structure. Any fix to avoid mutating the input data should be made in these files, ensuring that data is cloned internally if it needs to be updated or modified for component purposes.",
+        "bug_scenario": "The bug scenario is that when using the CascaderSelect component, if the data passed in is frozen (for example, by using Immer in strict mode or setAutoFreeze), an error is thrown: 'Uncaught TypeError: Cannot add property value, object is not extensible'. The stack trace shows the error comes from cascader.js, specifically at a point where the code is attempting to add or modify properties on the data objects received via props. This means the component is directly modifying user-passed props, which it should not do, as this can break with immutable data sources."
+    }
+}

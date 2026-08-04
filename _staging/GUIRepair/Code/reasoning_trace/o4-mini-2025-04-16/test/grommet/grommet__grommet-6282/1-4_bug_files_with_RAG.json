@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/DataTable/buildState.js",
+            "src/js/components/DataTable/Sorter.js",
+            "src/js/components/DataTable/DataTable.js",
+            "src/js/components/DataTable/__tests__/DataTable-test.js",
+            "src/js/components/DataTable/stories/Sort.js",
+            "src/js/components/DataTable/stories/Units.js",
+            "src/js/components/DataTable/stories/CustomThemed/Custom.js",
+            "src/js/components/DataTable/stories/ResizableColumns.js",
+            "src/js/components/DataTable/stories/SpaceXUngrouped.js",
+            "src/js/components/DataTable/stories/SpaceX.js",
+            "src/js/components/DataTable/__tests__/DataTable-test.js",
+            "src/js/components/DataTable/stories/NoPrimary.js"
+        ],
+        "explanation": "\u2022 buildState.js: This module assembles the table\u2019s state, including sorting. It currently takes raw cell values (null/undefined) and passes them directly into the sort routine without mapping them to empty strings. Adjusting it here to normalize null/undefined to '' before comparison will fix the broken ordering.\n\u2022 Sorter.js: The default sort comparator lives here. It compares two values and should handle null/undefined safely by converting them to empty strings or a defined fallback. Updating this file ensures no runtime errors and that missing values sort predictably.\n\u2022 DataTable.js: This is the main component that wires up the sort behavior and passes sort data through buildState. While the core fix lives in buildState and Sorter, DataTable.js may need to update how it invokes sort (e.g., stripping or defaulting undefined properties before calling buildState).\n\u2022 __tests__/DataTable-test.js: The existing sorting tests do not cover null or undefined cell values. Adding a test case here will validate the patch and prevent regressions, ensuring null/undefined values are treated as empty strings during sorting.",
+        "bug_scenario": "When the DataTable\u2019s sort feature encounters a column value that is null or undefined, it does not treat it as an empty string. As a result, rows with null/undefined values in that column remain in their original positions instead of being ordered consistently (for example sorted to the top or bottom). In the provided Codesandbox example, sorting the \u201cParent\u201d column breaks when one row\u2019s parent_id is null (rendered as \u201c--\u201d), so the table does not reorder items as expected."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/DataTable/Sorter.js",
+            "src/js/components/DataTable/buildState.js",
+            "src/js/components/DataTable/DataTable.js"
+        ],
+        "explanation": "Sorter.js contains the comparison routines for sorting values but does not handle null or undefined (it simply uses localeCompare or numeric compare directly on the raw value). buildState.js is responsible for applying the sort on the data array and delegating to Sorter; it likewise passes through null values unchanged. DataTable.js wires up the sort interaction and passes the raw property value into the sort pipeline. Together, these files determine how null/undefined cells are sorted, so they must be updated to coerce missing values to an empty string (or other placeholder) before comparison.",
+        "bug_scenario": "When clicking to sort the \u201cParent\u201d column, rows whose parent_id is null (rendered as \u201c--\u201d) are not being treated as empty strings and thus end up in the wrong position. The DataTable\u2019s built-in sort logic doesn\u2019t normalize null or undefined property values before comparing, so items with no parent (null) aren\u2019t ordered consistently."
+    }
+}

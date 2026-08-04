@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js//_renderReportHeader"
+        ],
+        "explanation": "The ReportRenderer class in report-renderer.js is responsible for building the report\u2019s header and overall layout. Its private method _renderReportHeader currently clones the header template, fills in timestamp, URL, user agent, and environment, and returns it\u2014but it never inspects report.runtimeWarnings. To display the headless-Chrome warning banner, _renderReportHeader must be extended to check report.runtimeWarnings (if non-empty) and insert a warning element at the top of the rendered header. No other renderer or generator file handles runtimeWarnings, so this is the key location for the fix.",
+        "bug_scenario": "When Lighthouse is run under headless Chrome (which can\u2019t apply mobile network throttling) a \u201cruntimeWarnings\u201d entry is added to the report JSON, but the v2 report renderer never looks at that array. As a result, users don\u2019t see the red banner warning them that \u201cyour site\u2019s mobile performance may be worse than the numbers presented\u201d at the top of the report. The screenshot shows exactly that banner under the gauge row."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer"
+        ],
+        "bug_functions": [
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer._renderReport",
+            "lighthouse-core/report/v2/renderer/report-renderer.js//ReportRenderer._renderReportHeader"
+        ],
+        "explanation": "The ReportRenderer class in report-renderer.js is responsible for stitching together the report HTML. The _renderReportHeader method builds the top header area, and the _renderReport method assembles the full document fragment including the header, navigation, score gauges, categories, and footer. To support headless-Chrome warnings, these methods need to be extended to check report.runtimeWarnings and inject a warning banner into the DOM at the appropriate position (directly under the score gauges). Without modifying these functions, any warnings in the runtimeWarnings array are never rendered in the HTML output.",
+        "bug_scenario": "The screenshot shows a Lighthouse report header with the category score gauges (Progressive Web App, Performance, Accessibility, Best Practices) followed immediately by a full-width red \u26a0\ufe0f warning banner. The banner reads: \u201cNote: Your site\u2019s mobile performance may be worse than the numbers presented in this report. Lighthouse could not test on a mobile connection because Headless Chrome does not support network throttling. See crbug.com/728451.\u201d This warning should appear when the JSON passed to the report renderer contains a non-empty runtimeWarnings array (as is the case when running under headless Chrome), but the current renderer does not insert it."
+    }
+}

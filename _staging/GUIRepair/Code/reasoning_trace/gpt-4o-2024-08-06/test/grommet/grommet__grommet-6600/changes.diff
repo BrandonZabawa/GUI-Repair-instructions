@@ -1,0 +1,63 @@
+diff --git a/src/js/components/DataFilters/DataFilters.js b/src/js/components/DataFilters/DataFilters.js
+index c1fa3bf5f..1adaa3130 100644
+--- a/src/js/components/DataFilters/DataFilters.js
++++ b/src/js/components/DataFilters/DataFilters.js
+@@ -16,11 +16,11 @@ const dropProps = {
+   align: { top: 'bottom', right: 'right' },
+ };
+ 
+-export const DataFilters = ({ drop, children, heading, ...rest }) => {
+-  const { clearFilters, data, messages, properties, view } =
+-    useContext(DataContext);
+-  const { format } = useContext(MessageContext);
+-  const [showContent, setShowContent] = useState();
++export const DataFilters = ({ drop, layer, children, heading, ...rest }) => {
++const { clearFilters, data, messages, properties, view } =
++useContext(DataContext);
++const { format } = useContext(MessageContext);
++const [showContent, setShowContent] = useState(layer ? true : undefined);
+   // touched is a map of form field name to its value, it only has fields that
+   // were changed as part of the DataForm here. This is so we can track based
+   // on what's inside DataFilters as opposed to trying to track from the view
+@@ -106,7 +106,7 @@ export const DataFilters = ({ drop, children, heading, ...rest }) => {
+     </DataForm>
+   );
+ 
+-  if (!controlled) return content;
++if (!controlled && !layer) return content;
+ 
+   // drop
+   const control = (
+@@ -126,12 +126,26 @@ export const DataFilters = ({ drop, children, heading, ...rest }) => {
+     />
+   );
+ 
+-  return (
+-    <Box flex={false} direction="row" gap="small" {...rest}>
+-      {control}
+-      {clearControl}
+-    </Box>
+-  );
++if (layer) {
++return (
++<Layer
++onEsc={() => setShowContent(false)}
++onClickOutside={() => setShowContent(false)}
++>
++<Box pad="medium">
++{content}
++<Button label="Close" onClick={() => setShowContent(false)} />
++</Box>
++</Layer>
++);
++} else {
++return (
++<Box flex={false} direction="row" gap="small" {...rest}>
++{control}
++{clearControl}
++</Box>
++);
++}
+ };
+ 
+ DataFilters.propTypes = DataFiltersPropTypes;

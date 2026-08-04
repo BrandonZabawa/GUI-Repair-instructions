@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js"
+        ],
+        "explanation": "All of the core JPEG-TIFF source and reprojection code assumes square pixels (one resolution value) and derives image and tile heights from that. \n\n\u2022 In src/ol/source/GeoTIFF.js the helper functions getBoundingBox, getOrigin, and especially getResolution(image, referenceImage) return a single resolution (width/height ratio) and ignore separate X/Y pixel scales in the GeoTIFF metadata.  As a result the tile grid is built with a wrong vertical resolution for non-square pixels.\n\n\u2022 In src/ol/reproj/Image.js, when a raster is reprojected, the code computes the target canvas height as getHeight(targetExtent) / targetResolution (a scalar). For non-square source pixels the Y spacing should use a different scale, so the number of rows is off and only part of the image is drawn.\n\n\u2022 In src/ol/reproj/Tile.js the same assumption occurs when reprojecting individual tiles\u2014the tile height is computed from a single resolution rather than separate X/Y scales, again truncating the bottom of the image.\n\nTo fix this, these modules need to be updated to read both X and Y pixel sizes from the TIFF tags, return separate resolutions, and use them when building tile grids and reprojection canvases.",
+        "bug_scenario": "The user is loading a Cloud-Optimized GeoTIFF (COG) with non-square pixels in OpenLayers. In their sandbox only the top portion of the image is drawn, while the rest is blank. In QGIS (or other viewers) the full image renders correctly, because those viewers take into account the pixel scale in both X and Y directions. In OpenLayers the COG source and reprojection layers assume a single (square) resolution, so the height (rows) of the image gets mis-calculated and the bottom part of the image is never drawn."
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/computed/trace-of-tab.js",
+            "lighthouse-core/audits/first-meaningful-paint.js"
+        ],
+        "explanation": "1) trace-of-tab.js: In compute_(), the code does `e.ts < firstPaint.ts` without verifying that firstPaint was found. If no \u2018firstPaint\u2019 event exists on that page\u2019s trace, firstPaint is undefined and accessing .ts blows up.\n\n2) first-meaningful-paint.js: While the audit guards against missing firstMeaningfulPaintEvt and navigationStartEvt, it never checks for a required firstPaint (or firstContentfulPaint) before invoking the trace logic. Because trace-of-tab throws the .ts error, the audit never recovers gracefully. Fixing this requires adding existence checks (and fallbacks) around firstPaint (and related paint events) there as well.",
+        "bug_scenario": "After installing the updated Lighthouse Chrome extension and clicking \u201cGenerate report,\u201d the extension navigates to its blob-based report page but immediately shows a red error message under the \u201cFirst meaningful paint\u201d header: \u201cCannot read property 'ts' of undefined.\u201d In other words, during trace processing the code attempts to read the timestamp (\u2018ts\u2019) of an event that wasn\u2019t found in the trace."
+    }
+}

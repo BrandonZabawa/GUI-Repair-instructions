@@ -1,0 +1,48 @@
+diff --git a/lighthouse-core/audits/viewport.js b/lighthouse-core/audits/viewport.js
+index 69c6b4f76..2b298e925 100644
+--- a/lighthouse-core/audits/viewport.js
++++ b/lighthouse-core/audits/viewport.js
+@@ -39,10 +39,10 @@ class Viewport extends Audit {
+     const warnings = [];
+     const parsedProps = Parser.parseMetaViewPortContent(artifacts.Viewport);
+ 
+-    if (Object.keys(parsedProps.unknownProperties).length) {
++    if (Object.keys(parsedProps.unknownProperties).length > 0) {
+       warnings.push(`Invalid properties found: ${JSON.stringify(parsedProps.unknownProperties)}`);
+     }
+-    if (Object.keys(parsedProps.invalidValues).length) {
++    if (Object.keys(parsedProps.invalidValues).length > 0) {
+       warnings.push(`Invalid values found: ${JSON.stringify(parsedProps.invalidValues)}`);
+     }
+ 
+diff --git a/lighthouse-core/report/html/renderer/report-renderer.js b/lighthouse-core/report/html/renderer/report-renderer.js
+index 8b9559fa4..19dc97c2b 100644
+--- a/lighthouse-core/report/html/renderer/report-renderer.js
++++ b/lighthouse-core/report/html/renderer/report-renderer.js
+@@ -140,14 +140,20 @@ class ReportRenderer {
+    * @return {Node}
+    */
+   _renderReportWarnings(report) {
+-    if (!report.runWarnings || report.runWarnings.length === 0) {
+-      return this._dom.createElement('div');
++    const container = this._dom.createElement('div');
++    if (report.runWarnings && report.runWarnings.length > 0) {
++      const warningsContainer = this._dom.cloneTemplate('#tmpl-lh-warnings--toplevel', this._templateContext);
++      const message = this._dom.find('.lh-warnings__msg', warningsContainer);
++      message.textContent = Util.UIStrings.toplevelWarningsMessage;
++
++      const warnings = this._dom.find('ul', warningsContainer);
++      for (const warningString of report.runWarnings) {
++        const warning = warnings.appendChild(this._dom.createElement('li'));
++        warning.textContent = warningString;
++      }
++      container.appendChild(warningsContainer);
+     }
+ 
+-    const container = this._dom.cloneTemplate('#tmpl-lh-warnings--toplevel', this._templateContext);
+-    const message = this._dom.find('.lh-warnings__msg', container);
+-    message.textContent = Util.UIStrings.toplevelWarningsMessage;
+-
+     const warnings = this._dom.find('ul', container);
+     for (const warningString of report.runWarnings) {
+       const warning = warnings.appendChild(this._dom.createElement('li'));

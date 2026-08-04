@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-bash.js",
+            "components/prism-bash.min.js",
+            "components/prism-shell-session.js",
+            "components/prism-shell-session.min.js"
+        ],
+        "explanation": "Prism\u2019s bash grammar (prism-bash.js) defines a comment token that matches any \u201c#\u201d not preceded by a backslash, so it also captures the \u201c#\u201d in URL fragments. The shell-session language (prism-shell-session.js) builds on the bash grammar and inherits this too-broad comment rule. To fix the bug, the comment-matching patterns in both prism-bash.js and prism-shell-session.js (and their minified counterparts) need to be tightened so that \u201c#\u201d inside URLs (or anywhere except at a true comment position) is not treated as the start of a comment.",
+        "bug_scenario": "When highlighting a \u201cShell session\u201d code block that contains a URL with a fragment identifier (for example: https://\u2026#pre-1-0-9-manifest-spoofing-vulnerability), Prism\u2019s shell\u2010session (and the underlying bash) grammar mistakes the \u201c#\u201d in the URL for the start of a comment. As a result, everything after the \u201c#\u201d in that URL is colored as a comment, producing incorrect highlighting."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-shell-session.js",
+            "components/prism-shell-session.min.js"
+        ],
+        "explanation": "All of the shell-session grammar lives in prism-shell-session.js (and its minified counterpart). That module is responsible for splitting a shell session into \u201cprompt\u201d, \u201ccommand\u201d and \u201coutput\u201d parts and for invoking the Bash grammar only on lines that begin with a prompt (e.g. \u201c$ \u201d). Because its current patterns are either too permissive or not properly segregating prompt vs. output, the \u201c#\u201d character is still falling through into Bash\u2019s symbol/comment rules on non-prompt lines. Fixing this requires adjusting prism-shell-session.js (and rebuilding its .min.js) so that:\n- Lines beginning with \u201c#\u201d are correctly recognized as a prompt token (if intended as root prompts), or\n- All other lines (plain output, including URLs containing \u201c#\u201d) are not fed to the Bash grammar at all, preventing \u201c#\u201d in URLs from being mis-interpreted as comment delimiters or symbols.",
+        "bug_scenario": "When highlighting shell-session code (Prism language \u201cshell-session\u201d), lines beginning with the root prompt \u201c#\u201d or \u201c#\u201d characters appearing in URLs (for example in a documentation link) are not being recognized as prompt or left un-parsed text, but instead end up highlighted as a \u201cshell-symbol\u201d token. In other words, \u201c#\u201d is being picked up by the generic Bash grammar as a symbol (or comment) even on lines that aren\u2019t commands, leading to incorrect coloring of both \u201c#\u201d prompts and \u201c#\u201d fragments inside plain-text output (e.g. inside URLs)."
+    }
+}

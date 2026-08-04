@@ -1,0 +1,83 @@
+diff --git a/src/ol/source/GeoTIFF.js b/src/ol/source/GeoTIFF.js
+index 88b81a6657..bdf95d4e24 100644
+--- a/src/ol/source/GeoTIFF.js
++++ b/src/ol/source/GeoTIFF.js
+@@ -428,6 +428,7 @@ class GeoTIFFSource extends DataTile {
+     let minZoom = 0;
+ 
+     const sourceCount = sources.length;
++    const sourceStats = new Array(sourceCount);
+     for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {
+       const images = sources[sourceIndex];
+       const imageCount = images.length;
+@@ -512,9 +513,21 @@ class GeoTIFFSource extends DataTile {
+         );
+       }
+ 
++      // extract GDAL statistics (if present) for later normalization
++      const metadata = images[0].getGDALMetadata();
++      const statsMin = metadata && metadata.STATISTICS_MINIMUM !== undefined ?
++        Number(metadata.STATISTICS_MINIMUM) : undefined;
++      const statsMax = metadata && metadata.STATISTICS_MAXIMUM !== undefined ?
++        Number(metadata.STATISTICS_MAXIMUM) : undefined;
++      sourceStats[sourceIndex] = {
++        min: statsMin,
++        max: statsMax
++      };
++
+       this.sourceImagery_[sourceIndex] = images.reverse();
+     }
+-
++    
++    this.sourceStats_ = sourceStats;
+     for (let i = 0, ii = this.sourceImagery_.length; i < ii; ++i) {
+       const sourceImagery = this.sourceImagery_[i];
+       while (sourceImagery.length < resolutions.length) {
+@@ -651,7 +664,8 @@ class GeoTIFFSource extends DataTile {
+     const pixelCount = size[0] * size[1];
+     const dataLength = pixelCount * bandCount;
+     const normalize = this.normalize_;
+-
++    const sourceStats = this.sourceStats_;
++    
+     return Promise.all(requests).then(function (sourceSamples) {
+       /** @type {Uint8Array|Float32Array} */
+       let data;
+@@ -667,20 +681,24 @@ class GeoTIFFSource extends DataTile {
+         for (let sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex) {
+           const source = sourceInfo[sourceIndex];
+ 
+-          let min = source.min;
+-          let max = source.max;
+-          let gain, bias;
+-          if (normalize) {
+-            if (min === undefined) {
+-              min = getMinForDataType(sourceSamples[sourceIndex][0]);
+-            }
+-            if (max === undefined) {
+-              max = getMaxForDataType(sourceSamples[sourceIndex][0]);
+-            }
++            let min = source.min;
++            let max = source.max;
++            let gain, bias;
++            if (normalize) {
++              if (min === undefined) {
++                min = sourceStats && sourceStats[sourceIndex] && sourceStats[sourceIndex].min !== undefined ?
++                  sourceStats[sourceIndex].min :
++                  getMinForDataType(sourceSamples[sourceIndex][0]);
++              }
++              if (max === undefined) {
++                max = sourceStats && sourceStats[sourceIndex] && sourceStats[sourceIndex].max !== undefined ?
++                  sourceStats[sourceIndex].max :
++                  getMaxForDataType(sourceSamples[sourceIndex][0]);
++              }
+ 
+-            gain = 255 / (max - min);
+-            bias = -min * gain;
+-          }
++              gain = 255 / (max - min);
++              bias = -min * gain;
++            }
+ 
+           for (
+             let sampleIndex = 0;

@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect",
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/MultiSelect/MultiSelect.js//(render return containing <button> and nested <ListBox.Selection>)",
+            "packages/react/src/components/ListBox/ListBoxSelection.js//handleOnClick"
+        ],
+        "explanation": "The MultiSelect component renders its toggle as a <button> and, when items are selected, injects the ListBox.Selection component (which itself renders a div with role=\u201cbutton\u201d) inside that same <button>. This creates a nested interactive element, triggering the error. Fixing it requires changing how/where the clear-selection control (ListBoxSelection) is rendered\u2014either moving it out of the toggle <button> in MultiSelect or restructuring ListBoxSelection so it does not become an interactive descendant of a button.",
+        "bug_scenario": "When one or more items are selected in the MultiSelect dropdown, the clear-selection icon (rendered by ListBoxSelection as a div with role=\u201cbutton\u201d) is rendered inside the toggle button (a <button> element). This nests an interactive element inside another interactive element, violating the HTML5 requirement that \u201cthere must be no interactive content descendant\u201d inside a <button>."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/MultiSelect/MultiSelect.js//MultiSelect",
+            "packages/react/src/components/ListBox/ListBoxSelection.js//ListBoxSelection"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ListBox/ListBoxSelection.js//handleOnClick",
+            "packages/react/src/components/ListBox/ListBoxSelection.js//handleOnKeyDown"
+        ],
+        "explanation": "The MultiSelect component (MultiSelect.js) renders its clear-selection UI (ListBox.Selection) inside the main toggle <button>. That clear-selection UI is implemented by the ListBoxSelection component (ListBoxSelection.js), which uses a <div role=\"button\"> for the clear icon and attaches handleOnClick and handleOnKeyDown handlers to it. Embedding any interactive element (even a <div role=\"button\">) inside a <button> creates nested interactive controls, breaking the HTML5 rule and leading to accessibility violations. To fix this, the clear control must be refactored\u2014either moved outside the parent <button> or rendered as a non-interactive element (or a native <button> with correct structure) so that no interactive descendant exists inside the toggle <button>.",
+        "bug_scenario": "In the MultiSelect component, when one or more items are selected, the component\u2019s clear-selection UI renders an interactive element (a <div role=\"button\">) inside the toggle <button> that opens the list. This nesting of interactive content violates the HTML5 spec (\u201cno interactive content descendant\u201d in a <button>), causing accessibility errors and confusing keyboard/screen reader users."
+    }
+}

@@ -1,0 +1,40 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/internal/FloatingMenu.js",
+            "packages/react/src/internal/ClickListener.js",
+            "packages/react/src/internal/InnerClickListener.js",
+            "packages/react/src/internal/useOutsideClick.js",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js",
+            "packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js",
+            "packages/react/src/components/Popover/Popover.js",
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/cli/src/commands/component/templates/component.template.js",
+            "packages/cli/src/commands/component/templates/index.template.js",
+            "packages/cli/src/commands/component/templates/story.template.js",
+            "packages/cli/src/commands/component/templates/test.template.js",
+            "packages/react/src/components/ContextMenu/ContextMenu.js (new)",
+            "packages/react/src/components/ContextMenu/ContextMenuTrigger.js (new)",
+            "packages/react/src/components/ContextMenu/ContextMenuItem.js (new)",
+            "packages/react/src/components/ContextMenu/ContextMenu.mdx (new)",
+            "packages/react/src/components/ContextMenu/ContextMenu.test.js (new)"
+        ],
+        "explanation": "1. internal/FloatingMenu.js: Provides the positioning logic for all floating layers. Must be extended to accept clientX/clientY from a right-click event and render at that absolute location.  2. internal/ClickListener.js and useOutsideClick.js: Used by OverflowMenu and Popover to detect clicks outside the floating layer. They need to listen to the `contextmenu` event as well to hide/show appropriately.  3. components/OverflowMenu & OverflowMenuItem: Existing click-triggered menu pattern\u2014serves as a blueprint for menu styling, focus management, and nested items. Should be refactored or wrapped to support right-click triggers.  4. components/Popover & Dropdown: These components illustrate the Carbon approach to a floating layer and a list of options; their APIs and behaviors (keyboard navigation, focus trapping) will guide the ContextMenu behavior.  5. CLI templates (component.template.js, index.template.js, story.template.js, test.template.js): Must be updated so that `carbon-cli component ContextMenu` scaffolds the new component directory with all necessary files.  6. ContextMenu.js, ContextMenuTrigger.js, ContextMenuItem.js (new): The actual implementation files for the new context-menu API (props to control visibility, anchor point, nested children, keyboard commands).  7. ContextMenu.mdx (new): Documentation for the new component, mirroring the style of other Carbon component docs.  8. ContextMenu.test.js (new): Unit tests for keyboard nav, opening/closing logic, nested expansion, disabled states, and correct positioning.  \n\nTogether, these files represent the core feature areas\u2014positioning, event handling, menu logic, scaffolding, docs, and tests\u2014that must be updated or created to ship a native right-click ContextMenu component in Carbon.",
+        "bug_scenario": "The Carbon design system currently provides overflow menus, popovers, and dropdowns\u2014but no dedicated \u201ccontext\u2010menu\u201d component that can be triggered by a right\u2010click (native contextmenu event), positioned absolutely at the click point, supports nested submenus, radio\u2010style selection, disabled children exploration, and keyboard shortcuts. The proposal and demonstration GIFs illustrate native application\u2013style right-click menus in a file browser (Box), spreadsheet grid (Google Sheets), code editor, Slack channel list, etc., and a static mockup shows nested \u201cShare with \u2192 [None|Product team|Organization|Company]\u201d. They also show a React sandbox using the third-party react-contextmenu library, underscoring the missing Carbon equivalent. A new ContextMenuTrigger + ContextMenu + ContextMenuItem component/pattern is needed.\n\nTo implement this feature within Carbon\u2019s codebase, several areas must be extended or refactored:\n\n\u2022 The low-level FloatingMenu (positioning) and ClickListener (outside clicks) utilities must support a right-click trigger and programmatic show/hide at a given screen coordinate.  \n\u2022 The OverflowMenu/OverflowMenuItem, Popover, and Dropdown implementations serve as close analogs and patterns that need to be reviewed and likely reused or subclassed.  \n\u2022 CLI component scaffolding templates must be updated to allow generating the new ContextMenu component folder.  \n\u2022 Documentation (MDX) and tests need to be added alongside the new contextual component."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js",
+            "packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js",
+            "packages/react/src/components/Popover/Popover.js",
+            "packages/react/src/components/floating-menu/floating-menu.js",
+            "packages/react/src/components/floating-menu/floating-menu.config.js",
+            "internal/FloatingMenu.js",
+            "internal/useOutsideClick.js",
+            "internal/ClickListener.js",
+            "internal/InnerClickListener.js"
+        ],
+        "explanation": "All of these files participate in rendering and controlling floating menus in Carbon:\n\n\u2022 packages/react/src/components/OverflowMenu/OverflowMenu.js & OverflowMenuItem.js\n  \u2013 implement the current click-triggered dropdown. They\u2019ll need to be extended (or a new ContextMenu component extracted) to hook into the contextmenu event, support nested sub-menus, radio states, and keyboard commands.\n\n\u2022 packages/react/src/components/Popover/Popover.js\n  \u2013 provides the basic portal and positioning API; the context menu should share or extend this to render outside of normal flow and position at arbitrary x/y coords.\n\n\u2022 packages/react/src/components/floating-menu/floating-menu.js & floating-menu.config.js\n  \u2013 the low-level floating-panel logic (portals, position calculations, arrow support); critical for absolute positioning by code and nested popovers.\n\n\u2022 internal/FloatingMenu.js, internal/useOutsideClick.js, internal/ClickListener.js, internal/InnerClickListener.js\n  \u2013 the foundational hooks for detecting click/outside clicks, focus management, and auto-closing. A context menu must listen for the browser\u2019s contextmenu event, trap focus, and close on any other click or ESC, so these utilities will need enhancements to support right-click triggers and nested menu layers.",
+        "bug_scenario": "The request is to build a true \u201ccontext-menu\u201d component\u2014one that opens on right-click (contextmenu event), can be absolutely positioned by code, supports nested sub-menus, radio/checkbox states, keyboard shortcuts, and proper focus/close behavior. Carbon\u2019s existing OverflowMenu and Popover patterns only cover click-to-open menus triggered by a toggle button; they don\u2019t hook into the browser\u2019s contextmenu event, nor do they expose APIs for programmatic positioning or nested menu behavior as shown in the Box, Google-Sheets, Slack, and CodeSandbox examples."
+    }
+}

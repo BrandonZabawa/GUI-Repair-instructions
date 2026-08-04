@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Text.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "1. src/ol/style/Text.js defines the text style API (including rotation). Errors here would affect how rotation parameters are passed to the rendering pipeline.\n2. src/ol/render/canvas/TextBuilder.js is responsible for converting a Text style (with rotation, scale, font metrics, offsets) into canvas draw instructions. The bug only appears when rotation \u2260 0, so the computation or instruction sequencing for rotated text in this file is highly suspect.\n3. src/ol/render/canvas/Executor.js unmarshals and executes the draw instructions from all builders, including the rotate/translate sequence for text. If the instructions for rotation ignore the map\u2010level clip/translate transform (applied earlier by VectorLayer), that would explain why rotated text stays in the original coordinate space.\n4. src/ol/renderer/canvas/VectorLayer.js applies the user\u2019s clipping and translation around the feature drawing. Non-rotated text (simple fillText calls) picks up that translation automatically, but rotated text may introduce its own save/restore or translate calls that overwrite or bypass the layer\u2019s context transform. Fixes here will ensure the clip/translate from VectorLayer remains in effect even when TextBuilder/Executor apply rotation.",
+        "bug_scenario": "When you hover over Miami, your \u201cspyglass\u201d overlay clips and translates the rendered vector layers into a red box offset from the cursor. Plain (non-rotated) text labels (\u201c1\u201d in blue, \u201c2\u201d in red) follow that translation and appear in the red box above/to the right of the original map. But any text style that has a non-zero rotation (the green \u201c3\u201d) stays at its original map position instead of being shifted into the spyglass area."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/style.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "\u2022 TextBuilder.js is responsible for building the draw instructions for text, including computing and applying rotation transforms. It currently uses context.setTransform or an equivalent approach that overrides the canvas\u2019s existing transform (including the spyglass translate).\n\u2022 style.js contains the code that creates and stamps out text style instructions (fill, stroke, offsets, rotation). Any fix to preserve the existing translate when applying a rotation must happen here or in how these instructions are encoded.\n\u2022 VectorLayer.js is where the prerender/postrender handlers apply the clip and translate for the spyglass effect. The fact that rotated text ignores that translate points directly at an interaction between the VectorLayer\u2019s context.translate and TextBuilder\u2019s transform reset. Adjusting the order or method of transform application in these files will preserve the spyglass translation for rotated text.",
+        "bug_scenario": "In the spyglass example, you apply a canvas clip and a context.translate in the layer\u2019s prerender to shift all subsequent drawing into the red spyglass box above/to the right of the cursor. Non-rotated text (blue \u201c1\u201d and red \u201c2\u201d) respects this translate and appears in the spyglass. However, once a text style has a non-zero rotation (green \u201c3\u201d), its drawing routine calls context.setTransform (or otherwise resets the canvas state) to apply the rotation. That blows away the earlier translate, so the green \u201c3\u201d snaps back to the original map position instead of staying in the spyglass."
+    }
+}

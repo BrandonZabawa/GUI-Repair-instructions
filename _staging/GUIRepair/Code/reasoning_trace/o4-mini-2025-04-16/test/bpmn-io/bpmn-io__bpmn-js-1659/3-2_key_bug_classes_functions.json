@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//LayoutConnectionBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//postExecute([ 'connection.layout','connection.updateWaypoints' ], \u2026)",
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//postExecute([ 'connection.move' ], \u2026)",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js//getLabelAdjustment",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js//findNewLabelLineStartIndex"
+        ],
+        "explanation": "The core behavior class LayoutConnectionBehavior listens for connection layout and move commands and updates only the incoming/outgoing connection waypoints. It doesn\u2019t invoke any logic to move labels or text\u2010annotation associations. Meanwhile, the LabelLayoutUtil utility defines getLabelAdjustment and findNewLabelLineStartIndex\u2014functions that compute exactly how far and where a label should shift after its host connection changes\u2014but these functions are never integrated into the behavior. To fix the bug, LayoutConnectionBehavior\u2019s postExecute handlers must be extended to loop over any labels/annotations attached to the connection and apply getLabelAdjustment/findNewLabelLineStartIndex (via modeling) so that labels follow the resized and re\u2010routed connection.",
+        "bug_scenario": "After resizing a subprocess the flow\u2019s connection is re\u2010laid out correctly, but any text annotation or association (label) attached to that connection stays in its old location and \u201changs\u201d off the line rather than being repositioned to track the updated connection path."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//LayoutConnectionBehavior",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js",
+            "lib/features/modeling/behavior/util/ConnectionLayoutUtil.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//postExecute (connection.layout/updateWaypoints handler)",
+            "lib/features/modeling/behavior/LayoutConnectionBehavior.js//postExecute (connection.move handler)",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js//getLabelAdjustment",
+            "lib/features/modeling/behavior/util/LabelLayoutUtil.js//findNewLabelLineStartIndex",
+            "lib/features/modeling/behavior/util/ConnectionLayoutUtil.js//getConnectionAdjustment"
+        ],
+        "explanation": "\n\u2022 LayoutConnectionBehavior: This class is responsible for reacting to connection.layout, connection.updateWaypoints and connection.move commands, and it updates the waypoints of all incoming/outgoing Connections (e.g. Associations) to keep them hooked to the main SequenceFlow. However, it never touches labels or text annotations. To fix the bug, its postExecute handlers must also compute and apply a move delta for any labels attached to the connection.\n\n\u2022 LabelLayoutUtil: Provides helper methods to compute how a label should move when the underlying connection changes. getLabelAdjustment computes the x/y delta for a label\u2019s mid-point; findNewLabelLineStartIndex helps re-attach the label to the correct segment on the updated line. These functions are not currently invoked \u2013 they need to be wired into LayoutConnectionBehavior.\n\n\u2022 ConnectionLayoutUtil.getConnectionAdjustment: Used by LayoutConnectionBehavior to compute new anchor points for other connections. A similar pattern should be applied for labels: use getLabelAdjustment and then modeling.moveShape or modeling.updateLabelPosition so that labels follow the re-layout. ",
+        "bug_scenario": "When you resize a subprocess (or any shape) to which a multi-waypoint SequenceFlow is attached, the Connection itself re-layouts correctly, but any Text annotation or label attached to that connection remains at its old position (\u201changing\u201d) instead of moving along with the updated line. Associations (dotted connectors) behave the same: they don\u2019t follow the re-laid-out connection endpoints."
+    }
+}

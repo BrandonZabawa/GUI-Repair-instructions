@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Accordion/AccordionItem.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/internal/useId.js//useId"
+        ],
+        "explanation": "The AccordionItem component (packages/react/src/components/Accordion/AccordionItem.js) is directly responsible for generating the id for each accordion item using the useId hook. The useId function (packages/react/src/internal/useId.js//useId) is the utility that generates these ids, using a prefix (defaulting to 'id', but 'accordion-item' in this context). Since both the AccordionItem and Footer components from different packages use the same useId implementation and prefix, there's no guarantee of uniqueness across both packages, leading to id collisions. The likely fix is to expose an optional id prefix prop in AccordionItem and/or useId, or to otherwise ensure the prefix is unique per component or library context.",
+        "bug_scenario": "The bug scenario involves rendering both AccordionItem components and a Footer from different Carbon React packages on the same page. This leads to duplicate ids (e.g., 'accordion-item-1') being generated for different elements, causing accessibility violations. The screenshot confirms the issue, showing the IBM Equal Access Accessibility Checker flagging duplicate id errors in the DOM for 'accordion-item-1'. This can break accessibility and possibly other interactive behaviors."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Accordion/AccordionItem.js",
+            "packages/react/src/internal/useId.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Accordion/AccordionItem.js//AccordionItem",
+            "packages/react/src/internal/useId.js//useId"
+        ],
+        "explanation": "The AccordionItem component in AccordionItem.js calls useId('accordion-item') to generate its ID. The useId hook in useId.js is responsible for generating unique IDs, but it appears to use a global counter or instance ID mechanism that can overlap across different packages or contexts, leading to duplicate IDs when multiple libraries or components are loaded on the same page. To fix the bug, it's necessary to update either the AccordionItem component to allow an id prefix override (as suggested in the bug report), or enhance useId to ensure global uniqueness across packages or contexts. Both the AccordionItem class/function and the useId function are directly involved in ID generation and usage, making them the critical locations for a fix.",
+        "bug_scenario": "The bug scenario shows that when using AccordionItem from carbon-components-react and a Footer component from @carbon/react together on the same page, duplicate IDs such as 'accordion-item-1' are generated and assigned to different elements. This causes accessibility violations, as shown in the screenshot, where the same ID is detected on multiple elements."
+    }
+}

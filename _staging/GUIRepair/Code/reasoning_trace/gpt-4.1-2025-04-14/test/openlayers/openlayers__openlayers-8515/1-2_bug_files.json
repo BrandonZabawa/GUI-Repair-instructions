@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/Select.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/render/canvas/VectorLayer.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "- src/ol/interaction/Select.js implements the ol.select.Interaction and is responsible for managing feature selection and triggering the rendering of selected styles. Any zIndex logic or rendering hooks related to selected features likely reside here.\n- src/ol/layer/Vector.js defines the vector layer that displays features. Its zIndex or render ordering logic may impact how selected features and overlays are layered.\n- src/ol/render/canvas/VectorLayer.js and src/ol/renderer/canvas/VectorLayer.js are responsible for drawing vector layers (and their features) on the canvas, managing draw order, and handling rendering of selected features versus standard overlays. These files would include logic on what is drawn on top when layers/styles overlap. The bug appears to stem from the ordering when rendering selection versus overlay/hover styles, thus these files are relevant for the fix.",
+        "bug_scenario": "The reported bug relates to the zIndex drawing order of selected features when using the ol.select.Interaction in OpenLayers. When a feature is selected in a cluster layer, the visual effect is that the selected feature is always rendered above other layers regardless of zIndex order, causing overlay elements (like red hover dots) to always appear below the selected style. This is demonstrated in the images: the desired behavior is having red dots (a hover effect) above, but the current (incorrect) behavior keeps the selected feature above all, hiding the hover overlays."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/interaction/Select.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/render/VectorContext.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/PluggableMap.js"
+        ],
+        "explanation": "These files are likely related to the bug due to their responsibilities: 1) src/ol/interaction/Select.js handles the selection logic itself, which may enforce a specific rendering order for selected features; 2) src/ol/layer/Vector.js represents vector layers and interacts with zIndex; 3) src/ol/render/VectorContext.js is involved in rendering features, including selected/hovered states; 4) src/ol/renderer/canvas/VectorLayer.js is responsible for the canvas rendering logic of vector layers, where zIndex and feature draw orders might be managed; 5) src/ol/renderer/Layer.js contains base rendering logic that could regulate the order of layer rendering; 6) src/ol/PluggableMap.js manages the rendering pipeline for all layers on the map, coordinating their order and potentially enforcing special rules for selected features. Together, these files are the most probable locations for logic that overrides or mishandles layer zIndex and feature selection draw order.",
+        "bug_scenario": "The bug scenario involves the ol.select.Interaction feature from OpenLayers always showing the selected feature on top of all other layers, regardless of the zIndex of those layers. In the provided scenario, when a cluster layer is selected, the red dots representing a hover effect (which are rendered in a separate layer) consistently appear beneath the selected cluster icon, even when it would be expected that setting a higher zIndex for the hover layer would cause it to be on top. The visual difference is shown in the two images: the expected outcome is for the red hover dots to appear above or at least on par with the selected feature, but in reality (second image), the selected feature is always rendered on top."
+    }
+}

@@ -1,0 +1,56 @@
+{
+    "1/1": {
+        "src/resources/filters/quarto-pre/table-captions.lua": [
+            {
+                "SEARCH": [
+                    "elseif hasRawHtmlTable(raw) then",
+                    "-- html table patterns",
+                    "local tablePattern = htmlTablePattern()",
+                    "local captionPattern = htmlTableCaptionPattern()",
+                    "-- insert caption if there is none",
+                    "local beginCaption, caption = raw.text:match(captionPattern)",
+                    "if not beginCaption then",
+                    "raw.text = raw.text:gsub(tablePattern, \"%1\" .. \"<caption></caption>\" .. \"%2%3\", 1)",
+                    "end",
+                    "-- apply table caption and label",
+                    "local beginCaption, captionText, endCaption = raw.text:match(captionPattern)",
+                    "if #tblCaptions[idx] > 0 then",
+                    "captionText = pandoc.utils.stringify(tblCaptions[idx])",
+                    "end",
+                    "if #tblLabels[idx] > 0 then",
+                    "captionText = captionText .. \" {#\" .. tblLabels[idx] .. \"}\"",
+                    "end",
+                    "raw.text = raw.text:gsub(captionPattern, \"%1\" .. captionText:gsub(\"%%\", \"%%%%\") .. \"%3\", 1)"
+                ],
+                "REPLACE": [
+                    "        elseif hasRawHtmlTable(raw) then",
+                    "          -- html table patterns",
+                    "          local tablePattern = htmlTablePattern()",
+                    "          local captionPattern = htmlTableCaptionPattern()",
+                    "          -- insert caption if there is none",
+                    "          local beginCaption, caption = raw.text:match(captionPattern)",
+                    "          if not beginCaption then",
+                    "            raw.text = raw.text:gsub(tablePattern, \"%1\" .. \"<caption></caption>\" .. \"%2%3\", 1)",
+                    "          end",
+                    "          -- apply table caption and label, with inline\u2010Markdown \u2192 HTML post\u2010processing",
+                    "          local beginCaption, captionText, endCaption = raw.text:match(captionPattern)",
+                    "          if #tblCaptions[idx] > 0 then",
+                    "            -- first turn the AST inlines into plain markdown text...",
+                    "            captionText = pandoc.utils.stringify(tblCaptions[idx])",
+                    "            -- ...then hack out common inline styles:",
+                    "            --  ^superscript^ \u2192 <sup>superscript</sup>",
+                    "            captionText = captionText:gsub(\"%^(.-)%^\", \"<sup>%1</sup>\")",
+                    "            --  _italics_     \u2192 <em>italics</em>",
+                    "            captionText = captionText:gsub(\"_(.-)_\",   \"<em>%1</em>\")",
+                    "          end",
+                    "          if #tblLabels[idx] > 0 then",
+                    "            captionText = captionText .. \" {#\" .. tblLabels[idx] .. \"}\"",
+                    "          end",
+                    "          raw.text = raw.text:gsub(captionPattern,",
+                    "                                   \"%1\" .. captionText:gsub(\"%%\", \"%%%%\") .. \"%3\",",
+                    "                                   1)"
+                ]
+            }
+        ]
+    }
+}

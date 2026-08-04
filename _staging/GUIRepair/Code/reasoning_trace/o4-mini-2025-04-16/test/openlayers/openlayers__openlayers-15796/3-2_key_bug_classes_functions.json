@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer.useContainer",
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer.prepareContainer",
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer.renderDeferred",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer.renderFrame"
+        ],
+        "explanation": "The reuse logic in CanvasLayerRenderer.useContainer lets the layer reuse the same canvas element when the CSS transform and background match. Then, in prepareContainer, clearRect is only called when containerReused is false (i.e. on a new canvas), so on subsequent frames nothing is cleared. When declutter:true, rendering is deferred via ZIndexContext and renderDeferred draws and clears the deferred context but not the main canvas. As a result, with opacity <1 and declutter enabled CanvasVectorLayerRenderer.renderFrame ends up drawing over older content without erasing it. Adjusting these methods to always clear the canvas (or disable container reuse) when opacity <1 or when declutter is active will fix the ghosting issue.",
+        "bug_scenario": "In the example with a VectorLayer configured with declutter:true and opacity:0.8, panning the map causes each new frame to draw on top of the last without erasing the previous one. The screenshot shows semi-transparent symbols ghosting behind the current frame because the canvas is not being cleared between renders when decluttering is enabled and opacity is less than 1."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer",
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/Layer.js//prepareContainer",
+            "src/ol/renderer/canvas/Layer.js//getRenderContext",
+            "src/ol/renderer/canvas/Layer.js//renderDeferred",
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame"
+        ],
+        "explanation": "\u2022 CanvasLayerRenderer.prepareContainer: only clears the canvas when it creates a new container (containerReused===false). When declutter is on and opacity<1, the container is reused on each frame and no clearRect is called, so old content remains.  \n\u2022 CanvasLayerRenderer.getRenderContext & renderDeferred: in declutter mode, drawing goes through a deferredContext that is never cleared on the main context between frames, so semi-transparent draws accumulate.  \n\u2022 CanvasVectorLayerRenderer.renderFrame: applies layer.opacity (globalAlpha<1) and then draws without first wiping the canvas, leaving remnants of earlier frames.  \nTogether these methods fail to clear old renderings when decluttering and translucency are both in effect, causing the visual artifacts.",
+        "bug_scenario": "When a VectorLayer is configured with declutter: true and opacity < 1, panning the map causes new features to be drawn on top of the old ones without clearing the canvas first. The semi-transparent draw means the previous frame \u201cbleeds through,\u201d leading to ghosting artifacts (as shown in the screenshot)."
+    }
+}

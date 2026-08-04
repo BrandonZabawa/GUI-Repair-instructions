@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Triangulation.js",
+            "src/ol/reproj/DataTile.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/Tile.js"
+        ],
+        "explanation": "All of these files implement the raster reprojection pipeline and currently assume square target pixels. common.js computes a single resolution value. Triangulation.js builds the warp grid using that one resolution for both axes, so every target pixel is square. DataTile.js, Image.js, and Tile.js drive the reprojection process (pixel generation and drawing) and rely on Triangulation to lay out and interpolate the pixels. To support rectangular target pixels (preserving the exact number of source pixels), these modules must be updated to use separate horizontal and vertical resolutions when generating the reprojection grid.",
+        "bug_scenario": "When re-projecting a small 5\u00d75 PNG from Lambert Conformal Conic into Web Mercator, OpenLayers forces the target pixels to be perfect squares. The reprojection grid uses a single resolution for both x and y, so horizontally it repeats/resizes columns to maintain square pixels. The result shows 7 columns instead of the expected 5 and mis-aligned pixel centers (blue dots) in the x-direction."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/reproj/common.js",
+            "src/ol/reproj/Triangulation.js",
+            "src/ol/reproj/Image.js",
+            "src/ol/reproj/DataTile.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/reproj.js"
+        ],
+        "explanation": "All of these files implement the raster reprojection pipeline and compute the target pixel grid. common.js defines how source and target extents and resolutions are calculated; Triangulation.js builds the mesh of triangles that determine pixel mapping (currently assuming uniform, square pixel spacing); Image.js and Tile.js consume the triangulation to warp full-image or tiled rasters; DataTile.js orchestrates reprojection of data\u2010tile grid sources; reproj.js ties the modules together. Because the code in these modules enforces square target pixels (equal horizontal and vertical spacing), it expands the number of output pixels horizontally, rather than preserving the source pixel count and stretching non\u2010square pixels as expected.",
+        "bug_scenario": "When projecting a small 5\u00d75 pixel raster (source Lambert Conformal Conic) into Web Mercator, each source pixel covers 3 km horizontally and 2 km vertically, so the target pixels are not square. OpenLayers\u2019 reprojection code forces square output pixels, repeating the first source column twice and producing a 7\u00d75 grid instead of preserving the original 5\u00d75 pixels. The circles marking expected pixel centers line up vertically but are misaligned horizontally."
+    }
+}

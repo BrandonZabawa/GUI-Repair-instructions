@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/Raster.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/style/expressions.js"
+        ],
+        "explanation": "1. src/ol/source/Raster.js  \n   \u2022 This is where the offscreen canvas is created and getImageData is called on every render.  It should pass willReadFrequently: true into getContext() to avoid the warning, and it must fire clear changed events when style variables change so the operation runs again on slider move.  \n\n2. src/ol/layer/WebGLTile.js  \n   \u2022 updateStyleVariables lives here.  It updates the GLSL uniforms for the \u2018level\u2019 variable but does not fully invalidate the tile caches or re-trigger the RasterSource operation when the value decreases.  Decreasing the threshold should mark the layer as changed so downstream raster operations and redraws occur.  \n\n3. src/ol/source/GeoTIFF.js  \n   \u2022 This source reads raw GeoTIFF band data and hands it to WebGL as RGBA.  The band-expression mapping may be mis-indexed, so what the user intends as the elevation band appears as zero in the red channel when read back, indicating a bug in band ordering or normalization.  \n\n4. src/ol/style/expressions.js  \n   \u2022 The \u2018band\u2019 and \u2018case\u2019 expression logic lives here.  Incorrect evaluation order or caching of expression results can explain why the white mask appears on upslope changes but not when lowering the threshold\u2014as the expression engine isn\u2019t picking up the updated variable values in the correct order.",
+        "bug_scenario": "The user is loading a single\u2010band GeoTIFF via a WebGLTileLayer and then overlaying a RasterSource operation (\u201cfloodRegion\u201d) to mark all pixels below a slider\u2010defined elevation threshold.  As the slider is moved upward the WebGL style expression correctly turns low pixels white, but as soon as the slider is moved back down the \u201cwhite mask\u201d no longer updates.  In addition, when clicking on the map and logging the red channel of the clicked pixel (via getImageData inside the RasterSource operation), the returned value is always zero\u2014even though the pixel on the map clearly has a nonzero elevation.  A Canvas2D warning also appears, advising use of the willReadFrequently flag to speed up repeated readback."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/source/Raster.js"
+        ],
+        "explanation": "1. src/ol/source/GeoTIFF.js: This is where the GeoTIFF file is fetched, decoded, and normalized into RGBA image data. If the plugin is packing all elevation data into a single channel (or normalizing incorrectly), then reading back the wrong component (always zero) would occur here. \n2. src/ol/layer/WebGLTile.js: This class implements the WebGL shader-based styling, including the \u2018variables\u2019 interface and the updateStyleVariables() method. Changes in the slider\u2019s \u2018level\u2019 variable must trigger a proper re-render of each tile. If updateStyleVariables() does not mark the layer or its tiles as changed when lowering the threshold, the white mask will never be \u201cerased.\u201d\n3. src/ol/source/Raster.js: This is the RasterSource which wraps the styled tile layer and invokes the floodRegion() operation on each frame. The bug manifests here in two ways:  (a) the RasterSource isn\u2019t getting invalidated on variable changes, so floodRegion() never re-runs with the new threshold when you slide down, and (b) it is handed image.data that came through WebGLTile, so any mis-packing of elevation channels in GeoTIFF.js will surface here as zero values.",
+        "bug_scenario": "When moving the sea-level slider up, the WebGLTileLayer styling immediately turns all pixels below the threshold white (as expected). However, when moving the slider back down, the styling does not \u201cunset\u201d those pixels\u2014they remain white. In addition, clicking on the map and logging the red channel of the input pixel always yields 0, even though the GeoTIFF clearly contains non-zero elevation data at that location."
+    }
+}

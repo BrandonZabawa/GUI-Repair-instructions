@@ -1,0 +1,2290 @@
+{
+    "1/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self', // Allow nested substitutions",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "HTML_TEMPLATE,",
+                    "CSS_TEMPLATE,",
+                    "TEMPLATE_STRING,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "tsLanguage.contains.forEach(mode => {",
+                    "if (mode.className === 'subst') {",
+                    "mode.contains.push('self'); // Allow nested substitutions",
+                    "}",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "2/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "// Allow nested structures",
+                    "end: '(?=\\\\}|\\\\${|$)',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const functionDeclaration = tsLanguage.contains.find(m => m.className === \"function\");",
+                    "functionDeclaration.relevance = 0; // () => {} is more typical in TypeScript"
+                ],
+                "REPLACE": [
+                    "const functionDeclaration = tsLanguage.contains.find(m => m.className === \"function\");",
+                    "functionDeclaration.relevance = 0; // () => {} is more typical in TypeScript",
+                    "",
+                    "// Ensure TS_TEMPLATE_STRING uses the updated SUBST",
+                    "const TS_TEMPLATE_STRING = Object.assign({}, tsLanguage.contains.find((m) => m.className === 'string' && m.begin === '`'));",
+                    "TS_TEMPLATE_STRING.contains = [",
+                    "...TS_TEMPLATE_STRING.contains,",
+                    "SUBST // Ensure usage of the updated SUBST from JavaScript definition",
+                    "];",
+                    "swapMode(tsLanguage, 'template_string', TS_TEMPLATE_STRING);"
+                ]
+            }
+        ]
+    },
+    "3/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "contains: [",
+                    "hljs.C_BLOCK_COMMENT_MODE,",
+                    "hljs.C_LINE_COMMENT_MODE,",
+                    "'self', // to handle nested ${}",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE",
+                    "]",
+                    "},",
+                    "SUBST",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "return tsLanguage;"
+                ],
+                "REPLACE": [
+                    "// Adjust template string handling similar to JavaScript fix",
+                    "const TEMPLATE_STRING = tsLanguage.contains.find(m => m.className === 'string');",
+                    "TEMPLATE_STRING.contains = TEMPLATE_STRING.contains.map(contain => {",
+                    "if (contain === SUBST) {",
+                    "return {",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "contains: [",
+                    "hljs.C_BLOCK_COMMENT_MODE,",
+                    "hljs.C_LINE_COMMENT_MODE,",
+                    "'self',",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE",
+                    "]",
+                    "};",
+                    "}",
+                    "return contain;",
+                    "});",
+                    "",
+                    "return tsLanguage;"
+                ]
+            }
+        ]
+    },
+    "4/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};",
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}', // adjust to correctly recognize nested expressions",
+                    "keywords: KEYWORDS,",
+                    "contains: [], // defined later",
+                    "relevance: 0",
+                    "};",
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "5/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '(?=\\\\})',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "{",
+                    "begin: '{',",
+                    "end: '}',",
+                    "contains: [\"self\"]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "const fixTemplateLiteralHighlighting = (lang) => {",
+                    "lang.contains.find(m => m.className === 'string' && m.begin === '`').contains.find(n => n.begin === '\\\\${')",
+                    ".contains.push({",
+                    "begin: '{',",
+                    "end: '}',",
+                    "contains: [\"self\"]",
+                    "});",
+                    "};",
+                    "",
+                    "fixTemplateLiteralHighlighting(tsLanguage);"
+                ]
+            }
+        ]
+    },
+    "6/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST,",
+                    "{",
+                    "// Nested template literals",
+                    "begin: /\\${/,",
+                    "end: /}/,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const functionDeclaration = tsLanguage.contains.find(m => m.className === \"function\");",
+                    "functionDeclaration.relevance = 0; // () => {} is more typical in TypeScript",
+                    "",
+                    "Object.assign(tsLanguage, {",
+                    "name: 'TypeScript',",
+                    "aliases: ['ts']",
+                    "});",
+                    "",
+                    "return tsLanguage;"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '}',",
+                    "keywords: KEYWORDS,",
+                    "contains: PARAMS_CONTAINS.concat([",
+                    "// Nested template literals",
+                    "{",
+                    "begin: /\\${/,",
+                    "end: /}/,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "}",
+                    "])",
+                    "};",
+                    "",
+                    "const functionDeclaration = tsLanguage.contains.find(m => m.className === \"function\");",
+                    "functionDeclaration.relevance = 0; // () => {} is more typical in TypeScript",
+                    "",
+                    "Object.assign(tsLanguage, {",
+                    "name: 'TypeScript',",
+                    "aliases: ['ts']",
+                    "});",
+                    "",
+                    "return tsLanguage;"
+                ]
+            }
+        ]
+    },
+    "7/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}(?!\\\\s*`)', // ensures it doesn't end when followed by a closing backtick",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "",
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Update the subst end behavior here as well if needed",
+                    "tsLanguage.contains.find(mode => mode.className === 'subst').end = '\\\\}(?!\\\\s*`)';",
+                    "",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "",
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);"
+                ]
+            }
+        ]
+    },
+    "8/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self',",
+                    "{",
+                    "begin: /{/,",
+                    "end: /}/,",
+                    "contains: ['self', hljs.APOS_STRING_MODE, hljs.QUOTE_STRING_MODE, NUMBER]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "tsLanguage.contains.forEach(mode => {",
+                    "if (mode.className === 'subst') {",
+                    "mode.contains.push({",
+                    "begin: /{/,",
+                    "end: /}/,",
+                    "contains: ['self', hljs.APOS_STRING_MODE, hljs.QUOTE_STRING_MODE, NUMBER]",
+                    "});",
+                    "}",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "9/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "...SUBST,",
+                    "contains: [",
+                    "...SUBST.contains,",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self']",
+                    "}",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "Object.assign(tsLanguage, {",
+                    "name: 'TypeScript',",
+                    "aliases: ['ts']",
+                    "});"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Extending TEMPLATE_STRING within TypeScript similar to JavaScript",
+                    "const TEMPLATE_STRING_TS = {",
+                    "...tsLanguage.contains.find(m => m.className === 'string'),",
+                    "contains: [",
+                    "...tsLanguage.contains.find(m => m.className === 'string').contains,",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self']",
+                    "}",
+                    "]",
+                    "};",
+                    "",
+                    "// Replace existing TEMPLATE_STRING with TEMPLATE_STRING_TS",
+                    "swapMode(tsLanguage, 'string', TEMPLATE_STRING_TS);",
+                    "",
+                    "Object.assign(tsLanguage, {",
+                    "name: 'TypeScript',",
+                    "aliases: ['ts']",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "10/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self',",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self', hljs.APOS_STRING_MODE, hljs.QUOTE_STRING_MODE, NUMBER, COMMENT]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "",
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Fix handling of curly braces in template literals",
+                    "const fixedSubst = tsLanguage.contains.find(m => m.className === 'subst');",
+                    "fixedSubst.contains = [",
+                    "'self',",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self', hljs.APOS_STRING_MODE, hljs.QUOTE_STRING_MODE, NUMBER, COMMENT]",
+                    "}",
+                    "];",
+                    "",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "",
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "]);"
+                ]
+            }
+        ]
+    },
+    "11/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "\"self\",",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: [\"self\", TEMPLATE_STRING],",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "tsLanguage.contains.forEach(mode => {",
+                    "if (mode.className === \"subst\") {",
+                    "mode.contains = mode.contains.concat([",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: [\"self\", tsLanguage],",
+                    "}",
+                    "]);",
+                    "}",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "12/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self',",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Adjust SUBST to handle nested curly braces for TypeScript",
+                    "const updateSubst = tsLanguage.contains.find(m => m.className === 'subst');",
+                    "updateSubst.contains = [",
+                    "'self',",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE",
+                    "]",
+                    "}",
+                    "];"
+                ]
+            }
+        ]
+    },
+    "13/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [], // defined later",
+                    "illegal: '\\\\n',",
+                    "relevance: 2",
+                    "};",
+                    "SUBST.contains = [",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "TEMPLATE_STRING,",
+                    "hljs.C_NUMBER_MODE,",
+                    "PARAMS, // to handle nested structures",
+                    "'self'",
+                    "];"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "",
+                    "const SUBST = tsLanguage.contains.find(m => m.className === 'subst');",
+                    "SUBST.contains.push('self');"
+                ]
+            }
+        ]
+    },
+    "14/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self', // Allow nested SUBST",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "HTML_TEMPLATE,",
+                    "CSS_TEMPLATE,",
+                    "TEMPLATE_STRING,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE,",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self']",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "",
+                    "// Update SUBST in TypeScript as well",
+                    "const SUBST_MODE = tsLanguage.contains.find(m => m.className === 'subst');",
+                    "if (SUBST_MODE) {",
+                    "SUBST_MODE.contains.push({",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self']",
+                    "});",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "15/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self',  // Allow nested expressions",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "HTML_TEMPLATE,",
+                    "CSS_TEMPLATE,",
+                    "TEMPLATE_STRING,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Enhance substitution processing for template literals",
+                    "tsLanguage.contains.find(mode => mode.className === 'subst').contains.push(",
+                    "'self'",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "16/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "...SUBST,",
+                    "contains: [",
+                    "...SUBST.contains,",
+                    "{",
+                    "begin: /{/, end: /}/,",
+                    "contains: ['self']",
+                    "}",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "const updateTemplateString = (lang) => {",
+                    "const tmplString = lang.contains.find(m => m.className === 'string' && m.begin === '`');",
+                    "tmplString.contains = [",
+                    "...tmplString.contains,",
+                    "{",
+                    "begin: /{/, end: /}/,",
+                    "contains: ['self']",
+                    "}",
+                    "];",
+                    "};",
+                    "",
+                    "updateTemplateString(tsLanguage);",
+                    "",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);"
+                ]
+            }
+        ]
+    },
+    "17/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST,",
+                    "{",
+                    "begin: /\\$\\{/,",
+                    "end: /\\}/,",
+                    "contains: [",
+                    "\"self\",",
+                    "hljs.C_NUMBER_MODE,",
+                    "hljs.QUOTE_STRING_MODE",
+                    "]",
+                    "}",
+                    "]"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const functionDeclaration = tsLanguage.contains.find(m => m.className === \"function\");",
+                    "functionDeclaration.relevance = 0; // () => {} is more typical in TypeScript"
+                ],
+                "REPLACE": [
+                    "const functionDeclaration = tsLanguage.contains.find(m => m.className === \"function\");",
+                    "",
+                    "// Extend the template string mode to handle nested expressions correctly",
+                    "const TEMPLATE_STRING = javascript(hljs).contains.find(",
+                    "m => m.className === \"string\"",
+                    ");",
+                    "TEMPLATE_STRING.contains.push({",
+                    "begin: /\\$\\{/,",
+                    "end: /\\}/,",
+                    "contains: [",
+                    "\"self\",",
+                    "hljs.C_NUMBER_MODE,",
+                    "hljs.QUOTE_STRING_MODE",
+                    "]",
+                    "});",
+                    "",
+                    "functionDeclaration.relevance = 0; // () => {} is more typical in TypeScript"
+                ]
+            }
+        ]
+    },
+    "18/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST,",
+                    "{",
+                    "begin: /\\{/, end: /\\}/, // Ensure nested braces don't break parsing",
+                    "contains: [",
+                    "'self',",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "hljs.C_BLOCK_COMMENT_MODE // Allow comments inside",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Extending TEMPLATE_STRING in TypeScript the same way as JavaScript",
+                    "const TEMPLATE_STRING = tsLanguage.contains.find(m => m.className === 'string');",
+                    "TEMPLATE_STRING.contains.push({",
+                    "begin: /\\{/, end: /\\}/,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "hljs.C_BLOCK_COMMENT_MODE",
+                    "]",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "19/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [], // defined later",
+                    "illegal: /\\\\n/,  // Ensure we don't break on newlines",
+                    "relevance: 0,",
+                    "// Allow nested template literals",
+                    "contains: ['self', TEMPLATE_STRING]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "SUBST  // Ensure TypeScript supports nesting as well",
+                    "]);"
+                ]
+            }
+        ]
+    },
+    "20/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self', // allow nested expressions",
+                    "SUBST",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "{",
+                    "className: 'string',",
+                    "variants: [",
+                    "{",
+                    "begin: 'css`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '}',",
+                    "keywords: KEYWORDS,",
+                    "contains: ['self', PARAMS]",
+                    "}",
+                    "],",
+                    "subLanguage: 'css'",
+                    "},",
+                    "{",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '}',",
+                    "keywords: KEYWORDS,",
+                    "contains: ['self', PARAMS]",
+                    "}",
+                    "]",
+                    "}",
+                    "]",
+                    "}",
+                    "]);"
+                ]
+            }
+        ]
+    },
+    "21/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}', // Must handle nested {}",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: [\"self\", ...SUBST.contains]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "",
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "",
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR, {",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: [\"self\", ...tsLanguage.exports.PARAMS_CONTAINS]",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "22/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "// Handle nested structures",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "HTML_TEMPLATE,",
+                    "CSS_TEMPLATE,",
+                    "TEMPLATE_STRING,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE,",
+                    "]",
+                    "}",
+                    "] // Extend pattern for nested expressions",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "23/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: []",
+                    "};",
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "// Adjusted regex to better handle nested structures",
+                    "end: /\\}/,",
+                    "keywords: KEYWORDS,",
+                    "contains: []",
+                    "};",
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST,",
+                    "{ // Allow nested template literals",
+                    "className: 'template-string',",
+                    "begin: /\\$\\{/,",
+                    "end: /\\}/,",
+                    "contains: [hljs.BACKSLASH_ESCAPE, 'self']",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "// Adjust template literal support for TypeScript, similarly",
+                    "swapMode(tsLanguage, \"template-string\", {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [hljs.BACKSLASH_ESCAPE, {",
+                    "className: 'template-string',",
+                    "begin: /\\$\\{/,",
+                    "end: /\\}/,",
+                    "contains: [hljs.BACKSLASH_ESCAPE, 'self']",
+                    "}]",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "24/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '(?<!})\\\\}',  // Ensure not to misinterpret nested contexts"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const swapMode = (mode, label, replacement) => {",
+                    "const indx = mode.contains.findIndex(m => m.label === label);",
+                    "if (indx === -1) { throw new Error(\"can not find mode to replace\"); };",
+                    "",
+                    "mode.contains.splice(indx, 1, replacement);",
+                    "};",
+                    "",
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const swapMode = (mode, label, replacement) => {",
+                    "const indx = mode.contains.findIndex(m => m.label === label);",
+                    "if (indx === -1) { throw new Error(\"can not find mode to replace\"); };",
+                    "",
+                    "// Update the substitution handling logic from JavaScript",
+                    "const substRule = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '(?<!})\\\\}',  // Ensure not to misinterpret nested contexts",
+                    "};",
+                    "",
+                    "mode.contains.splice(indx, 1, replacement);",
+                    "mode.contains.push(substRule);",
+                    "};",
+                    "",
+                    "const tsLanguage = javascript(hljs);"
+                ]
+            }
+        ]
+    },
+    "25/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}(?=[^`]*`)',  // Ensures the expression handling continues correctly",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST,",
+                    "{",
+                    "begin: /\\{/, end: /\\}/,",
+                    "contains: ['self', hljs.C_NUMBER_MODE, hljs.QUOTE_STRING_MODE]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "tsLanguage.contains.find(item => item.className === 'string').contains.push({",
+                    "begin: /\\{/, end: /\\}/,",
+                    "contains: ['self', hljs.C_NUMBER_MODE, hljs.QUOTE_STRING_MODE]",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "26/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "{",
+                    "begin: /{/, end: /}/, contains: [\"self\", hljs.BACKSLASH_ESCAPE, NUMBER]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "27/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "contains: SUBST.contains.concat([",
+                    "{",
+                    "begin: /{/, end: /}/,",
+                    "contains: ['self']",
+                    "}",
+                    "])",
+                    "}",
+                    "]"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Ensure that braces inside template strings are handled correctly",
+                    "const TEMPLATE_STRING = tsLanguage.contains.find(m => m.className === \"string\");",
+                    "if (TEMPLATE_STRING) {",
+                    "TEMPLATE_STRING.contains = TEMPLATE_STRING.contains.map(m => {",
+                    "if (m.className === 'subst') {",
+                    "return {",
+                    "...m,",
+                    "contains: m.contains.concat([",
+                    "{",
+                    "begin: /{/, end: /}/,",
+                    "contains: ['self']",
+                    "}",
+                    "])",
+                    "};",
+                    "}",
+                    "return m;",
+                    "});",
+                    "}",
+                    "",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);"
+                ]
+            }
+        ]
+    },
+    "28/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self' // To correctly handle nested template strings",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "tsLanguage.contains = tsLanguage.contains.map((mode) => {",
+                    "if (mode.className === 'string' && mode.contains) {",
+                    "return {",
+                    "...mode,",
+                    "contains: mode.contains.map((m) => {",
+                    "if (m.className === 'subst') {",
+                    "return {",
+                    "...m,",
+                    "contains: [",
+                    "'self', // Fixes incorrect interpretation of nested expressions",
+                    "...m.contains",
+                    "]",
+                    "};",
+                    "}",
+                    "return m;",
+                    "})",
+                    "};",
+                    "}",
+                    "return mode;",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "29/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "// Allow nested template strings",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self', hljs.APOS_STRING_MODE, hljs.QUOTE_STRING_MODE, HTML_TEMPLATE, CSS_TEMPLATE, TEMPLATE_STRING]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Adjust SUBST mode for TypeScript to allow nested template strings",
+                    "tsLanguage.contains.find(m => m.className === 'string').contains = [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self', hljs.APOS_STRING_MODE, hljs.QUOTE_STRING_MODE, HTML_TEMPLATE, CSS_TEMPLATE, TEMPLATE_STRING]",
+                    "}",
+                    "]",
+                    "}",
+                    "];"
+                ]
+            }
+        ]
+    },
+    "30/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self', // allow for nested substitutions",
+                    "// other contained modes",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "// this should update anywhere keywords is used since",
+                    "// it will be the same actual JS object",
+                    "Object.assign(tsLanguage.keywords, KEYWORDS);",
+                    "// Update to handle nested substitutions",
+                    "tsLanguage.contains.forEach(mode => {",
+                    "if (mode.className === 'string') {",
+                    "mode.contains.find(subMode => subMode.className === 'subst').contains.push('self');",
+                    "}",
+                    "});",
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);"
+                ]
+            }
+        ]
+    },
+    "31/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}', // Changed to handle nested braces",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "// Allow handling nested structures by including expressions",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self'] // Allow self-nesting",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Allow handling nested substitutions in TypeScript as well",
+                    "tsLanguage.contains.push({",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self']",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "32/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [], // defined later,",
+                    "illegal: '\\\\n' // prevent illegal newline within subst expressions",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "{ begin: '\\\\$\\\\{', end: '\\\\}', contains: ['self'], illegal: '\\\\n' } // handle nested template literals properly",
+                    "]);"
+                ]
+            }
+        ]
+    },
+    "33/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '(?=\\\\})', // Ensure it properly matches the closing bracket",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST,",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "relevance: 0,",
+                    "contains: ['self']",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "// Ensure TypeScript inherits the same improvements for template parsing",
+                    "Object.assign(tsLanguage.TEMPLATE_STRING, {",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST,",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "relevance: 0,",
+                    "contains: ['self']",
+                    "}",
+                    "]",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "34/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self',",
+                    "{",
+                    "begin: /{/,",
+                    "end: /}/,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "HTML_TEMPLATE,",
+                    "CSS_TEMPLATE,",
+                    "TEMPLATE_STRING,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE,",
+                    "PARAMS_CONTAINS // Ensures nested expressions are also highlighted",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "{",
+                    "begin: /[{](?:[^{}]|[*])*[}]/, // Handle nested braces correctly in expressions",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "HTML_TEMPLATE,",
+                    "CSS_TEMPLATE,",
+                    "TEMPLATE_STRING,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE,",
+                    "PARAMS_CONTAINS",
+                    "]",
+                    "}",
+                    "]);"
+                ]
+            }
+        ]
+    },
+    "35/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self', ...SUBST.contains]",
+                    "}",
+                    "] // defined later",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "",
+                    "const nestedBraces = {",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self', ...tsLanguage.exports.PARAMS_CONTAINS]",
+                    "};",
+                    "",
+                    "// Update the SUBST contains for TypeScript",
+                    "tsLanguage.contains.forEach(mode => {",
+                    "if (mode.className === 'subst') {",
+                    "mode.contains.push(nestedBraces);",
+                    "}",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "36/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: ['self'], // ensures nested substitutions are parsed correctly",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "]);"
+                ],
+                "REPLACE": [
+                    "tsLanguage.exports.PARAMS_CONTAINS.push(DECORATOR);",
+                    "tsLanguage.contains = tsLanguage.contains.concat([",
+                    "DECORATOR,",
+                    "NAMESPACE,",
+                    "INTERFACE,",
+                    "'self' // ensures proper parsing within the template literals",
+                    "]);"
+                ]
+            }
+        ]
+    },
+    "37/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "NUMBER,",
+                    "TEMPLATE_STRING,",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.C_BLOCK_COMMENT_MODE,",
+                    "hljs.C_LINE_COMMENT_MODE,",
+                    "SUBST.contains[3],  // HTML_TEMPLATE",
+                    "SUBST.contains[4],  // CSS_TEMPLATE",
+                    "SUBST.contains[5]   // TEMPLATE_STRING",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "38/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}', // Fix: Handle nested braces within the expressions",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "// Recurse into itself to handle nested {}",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self']",
+                    "},",
+                    "// other contains here...",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const swapMode = (mode, label, replacement) => {",
+                    "const indx = mode.contains.findIndex(m => m.label === label);",
+                    "if (indx === -1) { throw new Error(\"can not find mode to replace\"); };",
+                    "",
+                    "mode.contains.splice(indx, 1, replacement);",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const swapMode = (mode, label, replacement) => {",
+                    "const indx = mode.contains.findIndex(m => m.label === label);",
+                    "if (indx === -1) { throw new Error(\"can not find mode to replace\"); };",
+                    "",
+                    "if (label === 'subst') {",
+                    "// Update the substitution mode to handle nested braces",
+                    "replacement.contains.push({",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self']",
+                    "});",
+                    "}",
+                    "mode.contains.splice(indx, 1, replacement);",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "39/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [] // defined later",
+                    "};",
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const SUBST = {",
+                    "className: 'subst',",
+                    "begin: '\\\\$\\\\{',",
+                    "end: '\\\\}',",
+                    "keywords: KEYWORDS,",
+                    "contains: ['self', {",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self', hljs.BACKSLASH_ESCAPE]",
+                    "}]",
+                    "};",
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST,",
+                    "{",
+                    "begin: /\\{/,",
+                    "end: /\\}/,",
+                    "contains: ['self', hljs.BACKSLASH_ESCAPE]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ]
+    },
+    "40/40": {
+        "src/languages/javascript.js": [
+            {
+                "SEARCH": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "SUBST",
+                    "]",
+                    "};"
+                ],
+                "REPLACE": [
+                    "const TEMPLATE_STRING = {",
+                    "className: 'string',",
+                    "begin: '`',",
+                    "end: '`',",
+                    "contains: [",
+                    "hljs.BACKSLASH_ESCAPE,",
+                    "{",
+                    "className: 'subst',",
+                    "begin: '\\\\${',",
+                    "end: '}',",
+                    "keywords: KEYWORDS,",
+                    "contains: [",
+                    "'self',",
+                    "hljs.APOS_STRING_MODE,",
+                    "hljs.QUOTE_STRING_MODE,",
+                    "HTML_TEMPLATE,",
+                    "CSS_TEMPLATE,",
+                    "TEMPLATE_STRING,",
+                    "NUMBER,",
+                    "hljs.REGEXP_MODE",
+                    "]",
+                    "}",
+                    "]",
+                    "};"
+                ]
+            }
+        ],
+        "src/languages/typescript.js": [
+            {
+                "SEARCH": [
+                    "const tsLanguage = javascript(hljs);"
+                ],
+                "REPLACE": [
+                    "const tsLanguage = javascript(hljs);",
+                    "const TEMPLATE_STRING = tsLanguage.contains.find(m => m.className === \"string\");",
+                    "TEMPLATE_STRING.contains.find(m => m.className === \"subst\").contains.push(",
+                    "{",
+                    "begin: /\\{/, end: /\\}/,",
+                    "contains: ['self']",
+                    "}",
+                    ");"
+                ]
+            }
+        ]
+    }
+}

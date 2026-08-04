@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/render/canvas/Builder.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/render/canvas/hitdetect.js"
+        ],
+        "explanation": "All of these files take part in producing and drawing the image commands for icons and in hit testing them.  \n\u2022 style/Icon.js builds the instructions for positioning, scaling (including negative scale) and rotating the image.  A bug there can produce incorrect width/height or transform parameters when rotation is zero and scale is negative.  \n\u2022 render/canvas/Builder.js turns those instructions into actual canvas drawImage calls and context transforms.  Negative width/height values or missing context flips here will cause the icon not to draw or to draw off-screen.  \n\u2022 render/canvas/Executor.js executes the Builder instructions during normal rendering; if it does not properly apply negative scales, the icon vanishes or is misplaced.  \n\u2022 render/canvas/hitdetect.js builds and executes simplified drawing commands for hit detection; it must compute the icon\u2019s hit area correctly under negative scale.  Errors here stop clicks from being detected on the flipped icon.",
+        "bug_scenario": "When an Icon style is given a negative scale (flipping it) but zero rotation, two failures occur: clicks anywhere on the icon do not register (hit detection is broken), and as the flipped icon crosses the map edge it vanishes entirely instead of being partially rendered (clipped). Interestingly, if you add any non-zero rotation the hit detection and edge clipping work again, showing that the negative scale path for zero rotation is not handled correctly."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/style/IconImage.js",
+            "src/ol/render/canvas/ImageBuilder.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/render/canvas/hitdetect.js"
+        ],
+        "explanation": "All of these files participate in computing, drawing, and hit\u2013testing styled icons. Icon.js and IconImage.js calculate the icon size, anchor, and effective scale; ImageBuilder.js turns those parameters into canvas drawing instructions (width and height = imageSize \u00d7 scale), but negative scales produce negative dimensions and are either skipped or draw off\u2010screen. Executor.js replays those instructions both for visible rendering and for the off\u2010screen, color\u2010coded hit\u2010detection canvas; with negative sizes the hit rectangle is never painted. Finally, hitdetect.js contains the logic that interprets those painted pixels as feature hits, so if the hit canvas drawing is skipped or inverted, clicks won\u2019t register. Together, they explain why negative scale breaks both rendering at the edge and hit detection.",
+        "bug_scenario": "When an Icon style is given a negative scale with zero rotation, the map renderer produces no visible icon at the map edge (it disappears instead of being clipped) and user clicks on the flipped icon area are not detected. In other words, negative scale flips the image but the drawing instructions yield negative widths and heights, so both the canvas drawImage call and the hit\u2013detection color\u2010coding skip or misplace the icon."
+    }
+}

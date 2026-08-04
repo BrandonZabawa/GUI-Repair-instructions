@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/tilegrid/TileGrid.js//TileGrid",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//getImagesForSource",
+            "src/ol/source/GeoTIFF.js//configure_",
+            "src/ol/source/GeoTIFF.js//loadTile_"
+        ],
+        "explanation": "The bug is about the architecture for handling pyramidal GeoTIFF sources in a way that avoids creating multiple layers (and thus multiple WebGL contexts) for each level of the pyramid. The key class 'GeoTIFFSource' is responsible for providing the data for GeoTIFF tiles, and would need to be modified to support a source pyramid with a template and tile grid, similar to how WMTS sources work. Its 'configure_' and 'loadTile_' methods are likely where the logic for constructing tiles from the correct pyramid levels would go, and 'getImagesForSource' is likely critical for resolving which image(s) to use for each tile request. 'TileGrid' is essential because properly matching requested tiles to the pyramid levels depends on the grid structure (resolutions, origins, etc.). On the rendering side, 'WebGLTileLayerRenderer' is the class that manages the WebGL context for the layer and would be affected (or simplified) by the change: with only one source/layer needed, it will not create excessive contexts. These classes/functions are directly responsible for the handling, mapping, and rendering of tiled GeoTIFF sources, and are the points where the bug surfaces and where it must be fixed.",
+        "bug_scenario": "The bug scenario is that when using a pyramid of WebGLTileLayers (multiple layers for a pyramid of GeoTIFFs), the application quickly exhausts available WebGL contexts, causing WebGL context loss (rendering stops, tiles not rendered, severe performance degradation). This is especially problematic as the number of layers (and thus separate WebGL contexts) increases with larger pyramids. The suggested solution is to have a single source representing the pyramid (like WMTS), so that only one WebGL context per layer/renderer is used, regardless of pyramid size, by composing tiles from the correct source images."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource",
+            "src/ol/tilegrid/TileGrid.js//TileGrid",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.configure_",
+            "src/ol/source/GeoTIFF.js//GeoTIFFSource.loadTile_"
+        ],
+        "explanation": "The key class 'GeoTIFFSource' (src/ol/source/GeoTIFF.js) is directly responsible for loading and managing GeoTIFF sources. To support a pyramid-of-tiles approach via a template string and tile grid (rather than an individual file per layer), its logic (especially 'configure_' and 'loadTile_') must be adapted to manage multiple overlapping tile sources as a seamless pyramid. 'TileGrid' (src/ol/tilegrid/TileGrid.js) is essential because it defines how tile coordinates, extents, and resolutions are mapped, which is needed to properly request and compose pyramid tiles. 'WebGLTileLayerRenderer' (src/ol/renderer/webgl/TileLayer.js) is the renderer that creates and manages WebGL contexts for tile layers; changes to support a pyramid in a single source will improve how it manages contexts and tiles, preventing the proliferation of WebGL contexts. The functions 'configure_' and 'loadTile_' in 'GeoTIFFSource' are central for setting up the new pyramid source structure and for dynamically loading and compositing tiles from the pyramid according to the new source logic.",
+        "bug_scenario": "The bug scenario is that when using pyramids of WebGLTileLayers with large numbers of layers (such as with detailed GeoTIFF tiles), browsers quickly run out of available WebGL contexts, resulting in lost contexts, missing tiles, and poor performance (very low FPS). The root cause is that each layer (and thus each level of the pyramid) gets its own WebGL context, which does not scale for large datasets. The proposed solution is to compose all pyramid levels into a single source, so only one WebGL context is used, similar to the WMTS source model, by introducing a new source type that can handle a GeoTIFF pyramid through a template string and a tile grid object."
+    }
+}

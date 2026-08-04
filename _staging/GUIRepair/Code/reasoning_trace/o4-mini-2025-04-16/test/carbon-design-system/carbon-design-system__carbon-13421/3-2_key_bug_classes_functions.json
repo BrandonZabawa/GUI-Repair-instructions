@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/index.js",
+            "packages/react/src/index.js",
+            "packages/react/src/components/DataTable/DataTable.js//DataTable"
+        ],
+        "bug_functions": [],
+        "explanation": "The root of the bug is that the DataTable class\u2019s static subcomponent assignments (DataTable.Table = Table; DataTable.TableContainer = TableContainer; etc.) are defined in packages/react/src/components/DataTable/index.js, yet when consumers import DataTable from the root entrypoint (packages/react/src/index.js), those static properties are not preserved or exposed in an ESM environment. As a result, destructuring DataTable yields undefined subcomponents. The key code to fix is the static\u2010assignment module in components/DataTable/index.js (to ensure that static props are attached before any re-export) and the root index.js re-export (to preserve those static properties on the named export). Adjusting those modules to properly propagate the static members or to export the subcomponents directly will restore destructuring support.",
+        "bug_scenario": "In v11 of @carbon/react, importing DataTable and then destructuring its subcomponents off of the DataTable object (e.g. const { TableContainer, Table, TableHead, \u2026 } = DataTable) yields undefined for each of those values and causes the app to crash. The screenshots show React.createElement errors complaining that these destructured values are undefined when used in JSX, whereas importing them directly from the package (import { TableContainer, Table, TableHead, \u2026 } from '@carbon/react') works normally."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/index.js//DataTable",
+            "packages/react/src/components/DataTable/DataTable.js//DataTable"
+        ],
+        "bug_functions": [],
+        "explanation": "All of the sub-components (TableContainer, Table, TableHead, etc.) are attached as static properties on the DataTable class in packages/react/src/components/DataTable/index.js. The bug is that those static properties are not present (or not correctly hoisted) when the user tries to destructure them off DataTable. The root component\u2014DataTable itself\u2014lives in DataTable.js, but the static attachments live in the index.js wrapper. To fix the issue, the team needs to ensure that DataTable.TableContainer, DataTable.Table, etc., are reliably defined before any destructuring can occur (for example by moving the static assignments inside the class or exporting sub-components directly), so that destructuring from DataTable won\u2019t yield undefined values.",
+        "bug_scenario": "The user is importing the DataTable component from @carbon/react, then pulling out its sub-components via JavaScript destructuring (e.g. const { TableContainer, Table, TableHead, \u2026 } = DataTable). Because at runtime those static properties on DataTable are undefined, every <TableContainer> or <Table> in the JSX becomes undefined, and React blows up with \u201cElement type is invalid\u201d errors. When instead the user imports all of the pieces directly from '@carbon/react' (import { DataTable, TableContainer, Table, \u2026 } from '@carbon/react'), everything works as expected."
+    }
+}

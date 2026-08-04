@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer",
+            "src/ol/layer/BaseVector.js//BaseVectorLayer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/MapboxVector.js//configureSource",
+            "src/ol/renderer/canvas/VectorLayer.js//renderFrame"
+        ],
+        "explanation": "\u2022 MapboxVectorLayer (in src/ol/layer/MapboxVector.js) is where background colors from a Mapbox style should be applied to the vector tile source. Its configureSource() method is currently empty, so no background feature is ever injected.  \n\u2022 BaseVectorLayer (in src/ol/layer/BaseVector.js) defines a background option but does not surface it to the renderer or provide any hooks to render it.  \n\u2022 CanvasVectorLayerRenderer.renderFrame (in src/ol/renderer/canvas/VectorLayer.js), together with its call to useContainer, is where the failure occurs: it receives invalid or missing background styling data, leading to an assertion in the color-parsing code (fromStringInternal_ / asArray).  \nFixing these three points\u2014implementing configureSource to inject a proper background feature, exposing the background option in BaseVectorLayer, and ensuring renderFrame/useContainer correctly handle and apply background colors\u2014will allow vector layers with backgrounds to composite over other layers without errors.",
+        "bug_scenario": "When a vector layer with a background (for example a MapboxVector layer with a background color from its style) is added on top of another layer (e.g. an OSM TileLayer), rendering fails with an assertion error. The stack trace points into CanvasVectorLayerRenderer.useContainer (called from renderFrame) when it tries to parse or apply the background style, causing fromStringInternal_ (color parsing) to assert. In effect, layers that specify a background cannot be composited over other layers."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer",
+            "src/ol/layer/BaseVector.js//BaseVectorLayer",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer.configureSource",
+            "src/ol/layer/MapboxVector.js//MapboxVectorLayer.onStyleLoad",
+            "src/ol/renderer/canvas/VectorLayer.js//CanvasVectorLayerRenderer.renderFrame"
+        ],
+        "explanation": "MapboxVectorLayer.onStyleLoad loads the Mapbox style and then calls configureSource, which applies the style background to the vector source. If configureSource sets the background color as a raw array or unsupported type, the canvas fillStyle in CanvasVectorLayerRenderer.renderFrame receives an invalid value and triggers an assertion in the CSS color parser. BaseVectorLayer holds the background option but does not enforce conversion to a valid CSS string. To fix this, configureSource (or onStyleLoad) must convert the background color into a proper CSS string (e.g. via asColorLike) before passing it to the renderer, and CanvasVectorLayerRenderer.renderFrame must ensure it uses only valid fillStyle values.",
+        "bug_scenario": "When adding a MapboxVector (or any BaseVector) layer that has a background over another layer (e.g. an OSM TileLayer), rendering fails with an AssertionError in the internal CSS color parser. The stack trace shows the failure happening in CanvasVectorLayerRenderer.useContainer \u2192 renderFrame, meaning the background fill style is passed in an invalid format (e.g. as an array) to the canvas context."
+    }
+}

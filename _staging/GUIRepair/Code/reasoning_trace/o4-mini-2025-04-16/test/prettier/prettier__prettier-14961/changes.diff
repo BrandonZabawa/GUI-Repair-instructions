@@ -1,0 +1,54 @@
+diff --git a/src/language-html/embed/angular-interpolation.js b/src/language-html/embed/angular-interpolation.js
+index 29f930792..4cdc72a26 100644
+--- a/src/language-html/embed/angular-interpolation.js
++++ b/src/language-html/embed/angular-interpolation.js
+@@ -10,24 +10,32 @@ async function printAngularInterpolation(text, textToDoc) {
+     if (index % 2 === 0) {
+       parts.push(replaceEndOfLine(part));
+     } else {
+-      try {
+-        parts.push(
+-          group([
+-            "{{",
+-            indent([
++      // If this interpolation is a simple pipe with only string/number literals
++      // (e.g. currency:'CAD':'symbol-narrow', slice:1:5), preserve original spacing.
++      const literalArgsPattern =
++        /(\|\s*[\w$]+\s*:\s*(?:(?:'[^']*'|\d+)(?:\s*:\s*(?:'[^']*'|\d+))*))$/;
++      if (literalArgsPattern.test(part)) {
++        parts.push(replaceEndOfLine(part));
++      } else {
++        try {
++          parts.push(
++            group([
++              "{{",
++              indent([
++                line,
++                await formatAttributeValue(part, textToDoc, {
++                  parser: "__ng_interpolation",
++                  __isInHtmlInterpolation: true, // to avoid unexpected `}}`
++                  trailingComma: "none",
++                }),
++              ]),
+               line,
+-              await formatAttributeValue(part, textToDoc, {
+-                parser: "__ng_interpolation",
+-                __isInHtmlInterpolation: true, // to avoid unexpected `}}`
+-                trailingComma: "none",
+-              }),
+-            ]),
+-            line,
+-            "}}",
+-          ])
+-        );
+-      } catch {
+-        parts.push("{{", replaceEndOfLine(part), "}}");
++              "}}",
++            ])
++          );
++        } catch {
++          parts.push("{{", replaceEndOfLine(part), "}}");
++        }
+       }
+     }
+   }

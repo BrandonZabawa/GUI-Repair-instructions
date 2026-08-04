@@ -1,0 +1,22 @@
+diff --git a/src/command/render/pandoc.ts b/src/command/render/pandoc.ts
+index 723d69b8b..b90f50935 100644
+--- a/src/command/render/pandoc.ts
++++ b/src/command/render/pandoc.ts
+@@ -623,6 +623,17 @@ export async function runPandoc(
+       }
+     });
+ 
++    // disable the built-in crossref filter when the user explicitly
++    // requests crossref: false in their format metadata
++    if (options.format.metadata.crossref === false) {
++      allDefaults.filters = allDefaults.filters.filter((filter) => {
++        // filter may be a string or an object { type, path }
++        const filterPath = typeof filter === "string" ? filter : filter.path;
++        // drop any lua filter named `crossref.lua`
++        return !filterPath.endsWith("/filters/crossref.lua");
++      });
++    }
++
+     // Capture any format filter params
+     const filterParams = extras[kFilterParams];
+     if (filterParams) {

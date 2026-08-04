@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "package.json",
+            "webpack.config.js"
+        ],
+        "bug_functions": [
+            "webpack.config.js//autoprefixer()",
+            "webpack.config.js//PostCSS loader plugins function"
+        ],
+        "explanation": "The project\u2019s package.json devDependencies list autoprefixer as \"^8.1.0\", preventing the update to 9.0. In webpack.config.js we require('autoprefixer') and call autoprefixer({browsers:[\u2026]}) inside the postcss-loader plugins function. In Autoprefixer 9.0 the old 'browsers' option is deprecated (now 'overrideBrowserslist'), so both the dependency version in package.json and the plugin configuration in webpack.config.js must be updated to match the new API.",
+        "bug_scenario": "The PR\u2019s release\u2010note screenshot embeds the Coat of Arms of Canada (the \u201cArms of Canada\u201d image) as part of the Autoprefixer 9.0.0 announcement. Underneath that, the project\u2019s CI warns that our package.json still pins autoprefixer at version 8.x, so the upgrade to 9.0 (with its breaking-change in option names) isn\u2019t applied."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "package.json",
+            "webpack.config.js//postcss-loader options.plugins"
+        ],
+        "explanation": "To adopt Autoprefixer 9.0, you must update the version string in package.json\u2019s devDependencies (change \"autoprefixer\": \"^8.1.0\" to \"^9.0.0\"). Additionally, in webpack.config.js under the CSS rule, the anonymous plugins function inside the postcss-loader invocation calls autoprefixer({browsers: [...]}); this is where Autoprefixer is configured and may need to be updated if the 9.0 API deprecates or renames the \"browsers\" option (e.g. to \"overrideBrowserslist\").",
+        "bug_scenario": "A Greenkeeper pull request proposes bumping the devDependency \"autoprefixer\" from the current ^8.x release to the newly published 9.0.0. The PR includes the Autoprefixer 9.0 release notes, which display a stylized Canadian coat of arms as part of the branding. Because package.json still pins autoprefixer at 8.x, the new version isn\u2019t covered and the build will continue using the old version unless the dependency range is updated. Additionally, the project\u2019s PostCSS setup in webpack.config.js invokes autoprefixer with the old configuration, which may need adjustment to accommodate any breaking API changes in 9.0."
+    }
+}

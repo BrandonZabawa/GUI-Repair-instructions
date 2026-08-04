@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js"
+        ],
+        "bug_functions": [
+            "lib/features/replace/BpmnReplace.js//replaceElement"
+        ],
+        "explanation": "The bug is centered on the BPMN element replacement logic: in ReplaceOptions.js the multi-instance toggle entries define \u201creplace\u201d actions for parallel vs. sequential, but they don\u2019t correctly preserve the existing loopCharacteristics sub-element when swapping modes. Those entries end up invoking BpmnReplace.replaceElement, which is responsible for carrying over loopCharacteristics. Although replaceElement\u2019s filter is meant to copy loopCharacteristics by default, its logic around target-provided properties and CUSTOM_PROPERTIES causes the old loopCharacteristics to be dropped when the target has no explicit loopCharacteristics on its options. In short:\n\n\u2022 ReplaceOptions.js defines the UI actions to switch multi-instance types, but does not supply explicit loopCharacteristics overrides, so replaceElement believes there is nothing to copy.\n\u2022 BpmnReplace.replaceElement is the function that should retain the loopCharacteristics, but due to the way it picks CUSTOM_PROPERTIES and filters copyProps, the old loopCharacteristics node never makes it into the new businessObject.\n\nFixing this requires updating either the ReplaceOptions entries to pass through the existing loopCharacteristics or adjusting replaceElement\u2019s copyProps filter to always carry over loopCharacteristics (and in particular the child attributes like loopCardinality and isSequential) when toggling between parallel and sequential instances.",
+        "bug_scenario": "When a user switches a subprocess from parallel multi-instance to sequential (or vice versa) via the palette \u201creplace\u201d button, all of the subprocess\u2019s multi-instance loop settings (cardinality, collection, element variable, etc.) are wiped out. The GIF shows: 1) draw a subprocess; 2) toggle on the parallel multi-instance icon; 3) set a loop cardinality; 4) click the sequential multi-instance icon \u2013 at which point the loop cardinality and all other loopCharacteristics are lost."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/replace/BpmnReplace.js//BpmnReplace",
+            "lib/features/replace/ReplaceOptions.js"
+        ],
+        "bug_functions": [
+            "lib/features/replace/BpmnReplace.js//replaceElement",
+            "lib/features/replace/BpmnReplace.js//copyProperties"
+        ],
+        "explanation": "The core replacement logic lives in BpmnReplace.replaceElement. In its copyProps filter it explicitly handles loopCharacteristics \u2014 but only under a narrow condition (not event subprocess) and then drops any instance\u2010specific settings when building the new businessObject. Moreover, the CUSTOM_PROPERTIES whitelist does not include any loop-related keys, so when ReplaceOptions defines the parallel vs sequential toggle it never re-applies the existing loopCharacteristics. As a result, replaceElement never preserves the original loop cardinality or collection. Adjusting replaceElement (or the ReplaceOptions businessObject payload) to include loopCharacteristics (or its sub-properties) will prevent the loss of multi-instance settings.",
+        "bug_scenario": "When toggling a subprocess between parallel and sequential multi\u2010instance in the modeler, all of the loop characteristics (such as loop cardinality) are wiped out. In the repro the user creates a subprocess, adds parallel multi\u2010instance with a loop cardinality, then switches to sequential \u2013 and the loop settings vanish."
+    }
+}

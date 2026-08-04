@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/TileGroup/TileGroup.tsx",
+            "packages/react/src/components/TileGroup/index.js",
+            "packages/react/src/components/RadioTile/RadioTile.tsx",
+            "packages/react/src/components/RadioTile/index.ts",
+            "packages/carbon-components/scss/components/tile/_tile-group.scss",
+            "packages/carbon-components/scss/components/tile/_tile.scss"
+        ],
+        "explanation": "\u2022 TileGroup.tsx / index.js \u2013 this component currently only handles name, value, and onChange for tiles; it needs to accept a top-level `required` prop and pass it down to each RadioTile via context/child cloning so you no longer have to repeat `required` on every RadioTile.\n\n\u2022 RadioTile.tsx / index.ts \u2013 this is where the native `<input type=\"radio\">` sits (hidden visually). It needs to receive the propagated `required` attribute when TileGroup is marked required.\n\n\u2022 _tile-group.scss \u2013 we need to declare `.bx--tile-group { position: relative; }` so that absolutely-positioned inputs inside it will be placed relative to the entire group container.\n\n\u2022 _tile.scss \u2013 this is where `.bx--tile-input` is defined. We need to adjust its positioning rules (e.g. `bottom: 0; left: 50%; transform: translateX(-50%);`) so that the (invisible) input that triggers the validation bubble sits at the bottom-center of each tile/group rather than defaulting to the top-left corner.",
+        "bug_scenario": "When you make a TileGroup of RadioTiles required and submit the form without choosing one, the browser\u2019s native validation marker pops up at the top-left of the (invisible) radio input. In React you currently have to put `required` on every RadioTile instead of the TileGroup as a whole, and the hidden `<input>` that triggers the validation bubble is styled/positioned at the wrong place (top-left) instead of bottom-center of the tile or group.\n\nIn the two screenshots:\n- The first (light) theme shows the yellow \u201cPlease select one of these options\u201d callout in the upper-left corner of the tile container.\n- The second (dark) theme shows the same misplaced validation bubble.\n\nThe goal is 1) allow passing `required` on TileGroup and propagate it to all RadioTile inputs, and 2) update the CSS so that the hidden radio input is positioned bottom-center of the tile group, e.g.: \n```css\n.bx--tile-group { position: relative }\n.bx--tile-input { bottom: 0; left: 50%; }\n```"
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/TileGroup/TileGroup.tsx",
+            "packages/react/src/components/RadioTile/RadioTile.tsx",
+            "packages/carbon-components/scss/components/tile/_tile.scss"
+        ],
+        "explanation": "1. TileGroup.tsx: This component should accept a `required` prop and propagate it automatically to each underlying radio input, so users can simply mark the group as required rather than each tile.  \n2. RadioTile.tsx: This component renders the hidden `<input type=\\\"radio\\\" />` and currently only applies `required` when the prop is explicitly passed; it needs to pick up the group-level `required` as well. It also manages the positioning hooks (styles/classes) for that input.  \n3. _tile.scss: The CSS for `.bx--tile-group` and `.bx--tile-input` lives here. Adding `position: relative` to `.bx--tile-group` and adjusting `.bx--tile-input` (e.g. `bottom: 0; left: 50%; transform: translateX(-50%)`) will ensure the native browser validation popup is anchored to the bottom-center of the tile/group rather than the page corner.",
+        "bug_scenario": "The native HTML `<input type=\"radio\">` elements that live under each `RadioTile` aren\u2019t being validated as a group: you currently have to slap a `required` attribute on *every* `RadioTile` rather than being able to mark the entire `TileGroup` as required. In addition, because the invisible radio inputs aren\u2019t absolutely positioned inside a relatively-positioned container, the browser\u2019s native validation bubble appears in the top-left corner of the viewport instead of centered at the bottom of the tiles (see screenshots)."
+    }
+}

@@ -1,0 +1,40 @@
+diff --git a/src/number-picker/number-picker.jsx b/src/number-picker/number-picker.jsx
+index f6bd771e9..ac8247142 100644
+--- a/src/number-picker/number-picker.jsx
++++ b/src/number-picker/number-picker.jsx
+@@ -201,21 +201,27 @@ class NumberPicker extends React.Component {
+                 value: prevState.value,
+                 displayValue: prevState.displayValue,
+                 onlyDisplay: false,
++                max: nextProps.max,
++                min: nextProps.min,
+             };
+         }
+         // 一般受控render逻辑
++        let derived = {};
+         if ('value' in nextProps && `${nextProps.value}` !== `${prevState.value}`) {
+-            let { value, max, min, stringMode } = nextProps;
++            let { value, stringMode } = nextProps;
+             value = value === undefined || value === null ? '' : stringMode ? `${value}` : value;
+-            return {
+-                value,
+-                displayValue: value,
+-                max: max !== MAX_SAFE_INTEGER ? max : prevState.max,
+-                min: min !== MIN_SAFE_INTEGER ? min : prevState.min,
+-            };
++            derived.value = value;
++            derived.displayValue = value;
+         }
++        // Always update max and min from props
++        derived.max = nextProps.max;
++        derived.min = nextProps.min;
+ 
+-        return null;
++        // If nothing changed, return null
++        if (Object.keys(derived).length === 0) {
++            return null;
++        }
++        return derived;
+     }
+ 
+     isGreaterThan(v1, v2) {

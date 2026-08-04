@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/Select.js",
+            "src/ol/PluggableMap.js"
+        ],
+        "explanation": "1) src/ol/interaction/Select.js: this is where the Select interaction creates and maintains an internal feature overlay, attaches it to the map, and registers its postrender callback so that selected features are always drawn last. Because it is hard-coded here to live outside the normal layer stack (and to run its draw routine at the very end), there is no way for a consumer to change its z-order.  \n2) src/ol/PluggableMap.js: this is the core renderer for all layers and interactions. It controls the order in which tile layers, vector layers, and any postrender callbacks (including the Select interaction\u2019s overlay) are invoked. The current drawing sequence forces the Select overlay to come after every other layer \u2014 to allow zIndex control one would need to adjust how and when PluggableMap fires those postrender hooks (or expose a priority parameter from Select.js down into PluggableMap). These two files are where the overlay is created, scheduled, and ultimately drawn on top of everything.",
+        "bug_scenario": "In the user\u2019s demo they have two separate vector layers: one for showing red \u201chover\u201d dots and another implicit layer used by the ol.interaction.Select interaction to show the selected SVG\u2010icon feature. No matter how they set the zIndex on their hover layer (or on the cluster layer below it), the red-sprite layer always ends up underneath, and the select interaction\u2019s feature icon always renders above everything else. In other words, the Select interaction\u2019s overlay is always drawn on top of the scene, with no way to push it down beneath a user\u2010supplied layer."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/interaction/Select.js",
+            "src/ol/Map.js",
+            "src/ol/layer/Layer.js"
+        ],
+        "explanation": "\u2022 src/ol/interaction/Select.js defines and adds the internal featureOverlay VectorLayer without exposing or applying any zIndex option, so it always ends up at the end of the draw order.  \n\u2022 src/ol/Map.js (the PluggableMap implementation) is responsible for sorting and rendering layers by their zIndex (and insertion order) \u2013 it currently treats the Select overlay just like any other added layer, locking it into last-place rendering.  \n\u2022 src/ol/layer/Layer.js provides the getZIndex/setZIndex API on layers; any change to allow the Select overlay to respect a custom zIndex must hook into this mechanism.  \nTogether, these three files control the creation, stacking and rendering order of the Select overlay layer, so they must be updated to accept a zIndex option on the Select interaction, to set it on the featureOverlay, and to have Map.js honor it when drawing layers.",
+        "bug_scenario": "When using the built-in Select interaction, the \u201cselected\u201d vector layer (the featureOverlay) is always drawn last and on top of all other vector layers, no matter what zIndex you give those other layers.  In the user\u2019s CodePen they have a red-dot hover layer underneath a custom SVG icon; even when they bump the red-dot layer\u2019s zIndex above the default, the Select overlay still ends up on top, pushing the red dots below the selected symbol.  The user wants to be able to change the Select overlay\u2019s zIndex or have it respect the zIndex ordering of all layers."
+    }
+}

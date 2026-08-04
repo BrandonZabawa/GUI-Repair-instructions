@@ -1,0 +1,33 @@
+diff --git a/lighthouse-core/lib/stack-packs.js b/lighthouse-core/lib/stack-packs.js
+index 8edf47c3e..eb51ebfdb 100644
+--- a/lighthouse-core/lib/stack-packs.js
++++ b/lighthouse-core/lib/stack-packs.js
+@@ -44,6 +44,8 @@ const stackPacksToInclude = [
+ function getStackPacks(pageStacks) {
+   /** @type {Array<LH.Result.StackPack>} */
+   const packs = [];
++  /** @type {Set<string>} */
++  const addedPackIds = new Set();
+ 
+   for (const pageStack of pageStacks) {
+     const stackPackToIncl = stackPacksToInclude.find(stackPackToIncl =>
+@@ -52,6 +54,11 @@ function getStackPacks(pageStacks) {
+       continue;
+     }
+ 
++    // Prevent duplicate stack packs
++    if (addedPackIds.has(stackPackToIncl.packId)) {
++      continue;
++    }
++
+     // Grab the full pack definition
+     const matchedPack = stackPacks.find(pack => pack.id === stackPackToIncl.packId);
+     if (!matchedPack) {
+@@ -66,6 +73,7 @@ function getStackPacks(pageStacks) {
+       iconDataURL: matchedPack.iconDataURL,
+       descriptions: matchedPack.descriptions,
+     });
++    addedPackIds.add(stackPackToIncl.packId);
+   }
+ 
+   return packs;

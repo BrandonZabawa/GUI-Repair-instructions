@@ -1,0 +1,57 @@
+diff --git a/src/js/components/DateInput/DateInput.js b/src/js/components/DateInput/DateInput.js
+index 057eebcaa..3ee4157a1 100644
+--- a/src/js/components/DateInput/DateInput.js
++++ b/src/js/components/DateInput/DateInput.js
+@@ -175,27 +175,32 @@ Use the icon prop instead.`,
+         dates={dates}
+         // places focus on days grid when Calendar opens
+         initialFocus={open ? 'days' : undefined}
+-        onSelect={
+-          disabled
+-            ? undefined
+-            : (nextValue) => {
+-                let normalizedValue;
+-                if (range && Array.isArray(nextValue))
+-                  [normalizedValue] = nextValue;
+-                // clicking an edge date removes it
+-                else if (range) normalizedValue = [nextValue, nextValue];
+-                else normalizedValue = nextValue;
++onSelect={
++disabled
++? undefined
++: (nextValue) => {
++let normalizedValue;
++if (range && Array.isArray(nextValue))
++[normalizedValue] = nextValue;
++// clicking an edge date removes it
++else if (range) normalizedValue = [nextValue, nextValue];
++else normalizedValue = nextValue;
+ 
+-                if (schema) setTextValue(valueToText(normalizedValue, schema));
+-                setValue(normalizedValue);
+-                setReference(getReference(nextValue));
+-                if (onChange) onChange({ value: normalizedValue });
+-                if (open && !range) {
+-                  closeCalendar();
+-                  setTimeout(() => ref.current.focus(), 1);
+-                }
+-              }
+-        }
++// Check if the selected date is within bounds
++const [start, end] = calendarProps.bounds.map((d) => new Date(d));
++const selectedDate = new Date(normalizedValue);
++if (selectedDate >= start && selectedDate <= end) {
++if (schema) setTextValue(valueToText(normalizedValue, schema));
++setValue(normalizedValue);
++setReference(getReference(nextValue));
++if (onChange) onChange({ value: normalizedValue });
++if (open && !range) {
++closeCalendar();
++setTimeout(() => ref.current.focus(), 1);
++}
++}
++}
++}
+         {...calendarProps}
+       />
+     );

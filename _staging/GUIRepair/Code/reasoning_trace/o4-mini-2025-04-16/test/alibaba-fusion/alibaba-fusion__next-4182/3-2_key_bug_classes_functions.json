@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/cascader-select/cascader-select.jsx//CascaderSelect",
+            "src/overlay/index.jsx//Popup (the outer Popup wrapper)",
+            "src/overlay/popup-v2.jsx//Popup (the functional v2 Popup)",
+            "src/overlay/overlay-v2.jsx//Overlay2"
+        ],
+        "bug_functions": [
+            "src/cascader-select/cascader-select.jsx//getPopup",
+            "src/cascader-select/cascader-select.jsx//handleAfterOpen",
+            "src/overlay/index.jsx//Popup.render (v2 branch)",
+            "src/overlay/index.jsx//Popup.saveRef (missing in v2 case)"
+        ],
+        "explanation": "\u2022 CascaderSelect.getPopup: It assumes the Popup component will always expose a ref with a getInstance() or getContentNode(), but under v2 no ref is saved so ref is null.  \n\u2022 CascaderSelect.handleAfterOpen: Calls getPopup() to retrieve the open overlay instance; fails when getPopup() returns null.  \n\u2022 overlay/index.jsx Popup.render: In the v2 branch it returns <Popup2> without passing along a ref, so the parent class never gets a reference to the underlying overlay.  \n\u2022 overlay/index.jsx Popup.saveRef: The logic to attach ref only exists on the non-v2 branch; it needs to be applied when v2 is true or v2 Popup needs to expose an equivalent getInstance api.  \nTo fix this, either forward the ref in the v2 branch (and/or expose getInstance/getContentNode in popup-v2.jsx or overlay-v2.jsx) or adapt CascaderSelect.getPopup to the new v2 overlay API.",
+        "bug_scenario": "In the demo, passing popupProps={{ v2: true }} into <CascaderSelect> causes the overlay to use the new \u201cv2\u201d Popup implementation. Since the v2 branch in src/overlay/index.jsx doesn\u2019t forward a ref (and neither popup-v2.jsx nor overlay-v2.jsx expose the legacy getInstance/getContentNode APIs), CascaderSelect\u2019s getPopup() ends up being called on null. This produces \u201cCannot read properties of null (reading 'getInstance')\u201d when handleAfterOpen/fireVisibleChange tries to reach into the popup instance."
+    },
+    "2": {
+        "bug_classes": [
+            "src/cascader-select/cascader-select.jsx//CascaderSelect",
+            "src/overlay/index.jsx//Popup",
+            "src/overlay/popup-v2.jsx//Popup"
+        ],
+        "bug_functions": [
+            "src/cascader-select/cascader-select.jsx//getPopup",
+            "src/cascader-select/cascader-select.jsx//renderPopupContent",
+            "src/overlay/index.jsx//Popup.render",
+            "src/overlay/popup-v2.jsx//Popup (functional component)"
+        ],
+        "explanation": "\u2022 CascaderSelect.getPopup/renderPopupContent: CascaderSelect calls getPopup(ref) and then invokes getInstance() on the returned popup. In v2 mode it passes v2 to Overlay.Popup, so CascaderSelect tries to call getInstance on a null ref.\n\u2022 Overlay/index.jsx::Popup.render: When this.props.v2 is true it returns <Popup2 {...others}/> without attaching a ref or compatibility API, so no instance is created or passed back.\n\u2022 overlay/popup-v2.jsx::Popup: The v2 Popup is a plain functional component without forwardRef or useImperativeHandle to expose getInstance. It never provides the methods CascaderSelect expects.\nTogether these prevent CascaderSelect from obtaining the popup instance when v2: true, leading to the null.getInstance error.",
+        "bug_scenario": "In a demo using <CascaderSelect popupProps={{v2: true}} showSearch .../>, enabling the v2 popup triggers a runtime error \u201cCannot read properties of null (reading 'getInstance')\u201d. CascaderSelect internally grabs a ref to the Popup instance and calls getInstance on it; but when popupProps.v2 is true, Overlay.Popup.render returns the new functional Popup2 (from popup-v2.jsx) without forwarding a ref or exposing getInstance, so CascaderSelect\u2019s getPopup receives null and blows up."
+    }
+}

@@ -1,0 +1,39 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/StructuredList/StructuredList.tsx",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.tsx",
+            "packages/react/src/components/NumberInput/NumberInput.tsx",
+            "packages/react/src/components/Notification/Notification.tsx",
+            "packages/react/src/components/FilterableMultiSelect/index.js",
+            "packages/react/src/components/Dropdown/Dropdown.tsx",
+            "packages/react/src/components/DataTable/TableSelectRow.tsx",
+            "packages/react/src/components/InlineCheckbox/InlineCheckbox.js",
+            "packages/react/src/components/DataTable/TableSelectAll.tsx",
+            "packages/react/src/components/DataTable/TableExpandRow.tsx",
+            "packages/react/src/components/DataTable/TableExpandHeader.tsx",
+            "packages/react/src/components/ComboBox/ComboBox.tsx",
+            "packages/react/src/components/CodeSnippet/CodeSnippet.tsx"
+        ],
+        "explanation": "Each of these files defines a component API that currently expects a prop named `ariaLabel` (or only supports that camel-cased version). According to React\u2019s WAI-ARIA documentation, attributes like `aria-label` should be hyphen-cased in JSX. To ensure consistency and compliance, we must add support for the `aria-label` prop, deprecate `ariaLabel` via a warning helper, and adjust internal usage to prefer `aria-label` when provided\u2014while still honoring `ariaLabel` for backward compatibility during the deprecation period.",
+        "bug_scenario": "Several Carbon React components currently accept their header/accessibility label via a camel-cased prop `ariaLabel`, while others accept the hyphen-cased HTML attribute `aria-label`. Storybook for Modal shows `aria-label`, but ComboBox still only accepts `ariaLabel`, and other components vary. This inconsistency violates React\u2019s guidance (all `aria-*` attributes should be hyphen-case) and confuses users. We need to update all components that currently use `ariaLabel` to also accept `aria-label` (and deprecate `ariaLabel`)."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/StructuredList/StructuredList.tsx",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.tsx",
+            "packages/react/src/components/NumberInput/NumberInput.tsx",
+            "packages/react/src/components/Notification/Notification.tsx",
+            "packages/react/src/components/MultiSelect/FilterableMultiSelect.tsx",
+            "packages/react/src/components/Dropdown/Dropdown.tsx",
+            "packages/react/src/components/DataTable/TableSelectRow.tsx",
+            "packages/react/src/components/DataTable/TableSelectAll.tsx",
+            "packages/react/src/components/DataTable/TableExpandRow.tsx",
+            "packages/react/src/components/DataTable/TableExpandHeader.tsx",
+            "packages/react/src/components/ComboBox/ComboBox.tsx",
+            "packages/react/src/components/CodeSnippet/CodeSnippet.tsx"
+        ],
+        "explanation": "Each of these files defines a component that currently exposes an `ariaLabel` prop in its TypeScript definitions, PropTypes or story args. To achieve consistent, standards-compliant ARIA support across all React components, each must be updated to:\n 1. Deprecate the existing camelCase `ariaLabel` prop (e.g. via a deprecation warning helper)\n 2. Add the hyphen-cased `['aria-label']` prop to the component\u2019s prop definitions \n 3. Update internal prop resolution logic so that if a consumer passes `aria-label` it is used in preference to `ariaLabel`, but maintain backward compatibility until the old API is removed.\n\nBy touching each of these component source files, the library will uniformly accept `aria-label` and show the correct prop name in Storybook and TypeScript definitions, closing the inconsistency gap.",
+        "bug_scenario": "In the Carbon React storybook screenshots, we see that the Modal component\u2019s props panel lists a kebab-case prop name `aria-label`, while other components such as ComboBox still use the camelCase prop `ariaLabel`. Throughout the library, some components accept only `ariaLabel`, some only `aria-label`, and some accept both, leading to inconsistent APIs. According to React\u2019s accessibility guidelines, all ARIA attributes in JSX should be hyphen-cased. To fix this accessibility-API inconsistency, any component that currently only accepts `ariaLabel` must be updated to accept `aria-label` (while deprecating the old camelCase alias for backward compatibility)."
+    }
+}

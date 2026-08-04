@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-markdown/parser-markdown.js",
+            "src/language-markdown/embed.js",
+            "src/language-markdown/printer-markdown.js"
+        ],
+        "explanation": "All of these files participate in handling raw HTML inside Markdown. parser-markdown.js identifies HTML blocks in the Markdown AST. embed.js is responsible for calling the HTML printer and wrapping its output so it can be inserted into the Markdown document, applying indent logic. printer-markdown.js takes those embedded HTML nodes and generates the final indentation and line breaks. The repeated-indent bug happens because the embed and printer modules apply an extra level of indent on each format pass instead of normalizing back to the original list nesting level.",
+        "bug_scenario": "When formatting a Markdown file containing a nested HTML table under a numbered list, the \u201cformat on save\u201d feature with Prettier continually adds an extra indent to the raw HTML block on each save. The HTML table starts correctly indented but drifts further to the right every time the file is saved, breaking the desired alignment."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-markdown/embed.js",
+            "src/language-markdown/parser-markdown.js",
+            "src/language-markdown/printer-markdown.js",
+            "src/language-markdown/options.js",
+            "src/language-html/parser-parse5.js",
+            "src/language-html/printer-htmlparser2.js"
+        ],
+        "explanation": "All of the files above participate in detecting, parsing, printing and embedding raw HTML inside Markdown.  \n\n\u2022 src/language-markdown/parser-markdown.js  \u0012 recognizes raw HTML blocks in the Markdown AST.  \n\u2022 src/language-markdown/embed.js           \u0012 wraps the HTML parser/printer so it can be run inside a Markdown indent context.  \n\u2022 src/language-markdown/printer-markdown.js \u0012 finally prints those HTML nodes with the surrounding Markdown indentation.  \n\u2022 src/language-markdown/options.js         \u0012 contains the Markdown-specific settings that control how HTML blocks treat whitespace and indentation.  \n\nOnce the HTML is handed off to the HTML printer, it uses these two files:  \n\u2022 src/language-html/parser-parse5.js       \u0012 turns the HTML string into an AST.  \n\u2022 src/language-html/printer-htmlparser2.js \u0012 turns that AST back into formatted HTML, but currently ignores the correct \u201cbase\u201d indent for Markdown list nesting, causing the incremental shift on each save.  \n\nAdjusting the indent logic in the Markdown embed layer (or carrying the base indent through into the HTML printer) will stop the extra spaces from accumulating.",
+        "bug_scenario": "When you enable \u201cformat on save\u201d in VS Code with Prettier as the default formatter, any raw HTML block nested under a Markdown list will get an extra level of indentation on every single save. In the example, a `<table>\u2026</table>` block that lives four spaces under the list item (to make it a child of that list) will be moved right by 4 more spaces each time you save. After four saves it\u2019s pushed out by 16 spaces, completely mis-aligning your Markdown. Code blocks in Markdown can sometimes avoid repeating the shift after they\u2019re \u201cstabilized,\u201d but raw HTML never does."
+    }
+}

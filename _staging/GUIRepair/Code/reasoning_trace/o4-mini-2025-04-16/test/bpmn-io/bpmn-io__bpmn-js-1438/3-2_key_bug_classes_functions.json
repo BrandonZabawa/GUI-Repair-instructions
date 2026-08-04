@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/import/BpmnImporter.js//BpmnImporter",
+            "lib/util/LabelUtil.js//LabelUtil",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer"
+        ],
+        "bug_functions": [
+            "lib/import/BpmnImporter.js//BpmnImporter.prototype.add",
+            "lib/util/LabelUtil.js//isLabelExternal",
+            "lib/util/LabelUtil.js//getExternalLabelBounds",
+            "lib/draw/BpmnRenderer.js//BpmnRenderer.prototype.drawConnection"
+        ],
+        "explanation": "\u2022 BpmnImporter.prototype.add (lib/import/BpmnImporter.js) is responsible for creating connection elements and (conditionally) their external labels. Currently it only calls addLabel if getLabel(element) returns a truthy label, which does not pick up Message Flow \u201cname\u201d properties. To display message names here, addLabel must be invoked unconditionally for bpmn:MessageFlow even when no DI label bounds exist, or getLabel must be extended to read semantic.name.  \n\n\u2022 LabelUtil.isLabelExternal (lib/util/LabelUtil.js) flags MessageFlow as an element that should receive an external label. It works correctly, but downstream code never honors its result for message flows.  \n\n\u2022 LabelUtil.getExternalLabelBounds (lib/util/LabelUtil.js) computes where to place an external label on a flow. It must be exercised for MessageFlow; message-specific offset logic might need adjustment so the name doesn\u2019t overlap the envelope icon.  \n\n\u2022 BpmnRenderer.prototype.drawConnection (lib/draw/BpmnRenderer.js) draws the dashed line and message icon but does not render the label shape created by the importer. The renderer must be updated to discover and render label shapes for connection elements (e.g. by delegating to textRenderer for child label shapes).  \n\nTogether, these classes/functions form the import\u2192layout\u2192render pipeline for external labels on message flows; they must be extended or fixed to pick up BPMN messageFlow.name, create the label shape at the correct position, and draw it under the envelope icon.",
+        "bug_scenario": "In the provided BPMN diagram many of the Message Flow connections (dashed lines with envelope icons) carry a \u201cname\u201d in the underlying BPMN XML but no text label is ever rendered under the envelope. The red-boxed Message Flow (and many like it) show only an envelope icon on a dashed line with no \u201cmessage name\u201d text, even though the BPMN data for those flows has a <messageFlow name=\u201c\u2026\u201d> set."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/util/LabelUtil.js",
+            "lib/import/BpmnImporter.js",
+            "lib/draw/BpmnRenderer.js"
+        ],
+        "bug_functions": [
+            "LabelUtil.isLabelExternal",
+            "BpmnImporter.prototype.add",
+            "BpmnImporter.prototype.addLabel",
+            "BpmnRenderer.prototype.drawConnection"
+        ],
+        "explanation": "\u2022 LabelUtil.isLabelExternal: this function is responsible for marking bpmn:MessageFlow elements as having an external label. If this list is wrong or incomplete, the importer will never attempt to render a label for the message icon.\n\n\u2022 BpmnImporter.prototype.add: after creating a connection element for a MessageFlow, this method checks isLabelExternal(semantic) and then calls addLabel only if getLabel(element) returns non-empty text. Since getLabel currently only reads the flow\u2019s own name property (and not the referenced <bpmn:Message> name), it never returns the underlying message name.\n\n\u2022 BpmnImporter.prototype.addLabel: this is the routine that actually creates and positions the label shape under the connection. Even if LabelUtil and getLabel returned a string, any miscalculation of bounds or a missing call here would suppress the text.\n\n\u2022 BpmnRenderer.prototype.drawConnection: this renderer hook draws the MessageFlow line and the envelope marker. If a label shape has been added by the importer, drawConnection (or drawShape in the renderer) must still delegate to the TextRenderer to actually draw the label text. If it intentionally skips label rendering for MessageFlow or for shapes of type \u2018label\u2019 attached to message flows, the text will not appear.\n\nTo fix the problem, one must\n  \u2022 enhance getLabel (in features/label-editing/LabelUtil.js) to return semantic.messageRef.name when semantic.$type === 'bpmn:MessageFlow' and no other name is set;\n  \u2022 verify that isLabelExternal indeed returns true for MessageFlow;\n  \u2022 ensure BpmnImporter.add invokes addLabel for MessageFlows when getLabel now returns the messageRef name;\n  \u2022 and confirm that BpmnRenderer.drawConnection (or drawShape) does not filter out label shapes on MessageFlows so that the TextRenderer will actually paint the name under the envelope icon.",
+        "bug_scenario": "In the provided BPMN diagram message flows display the little envelope icon in the middle of the dashed connection but never show the actual name of the underlying <bpmn:Message> (or the name carried on the MessageFlow). In other words, although LabelUtil marks MessageFlows as \u201cexternal labels,\u201d and the importer even tries to create a label if getLabel(element) returns text, no text ever appears with the envelope icon. The red\u2010boxed example in the lower lane highlights exactly one of these nameless message icons."
+    }
+}

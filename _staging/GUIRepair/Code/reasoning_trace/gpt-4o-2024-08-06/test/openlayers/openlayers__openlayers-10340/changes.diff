@@ -1,0 +1,42 @@
+diff --git a/src/ol/geom/Polygon.js b/src/ol/geom/Polygon.js
+index 24d0f17d82..854238e2b8 100644
+--- a/src/ol/geom/Polygon.js
++++ b/src/ol/geom/Polygon.js
+@@ -420,8 +420,9 @@ export function makeRegular(polygon, center, radius, opt_angle) {
+   for (let i = 0; i <= sides; ++i) {
+     const offset = i * stride;
+     const angle = startAngle + (modulo(i, sides) * 2 * Math.PI / sides);
+-    flatCoordinates[offset] = center[0] + (radius * Math.cos(angle));
+-    flatCoordinates[offset + 1] = center[1] + (radius * Math.sin(angle));
++const geographicOffset = getGeographicOffset(center, radius, angle);
++flatCoordinates[offset] = geographicOffset[0];
++flatCoordinates[offset + 1] = geographicOffset[1];
+   }
+   polygon.changed();
+ }
+diff --git a/src/ol/interaction/Draw.js b/src/ol/interaction/Draw.js
+index c4e2824b44..da694a52d5 100644
+--- a/src/ol/interaction/Draw.js
++++ b/src/ol/interaction/Draw.js
+@@ -301,9 +301,8 @@ class Draw extends PointerInteraction {
+         geometryFunction = function(coordinates, opt_geometry) {
+           const circle = opt_geometry ? /** @type {Circle} */ (opt_geometry) :
+             new Circle([NaN, NaN]);
+-          const squaredLength = squaredCoordinateDistance(
+-            coordinates[0], coordinates[1]);
+-          circle.setCenterAndRadius(coordinates[0], Math.sqrt(squaredLength));
++const radius = getGeographicDistance(coordinates[0], coordinates[1]);
++circle.setCenterAndRadius(coordinates[0], radius);
+           return circle;
+         };
+       } else {
+@@ -970,8 +969,7 @@ export function createRegularPolygon(opt_sides, opt_angle) {
+     const center = /** @type {LineCoordType} */ (coordinates)[0];
+     const end = /** @type {LineCoordType} */ (coordinates)[1];
+     const radius = Math.sqrt(
+-      squaredCoordinateDistance(center, end));
+-    const geometry = opt_geometry ? /** @type {Polygon} */ (opt_geometry) :
++const radius = getGeographicDistance(center, end);
+       fromCircle(new Circle(center), opt_sides);
+     let angle = opt_angle;
+     if (!opt_angle) {

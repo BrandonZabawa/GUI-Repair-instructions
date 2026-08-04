@@ -1,0 +1,31 @@
+diff --git a/lighthouse-core/audits/uses-rel-preconnect.js b/lighthouse-core/audits/uses-rel-preconnect.js
+index f17d1ba58..48fd7c849 100644
+--- a/lighthouse-core/audits/uses-rel-preconnect.js
++++ b/lighthouse-core/audits/uses-rel-preconnect.js
+@@ -89,12 +89,15 @@ class UsesRelPreconnectAudit extends Audit {
+     const settings = context.settings;
+     let maxWasted = 0;
+ 
+-    const [networkRecords, mainResource, loadSimulator] = await Promise.all([
++    const [networkRecords, mainResource, loadSimulator, dom] = await Promise.all([
+       NetworkRecords.request(devtoolsLog, context),
+       MainResource.request({devtoolsLog, URL}, context),
+       LoadSimulator.request({devtoolsLog, settings}, context),
++      context.driver.evaluateAsync('Array.from(document.querySelectorAll("link[rel=preconnect], link[rel=dns-prefetch]")).map(link => link.href)')
+     ]);
+ 
++    const preconnectedOrigins = new Set(dom);
++
+     const {rtt, additionalRttByOrigin} = loadSimulator.getOptions();
+ 
+     /** @type {Map<string, LH.Artifacts.NetworkRequest[]>}  */
+@@ -112,7 +115,8 @@ class UsesRelPreconnectAudit extends Audit {
+           mainResource.parsedURL.securityOrigin === record.parsedURL.securityOrigin ||
+           // filter out all resources where origins are already resolved
+           UsesRelPreconnectAudit.hasAlreadyConnectedToOrigin(record) ||
+-          // make sure the requests are below the PRECONNECT_SOCKET_MAX_IDLE (15s) mark
++          // filter out origins that are already preconnected in the DOM
++          preconnectedOrigins.has(record.parsedURL.securityOrigin) ||
+           !UsesRelPreconnectAudit.socketStartTimeIsBelowThreshold(record, mainResource)
+         ) {
+           return;

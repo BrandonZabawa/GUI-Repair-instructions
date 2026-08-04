@@ -1,0 +1,490 @@
+{
+    "1/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "if (this.anchorOrigin_ != IconOrigin.TOP_LEFT) {",
+                    "if (!size) {",
+                    "return null;",
+                    "}",
+                    "if (anchor === this.anchor_) {",
+                    "anchor = this.anchor_.slice();",
+                    "}",
+                    "if (",
+                    "this.anchorOrigin_ == IconOrigin.TOP_RIGHT ||",
+                    "this.anchorOrigin_ == IconOrigin.BOTTOM_RIGHT",
+                    ") {",
+                    "anchor[0] = -anchor[0] + size[0];",
+                    "}",
+                    "if (",
+                    "this.anchorOrigin_ == IconOrigin.BOTTOM_LEFT ||",
+                    "this.anchorOrigin_ == IconOrigin.BOTTOM_RIGHT",
+                    ") {",
+                    "anchor[1] = -anchor[1] + size[1];",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (this.anchorOrigin_ != IconOrigin.TOP_LEFT) {",
+                    "if (!size) {",
+                    "return null;",
+                    "}",
+                    "if (anchor === this.anchor_) {",
+                    "anchor = this.anchor_.slice();",
+                    "}",
+                    "if (",
+                    "this.anchorOrigin_ == IconOrigin.TOP_RIGHT ||",
+                    "this.anchorOrigin_ == IconOrigin.BOTTOM_RIGHT",
+                    ") {",
+                    "anchor[0] = (this.scale < 0 ? -1 : 1) * (-anchor[0] + size[0]);",
+                    "}",
+                    "if (",
+                    "this.anchorOrigin_ == IconOrigin.BOTTOM_LEFT ||",
+                    "this.anchorOrigin_ == IconOrigin.BOTTOM_RIGHT",
+                    ") {",
+                    "anchor[1] = (this.scale < 0 ? -1 : 1) * (-anchor[1] + size[1]);",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "const iconContext = createCanvasContext2D(width, height);",
+                    "iconContext.drawImage(img, 0, 0);",
+                    "style.setImage(",
+                    "new Icon({",
+                    "img: img,",
+                    "imgSize: imgSize,",
+                    "anchor: image.getAnchor(),",
+                    "anchorXUnits: IconAnchorUnits.PIXELS,",
+                    "anchorYUnits: IconAnchorUnits.PIXELS,",
+                    "offset: image.getOrigin(),",
+                    "size: image.getSize(),",
+                    "opacity: image.getOpacity(),",
+                    "scale: image.getScale(),",
+                    "rotation: image.getRotation(),",
+                    "rotateWithView: image.getRotateWithView(),",
+                    "})",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const iconContext = createCanvasContext2D(width, height);",
+                    "iconContext.save();",
+                    "if (image.getScale() < 0) {",
+                    "iconContext.scale(-1, -1);",
+                    "iconContext.translate(-width, -height);",
+                    "}",
+                    "iconContext.drawImage(img, 0, 0);",
+                    "iconContext.restore();",
+                    "style.setImage(",
+                    "new Icon({",
+                    "img: img,",
+                    "imgSize: imgSize,",
+                    "anchor: image.getAnchor(),",
+                    "anchorXUnits: IconAnchorUnits.PIXELS,",
+                    "anchorYUnits: IconAnchorUnits.PIXELS,",
+                    "offset: image.getOrigin(),",
+                    "size: image.getSize(),",
+                    "opacity: image.getOpacity(),",
+                    "scale: image.getScale(),",
+                    "rotation: image.getRotation(),",
+                    "rotateWithView: image.getRotateWithView(),",
+                    "})",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "const scale = options.scale !== undefined ? options.scale : 1;"
+                ],
+                "REPLACE": [
+                    "// Adjust the scale to always be positive",
+                    "const scale = options.scale !== undefined ? Math.abs(options.scale) : 1;"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "const width = imgSize ? imgSize[0] : img.width;",
+                    "const height = imgSize ? imgSize[1] : img.height;"
+                ],
+                "REPLACE": [
+                    "// Take absolute value of dimensions for negative scales",
+                    "const width = imgSize ? Math.abs(imgSize[0]) : Math.abs(img.width);",
+                    "const height = imgSize ? Math.abs(imgSize[1]) : Math.abs(img.height);"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "const scale = options.scale !== undefined ? options.scale : 1;",
+                    "...",
+                    "const size = this.getSize();",
+                    "...",
+                    "anchor = this.anchor_.slice();"
+                ],
+                "REPLACE": [
+                    "const scale = options.scale !== undefined ? Math.abs(options.scale) : 1;",
+                    "...",
+                    "const size = this.getSize();",
+                    "if (scale < 0) {",
+                    "anchor = [size[0] - anchor[0], size[1] - anchor[1]];",
+                    "} else {",
+                    "anchor = this.anchor_.slice();",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "canvas.width = imgSize[0];",
+                    "canvas.height = imgSize[1];",
+                    "...",
+                    "const iconContext = createCanvasContext2D(width, height);",
+                    "iconContext.drawImage(img, 0, 0);"
+                ],
+                "REPLACE": [
+                    "const scale = Math.abs(image.getScale());",
+                    "canvas.width = imgSize[0] * scale;",
+                    "canvas.height = imgSize[1] * scale;",
+                    "...",
+                    "const iconContext = createCanvasContext2D(width * scale, height * scale);",
+                    "iconContext.scale(scale, scale);",
+                    "iconContext.drawImage(img, 0, 0);"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "const scale = options.scale !== undefined ? options.scale : 1;"
+                ],
+                "REPLACE": [
+                    "const scale = options.scale !== undefined ? Math.abs(options.scale) : 1;"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "const width = size[0] / 2;",
+                    "const height = size[1] / 2;",
+                    "const context = createCanvasContext2D(width, height);"
+                ],
+                "REPLACE": [
+                    "const width = Math.abs(size[0]) / 2;",
+                    "const height = Math.abs(size[1]) / 2;",
+                    "const context = createCanvasContext2D(width, height);"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "super({",
+                    "opacity: opacity,",
+                    "rotation: rotation,",
+                    "scale: scale,",
+                    "displacement:",
+                    "options.displacement !== undefined ? options.displacement : [0, 0],",
+                    "rotateWithView: rotateWithView,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "// Ensure scale is positive for rendering transformations",
+                    "super({",
+                    "opacity: opacity,",
+                    "rotation: rotation,",
+                    "scale: Math.abs(scale),",
+                    "displacement:",
+                    "options.displacement !== undefined ? options.displacement : [0, 0],",
+                    "rotateWithView: rotateWithView,",
+                    "});"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "const width = imgSize ? imgSize[0] : img.width;",
+                    "const height = imgSize ? imgSize[1] : img.height;",
+                    "const iconContext = createCanvasContext2D(width, height);",
+                    "iconContext.drawImage(img, 0, 0);"
+                ],
+                "REPLACE": [
+                    "let width = imgSize ? imgSize[0] : img.width;",
+                    "let height = imgSize ? imgSize[1] : img.height;",
+                    "// If scale is negative, mirror the image and adjust dimensions",
+                    "if (image.getScale() < 0) {",
+                    "imgContext.scale(-1, 1);",
+                    "width = -width;",
+                    "}",
+                    "const iconContext = createCanvasContext2D(Math.abs(width), Math.abs(height));",
+                    "iconContext.drawImage(img, 0, 0, Math.abs(width), Math.abs(height));"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "const scale = options.scale !== undefined ? options.scale : 1;"
+                ],
+                "REPLACE": [
+                    "const scale = Math.abs(options.scale !== undefined ? options.scale : 1);"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "imgContext.fillRect(0, 0, img.width, img.height);",
+                    "const width = imgSize ? imgSize[0] : img.width;",
+                    "const height = imgSize ? imgSize[1] : img.height;"
+                ],
+                "REPLACE": [
+                    "const scale = image.getScale();",
+                    "const isNegativeScale = scale < 0;",
+                    "if (isNegativeScale) {",
+                    "imgContext.translate(img.width, img.height);",
+                    "imgContext.scale(-1, -1);",
+                    "}",
+                    "imgContext.fillRect(0, 0, img.width, img.height);",
+                    "const width = imgSize ? Math.abs(imgSize[0]) : Math.abs(img.width);",
+                    "const height = imgSize ? Math.abs(imgSize[1]) : Math.abs(img.height);",
+                    "if (isNegativeScale) {",
+                    "imgContext.translate(img.width, img.height);",
+                    "imgContext.scale(-1, -1);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* @type {number|import(\"../size.js\").Size}",
+                    "*/",
+                    "const scale = options.scale !== undefined ? options.scale : 1;"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* Adjust scale when negative. If the scale is negative, we should flip",
+                    "* the image by mirroring it. This patch assumes flipping occurs automatically",
+                    "* and scale is set to the positive equivalent for the scale logic.",
+                    "* @type {number|import(\"../size.js\").Size}",
+                    "*/",
+                    "const scale = options.scale !== undefined ? Math.abs(options.scale) : 1;"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "style.setImage(",
+                    "new Icon({",
+                    "img: img,",
+                    "imgSize: imgSize,",
+                    "anchor: image.getAnchor(),",
+                    "anchorXUnits: IconAnchorUnits.PIXELS,",
+                    "anchorYUnits: IconAnchorUnits.PIXELS,",
+                    "offset: image.getOrigin(),",
+                    "size: image.getSize(),",
+                    "opacity: image.getOpacity(),",
+                    "scale: image.getScale(),",
+                    "rotation: image.getRotation(),",
+                    "rotateWithView: image.getRotateWithView(),",
+                    "})",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const scale = image.getScale();",
+                    "style.setImage(",
+                    "new Icon({",
+                    "img: img,",
+                    "imgSize: imgSize,",
+                    "anchor: image.getAnchor(),",
+                    "anchorXUnits: IconAnchorUnits.PIXELS,",
+                    "anchorYUnits: IconAnchorUnits.PIXELS,",
+                    "offset: image.getOrigin(),",
+                    "size: image.getSize(),",
+                    "opacity: image.getOpacity(),",
+                    "scale: Math.abs(scale),",
+                    "rotation: image.getRotation(),",
+                    "rotateWithView: image.getRotateWithView(),",
+                    "})",
+                    ");",
+                    "",
+                    "// Apply necessary transformations for hit detection if flipping effect is needed",
+                    "const isFlipped = Array.isArray(scale) ? scale[0] < 0 || scale[1] < 0 : scale < 0;",
+                    "if (isFlipped) {",
+                    "context.save();",
+                    "context.scale(scale < 0 ? -1 : 1, scale < 0 ? -1 : 1);",
+                    "context.translate(scale < 0 ? -canvas.width : 0, scale < 0 ? -canvas.height : 0);",
+                    "context.restore();",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "const scale = options.scale !== undefined ? options.scale : 1;"
+                ],
+                "REPLACE": [
+                    "const scale = options.scale !== undefined ? Math.abs(options.scale) : 1;"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "style.setImage(",
+                    "new Icon({",
+                    "img: img,",
+                    "imgSize: imgSize,",
+                    "anchor: image.getAnchor(),",
+                    "anchorXUnits: IconAnchorUnits.PIXELS,",
+                    "anchorYUnits: IconAnchorUnits.PIXELS,",
+                    "offset: image.getOrigin(),",
+                    "size: image.getSize(),",
+                    "opacity: image.getOpacity(),",
+                    "scale: image.getScale(),",
+                    "rotation: image.getRotation(),",
+                    "rotateWithView: image.getRotateWithView(),",
+                    "})",
+                    ");"
+                ],
+                "REPLACE": [
+                    "const adjustedScale = image.getScale();",
+                    "style.setImage(",
+                    "new Icon({",
+                    "img: img,",
+                    "imgSize: imgSize,",
+                    "anchor: image.getAnchor(),",
+                    "anchorXUnits: IconAnchorUnits.PIXELS,",
+                    "anchorYUnits: IconAnchorUnits.PIXELS,",
+                    "offset: image.getOrigin(),",
+                    "size: image.getSize(),",
+                    "opacity: image.getOpacity(),",
+                    "// Adjust scale handling here",
+                    "scale: Array.isArray(adjustedScale) ? adjustedScale.map(Math.abs) : Math.abs(adjustedScale),",
+                    "rotation: image.getRotation(),",
+                    "rotateWithView: image.getRotateWithView(),",
+                    "})",
+                    ");"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "let offset = this.offset_;"
+                ],
+                "REPLACE": [
+                    "let offset = this.offset_.slice();",
+                    "const scale = Array.isArray(this.getScale()) ? this.getScale() : [this.getScale(), this.getScale()];",
+                    "offset = offset.map((value, index) => scale[index] < 0 ? -value : value);"
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "renderer.drawGeometry(geomAndStyle[j]);"
+                ],
+                "REPLACE": [
+                    "const geometry = geomAndStyle[j];",
+                    "const scale = image.getScale();",
+                    "const transformMatrix = renderer.getTransform();",
+                    "if (scale < 0) {",
+                    "transformMatrix[0] *= -1; // Flip X-axis for negative scale",
+                    "transformMatrix[3] *= -1; // Flip Y-axis for negative scale",
+                    "}",
+                    "renderer.setTransform(transformMatrix);",
+                    "renderer.drawGeometry(geometry);"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/style/Icon.js": [
+            {
+                "SEARCH": [
+                    "if (this.anchorOrigin_ != IconOrigin.TOP_LEFT) {",
+                    "if (!size) {",
+                    "return null;",
+                    "}",
+                    "if (anchor === this.anchor_) {",
+                    "anchor = this.anchor_.slice();",
+                    "}",
+                    "if (",
+                    "this.anchorOrigin_ == IconOrigin.TOP_RIGHT ||",
+                    "this.anchorOrigin_ == IconOrigin.BOTTOM_RIGHT",
+                    ") {",
+                    "anchor[0] = -anchor[0] + size[0];",
+                    "}",
+                    "if ("
+                ],
+                "REPLACE": [
+                    "if (this.anchorOrigin_ != IconOrigin.TOP_LEFT) {",
+                    "if (!size) {",
+                    "return null;",
+                    "}",
+                    "if (anchor === this.anchor_) {",
+                    "anchor = this.anchor_.slice();",
+                    "}",
+                    "const scale = this.getScale();",
+                    "if (",
+                    "this.anchorOrigin_ == IconOrigin.TOP_RIGHT ||",
+                    "this.anchorOrigin_ == IconOrigin.BOTTOM_RIGHT",
+                    ") {",
+                    "anchor[0] = (scale < 0 ? anchor[0] : -anchor[0]) + size[0];",
+                    "}",
+                    "if ("
+                ]
+            }
+        ],
+        "src/ol/render/canvas/hitdetect.js": [
+            {
+                "SEARCH": [
+                    "renderer.drawGeometry(geomAndStyle[j]);"
+                ],
+                "REPLACE": [
+                    "const style = geomAndStyle[j + 1];",
+                    "const image = style.getImage();",
+                    "if (image && image.getScale() < 0) {",
+                    "context.save();",
+                    "context.scale(-1, 1);",
+                    "renderer.drawGeometry(geomAndStyle[j]);",
+                    "context.restore();",
+                    "} else {",
+                    "renderer.drawGeometry(geomAndStyle[j]);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

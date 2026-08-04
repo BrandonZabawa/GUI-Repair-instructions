@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//ContentSwitcher",
+            "packages/components/src/components/content-switcher/content-switcher.config.js//module.exports"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//static propTypes",
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//static defaultProps",
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//render"
+        ],
+        "explanation": "The ContentSwitcher class is where the `light` prop must be declared and handled. We need to extend its static `propTypes` to include a boolean `light` prop, add `light: false` to `defaultProps`, and update the `render` method\u2019s `classNames` call to conditionally apply the `\n`${prefix}--content-switcher--light`\n` modifier when `light` is true. Additionally, the component\u2019s core configuration file (content-switcher.config.js) defines Storybook variants\u2014so we must add a new `light` variant there (context: { light: true }) so docs and demos reflect the new theme option.",
+        "bug_scenario": "The bug shows the ContentSwitcher rendered on a dark (ui-01) page background: the selected switch button blends into the white page area and the unselected button has insufficient contrast, making the controls hard to read. We need to add a `light` variant/prop so that, when used on dark backgrounds, the switcher applies a light theme class (e.g. `--content-switcher--light`) to invert its colors."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/components/src/components/content-switcher/content-switcher.config.js",
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//ContentSwitcher",
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher.js//render",
+            "packages/react/src/components/ContentSwitcher/ContentSwitcher-story.js//contentSwitcher"
+        ],
+        "explanation": "1. content-switcher.config.js: This config file defines the variants for the vanilla JS component. A new \u201clight\u201d variant (with context.light = true and the appropriate notes) must be added here so designers can preview it.\n2. ContentSwitcher.js (class ContentSwitcher): This React class doesn\u2019t yet accept or act on a `light` prop. We need to add `light: PropTypes.bool` and `light: false` in defaultProps, then update the render() method\u2019s classNames call to include `${prefix}--content-switcher--light` when `this.props.light` is true.\n3. ContentSwitcher-story.js (function contentSwitcher): The Storybook story generator for ContentSwitcher needs a new boolean knob for the `light` prop and must pass it into the rendered component so engineers can QA the light variant.\n4. ContentSwitcher-test.js: The unit tests must be extended to assert that when `<ContentSwitcher light>\u2026</ContentSwitcher>` is rendered, the container has the `--light` modifier class, preventing regressions.",
+        "bug_scenario": "The ContentSwitcher component currently renders white-on-white styling when placed on a dark \u201cui-01\u201d background, making the active switch indistinguishable. In the provided screenshot, the switch labeled \u201cBy reviewer\u201d blends into the white track and fails to contrast against the dark page background. A light variant (similar to TextInput\u2019s \u201c--light\u201d mode) is needed so the switches render in an inverted (dark-on-light) style when placed on dark backgrounds."
+    }
+}

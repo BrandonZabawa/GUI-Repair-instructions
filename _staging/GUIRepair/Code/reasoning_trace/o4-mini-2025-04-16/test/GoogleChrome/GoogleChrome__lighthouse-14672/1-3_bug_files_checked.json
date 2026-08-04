@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "clients/devtools/devtools-entry.js",
+            "core/lib/emulation.js"
+        ],
+        "explanation": "clients/devtools/devtools-entry.js is where DevTools forces screenEmulation.disabled=true. That flag flows into the core emulation description logic. lib/emulation.js implements getEmulationDescriptions(), which checks screenEmulation.disabled and, if true, returns the \u201cno emulation\u201d string. Together, these two files cause the DevTools UI to incorrectly label mobile runs as having no emulation.",
+        "bug_scenario": "When running Lighthouse from within Chrome DevTools, DevTools sets screen emulation as disabled in devtools-entry.js. As a result, the shared getEmulationDescriptions() routine (in lib/emulation.js) sees screenEmulation.disabled===true and returns \u201cNo emulation\u201d for the device description. The UI then shows \u201cNo emulation with Lighthouse\u201d (as seen in the screenshot) even though a mobile emulation profile and CPU throttling are in effect."
+    },
+    "2": {
+        "bug_files": [
+            "clients/devtools/devtools-entry.js",
+            "core/lib/emulation.js",
+            "third-party/devtools-tests/e2e/lighthouse/devtools-settings_test.ts"
+        ],
+        "explanation": "\u2022 clients/devtools/devtools-entry.js explicitly sets disableDeviceEmulation (maps to settings.screenEmulation.disabled) so that Lighthouse itself doesn\u2019t try to emulate a device when DevTools is already doing so.  That flag is now causing getEmulationDescriptions to report \u201cno emulation.\u201d\n\u2022 lib/emulation.js (which implements getEmulationDescriptions) returns the \u201cNo emulation with Lighthouse\u201d string whenever screenEmulation.disabled is true.  It needs to special-case DevTools or use a different flag so that DevTools emulation still appears in the UI.\n\u2022 third-party/devtools-tests/e2e/lighthouse/devtools-settings_test.ts contains the end-to-end assertion for the DevTools UI badge.  It\u2019s now failing because the UI text has changed, so the test will need updating once the underlying logic is fixed.",
+        "bug_scenario": "When running Lighthouse from within Chrome DevTools on a mobile-emulated page, the UI badge and tooltip incorrectly say \u201cNo emulation with Lighthouse\u201d instead of reflecting the DevTools device emulation.  In screenshot: even though DevTools is in mobile emulation mode (e.g. iPhone), Lighthouse thinks screen emulation has been disabled and shows \u201cNo emulation.\u201d"
+    }
+}

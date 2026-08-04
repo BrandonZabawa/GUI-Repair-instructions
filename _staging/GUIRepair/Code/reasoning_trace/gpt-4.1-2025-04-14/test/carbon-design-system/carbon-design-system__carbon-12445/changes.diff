@@ -1,0 +1,77 @@
+diff --git a/packages/react/src/components/ComboBox/ComboBox.js b/packages/react/src/components/ComboBox/ComboBox.js
+index 1e9463c2..64d90110 100644
+--- a/packages/react/src/components/ComboBox/ComboBox.js
++++ b/packages/react/src/components/ComboBox/ComboBox.js
+@@ -77,6 +77,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+     className: containerClassName,
+     direction,
+     disabled,
++    readOnly, // NEW: add readOnly prop
+     downshiftProps,
+     helperText,
+     id,
+@@ -203,6 +204,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+     {
+       [`${prefix}--list-box--up`]: direction === 'top',
+       [`${prefix}--combo-box--warning`]: showWarning,
++      [`${prefix}--combo-box--readonly`]: readOnly, // NEW: add read-only class
+     }
+   );
+   const titleClasses = cx(`${prefix}--label`, {
+@@ -224,6 +226,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+ 
+   const inputClasses = cx(`${prefix}--text-input`, {
+     [`${prefix}--text-input--empty`]: !inputValue,
++    [`${prefix}--text-input--readonly`]: readOnly, // NEW: add read-only class
+   });
+ 
+   // needs to be Capitalized for react to render it correctly
+@@ -285,11 +288,18 @@ const ComboBox = React.forwardRef((props, ref) => {
+           // Remove excess aria `aria-labelledby`. HTML <label for> provides this aria information.
+           'aria-labelledby': null,
+           disabled,
++          readOnly, // NEW: pass readOnly to inputProps
+           placeholder,
+           onClick() {
+-            toggleMenu();
++            if (!readOnly) {
++              toggleMenu();
++            }
+           },
+           onKeyDown: (event) => {
++            if (readOnly) {
++              event.preventDefault();
++              return;
++            }
+             if (match(event, keys.Space)) {
+               event.stopPropagation();
+             }
+@@ -331,6 +341,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+                 <input
+                   role="combobox"
+                   disabled={disabled}
++                  readOnly={readOnly} // NEW: set readOnly attribute
+                   className={inputClasses}
+                   type="text"
+                   tabIndex="0"
+@@ -353,7 +364,7 @@ const ComboBox = React.forwardRef((props, ref) => {
+                     className={`${prefix}--list-box__invalid-icon ${prefix}--list-box__invalid-icon--warning`}
+                   />
+                 )}
+-                {inputValue && (
++                {inputValue && !readOnly && (
+                   <ListBoxSelection
+                     clearSelection={clearSelection}
+                     translateWithId={translateWithId}
+@@ -429,6 +440,11 @@ ComboBox.propTypes = {
+    */
+   ariaLabel: PropTypes.string,
+ 
++  /**
++   * Specify if the ComboBox should be read-only
++   */
++  readOnly: PropTypes.bool,
++
+   /**
+    * An optional className to add to the container node
+    */

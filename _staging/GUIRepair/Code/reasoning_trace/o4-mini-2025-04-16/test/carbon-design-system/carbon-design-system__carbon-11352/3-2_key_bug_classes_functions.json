@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Button/Button.js//Button",
+            "packages/react/src/components/IconButton/index.js//IconButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Button/Button.js//handleClick",
+            "packages/react/src/components/IconButton/index.js//IconButton (forwardRef callback)"
+        ],
+        "explanation": "The Button component\u2019s hasIconOnly branch wraps icon-only buttons in an IconButton, passing along the size prop. By default IconButton is defined with size='md', so Button computes its padding using the regular md button CSS class (`${prefix}--btn--md`). That padding doesn\u2019t match the design token for icon-only buttons and causes the right padding to be off. To fix this, the default size or CSS mapping in IconButton (or the hasIconOnly block in Button.js) must be adjusted so that icon-only buttons use the correct padding class or token rather than the standard md padding.",
+        "bug_scenario": "When rendering an IconButton without an explicit size the component falls back to a default \u201cmd\u201d size and applies the regular \u201cmd\u201d button padding class. In the provided screenshot the right\u2010hand padding is too small, showing the icon sitting too close to the edge of its container and the tooltip arrow misaligned."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Button/Button.js//Button",
+            "packages/react/src/components/IconButton/index.js//IconButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Button/Button.js//forwardRef(Button)",
+            "packages/react/src/components/IconButton/index.js//forwardRef(IconButton)"
+        ],
+        "explanation": "The padding issue lives in the Button component\u2019s icon\u2010only logic and in the IconButton wrapper. In Button.js the hasIconOnly branch is intended to swap into the true icon\u2010only layout, but because IconButton never passes hasIconOnly down, Button renders with standard \u201cmd\u201d button padding. At the same time, IconButton (in index.js) simply calls <Button size=\"md\" kind=\u2026> without propagating hasIconOnly, so the icon\u2010only padding rules never apply. To fix the right spacing, IconButton should pass hasIconOnly (and ideally the IconButton size token) into the underlying Button, or the Button hasIconOnly branch should be refactored to avoid this circular logic.",
+        "bug_scenario": "When using the IconButton component on Chrome (v1.1.0 of @carbon/react), the right padding on the icon\u2010only button is too small. The screenshot shows the rectangular button container is too tight on the right side of the pencil icon. It appears IconButton is rendering the Button at the default \u201cmd\u201d padding rather than using the icon\u2010only spacing token."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/drilldown/DrilldownBreadcrumbs.js",
+            "lib/util/DrilldownUtil.js",
+            "lib/features/drilldown/SubprocessCompatibility.js",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js"
+        ],
+        "explanation": "\u2022 DrilldownBreadcrumbs.js: this component builds and handles clicks on the breadcrumb trail; it\u2019s where setRootElement is called with the wrong target when the subprocess is wrapped by a pool.  \n\u2022 DrilldownUtil.js: contains helper logic for finding and normalizing drill-down roots; it doesn\u2019t account for the extra pool wrapper and therefore returns undefined.  \n\u2022 SubprocessCompatibility.js: adapts drill-down behavior for collapsed subprocesses; needs to include logic for pool-wrapped subprocesses.  \n\u2022 DrilldownOverlayBehavior.js: listens for root changes to update overlays; because the root change never properly fires, overlays aren\u2019t reattached on drill out.  \n\u2022 UpdateCanvasRootHandler.js: the command handler for changing the canvas root; it must correctly wire up the new rootElement for undo/redo and event firing.  \n\u2022 Canvas.js: implements setRootElement and throws the error when no valid rootElement is passed; it surfaces the bug and its guardrail may need to be adjusted once the callers are fixed.",
+        "bug_scenario": "When drilling into a collapsed subprocess that\u2019s wrapped by a pool, clicking the breadcrumb to drill back out triggers a call to Canvas.setRootElement with an undefined rootElement. This throws \u201crootElement required\u201d and leaves you stuck inside the subprocess."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/drilldown/DrilldownBreadcrumbs.js",
+            "lib/features/drilldown/DrilldownOverlayBehavior.js",
+            "lib/features/drilldown/DrilldownCentering.js",
+            "lib/features/drilldown/SubprocessCompatibility.js",
+            "lib/util/DrilldownUtil.js",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js"
+        ],
+        "explanation": "\u2022 DrilldownBreadcrumbs.js \u2013 contains the click handler that invokes canvas.setRootElement; because the overlay hasn\u2019t updated its stored root, it ends up passing undefined and throws the error.  \n\u2022 DrilldownOverlayBehavior.js \u2013 registers the drilldown overlay on the diagram, but never listens for or reacts to canvas root change events (e.g. when a collapsed subprocess under a pool becomes the new root).  \n\u2022 DrilldownCentering.js \u2013 meant to re-center the viewport on the active root, but isn\u2019t triggered on drill-out in the pool/subprocess scenario, so the overlay remains out of sync.  \n\u2022 SubprocessCompatibility.js \u2013 adds compatibility fixes for collapsed subprocesses, but doesn\u2019t handle the additional pool wrapper, so the drilldown utilities never resolve the true parent root.  \n\u2022 DrilldownUtil.js \u2013 helper functions that compute drilldown targets; they don\u2019t accommodate the extra pool level, leading to missing/undefined root references when building breadcrumbs.  \n\u2022 UpdateCanvasRootHandler.js \u2013 the modeling command that actually performs canvas.setRootElement; although it correctly sets the new root when drilling in, it isn\u2019t wired into the drilldown overlay lifecycle, so drilling back out never invokes it with a valid element.",
+        "bug_scenario": "When I wrap a collapsed subprocess inside a pool, navigate into that subprocess, and then click the breadcrumb back to the parent process, the library throws \u201cUncaught Error: rootElement required.\u201d In the drill-out click handler (in DrilldownBreadcrumbs.js), canvas.setRootElement is called with an undefined element. In other words, after I drill into the subprocess the drilldown overlay never picks up the new root, so when I try to drill back out it has no valid rootElement to pass to the canvas."
+    }
+}

@@ -1,0 +1,17 @@
+diff --git a/lighthouse-core/audits/byte-efficiency/offscreen-images.js b/lighthouse-core/audits/byte-efficiency/offscreen-images.js
+index 20b1673ac..943f48b77 100644
+--- a/lighthouse-core/audits/byte-efficiency/offscreen-images.js
++++ b/lighthouse-core/audits/byte-efficiency/offscreen-images.js
+@@ -72,6 +72,12 @@ class OffscreenImages extends Audit {
+     const url = URL.getDisplayName(image.src, {preserveQuery: true});
+     const totalPixels = image.clientWidth * image.clientHeight;
+     const visiblePixels = this.computeVisiblePixels(image.clientRect, viewportDimensions);
++    
++    // Skip SVG images as they may not have valid clientWidth/clientHeight
++    if (image.networkRecord.mimeType === 'image/svg+xml') {
++      return null;
++    }
++
+     const wastedRatio = 1 - visiblePixels / totalPixels;
+     const totalBytes = image.networkRecord.resourceSize;
+     const wastedBytes = Math.round(totalBytes * wastedRatio);

@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "resources/filters/quarto-pre/code-annotation.lua",
+            "resources/filters/quarto-post/tikz.lua",
+            "src/format/pdf/format-pdf.ts"
+        ],
+        "explanation": "\u2022 resources/filters/quarto-pre/code-annotation.lua: This pre-filter scans code blocks for annotation markers and should record the positions of callout numbers. It is also where metadata for later TikZ injection is prepared. If this filter doesn\u2019t run or doesn\u2019t tag the document properly, no annotations appear.\n\n\u2022 resources/filters/quarto-post/tikz.lua: This post-filter is responsible for adding the LaTeX header includes \u2014 namely \u201c\\\\usepackage{tikz}\u201d and the definition of the \u201c\\\\circled\u201d macro. Without this, the generated .tex file has undefined commands and will not draw circled numbers.\n\n\u2022 src/format/pdf/format-pdf.ts: This TypeScript file wires up the PDF-specific format, registering which pre- and post-filters to apply for PDF output. If it fails to include the code-annotation and tikz filters in its filter list (or points to the wrong paths), neither the annotation metadata nor the TikZ injection will occur. To fix the bug, ensure this file references both filters under the PDF pipeline so that code-annotation.lua and tikz.lua actually run when producing PDFs.",
+        "bug_scenario": "When rendering PDF documents in Quarto v1.3.336, code annotations that should draw circled callout numbers via TikZ do not appear. In the generated LaTeX the ``\\circled`` macro is undefined and the TikZ package is never \\usepackage'd, so the little circled numbers and stylized list elements shown in the screenshot do not render. This indicates that the filters responsible for injecting the TikZ dependency and defining the macro are either not firing or not registered in the PDF format pipeline."
+    },
+    "2": {
+        "bug_files": [
+            "resources/filters/quarto-pre/code-annotation.lua",
+            "src/format/pdf.ts",
+            "resources/formats/pdf/pandoc/default.latex"
+        ],
+        "explanation": "1. resources/filters/quarto-pre/code-annotation.lua \u2013 this filter turns \u201c// <n>\u201d markers into call-outs but isn\u2019t being registered for the PDF output path.\n2. src/format/pdf.ts \u2013 the PDF formatter builds the pandoc command and should include the code-annotation.lua filter in its list of default filters; it currently omits it.\n3. resources/formats/pdf/pandoc/default.latex \u2013 the LaTeX template for PDF must load TikZ and define the \\circled{\u00b7} command so that call-out numbers render as circled symbols, but the TikZ package and macro definition are missing here.",
+        "bug_scenario": "When rendering a PDF in Quarto v1.3.336 the usual call-out annotations on code blocks no longer appear, and the little circled numbers in the adjacent list are not styled correctly. In the example the Lua filter that scans for \u201c// <1>\u201d markers is not run in the PDF pipeline, and the LaTeX template never pulls in TikZ or defines the \\circled macro, so you get a raw \u201c(1)\u201d instead of a circled \u201c\u2460\u201d."
+    }
+}

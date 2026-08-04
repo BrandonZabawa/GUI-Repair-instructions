@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/interaction/Draw.js//Draw",
+            "src/ol/interaction/Pointer.js//PointerInteraction",
+            "src/ol/interaction/DragPan.js//DragPan"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Draw.js//handleUpEvent",
+            "src/ol/interaction/Draw.js//finishDrawing",
+            "src/ol/interaction/Draw.js//abortDrawing_",
+            "src/ol/interaction/Pointer.js//handleEvent",
+            "src/ol/interaction/DragPan.js//handleDownEvent"
+        ],
+        "explanation": "The Draw interaction (in Draw.js) is responsible for starting and ending the user\u2019s drawing sequence. Its handleUpEvent and finishDrawing methods dispatch the drawend event but do not properly reset the internal pointer-sequence state or clear the sketch overlay. Because Draw extends PointerInteraction, the base PointerInteraction.handleEvent machinery continues treating pointer events as part of a still-open \u201cdown-up\u201d sequence, swallowing subsequent pointerdown events. As a result, the DragPan.handleDownEvent (in DragPan.js) never fires, so the map pan never begins. Fixing this requires updating Draw.finishDrawing (and/or abortDrawing_) and Draw.handleUpEvent to clear the handlingDownUpSequence flag (or call abortDrawing_), allowing pointer events to propagate to DragPan again.",
+        "bug_scenario": "After completing (drawend) a polygon with the Draw interaction (using altKeyOnly), the map no longer responds to drag gestures. Pointer events continue to be captured by the Draw interaction instead of falling through to the DragPan interaction, so panning the map is effectively disabled until the page is reloaded."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/interaction/Draw.js//Draw",
+            "src/ol/interaction/Pointer.js//PointerInteraction",
+            "src/ol/interaction/DragPan.js//DragPan"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Draw.js//handleUpEvent",
+            "src/ol/interaction/Draw.js//finishDrawing",
+            "src/ol/interaction/Pointer.js//handleEvent",
+            "src/ol/interaction/DragPan.js//handleDownEvent"
+        ],
+        "explanation": "\u2022 Draw.handleUpEvent: this method finalizes the polygon and is responsible for resetting the down/up sequence in the Draw interaction. If it does not return false (or otherwise clear the handlingDownUpSequence flag), Draw will continue to intercept subsequent pointer events, blocking map panning.\n\u2022 Draw.finishDrawing: this function cleans up the sketch and dispatches drawend, but must also clear any internal flags or listeners that keep Draw in a captured state. A missing state reset here will prevent pointer events from propagating.\n\u2022 PointerInteraction.handleEvent: the base class that routes all pointerdown/drag/up events based on handlingDownUpSequence. If Draw never resets handlingDownUpSequence to false, this handler will continue to swallow events even after drawing has ended.\n\u2022 DragPan.handleDownEvent: the pan interaction\u2019s entry point for starting a drag. Because Draw is still capturing pointerdown events post\u2010drawend, DragPan.handleDownEvent is never invoked, so the map does not pan.\n\nTo fix: ensure that after finishDrawing (via handleUpEvent and/or finishDrawing), the Draw interaction clears its internal down/up sequence (handlingDownUpSequence) so that pointer events again flow through to DragPan.handleDownEvent.",
+        "bug_scenario": "The user is drawing a polygon on the map with the Draw interaction (condition: altKeyOnly). After completing (drawend) the polygon, attempts to pan/drag the map no longer work\u2014pointer\u2010drag events are swallowed by the Draw interaction and never reach the DragPan interaction. Reverting to OL 4.6.5 restores normal panning."
+    }
+}

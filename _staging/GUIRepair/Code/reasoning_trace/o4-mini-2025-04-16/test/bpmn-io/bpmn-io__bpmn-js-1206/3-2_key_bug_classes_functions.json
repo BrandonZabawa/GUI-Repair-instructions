@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DetachEventBehavior.js//DetachEventBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DetachEventBehavior.js//preExecute('elements.move', \u2026) handler",
+            "lib/features/modeling/behavior/DetachEventBehavior.js//getEventDefinition"
+        ],
+        "explanation": "The DetachEventBehavior class is responsible for intercepting the 'elements.move' command and converting a detached Boundary Event into an Intermediate Event by calling bpmnReplace.replaceElement. However, its preExecute handler explicitly returns early unless exactly one shape is moved (shapes.length !== 1). As a result, batch moves (multiple shapes) never hit the conversion logic. The getEventDefinition helper determines the type of Intermediate Event to create. Fixing the bug requires extending or removing the single-shape check in the preExecute handler so that each Boundary Event in a multi-shape move is correctly detached and replaced.",
+        "bug_scenario": "When multiple BPMN Boundary Events are selected and moved together onto the canvas in one batch operation, they remain as Boundary Events instead of being detached from their host and converted into Intermediate Catch/Throw Events. In the screen recording, dragging two boundary circles away from their parent shape does not trigger conversion, whereas a single boundary moved on its own should be replaced by an Intermediate Event."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DetachEventBehavior.js//DetachEventBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DetachEventBehavior.js//preExecute('elements.move', \u2026) handler",
+            "lib/features/modeling/behavior/DetachEventBehavior.js//getEventDefinition"
+        ],
+        "explanation": "The DetachEventBehavior class is responsible for intercepting move commands and converting detached Boundary Events into Intermediate Events. Its preExecute hook on 'elements.move' contains the logic that checks for a single shape (shapes.length === 1), verifies it is a Boundary Event with no new host, and then calls bpmnReplace.replaceElement to perform the conversion. Because the code immediately returns when shapes.length !== 1, the batch move of multiple Boundary Events never triggers this conversion logic. The helper function getEventDefinition is also central, as it determines the type of event definition to carry over into the new Intermediate Event. Fixing this bug will require updating DetachEventBehavior (and specifically its preExecute handler) to handle multiple shapes in a batch move\u2014iterating over each Boundary Event and applying the same replacement logic rather than skipping when more than one shape is moved.",
+        "bug_scenario": "In the provided screen recording, a user selects two BPMN Boundary Events at once and drags them off their host onto the canvas in a single, batch move. Instead of each Boundary Event being detached and converted into an Intermediate Event, they remain as Boundary Events floating on the canvas. The intended behavior (as implemented for single moves) is that whenever a Boundary Event is detached from its host, it is replaced by an Intermediate Catch or Throw Event."
+    }
+}

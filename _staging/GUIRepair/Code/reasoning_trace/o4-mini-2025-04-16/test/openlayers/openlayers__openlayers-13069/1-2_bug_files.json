@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/worker/geotiff-decoder.js"
+        ],
+        "explanation": "src/ol/source/GeoTIFF.js defines the public GeoTIFF source API and default tile decoding options, but currently does not pull the STATISTICS_MAXIMUM or STATISTICS_MINIMUM values from the tile\u2019s GDAL metadata. src/ol/worker/geotiff-decoder.js performs the actual raster decoding and normalization on the worker side, but it applies a generic min/max range rather than using the metadata values. These two files together implement the GeoTIFF source and its decode/normalize pipeline and therefore must be updated to look for and use STATISTICS_MAXIMUM and STATISTICS_MINIMUM as the default normalization bounds.",
+        "bug_scenario": "When rendering GeoTIFF sources in OpenLayers, the default normalization step ignores the underlying STATISTICS_MAXIMUM and STATISTICS_MINIMUM metadata provided by the GeoTIFF (via geotiff.js getGDALMetadata). As a result, images are contrast-stretched over a generic range instead of the true data bounds, leading to incorrect brightness/contrast. The user wants STATISTICS_MAXIMUM and STATISTICS_MINIMUM to be used as the default max/min values for normalization whenever they are present."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/worker/geotiff-decoder.js",
+            "src/ol/source/Raster.js"
+        ],
+        "explanation": "\u2022 src/ol/source/GeoTIFF.js defines the GeoTIFF source options and contains the logic that reads raster data, sets up normalization, and applies min/max band settings. This is where metadata\u2010driven defaults should be wired in.\\n\u2022 src/ol/worker/geotiff-decoder.js is the place where the geotiff.js library is invoked to read the image and its metadata (including STATISTICS_* tags). It needs to be extended to fetch and forward STATISTICS_MINIMUM/MAXIMUM along with the tile data.\\n\u2022 src/ol/source/Raster.js contains the generic normalization/filtering pipeline that applies the min/max values to pixel arrays. It must accept and respect metadata\u2010derived defaults when no explicit min/max have been configured by the application.",
+        "bug_scenario": "When using an OpenLayers GeoTIFF source with normalization enabled, STATISTICS_MINIMUM and STATISTICS_MAXIMUM values published by geotiff.js via getGDALMetadata() are not used as the default min/max for normalization. Instead, the code always falls back to either hard\u2010coded defaults or computes extrema by scanning pixel values. The desired behavior is to detect the presence of STATISTICS_MINIMUM / STATISTICS_MAXIMUM in the GeoTIFF metadata and use those values as the normalization min/max when the user hasn\u2019t supplied custom min/max options."
+    }
+}

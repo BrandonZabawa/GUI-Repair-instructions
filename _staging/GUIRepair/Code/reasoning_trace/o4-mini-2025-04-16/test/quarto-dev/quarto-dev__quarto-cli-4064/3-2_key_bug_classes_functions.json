@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/format/reveal/format-reveal.ts",
+            "src/format/reveal/metadata.ts",
+            "src/format/reveal/schemas.ts"
+        ],
+        "bug_functions": [
+            "src/format/reveal/format-reveal.ts//revealjsFormat",
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor",
+            "src/format/reveal/metadata.ts//revealMetadataFilter"
+        ],
+        "explanation": "\u2022 revealjsFormat (in format-reveal.ts) is responsible for merging the user\u2019s width/height options into the JS config that gets passed to Reveal.initialize(...) but currently does not wrap string values (especially those ending in \u201c%\u201d) in quotes.  \n\u2022 revealHtmlPostprocessor (in the same file) emits the final initialization snippet; it picks up whatever values revealjsFormat provided, so unquoted percent values slip through and cause a JS syntax error.  \n\u2022 revealMetadataFilter (in metadata.ts) normalizes kebab-case keys into camelCase but makes no attempt to distinguish or quote percentage strings before they travel downstream.  \n\u2022 The schema definition in schemas.ts declares width/height can be string or number, but there is no logic to enforce or quote percent\u2010style strings when rendering the JS.  \n\nTogether, these functions form the path from YAML metadata \u2192 TypeScript config \u2192 EJS template \u2192 final JS. To fix the bug, revealjsFormat (or the EJS template it drives) must detect string values ending in \u201c%\u201d and emit them as quoted JS strings, and metadataFilter might proactively preserve or annotate percent\u2010style values to ensure they remain quoted.",
+        "bug_scenario": "When a user specifies width and height as percentage values (e.g. \u201c100%\u201d) in a Quarto revealjs document, the generated Reveal.js initialization block omits the necessary quotes around those percent\u2010based strings. The result is invalid JavaScript (e.g. width: 100%) that breaks reveal.js and renders a blank presentation."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/format/reveal/format-reveal.ts//revealjsFormat",
+            "src/format/reveal/format-reveal.ts//revealHtmlPostprocessor",
+            "src/format/reveal/metadata.ts//revealMetadataFilter"
+        ],
+        "explanation": "\u2022 revealjsFormat: this function builds the configuration object for Reveal.js, taking user-supplied options (including width and height). It needs to handle string values (percentages) by preserving quotation marks when serializing to the template. \n\u2022 revealHtmlPostprocessor: after the HTML is generated, this postprocessor injects the Reveal.initialize call. It already has logic to quote numeric options like slideNumber; it must be extended to wrap string options (width and height) in quotes so that Reveal.js receives valid CSS string values rather than bare tokens that break parsing. \n\u2022 revealMetadataFilter: this function normalizes YAML keys (kebab to camel case) but does not distinguish string vs numeric values. Ensuring percentage strings are passed through unchanged (and later quoted) requires adjustments here so that the downstream template sees the correct value type.",
+        "bug_scenario": "The user is authoring a revealjs presentation in Quarto and has specified the slide `width` and `height` as percentage strings (e.g. \"100%\") in the YAML header. Instead of rendering the slides responsively, the presentation renders as a blank screen. When pixel values are used instead (e.g. 1600, 900), the slides render correctly. The screenshots show a blank dark canvas with no content when percentages are used, and a properly sized slide when pixel dimensions are used."
+    }
+}

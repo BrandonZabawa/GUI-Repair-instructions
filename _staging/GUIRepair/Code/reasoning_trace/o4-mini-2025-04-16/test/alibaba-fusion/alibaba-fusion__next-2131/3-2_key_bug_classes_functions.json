@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/tree/view/tree.jsx//Tree"
+        ],
+        "bug_functions": [
+            "src/tree/view/tree.jsx//preHandleData",
+            "src/tree/view/tree.jsx//drill",
+            "src/tree/view/tree.jsx//renderByDataSource",
+            "src/tree/view/tree.jsx//getNodeProps",
+            "src/tree/view/tree.jsx//getData"
+        ],
+        "explanation": "所有定位、渲染流程里都依赖给原始 dataSource 每一项挂载 pos、level 等属性。preHandleData 的内部 drill 函数直接对 item 对象做 item.pos = pos/item.level = level 的写操作；renderByDataSource 调用 drill 为每个节点生成 pos；getData 则是整个流程的入口；getNodeProps 里又直接读取 nodeData.pos。如果外部传入的节点对象被 Object.freeze 或类似不可扩展，item.pos 写入就会抛 Cannot add property；或者写入失败后拿不到 pos，就在 getNodeProps 中拿到 undefined 引发 Cannot read property 'pos'。因此这几个函数都需要改为先做浅克隆（如 {...item}）再挂载元信息，或改用一张外部映射表记录 pos 而不是直接在原始对象上打补丁。",
+        "bug_scenario": "用户在升级 @alifd/next Tree 组件到 1.20.23 后，使用一个普通的、不可变的 dataSource 数组初始化 Tree，浏览器控制台报错 “Cannot add property pos, object is not extensible” （或者后续在 getNodeProps 中读取不到 item.pos 导致 Cannot read property 'pos' of undefined）。从截图可以看到，Tree 在内部的 preHandleData → drill 函数中，试图通过 item.pos = pos 给原始 dataSource 对象打上位置信息，但如果外部传入的节点对象是冻结（freeze）或不可扩展的，就会在这里抛错"
+    },
+    "2": {
+        "bug_classes": [
+            "src/tree/view/tree.jsx//Tree"
+        ],
+        "bug_functions": [
+            "src/tree/view/tree.jsx//preHandleData",
+            "src/tree/view/tree.jsx//getData",
+            "src/tree/view/tree.jsx//renderByDataSource",
+            "src/tree/view/tree.jsx//getNodeProps"
+        ],
+        "explanation": "All of these functions live in Tree and either set or rely on the injected pos property on each node. preHandleData (and its nested drill) currently mutates each item by writing item.pos and item.level. If the input objects are immutable or sealed, this assignment fails and pos is never propagated. getData calls preHandleData to build the normalized tree, renderByDataSource uses that data (expecting pos), and getNodeProps immediately reads item.pos – causing undefined or a TypeError. To fix, preHandleData should clone each item (e.g. {...item, pos, level}) rather than mutating it in place, ensuring pos is always present on the objects Tree later consumes.",
+        "bug_scenario": "When Tree is given an immutable dataSource (for example, a frozen or immutable JS object), the internal preHandleData/drill function tries to assign new properties (pos, level) directly onto each item. Because the items are not extensible, the assignment fails (”Cannot add property pos, object is not extensible”), so later code that expects item.pos to exist either never sets it or throws when reading it (e.g. in getNodeProps), producing TypeError and broken rendering."
+    }
+}

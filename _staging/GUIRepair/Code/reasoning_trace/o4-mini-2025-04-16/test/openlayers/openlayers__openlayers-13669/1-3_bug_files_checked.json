@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js"
+        ],
+        "explanation": "The entire workflow for reading the TIFF bands and injecting an alpha channel lives in GeoTIFF.js. That file reads the nodata option and then checks each pixel with a strict equality against the nodata value to decide whether to set alpha to 0. Since NaN !== NaN, the no-data mask check never succeeds and alpha is always set to 255. Fixing this requires changing the equality test in GeoTIFF.js (e.g. using Number.isNaN) so that pixels with NaN no-data are correctly assigned an alpha of 0.",
+        "bug_scenario": "When loading a Cloud-Optimized GeoTIFF whose no-data value is set to NaN, an alpha band is added but no-data pixels still receive an opaque alpha of 255. As a result, calling getData on the source returns [NaN, NaN, NaN, 255] instead of [NaN, NaN, NaN, 0], so no-data masking and any dependent styling logic fail."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/source/common.js",
+            "src/ol/source/DataTile.js"
+        ],
+        "explanation": "src/ol/source/GeoTIFF.js contains the logic to read the bands, apply the nodata mask and build the alpha channel. It currently does nodata comparison with '===', which always fails when nodata is NaN. src/ol/source/common.js provides shared utilities for interpreting nodata values but has no special-case handling for NaN either. Finally, src/ol/source/DataTile.js\u2019s getData() returns the RGBA buffer produced upstream, so because the alpha was never zeroed for NaN values, it remains 255. All three files are involved in detecting and propagating nodata into the alpha band and must be updated to use Number.isNaN (or a similar NaN-aware check) when nodata is NaN.",
+        "bug_scenario": "When loading a COG whose nodata value is NaN the GeoTIFF source adds an alpha band but never recognizes NaN as nodata (because it uses strict equality checks). As a result getData() returns pixels like [NaN, NaN, NaN, 255] instead of setting the alpha to 0 (e.g. [NaN, NaN, NaN, 0])."
+    }
+}

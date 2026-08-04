@@ -1,0 +1,41 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Image.js//ImageStyle",
+            "src/ol/style/Text.js//Text",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Image.js//constructor",
+            "src/ol/style/Image.js//clone",
+            "src/ol/style/Text.js//constructor",
+            "src/ol/style/Text.js//clone",
+            "src/ol/render/canvas/ImageBuilder.js//setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//drawPoint",
+            "src/ol/render/canvas/ImageBuilder.js//drawMultiPoint",
+            "src/ol/render/canvas/TextBuilder.js//setTextStyle",
+            "src/ol/render/canvas/TextBuilder.js//drawText"
+        ],
+        "explanation": "These classes and methods are responsible for carrying the `declutterMode` (and the new `ignorePlacement` flag) from the style objects into the canvas rendering instructions and for sequencing image-and-text draw calls correctly.  \n\n\u2022 In ImageStyle (Image.js) and Text (Text.js), the constructors and clone methods must be extended to accept, store and propagate the new `ignorePlacement` option alongside the existing `declutterMode`.  \n\n\u2022 CanvasImageBuilder (ImageBuilder.js) reads `declutterMode` from the ImageStyle in setImageStyle, then includes it (and the shared declutter data) in the DRAW_IMAGE canvas instructions in drawPoint and drawMultiPoint. If `declutterMode` is not handled properly here, icons will always render immediately or in the wrong order.  \n\n\u2022 CanvasTextBuilder (TextBuilder.js) similarly needs to capture `declutterMode` (and `ignorePlacement`) in setTextStyle and pass it into the text drawing instructions in drawText so labels and icons share the same declutter pipeline. Without updating these methods, text is never decluttered against images unless the mode is the default \u201cdeclutter,\u201d leading to the overlapping shown in the bug report.",
+        "bug_scenario": "When a vector layer is styled with both icons and labels and the style option `declutterMode` is set to anything other than the default \u201cdeclutter\u201d (for example \u201cnone\u201d or \u201cobstacle\u201d), icons and labels end up overlapping or not being rendered in the expected order. In the provided scenario images you can see point symbols and their text labels drawing on top of one another instead of respecting the configured placement rules."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Image.js//ImageStyle",
+            "src/ol/style/Text.js//Text",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder"
+        ],
+        "bug_functions": [
+            "src/ol/style/Image.js//ImageStyle.constructor",
+            "src/ol/style/Text.js//Text.constructor",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder.setImageStyle",
+            "src/ol/render/canvas/ImageBuilder.js//CanvasImageBuilder.drawPoint",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.setTextStyle",
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.drawText"
+        ],
+        "explanation": "The ImageStyle and Text classes define the symbolizer options (including declutterMode) but currently lack an ignorePlacement flag. Their constructors, clone methods and getters/setters need to be updated to handle the new option. The CanvasImageBuilder and CanvasTextBuilder classes read declutterMode (and shared data for combined image+text decluttering) in setImageStyle/setTextStyle and apply it in drawPoint/drawText. Those methods are the heart of placement and drawing logic. To fix the bug, we must extend the style classes to carry ignorePlacement through to the builders, and then modify the builder draw routines to bypass placement checks when ignorePlacement is set, ensuring that images or text can opt out of decluttering even when declutterMode\u2260\"declutter\".",
+        "bug_scenario": "When a feature style returns both an icon (Image) and a label (Text) and the layer is rendered with declutterMode other than \"declutter\", icons and/or labels get hidden or reordered incorrectly. In particular, setting declutterMode to \"obstacle\" or \"none\" still causes one of the two symbolizers to be treated as an obstacle (or to participate in decluttering) even when the user wants only text or only images to declutter. The desired behavior is to allow an additional option (ignorePlacement) on Image and Text so that one symbolizer can always be drawn and not participate in placement checks, even when decluttering is enabled for the other."
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/Layer.js",
+            "src/ol/renderer/canvas/TileLayer.js"
+        ],
+        "explanation": "1. src/ol/renderer/canvas/Layer.js defines CanvasLayerRenderer.useContainer(), which is responsible for creating/re-using the DOM container for each layer and is passed the layer opacity. The bug is that, when creating a new container, it never sets container.style.opacity to the passed opacity value\u2014so the CSS opacity never applies to the layer group, breaking cross-layer blending.  \n2. src/ol/renderer/canvas/TileLayer.js implements CanvasTileLayerRenderer, the renderer for tiled layers. It relies on the base useContainer() logic to apply layer opacity, but because useContainer() fails to set the CSS opacity on the container, none of the tiled layers ever get the correct group opacity. As a result, tiled layers no longer composite properly on top of each other when their opacity values are identical.",
+        "bug_scenario": "When stacking several ArcGIS REST tiled layers (all set to the same opacity, e.g. 0.5) in OL 6.9.0, the top\u2010most layer no longer blends with the layers beneath\u2014it shows full opacity relative to them (though you can still see the basemap through it). In OL 6.7.0 (and below) the same layers overlap and composite correctly. The screenshots show OL 6.9.0 (only basemap peeking through) versus OL 6.7.0 (translucent layers stacking as expected)."
+    }
+}

@@ -1,0 +1,89 @@
+{
+    "1/1": {
+        "lighthouse-core/gather/computed/critical-request-chains.js": [
+            {
+                "SEARCH": [
+                    "static isCritical(request) {",
+                    "const resourceTypeCategory = request._resourceType && request._resourceType._category;",
+                    "",
+                    "// XHRs are fetched at High priority, but we exclude them, as they are unlikely to be critical",
+                    "// Images are also non-critical.",
+                    "// Treat any images missed by category, primarily favicons, as non-critical resources",
+                    "const nonCriticalResourceTypes = [",
+                    "WebInspector.resourceTypes.Image._category,",
+                    "WebInspector.resourceTypes.XHR._category,",
+                    "];",
+                    "if (nonCriticalResourceTypes.includes(resourceTypeCategory) ||",
+                    "request.mimeType && request.mimeType.startsWith('image/')) {",
+                    "return false;",
+                    "}",
+                    "",
+                    "return ['VeryHigh', 'High', 'Medium'].includes(request.priority());",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  static isCritical(request) {",
+                    "    const resourceTypeCategory = request._resourceType && request._resourceType._category;",
+                    "",
+                    "    // Exclude data URIs",
+                    "    if (request._url && request._url.startsWith('data:')) {",
+                    "      return false;",
+                    "    }",
+                    "",
+                    "    // Exclude iframes (Documents that are not the main frame)",
+                    "    // _resourceType._name === 'Document' and has a frameId different from main frame",
+                    "    if (",
+                    "      request._resourceType &&",
+                    "      request._resourceType._name === 'Document' &&",
+                    "      request.frameId &&",
+                    "      request.frameId !== request._mainFrameId // _mainFrameId may not exist, fallback to checking initiatorType",
+                    "    ) {",
+                    "      return false;",
+                    "    }",
+                    "    // Alternatively, if above doesn't work, check initiatorType",
+                    "    if (request.initiatorType === 'iframe') {",
+                    "      return false;",
+                    "    }",
+                    "",
+                    "    // XHRs are fetched at High priority, but we exclude them, as they are unlikely to be critical",
+                    "    // Images are also non-critical.",
+                    "    // Treat any images missed by category, primarily favicons, as non-critical resources",
+                    "    const nonCriticalResourceTypes = [",
+                    "      WebInspector.resourceTypes.Image._category,",
+                    "      WebInspector.resourceTypes.XHR._category,",
+                    "    ];",
+                    "    if (nonCriticalResourceTypes.includes(resourceTypeCategory) ||",
+                    "        request.mimeType && request.mimeType.startsWith('image/')) {",
+                    "      return false;",
+                    "    }",
+                    "",
+                    "    return ['VeryHigh', 'High', 'Medium'].includes(request.priority());",
+                    "  }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "static extractChain(networkRecords) {",
+                    "networkRecords = networkRecords.filter(req => req.finished);",
+                    "",
+                    "// Build a map of requestID -> Node.",
+                    "const requestIdToRequests = new Map();",
+                    "for (const request of networkRecords) {",
+                    "requestIdToRequests.set(request.requestId, request);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  static extractChain(networkRecords) {",
+                    "    // Exclude data URI requests (at least leaf nodes, but here we filter all)",
+                    "    networkRecords = networkRecords.filter(req => req.finished && !(req._url && req._url.startsWith('data:')));",
+                    "",
+                    "    // Build a map of requestID -> Node.",
+                    "    const requestIdToRequests = new Map();",
+                    "    for (const request of networkRecords) {",
+                    "      requestIdToRequests.set(request.requestId, request);",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

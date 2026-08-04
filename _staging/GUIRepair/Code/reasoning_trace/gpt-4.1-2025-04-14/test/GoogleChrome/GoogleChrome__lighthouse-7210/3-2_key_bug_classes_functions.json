@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js//UnusedCSSRules",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js//UnusedCSSRules.computeUsage",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.estimateTransferSize"
+        ],
+        "explanation": "The problem is rooted in how Lighthouse estimates the transferred size of CSS resources. The function UnusedCSSRules.computeUsage in unused-css-rules.js calculates the 'wasted' and 'total' bytes for a stylesheet by relying on ByteEfficiencyAudit.estimateTransferSize (inherited from UnusedBytes in byte-efficiency-audit.js). The estimateTransferSize function defaults to a hardcoded compression ratio (0.5) if the network record is not present or doesn't match the resource type. This is pessimistic and does not reflect the actual gzipped size of resources, especially for styles injected via JSON and then appended as a style tag. To fix the bug, the logic in these functions/classes must be updated to more accurately reflect the actual transferred (gzipped) size, possibly by inspecting the network record for gzipped transfer size or by allowing a custom compression ratio for inline/injected styles.",
+        "bug_scenario": "The bug scenario is that Lighthouse/Pagespeed is reporting a much higher potential CSS savings than is actually possible. The tool claims that a stylesheet is 80KB with a potential savings of 70KB, but the actual gzipped size fetched is only about 20KB. This overestimation leads to misleading audit results for 'Defer unused CSS' because the calculated savings and file size are based on the DOM size of the injected style tag, not the actual fetched gzipped resource size."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js//UnusedCSSRules",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js//UnusedCSSRules.computeUsage",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js//UnusedBytes.estimateTransferSize"
+        ],
+        "explanation": "The problem is rooted in how Lighthouse estimates the transfer size of CSS resources. The UnusedCSSRules audit is responsible for calculating unused CSS and relies on ByteEfficiencyAudit's (UnusedBytes) estimateTransferSize method to determine the network size of resources. The bug occurs because estimateTransferSize uses a default compression ratio (0.5) when it cannot find a network record, which does not accurately reflect the true size of gzipped CSS fetched dynamically. To fix the bug, either UnusedCSSRules.computeUsage must ensure it passes the correct network record or compression ratio for dynamically fetched CSS, or estimateTransferSize in UnusedBytes must better handle these dynamic/injected resource scenarios by using actual transfer sizes where possible. These methods and classes are directly responsible for the incorrect size and savings calculation and thus are the bug-related elements.",
+        "bug_scenario": "The bug scenario involves the Lighthouse audit for unused CSS reporting an overly pessimistic GZIP compression ratio for CSS that is loaded via gzipped JSON and injected into the DOM by a third-party JavaScript tool. The report claims a much larger potential CSS savings than is actually possible, because it estimates transfer size based on the DOM-injected content size rather than the true gzipped resource fetched. This results in Pagespeed suggesting an incorrect potential savings, misleading users about real optimization opportunities."
+    }
+}

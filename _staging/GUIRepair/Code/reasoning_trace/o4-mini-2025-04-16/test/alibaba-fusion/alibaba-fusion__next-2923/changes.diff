@@ -1,0 +1,52 @@
+diff --git a/src/config-provider/cache.js b/src/config-provider/cache.js
+index 657cc2e66..b4d800eb2 100644
+--- a/src/config-provider/cache.js
++++ b/src/config-provider/cache.js
+@@ -27,9 +27,6 @@ class Cache {
+     update(key, value) {
+         if (this.has(key)) {
+             this._store.set(key, value);
+-        }
+-    }
+-
+     remove(key) {
+         this._store.delete(key);
+ 
+@@ -41,6 +38,18 @@ class Cache {
+         }
+     }
+ 
++    /**
++     * Completely clear the cache.
++     * After calling this, size === 0 and root === null.
++     */
++    clear() {
++        this._store.clear();
++        this._root = null;
++    }
++}
++
++export default Cache;
++
+     root() {
+         return this._store.get(this._root);
+     }
+diff --git a/src/config-provider/index.jsx b/src/config-provider/index.jsx
+index 59ed4c36f..bd5725e56 100644
+--- a/src/config-provider/index.jsx
++++ b/src/config-provider/index.jsx
+@@ -175,6 +175,14 @@ class ConfigProvider extends Component {
+         };
+     };
+ 
++    /**
++     * Manually clear all cached contexts.
++     * Useful in SSR environments where componentWillUnmount is never called.
++     */
++    static clearCache() {
++        childContextCache.clear();
++    }
++
+     constructor(...args) {
+         super(...args);
+         childContextCache.add(this, Object.assign({}, childContextCache.get(this, {}), this.getChildContext()));

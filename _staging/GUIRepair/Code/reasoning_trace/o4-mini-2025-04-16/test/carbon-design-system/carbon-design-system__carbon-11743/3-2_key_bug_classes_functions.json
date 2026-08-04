@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/UIShell.stories.js"
+        ],
+        "bug_functions": [],
+        "explanation": "The root of the problem lives in the Storybook setup inside UIShell.stories.js. The default export for the CSF file does not declare a `component` nor list its `subcomponents`, so the Docs addon can\u2019t infer which component the `<Props />` call in UIShell.mdx should document. Without a proper `component: Header` (or whichever primary entry point) and a `subcomponents: { HeaderNavigation, HeaderName, \u2026 }`, Storybook falls back to \u201cundefined\u201d as the primary tab and then picks up the named exports from the module for the sub-tabs \u2013 none of which have extracted props metadata. To fix this, UIShell.stories.js needs to be updated to include in its default export something like:\n\n  component: Header,\n  subcomponents: { HeaderNavigation, HeaderName, HeaderMenu, HeaderMenuItem, HeaderGlobalBar, \u2026 },\n  parameters: { docs: { page: mdx } }\n\nOnce that metadata is present, the `<Props />` call in UIShell.mdx will correctly pull in and render the prop tables for each component.",
+        "bug_scenario": "On the production Storybook page for the UIShell package (React v11.x), the \u201cComponent API\u201d panel renders an \u201cundefined\u201d tab instead of the primary UIShell component, and then lists each subcomponent (Content, Header, HeaderMenuButton, HeaderName, HeaderNavigation, HeaderMenu, HeaderMenuItem, HeaderGlobalBar, etc.) \u2013 all of which show \u201cNo inputs found for this component.\u201d In other words, Storybook\u2019s Docs addon can\u2019t find or associate the correct component definitions with the <Props /> call in the MDX docs, so no prop tables ever render."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/UIShell/UIShell.stories.js//default export"
+        ],
+        "bug_functions": [],
+        "explanation": "The default export in UIShell.stories.js defines the story metadata (title, decorators, etc.) but omits the `component` and `subcomponents` fields that the Storybook Docs addon uses to generate its Props table. Without a `component` reference, the `<Props />` block in the UIShell MDX (or the auto-generated docs for each story) cannot resolve which component\u2019s prop types to display\u2014hence it shows \u201cundefined.\u201d Adding a `component: Header` (or the appropriate primary component) and listing all needed subcomponents under `subcomponents` in that default export will allow Storybook to locate and render the correct API tables.",
+        "bug_scenario": "When viewing the UIShell stories (e.g. the \u201cFixed SideNav\u201d story) in the published Storybook, the \u201cComponent API\u201d props table appears with an \u201cundefined\u201d tab and shows \u201cNo inputs found for this component,\u201d instead of rendering the prop tables for Header, HeaderMenuButton, SideNav, etc."
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Tab/Tab.js",
+            "packages/react/src/components/Tabs/Tabs.js"
+        ],
+        "explanation": "1) In Tab.js we render each <a> with role=\"tab\" and set aria-posinset (index + 1) and aria-setsize (totalTabs), but totalTabs is only passed in if Tabs.js correctly calculates it.  \n2) In Tabs.js we gather this.props.children and clone each Tab with a totalTabs prop equal to getTabs().length.  If getTabs() is not returning exactly the Tab elements (for example, if you wrap them in a TabList wrapper) or we miscount, totalTabs ends up undefined or 1.  That causes aria-setsize to fall back to 1, so VoiceOver always announces 1 of 1.  \n\nTo fix this, Tabs.js needs to correctly enumerate only the Tab children (not wrappers) and pass an accurate totalTabs count, and Tab.js will then render aria-setsize with the real number of tabs.",
+        "bug_scenario": "When you navigate a Tabs component with VoiceOver (macOS 10.14.6 + Chrome 79), VoiceOver always reads \u201ctab, 1 of 1\u201d for each tab\u2014even when there are multiple tabs.  In other words, aria\u2010setsize is not reflecting the real number of tabs, so VoiceOver thinks there\u2019s only one tab in the collection."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Tabs/Tabs.js",
+            "packages/react/src/components/Tab/Tab.js"
+        ],
+        "explanation": "The `Tabs.js` component is responsible for iterating over its children and injecting every Tab\u2019s `index` and `totalTabs` so that `Tab.js` can set the proper ARIA attributes (`aria-posinset` and `aria-setsize`). Because of the `TabList`/`TabPanels` wrapper, `getTabs()` in `Tabs.js` is not actually walking into the real `<Tab>` nodes\u2014so it passes the wrong (or no) `totalTabs` prop. As a result, `Tab.js` renders `aria-setsize` as the default `1`, leading VoiceOver to announce \u201c1 of 1\u201d on every tab. Fixing `getTabs()` (or otherwise drilling into the real `<Tab>` children) in `Tabs.js`, so that each `<Tab>` receives the correct `index` and `totalTabs`, will restore correct announcements in VoiceOver. `Tab.js` itself applies those props into the anchor\u2019s ARIA attributes, so it\u2019s also implicated in the bug chain.",
+        "bug_scenario": "When navigating the Carbon `Tabs` widget with VoiceOver, the screen reader always announces \u201c1 of 1\u201d for every tab\u2014even when there are multiple tabs in the group. In the GIF you can see \u201cCustom Label, selected, tab, 1 of 1\u201d is spoken on the fourth of four tabs. VoiceOver never picks up the correct `aria-posinset`/`aria-setsize` values."
+    }
+}

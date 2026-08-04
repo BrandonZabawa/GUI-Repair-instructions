@@ -1,0 +1,126 @@
+diff --git a/packages/react/src/components/DataTable/DataTable.tsx b/packages/react/src/components/DataTable/DataTable.tsx
+index a8c2bcf9..f8c6385a 100644
+--- a/packages/react/src/components/DataTable/DataTable.tsx
++++ b/packages/react/src/components/DataTable/DataTable.tsx
+@@ -675,12 +675,15 @@ class DataTable<RowType, ColTypes extends any[]> extends React.Component<
+   };
+ 
+   getBatchActionProps = (props = {}) => {
+-    const { shouldShowBatchActions } = this.state;
++    const { shouldShowBatchActions, rowIds } = this.state;
+     const totalSelected = this.getSelectedRows().length;
++    const totalItems = rowIds.length;
+     return {
+       ...props,
+       shouldShowBatchActions: shouldShowBatchActions && totalSelected > 0,
+       totalSelected,
++      totalItems,
++      onSelectAll: this.handleSelectAll,
+       onCancel: this.handleOnCancel,
+     };
+   };
+diff --git a/packages/react/src/components/DataTable/TableBatchActions.js b/packages/react/src/components/DataTable/TableBatchActions.js
+index 9f24cf31..6d62084c 100644
+--- a/packages/react/src/components/DataTable/TableBatchActions.js
++++ b/packages/react/src/components/DataTable/TableBatchActions.js
+@@ -17,20 +17,23 @@ const translationKeys = {
+   'carbon.table.batch.cancel': 'Cancel',
+   'carbon.table.batch.items.selected': 'items selected',
+   'carbon.table.batch.item.selected': 'item selected',
++  'carbon.table.batch.select-all': 'Select all',
+ };
+ 
+ const translateWithId = (id, state) => {
+   if (id === 'carbon.table.batch.cancel') {
+     return translationKeys[id];
+   }
++  if (id === 'carbon.table.batch.select-all') {
++    // display "Select all (1234)" when totalItems is provided
++    return state && typeof state.totalItems === 'number'
++      ? `Select all (${state.totalItems})`
++      : translationKeys[id];
++  }
+   return `${state.totalSelected} ${translationKeys[id]}`;
+ };
+-
+-const TableBatchActions = ({
+-  className,
+-  children,
+-  shouldShowBatchActions,
+-  totalSelected,
++  totalItems,
++  onSelectAll,
+   onCancel,
+   translateWithId: t,
+   ...rest
+@@ -44,7 +47,6 @@ const TableBatchActions = ({
+     },
+     className
+   );
+-
+   const batchSummaryClasses = cx(`${prefix}--batch-summary`, {
+     [`${prefix}--batch-summary__scroll`]: isScrolling,
+   });
+@@ -65,6 +67,14 @@ const TableBatchActions = ({
+               : t('carbon.table.batch.item.selected', { totalSelected })}
+           </Text>
+         </p>
++        {onSelectAll && (
++          <Button
++            kind="ghost"
++            className={`${prefix}--batch-summary__select-all`}
++            onClick={onSelectAll}>
++            {t('carbon.table.batch.select-all', { totalItems })}
++          </Button>
++        )}
+       </div>
+       <TableActionList>
+         {children}
+@@ -78,6 +88,13 @@ const TableBatchActions = ({
+     </div>
+   );
+ };
++          onClick={onCancel}>
++          {t('carbon.table.batch.cancel')}
++        </Button>
++      </TableActionList>
++    </div>
++  );
++};
+ 
+ TableBatchActions.translationKeys = Object.keys(translationKeys);
+ 
+@@ -85,6 +102,11 @@ TableBatchActions.propTypes = {
+   children: PropTypes.node,
+   className: PropTypes.string,
+ 
++  /**
++   * Optional handler to select all items across all pages.
++   */
++  onSelectAll: PropTypes.func,
++
+   /**
+    * Hook required to listen for when the user initiates a cancel request
+    * through this component
+@@ -103,6 +125,12 @@ TableBatchActions.propTypes = {
+    */
+   totalSelected: PropTypes.number.isRequired,
+ 
++  /**
++   * Numeric representation of the total number of items available to select.
++   * Used to derive the select-all label.
++   */
++  totalItems: PropTypes.number,
++
+   /**
+    * Supply a method to translate internal strings with your i18n tool of
+    * choice. Translation keys are available on the `translationKeys` field for
+@@ -113,6 +141,8 @@ TableBatchActions.propTypes = {
+ 
+ TableBatchActions.defaultProps = {
+   translateWithId,
++  onSelectAll: undefined,
++  totalItems: undefined,
+ };
+ 
+ export default TableBatchActions;

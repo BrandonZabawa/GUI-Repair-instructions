@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Tabs/StyledTabs.js",
+            "src/js/components/Tab/StyledTab.js",
+            "src/js/components/Tabs/Tabs.js"
+        ],
+        "explanation": "1. StyledTabs.js defines the overall tab header layout (positioning, overflow, and relative container for the indicator). Missing or altered positioning here means the underline can\u2019t stay pinned to the bottom edge of that container.  \n2. StyledTab.js contains the styled <Tab> element and is responsible for rendering the active-tab underline (via border-bottom and negative margin). Changes in how margins or positioning are applied here directly affect whether the underline \u2018sticks\u2019 to the bottom.  \n3. Tabs.js wires up the tab header container (e.g. flex, orientation, scroll behavior) introduced in PR #6137. Because the new feature changed how the header box sizes or scrolls, the existing underline positioning logic no longer lines up. Adjustments in all three files are required to restore the bottom-stick behavior in a scrollable tab content scenario.",
+        "bug_scenario": "The bug manifests when you place a <Tabs> inside a fixed-height, scrollable container. After upgrading to Grommet 2.25.0 (and grommet-theme-hpe 3.2.0), the bottom border (underline) of the active tab no longer hugs the bottom edge of the tab bar. Instead it stays pinned wherever the tab bar first renders, so as you scroll the tab content the underline drifts off the tab header. In 2.24.0 the active-tab underline correctly had a negative bottom margin that kept it flush with the header line regardless of content scrolling; that behavior was broken by PR #6137."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/Tabs/StyledTabs.js",
+            "src/js/components/Tabs/Tabs.js",
+            "src/js/components/Tab/StyledTab.js",
+            "src/js/components/Tab/Tab.js"
+        ],
+        "explanation": "The issue originates in the Tabs and Tab components themselves:\n\n\u2022 StyledTabs.js and Tabs.js define the wrapper around all tabs and the positioning of the underline indicator. A change in PR #6137 altered how the header container is laid out and its positioning context, so the indicator is no longer absolutely positioned relative to the header bottom.\n\n\u2022 StyledTab.js and Tab.js define each individual tab and its underline style. They control the border-bottom and margin for the active state. Because the parent container\u2019s positioning was changed, these styles no longer render at the bottom of the header but float above the scrollable content.\n\nAdjusting the positioning (e.g. re-introducing a relative wrapper on the header) or modifying how the indicator is rendered in these four files will restore the sticky underline behavior.",
+        "bug_scenario": "When a Tabs component is placed inside a fixed-height, scrollable container, the active tab\u2019s underline (margin-bottom border) is supposed to stick to the bottom of the tab header. After the recent PR #6137, the underline now moves up with the content and no longer remains pinned to the bottom of the tab bar."
+    }
+}

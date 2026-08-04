@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//ToggleElementCollapseBehaviour"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//hideEmptyLabels",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//collapsedBounds",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//expandedBounds",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//filterVisible",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//postExecuted(shape.toggleCollapse)"
+        ],
+        "explanation": "The ToggleElementCollapseBehaviour class intercepts the \u2018shape.toggleCollapse\u2019 command and is responsible for hiding labels and resizing the collapsed subprocess. The hideEmptyLabels function only hides labels with no businessObject.name, so any labeled elements remain visible in the collapsed state. Those visible labels are then repositioned by collapsedBounds (centering only the default size) and by expandedBounds via filterVisible, causing labels (especially the start event label) to be placed far outside the collapsed box. To fix the issue, hideEmptyLabels (or a new similar function) must also hide all labels (not just empty ones) when collapsing, and collapsedBounds/expandedBounds logic should account for label visibility and omit hidden children when centering.",
+        "bug_scenario": "When a BPMN subprocess containing labeled start, task, and end events is collapsed by clicking through the steps, the labels inside the collapsed subprocess are not hidden and, in particular, the start event\u2019s label jumps far outside the collapsed boundary. Expected behavior is that all labels inside a collapsed subprocess should be hidden."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//ToggleElementCollapseBehaviour"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//hideEmptyLabels",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js//shape.toggleCollapse executed handler"
+        ],
+        "explanation": "The collapse behavior for BPMN subprocesses is implemented in ToggleElementCollapseBehaviour. The helper hideEmptyLabels only hides labels that have no name, so named labels inside the subprocess are never hidden when collapsing. The executed handler for the 'shape.toggleCollapse' command only calls hideEmptyLabels when expanding the subprocess, not when collapsing it. As a result, inner labels remain visible (and thus leak outside) upon collapse. Fixing this requires updating the executed handler (and/or hideEmptyLabels) to hide all labels inside the subprocess when it is collapsed.",
+        "bug_scenario": "In the BPMN editor the user creates an expanded subprocess, drops a start event, task and end event into it, and assigns labels to each. When the subprocess is collapsed (by clicking through steps), the inner labels remain visible and even shift outside the collapsed subprocess boundary. Expected behavior is that all labels on elements inside a collapsed subprocess should be hidden."
+    }
+}

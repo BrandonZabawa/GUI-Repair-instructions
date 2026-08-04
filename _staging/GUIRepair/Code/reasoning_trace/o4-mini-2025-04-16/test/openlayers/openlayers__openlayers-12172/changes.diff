@@ -1,0 +1,37 @@
+diff --git a/src/ol/render/canvas/ImageBuilder.js b/src/ol/render/canvas/ImageBuilder.js
+index 9df168dce5..182b5f1484 100644
+--- a/src/ol/render/canvas/ImageBuilder.js
++++ b/src/ol/render/canvas/ImageBuilder.js
+@@ -245,6 +245,10 @@ class CanvasImageBuilder extends CanvasBuilder {
+     this.imagePixelRatio_ = imageStyle.getPixelRatio(this.pixelRatio);
+     this.anchorX_ = anchor[0];
+     this.anchorY_ = anchor[1];
++    // Apply the style's displacement to the drawing anchor so the icon isn't clipped
++    const displacement = imageStyle.getDisplacement();
++    this.anchorX_ -= displacement[0];
++    this.anchorY_ -= displacement[1];
+     this.hitDetectionImage_ = hitDetectionImage;
+     this.image_ = image;
+     this.height_ = size[1];
+diff --git a/src/ol/style/Icon.js b/src/ol/style/Icon.js
+index 916f6c5aa3..766bd123d7 100644
+--- a/src/ol/style/Icon.js
++++ b/src/ol/style/Icon.js
+@@ -368,7 +368,6 @@ class Icon extends ImageStyle {
+       return this.origin_;
+     }
+     let offset = this.offset_;
+-    const displacement = this.getDisplacement();
+ 
+     if (this.offsetOrigin_ != IconOrigin.TOP_LEFT) {
+       const size = this.getSize();
+@@ -390,8 +389,7 @@ class Icon extends ImageStyle {
+         offset[1] = iconImageSize[1] - size[1] - offset[1];
+       }
+     }
+-    offset[0] += displacement[0];
+-    offset[1] += displacement[1];
++    // Do not apply displacement here—it belongs in the draw phase, not the sprite origin
+     this.origin_ = offset;
+     return this.origin_;
+   }

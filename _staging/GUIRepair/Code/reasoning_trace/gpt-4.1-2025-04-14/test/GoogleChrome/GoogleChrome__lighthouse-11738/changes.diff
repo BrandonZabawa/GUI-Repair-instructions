@@ -1,0 +1,25 @@
+diff --git a/lighthouse-core/gather/gather-runner.js b/lighthouse-core/gather/gather-runner.js
+index 83b0ab015..ee13d03a2 100644
+--- a/lighthouse-core/gather/gather-runner.js
++++ b/lighthouse-core/gather/gather-runner.js
+@@ -799,6 +799,20 @@ class GatherRunner {
+     await GatherRunner.beginRecording(passContext);
+     const {navigationError: possibleNavError} = await GatherRunner.loadPage(driver, passContext);
+     await GatherRunner.pass(passContext, gathererResults);
++
++    // --- PATCH START ---
++    // If using simulated throttling, increase the wait time for layout shifts to be captured.
++    if (passContext.settings.throttlingMethod === 'simulate') {
++      // Increase pauseAfterLoadMs and maxWaitForLoadedMs for simulated throttling
++      if (!passContext.passConfig.pauseAfterLoadMs || passContext.passConfig.pauseAfterLoadMs < 5000) {
++        passContext.passConfig.pauseAfterLoadMs = 5000;
++      }
++      if (!passContext.passConfig.maxWaitForLoadedMs || passContext.passConfig.maxWaitForLoadedMs < 15000) {
++        passContext.passConfig.maxWaitForLoadedMs = 15000;
++      }
++    }
++    // --- PATCH END ---
++
+     const loadData = await GatherRunner.endRecording(passContext);
+ 
+     // Disable throttling so the afterPass analysis isn't throttled

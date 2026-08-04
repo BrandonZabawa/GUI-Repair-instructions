@@ -1,0 +1,37 @@
+diff --git a/src/ol/renderer/canvas/VectorLayer.js b/src/ol/renderer/canvas/VectorLayer.js
+index c5025e47d5..95c76159a4 100644
+--- a/src/ol/renderer/canvas/VectorLayer.js
++++ b/src/ol/renderer/canvas/VectorLayer.js
+@@ -241,18 +241,20 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+   /**
+    * @private
+    */
+-  resetDrawContext_() {
+-    if (this.opacity_ !== 1) {
+-      const alpha = this.targetContext_.globalAlpha;
+-      this.targetContext_.globalAlpha = this.opacity_;
+-      this.targetContext_.drawImage(this.context.canvas, 0, 0);
+-      this.targetContext_.globalAlpha = alpha;
+-      releaseCanvas(this.context);
+-      canvasPool.push(this.context.canvas);
+-      this.context = this.targetContext_;
+-      this.targetContext_ = null;
+-    }
+-  }
++resetDrawContext_() {
++if (this.opacity_ !== 1) {
++const alpha = this.targetContext_.globalAlpha;
++this.targetContext_.globalAlpha = this.opacity_;
++// Clear the target context before drawing the new frame
++this.targetContext_.clearRect(0, 0, this.targetContext_.canvas.width, this.targetContext_.canvas.height);
++this.targetContext_.drawImage(this.context.canvas, 0, 0);
++this.targetContext_.globalAlpha = alpha;
++releaseCanvas(this.context);
++canvasPool.push(this.context.canvas);
++this.context = this.targetContext_;
++this.targetContext_ = null;
++}
++}
+ 
+   /**
+    * Render declutter items for this layer

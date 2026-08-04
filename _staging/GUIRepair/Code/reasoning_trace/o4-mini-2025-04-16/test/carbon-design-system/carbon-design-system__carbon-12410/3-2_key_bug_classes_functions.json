@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Slider/Slider.js//Slider"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Slider/Slider.js//defaultProps",
+            "packages/react/src/components/Slider/Slider.js//propTypes",
+            "packages/react/src/components/Slider/Slider.js//render",
+            "packages/react/src/components/Slider/Slider.stories.js//ReadOnly",
+            "packages/react/src/components/Slider/Slider-test.js//(add readOnly tests)"
+        ],
+        "explanation": "All of the work to enable and style a read-only slider revolves around the Slider class. In Slider.defaultProps and Slider.propTypes we must ensure the readOnly prop is properly declared and defaults to false. In render(), we must wire readOnly to the correct CSS class (e.g. `${prefix}--slider--readonly`) and suppress the thumb handle while exposing the static display of the value. In the Storybook file, the ReadOnly story needs to be updated or added as the default copy-and-paste example under `/package/react`, and Playground argTypes should include readOnly so it\u2019s controllable. Finally, in Slider-test.js we must add a dedicated test suite to mount Slider with `readOnly` and assert that the root slider element has the readonly modifier class and that user interactions (drag, keydown) are disabled in this state.",
+        "bug_scenario": "The design calls for a true \u201cread-only\u201d slider: it should render a static track, no interactive thumb handle, and display the current value in a text box styled per the read-only guidance (color, spacing, border). The provided images show the intended color tokens and structural layout for read-only state (no draggable thumb, a simple numeric display). Currently, although a readOnly prop exists, the Slider component does not apply the required CSS class or styles for read-only mode, there\u2019s no Storybook default copy-and-paste story for read-only, and no tests assert the read-only class is rendered."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Slider/Slider.js//Slider"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Slider/Slider.js//propTypes (add readOnly: PropTypes.bool)",
+            "packages/react/src/components/Slider/Slider.js//onDragStart (should bail out when readOnly)",
+            "packages/react/src/components/Slider/Slider.js//_onDrag (should bail out when readOnly)",
+            "packages/react/src/components/Slider/Slider.js//onDragStop (should bail out when readOnly)",
+            "packages/react/src/components/Slider/Slider.js//onKeyDown (should bail out when readOnly)",
+            "packages/react/src/components/Slider/Slider.js//onChange (should bail out when readOnly)",
+            "packages/react/src/components/Slider/Slider-test.js//Renders as expected (add tests for readOnly class and prop)"
+        ],
+        "explanation": "\n1. Slider class (Slider.js): this is the core component that needs to understand and enforce readOnly mode. Although defaultProps already includes readOnly: false and the render method applies a \u2018--readonly\u2019 CSS class and sets the input\u2019s readOnly attribute, the interaction handlers (onDragStart, _onDrag, onDragStop, onKeyDown, onChange) currently only check for the disabled prop. They must also no-op when readOnly is true to prevent dragging, keyboard events, or manual input changes.\n\n2. propTypes (Slider.js): we need to explicitly declare readOnly in the static propTypes so that users see it in documentation and Storybook controls.\n\n3. Interaction methods (Slider.js):\n   - onDragStart, _onDrag, onDragStop: skip all drag logic if readOnly, just like disabled.\n   - onKeyDown: ignore arrow keys when readOnly.\n   - onChange: refuse to update internal state or fire onChange if readOnly.\n\n4. Slider-test.js: the unit tests validate behavior and styling. We must add tests under the \u201cRenders as expected\u201d describe block to assert:\n   - when readOnly is true, the root slider container includes the `${prefix}--slider--readonly` class\n   - the underlying `<input>` has the readOnly attribute set\n   - interactions (drag, keydown, change) do not fire onChange/onRelease callbacks when readOnly\n\nBy updating the component API declarations, styling hooks, interaction guards, and corresponding tests, we satisfy the acceptance criteria: a coded read-only prop, proper styles, playground controls, a copy-pasteable default story, and RTL tests for the readOnly class.",
+        "bug_scenario": "The user is requesting a new \u201cread-only\u201d variant of the Slider component. The design mockups show a static slider bar with no draggable thumb (handle) and a non-interactive text input on the right. The slider track and range labels should remain visible, but the thumb must be hidden or visually disabled, and all mouse/keyboard interactions must be disabled. The supplied images illustrate the color/typography for the read-only labels and the intended structure (no thumb, only static number input), making clear that the Slider should render differently when the readOnly prop is set."
+    }
+}

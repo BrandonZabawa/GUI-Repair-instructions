@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/markdown.js"
+        ],
+        "explanation": "The only place in Highlight.js that recognizes Markdown emphasis and strong markers is src/languages/markdown.js. Its regex rules for matching single asterisks (_italic_), double asterisks (__bold__), and especially triple asterisks (***bold+italic***) were overlapping in a way that never consumed the closing delimiter correctly. Fixing the ordering and patterns in markdown.js ensures that ***\u2026*** is recognized as a self-contained span, so subsequent text isn\u2019t incorrectly highlighted.",
+        "bug_scenario": "When you write combined bold+italic in Markdown using three asterisks (***text***), Highlight.js\u2019s Markdown grammar never actually closes the triple\u2010asterisk span. As a result, the rest of the document continues to be rendered as bold+italic instead of returning to normal. In the \u201cBefore fix\u201d screenshot you can see that after \u201c***this is both***\u201d every subsequent line remains styled. In the \u201cAfter fix\u201d screenshot, only the text between the triple asterisks is styled and the following content returns to normal."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/markdown.js"
+        ],
+        "explanation": "The file src/languages/markdown.js contains the definition of how markdown emphasis (italics, bold, and combined bold+italics) is recognized, including the regular expressions and boundary rules for single (* or _) and multiple (**, ***, __, ___) delimiters. The misrender occurs because the closing pattern for triple asterisks wasn\u2019t matching correctly, causing the highlighter to treat the rest of the document as still inside a bold+italics span. Updating the emphasis rules and regexes in markdown.js fixes the detection of the closing *** delimiter and restores normal rendering for the remainder of the text.",
+        "bug_scenario": "In markdown text that uses triple\u2010asterisks to denote bold+italics (e.g. ***this is both***), the highlighter never sees the closing delimiter correctly and continues to apply bold+italics styling to the rest of the document. In the \u201cbefore\u201d screenshot you can see that after the triple\u2010asterisk opening and its closing in the first line, everything below remains rendered as bold and italics. The \u201cafter\u201d screenshot shows that once the closing *** is encountered, subsequent text is rendered normally."
+    }
+}

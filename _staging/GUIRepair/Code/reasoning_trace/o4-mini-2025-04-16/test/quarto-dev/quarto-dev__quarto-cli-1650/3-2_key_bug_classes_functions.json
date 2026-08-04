@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/core/handlers/mermaid.ts//mermaidHandler",
+            "src/core/handlers/dot.ts//dotHandler"
+        ],
+        "bug_functions": [
+            "src/core/handlers/mermaid.ts//cell",
+            "src/core/handlers/mermaid.ts//makeDefault",
+            "src/core/handlers/dot.ts//cell"
+        ],
+        "explanation": "The two LanguageHandler implementations for mermaid and dot always prefix their echoed output with a leading newline. In mermaidHandler.cell, the makeDefault() branch returns mappedConcat(['\\n``` mermaid\\n', \u2026, '\\n```\\n']), injecting an unwanted blank line before the fenced block. Likewise, dotHandler.cell\u2019s non\u2010JS path builds its output with mappedConcat(['\\n![](... )\\n']), again inserting a leading newline. Removing or trimming those leading '\\n' prefixes in these functions will eliminate the blank gap at the top of the echoed chunks.",
+        "bug_scenario": "When a user author writes a mermaid or dot code\u2010cell with echo: true (or echo: fenced), the rendered HTML shows an extra blank line at the very top of the block. The screenshots show a blank gap above the mermaid diagram (or fenced source block) even though no such blank line exists in the source. This happens for both mermaid and dot chunks under the post-engine handlers."
+    },
+    "2": {
+        "bug_classes": [
+            "src/core/handlers/mermaid.ts//mermaidHandler",
+            "src/core/handlers/dot.ts//dotHandler"
+        ],
+        "bug_functions": [
+            "src/core/handlers/mermaid.ts//cell",
+            "src/core/handlers/mermaid.ts//makeDefault",
+            "src/core/handlers/mermaid.ts//makeSvg",
+            "src/core/handlers/mermaid.ts//makePng",
+            "src/core/handlers/mermaid.ts//makeJs",
+            "src/core/handlers/dot.ts//cell"
+        ],
+        "explanation": "The mermaidHandler.cell and dotHandler.cell functions are the entry points that render the chunk content and then invoke various helper methods (makeSvg, makePng, makeJs, and makeDefault in mermaid.ts; cell in dot.ts) to produce the final output. All of these code paths ultimately call baseHandler.build (or mappedConcat for the fenced\u2010echo case), which by default prefixes a newline before the rendered content. When the chunk\u2019s echo option is enabled, that leading newline appears as a blank line in the output. To fix this issue, the build or mappedConcat calls in these handlers need to suppress or trim that initial newline when echo is true or echo is set to a fenced style.",
+        "bug_scenario": "When users include mermaid or dot code chunks in a Quarto document with either \u201cecho: true\u201d or \u201cecho: fenced,\u201d the rendered HTML shows an unwanted blank line at the top of the code block before the diagram or raw code. This occurs both for live\u2010rendered diagrams (SVG/PNG) and for fenced\u2010echoed source output."
+    }
+}

@@ -1,0 +1,93 @@
+diff --git a/lighthouse-core/audits/metrics.js b/lighthouse-core/audits/metrics.js
+index 8179ed86d..22fb382c4 100644
+--- a/lighthouse-core/audits/metrics.js
++++ b/lighthouse-core/audits/metrics.js
+@@ -35,23 +35,40 @@ class Metrics extends Audit {
+     const metrics = summary.metrics;
+     const debugInfo = summary.debugInfo;
+ 
+-    for (const [name, value] of Object.entries(metrics)) {
++    // Aggregate iframe metrics if available
++    let iframeMetrics = [];
++    if (artifacts.iframeMetrics && Array.isArray(artifacts.iframeMetrics)) {
++      iframeMetrics = artifacts.iframeMetrics.map(im => im.metrics && im.metrics.metrics ? im.metrics.metrics : {});
++    }
++
++    // Combine main and iframe metrics (worst-case for each metric)
++    const allMetrics = [metrics, ...iframeMetrics];
++    const aggregatedMetrics = {...metrics};
++    for (const key of Object.keys(metrics)) {
++      const values = allMetrics.map(m => typeof m[key] === 'number' ? m[key] : undefined).filter(v => v !== undefined);
++      if (values.length > 1) {
++        // For performance metrics, use the worst (max) value
++        aggregatedMetrics[key] = Math.max(...values);
++      }
++    }
++
++    for (const [name, value] of Object.entries(aggregatedMetrics)) {
+       const key = /** @type {keyof LH.Artifacts.TimingSummary} */ (name);
+       if (typeof value === 'number') {
+-        metrics[key] = Math.round(value);
++        aggregatedMetrics[key] = Math.round(value);
+       }
+     }
+ 
+     /** @type {LH.Audit.Details.DebugData} */
+     const details = {
+       type: 'debugdata',
+-      // TODO: Consider not nesting metrics under `items`.
+-      items: [metrics, debugInfo],
++      // Show both main and iframe metrics for transparency
++      items: [aggregatedMetrics, {main: metrics, iframes: iframeMetrics}, debugInfo],
+     };
+ 
+     return {
+       score: 1,
+-      numericValue: metrics.interactive || 0,
++      numericValue: aggregatedMetrics.interactive || 0,
+       details,
+     };
+   }
+diff --git a/lighthouse-core/gather/gather-runner.js b/lighthouse-core/gather/gather-runner.js
+index cca2d1586..286c73c3c 100644
+--- a/lighthouse-core/gather/gather-runner.js
++++ b/lighthouse-core/gather/gather-runner.js
+@@ -406,6 +406,38 @@ class GatherRunner {
+       await driver.scrollTo(scrollPosition);
+       log.timeEnd(status);
+     }
++    // --- Begin: Recursively gather iframe metrics ---
++    if (gathererResults['IFrameElements']) {
++      const iframeElements = await Promise.all(gathererResults['IFrameElements']);
++      const iframeMetrics = [];
++      for (const iframeList of iframeElements) {
++        if (Array.isArray(iframeList)) {
++          for (const iframe of iframeList) {
++            if (iframe && iframe.src) {
++              try {
++                // Create a new passContext for the iframe src
++                const iframePassContext = {
++                  ...passContext,
++                  url: iframe.src,
++                };
++                // Run a gather pass for the iframe src
++                const iframePassResults = await GatherRunner.runPass(iframePassContext);
++                if (iframePassResults.artifacts && iframePassResults.artifacts.Metrics) {
++                  iframeMetrics.push({
++                    src: iframe.src,
++                    metrics: iframePassResults.artifacts.Metrics,
++                  });
++                }
++              } catch (e) {
++                // Ignore errors in iframe gathering
++              }
++            }
++          }
++        }
++      }
++      passContext.baseArtifacts.iframeMetrics = iframeMetrics;
++    }
++    // --- End: Recursively gather iframe metrics ---
+     log.timeEnd(apStatus);
+   }
+ 

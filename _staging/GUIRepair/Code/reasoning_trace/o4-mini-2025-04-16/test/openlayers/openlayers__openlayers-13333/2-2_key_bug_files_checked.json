@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This class drives WebGL tile rendering but calls getSources(frameState.extent, \u2026) without ever constraining that extent by the layer\u2019s own extent property. A fix must intercept the layer extent here (or in createRenderer) so that only tiles within the user-supplied extent are requested.\n\n2. src/ol/renderer/webgl/TileLayer.js: The WebGLTileLayerRenderer is responsible for computing the render extent (getRenderExtent) and enqueuing tiles (enqueueTiles) into the WebGL pipeline. Both methods currently ignore the layer\u2019s extent. getRenderExtent needs to intersect frameState.extent with the layer\u2019s extent, and the projection/tile coordinate \u2192 clip\u2010rectangle logic must be updated so fragments outside the bounding box are discarded or scissored. Adjusting these two files will restore proper clipping to the original extent.",
+        "bug_scenario": "The user is loading a Cloud Optimized GeoTIFF into a WebGLTile layer and explicitly passing its geographic extent to the layer. In QGIS the TIFF is correctly clipped to its bounding box, but in the OpenLayers WebGLTile layer the image bleeds outside the defined red\u2010boxed extent and even \u201cpinches\u201d in on deeper zooms. The tiles are being rendered without any clipping to the layer\u2019s extent."
+    }
+}

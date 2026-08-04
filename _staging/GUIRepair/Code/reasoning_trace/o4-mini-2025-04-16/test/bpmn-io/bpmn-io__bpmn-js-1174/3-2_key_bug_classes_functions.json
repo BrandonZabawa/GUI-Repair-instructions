@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnLayouter.js//BpmnLayouter",
+            "lib/features/grid-snapping/behavior/LayoutConnectionBehavior.js//LayoutConnectionBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnLayouter.js//layoutConnection",
+            "lib/features/modeling/BpmnLayouter.js//getBoundaryEventLoopLayout",
+            "lib/features/grid-snapping/behavior/LayoutConnectionBehavior.js//postExecuted (connection.layout)"
+        ],
+        "explanation": "The heart of the error lies in BpmnLayouter.layoutConnection: it special-cases loops (source === target) by setting preferredLayouts to ['b:l'] but then passes the original waypoint array into repairConnection/withoutRedundantPoints, which does not preserve the full set of waypoints and yields a malformed loop. The helper getBoundaryEventLoopLayout is only used for BoundaryEvent loops, leaving general SequenceFlow loops unrefined. On top of that, LayoutConnectionBehavior intercepts the connection.layout command but skips grid-snapping adjustments whenever hints.connectionStart or hints.connectionEnd are provided (which is exactly the case during reconnect), preventing any corrective snapping of the middle segments. Fixing the loop layout thus requires extending layoutConnection (and possibly getBoundaryEventLoopLayout) to handle multi-segment SequenceFlow loops correctly and/or adjusting the snap logic in LayoutConnectionBehavior so that intermediate waypoints are preserved and aligned.",
+        "bug_scenario": "When reconnecting a multi-waypoint SequenceFlow back onto the same element (forming a loop), the manhattan layout algorithm drops and reorders intermediate waypoints, producing a distorted loop shape instead of the tidy loop you\u2019d get creating the loop from scratch. The provided GIFs show how the connection collapses to just two points or takes the wrong corner when re-attached."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/BpmnLayouter.js//BpmnLayouter"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/BpmnLayouter.js//BpmnLayouter.prototype.layoutConnection",
+            "lib/features/modeling/BpmnLayouter.js//getBoundaryEventLoopLayout",
+            "lib/features/modeling/BpmnLayouter.js//shouldConnectToSameSide"
+        ],
+        "explanation": "All of the loop\u2010layout logic lives in BpmnLayouter. The method layoutConnection is invoked on reconnect and contains the branch for source===target (sequence flow loops). It delegates to the Manhattan layout (via repairConnection) but only supplies a single 'b:l' layout, which doesn\u2019t honour multi-waypoint shapes on reconnect. The helper getBoundaryEventLoopLayout (used for boundary event loops) and its subsidiary shouldConnectToSameSide compute how self\u2010loops wrap around a shape and where to anchor segments; these must be adjusted or reused for sequence flow loops with more than two waypoints. Editing these routines in BpmnLayouter.js will correct the loop geometry on reconnect.",
+        "bug_scenario": "When reconnecting a multi\u2010waypoint sequence flow back onto the same element (forming a loop), the path is laid out incorrectly: instead of redrawing the loop around the element the connection collapses or snaps in the wrong direction (see the two animated GIFs). You start with a complex, orthogonal connection, drag one end back onto its source so that source===target, and end up with a malformed loop that does not match a freshly drawn self\u2010loop."
+    }
+}

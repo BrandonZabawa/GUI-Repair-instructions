@@ -1,0 +1,42 @@
+diff --git a/src/language-markdown/printer-markdown.js b/src/language-markdown/printer-markdown.js
+index a45b03926..6280565b6 100644
+--- a/src/language-markdown/printer-markdown.js
++++ b/src/language-markdown/printer-markdown.js
+@@ -469,6 +469,37 @@ function printTable(path, options, print) {
+     contents[0].map(() => 3) // minimum width = 3 (---, :--, :-:, --:)
+   );
+ 
++  // If any column is wider than the print width, disable fancy table
++  // separators and fallback to a simple 3-dash pattern.
++  if (Math.max(...columnMaxWidths) > options.printWidth) {
++    function fallbackSeparator() {
++      return concat([
++        "| ",
++        join(
++          " | ",
++          node.align.map(align => {
++            switch (align) {
++              case "left":
++                return ":---";
++              case "right":
++                return "---:";
++              case "center":
++                return ":---:";
++              default:
++                return "---";
++            }
++          })
++        ),
++        " |"
++      ]);
++    }
++    return join(hardline, [
++      printRow(contents[0]),
++      fallbackSeparator(),
++      join(hardline, contents.slice(1).map(printRow))
++    ]);
++  }
++
+   return join(hardline, [
+     printRow(contents[0]),
+     printSeparator(),

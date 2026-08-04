@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/Calendar/Calendar.js",
+            "src/js/components/Calendar/StyledCalendar.js",
+            "src/js/components/Calendar/utils.js"
+        ],
+        "explanation": "All of the logic and styling for the Calendar lives in this folder:  \n1. Calendar.js \u2013 this file drives the rendering of the month view, laying out rows and cells expecting CSS Grid to work. IE11 never reaches its fallback and so the cells collapse or overlap.  \n2. StyledCalendar.js \u2013 the styled-component here is where display: grid, grid-template-rows/columns, and gap are declared. IE11 only supports its old prefixed grid and needs a flex or table fallback.  \n3. utils.js \u2013 this contains ISO-8601 date parsing (splitting on dashes or feeding strings into new Date(\u2026)). IE11\u2019s Date.parse doesn\u2019t handle yyyy-mm-dd the same way, resulting in NaN/invalid cells.  \n\nBy updating StyledCalendar.js to detect Grid.available (or provide a flex fallback) and by normalizing date input in utils.js to an IE-safe parser, the Calendar will render correctly in IE11.",
+        "bug_scenario": "When you load the new Grommet v2 Calendar in IE11 the month-grid completely breaks: the day-cells are mis-positioned or missing, and the numbers themselves are garbled (you can see odd symbols instead of dates). This happens because Calendar is using modern CSS grid without any IE fallback, and it also relies on ISO-8601 date parsing that IE11 does not support natively."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/Calendar/StyledCalendar.js",
+            "src/js/components/Calendar/Calendar.js",
+            "src/js/components/Calendar/utils.js",
+            "src/js/components/Grid/Grid.js",
+            "webpack.config.babel.js"
+        ],
+        "explanation": "\u2022 StyledCalendar.js defines the calendar\u2019s entire layout using modern CSS Grid properties that IE11 doesn\u2019t understand (e.g. grid\u2010template\u2010rows, grid\u2010template\u2010columns, grid\u2010gap). Those rules must be updated or polyfilled (\u2013ms\u2010grid, explicit ms\u2010grid\u2010row/column) to work in IE11.\n\u2022 Calendar.js is the component that renders the header arrows and day cells into the StyledCalendar wrapper; because the wrapper\u2019s grid CSS is dropped in IE11, its markup collapses and its icons/font\u2010characters never line up.\n\u2022 utils.js contains date\u2010label and formatting logic; while not strictly layout, it supplies the content into StyledCalendar\u2014it\u2019s where you would ensure the right characters/icons are chosen for IE11 environments (or that you\u2019re not inadvertently passing an unsupported icon font).\n\u2022 Grid.js declares Grid.available and the fallback for older browsers; Calendar does not currently consult that availability check. You could either switch Calendar to use the Grid component (so it falls back automatically in IE11) or copy its availability logic into StyledCalendar.\n\u2022 webpack.config.babel.js (and the Grommet Babel preset) must be configured with autoprefixer settings (grid: 'autoplace') so that CSS Grid properties are transpiled into \u2013ms\u2010grid for IE11. Right now those config files are missing or misconfigured, so no prefixes are emitted.",
+        "bug_scenario": "When you open the Grommet Calendar example in IE11, the month view comes up entirely garbled: the day\u2010of\u2010week headings and date cells appear as little rectangles or misplaced text, the chevron navigation arrows do not render, and the calendar grid collapses. In modern browsers it uses CSS Grid and renders correctly, but IE11\u2019s incomplete grid support (and lack of \u2013ms\u2010grid autoprefixing) means the rules in StyledCalendar never take effect, so the calendar falls back to a broken layout."
+    }
+}

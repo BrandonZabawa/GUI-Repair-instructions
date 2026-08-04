@@ -1,0 +1,68 @@
+diff --git a/packages/react/src/components/UIShell/SideNav.js b/packages/react/src/components/UIShell/SideNav.js
+index df66e88c..a5033f78 100644
+--- a/packages/react/src/components/UIShell/SideNav.js
++++ b/packages/react/src/components/UIShell/SideNav.js
+@@ -81,6 +81,18 @@ const SideNav = React.forwardRef(function SideNav(props, ref) {
+ 
+   let childrenToRender = children;
+ 
++  // Handler to close SideNav when a link is clicked
++  const handleChildClick = (event) => {
++    // Only close if SideNav is expanded and not persistent
++    if (expanded && !isPersistent) {
++      handleToggle(event, false);
++    }
++    // If the child has its own onClick, call it
++    if (event.currentTarget && typeof event.currentTarget.onclick === 'function') {
++      event.currentTarget.onclick(event);
++    }
++  };
++
+   // if a rail, pass the expansion state as a prop, so children can update themselves to match
+   if (isRail) {
+     childrenToRender = React.Children.map(children, (child) => {
+@@ -93,6 +105,18 @@ const SideNav = React.forwardRef(function SideNav(props, ref) {
+         ...(CARBON_SIDENAV_ITEMS.includes(child.type?.displayName)
+           ? {
+               isSideNavExpanded: currentExpansionState,
++              onClick: handleChildClick,
++            }
++          : {}),
++      });
++    });
++  } else {
++    // For non-rail, also inject onClick to close on link click
++    childrenToRender = React.Children.map(children, (child) => {
++      return React.cloneElement(child, {
++        ...(CARBON_SIDENAV_ITEMS.includes(child.type?.displayName)
++          ? {
++              onClick: handleChildClick,
+             }
+           : {}),
+       });
+@@ -119,9 +143,24 @@ const SideNav = React.forwardRef(function SideNav(props, ref) {
+     eventHandlers.onMouseLeave = () => handleToggle(false, false);
+   }
+ 
++  // Handler for overlay click to close SideNav
++  const handleOverlayClick = (event) => {
++    // Only close if SideNav is expanded
++    if (expanded) {
++      handleToggle(event, false);
++    }
++  };
++
+   return (
+     <>
+-      {isFixedNav ? null : <div className={overlayClassName} />}
++      {isFixedNav ? null : (
++        <div
++          className={overlayClassName}
++          onClick={handleOverlayClick}
++          tabIndex="-1"
++          aria-hidden={!expanded}
++        />
++      )}
+       <nav
+         aria-hidden={!expanded}
+         ref={ref}

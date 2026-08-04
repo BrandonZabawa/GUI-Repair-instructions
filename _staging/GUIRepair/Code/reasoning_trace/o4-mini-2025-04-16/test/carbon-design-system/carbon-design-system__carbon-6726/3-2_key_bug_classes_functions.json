@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//onToggleClick",
+            "packages/react/src/components/ComboBox/ComboBox.js//render"
+        ],
+        "explanation": "The ComboBox component\u2019s render method spreads the user-supplied onClick handler only onto the <input> via {...rest}, not onto the toggle button. The toggle button\u2019s click is handled by onToggleClick, which intercepts clicks on the input but never invokes the user\u2019s onClick callback. As a result, clicking the arrow icon does not trigger the passed onClick handler (and thus the AJAX call) on the first open. To fix this, the render logic (and getToggleButtonProps/onToggleClick) should be updated to forward the consumer\u2019s onClick prop to the toggle button as well as the input.",
+        "bug_scenario": "The user has a ComboBox with a downward-facing arrow icon that should trigger the same onClick handler as the text input itself. In the first screenshot, clicking the arrow the first time flips the icon but does not invoke the onClick (so no AJAX call and the list remains empty). In the second screenshot, clicking in the input field correctly fires the onClick, fetches items, and populates the list. In the third screenshot, clicking the arrow again now that items are loaded also shows the list (but only because it was already populated). The bug is that the arrow toggle does not call the onClick handler on its first use."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox.onToggleClick",
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox.render"
+        ],
+        "explanation": "The ComboBox component defines an onToggleClick method and then passes it as the onClick for the toggle button (the down-arrow) via getToggleButtonProps. It never invokes the user-supplied onClick prop when the arrow is clicked. Meanwhile the input itself gets the spread \u2018...rest\u2019 props (including the user\u2019s onClick) via getInputProps, so clicking in the text box fires the handler but clicking the arrow does not. To fix this, ComboBox.render (where getToggleButtonProps is called) or onToggleClick must be updated to also call this.props.onClick (or otherwise pass the user\u2019s onClick) when the toggle icon is clicked.",
+        "bug_scenario": "The user\u2019s screenshots show that clicking the down-arrow icon on the ComboBox opens and flips the icon, but does not fire the user\u2019s onClick handler (and thus no AJAX items are loaded), whereas clicking directly in the input field correctly fires the handler and populates the list."
+    }
+}

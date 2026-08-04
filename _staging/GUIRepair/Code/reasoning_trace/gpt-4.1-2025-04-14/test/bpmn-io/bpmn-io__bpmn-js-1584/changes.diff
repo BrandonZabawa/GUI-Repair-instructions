@@ -1,0 +1,79 @@
+diff --git a/lib/features/copy-paste/BpmnCopyPaste.js b/lib/features/copy-paste/BpmnCopyPaste.js
+index f2c358ab..92958bf0 100644
+--- a/lib/features/copy-paste/BpmnCopyPaste.js
++++ b/lib/features/copy-paste/BpmnCopyPaste.js
+@@ -84,10 +84,11 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+       is(parent, 'bpmn:Participant') &&
+       is(property, 'bpmn:Process')
+     ) {
++      // Always create a new process with a new ID for the pasted participant
+       bpmnProcess = bpmnFactory.create('bpmn:Process');
+-
++      // Ensure the new process has a unique ID (do not copy the old one)
+       // return copy of process
+-      return moddleCopy.copyElement(property, bpmnProcess);
++      return moddleCopy.copyElement(property, bpmnProcess, { id: undefined });
+     }
+   });
+ 
+diff --git a/lib/features/modeling/behavior/CreateParticipantBehavior.js b/lib/features/modeling/behavior/CreateParticipantBehavior.js
+index 76f8f373..c95be3c4 100644
+--- a/lib/features/modeling/behavior/CreateParticipantBehavior.js
++++ b/lib/features/modeling/behavior/CreateParticipantBehavior.js
+@@ -103,6 +103,8 @@ export default function CreateParticipantBehavior(canvas, eventBus, modeling) {
+ 
+       // re-use process when creating first participant
+       context.process = parent;
++      // Store the original process ID for redo/undo consistency
++      context.originalProcessId = parent.businessObject.id;
+     }
+ 
+     context.parent = collaboration;
+@@ -126,7 +128,10 @@ export default function CreateParticipantBehavior(canvas, eventBus, modeling) {
+       context.oldProcessRef = shape.businessObject.processRef;
+ 
+       // re-use process when creating first participant
+-      shape.businessObject.processRef = process.businessObject;
++      // If the processRef is missing or has a different ID, restore the original processRef
++      if (!shape.businessObject.processRef || (context.originalProcessId && shape.businessObject.processRef.id !== context.originalProcessId)) {
++        shape.businessObject.processRef = process.businessObject;
++      }
+     }
+   }, true);
+ 
+@@ -252,4 +257,4 @@ function findParticipant(elements) {
+   return find(elements, function(element) {
+     return is(element, 'bpmn:Participant');
+   });
+-}
+\ No newline at end of file
++}
+diff --git a/lib/features/modeling/behavior/RemoveParticipantBehavior.js b/lib/features/modeling/behavior/RemoveParticipantBehavior.js
+index 60ce6780..0ffaedd9 100644
+--- a/lib/features/modeling/behavior/RemoveParticipantBehavior.js
++++ b/lib/features/modeling/behavior/RemoveParticipantBehavior.js
+@@ -37,7 +37,16 @@ export default function RemoveParticipantBehavior(eventBus, modeling) {
+     if (collaborationRoot && !collaborationRoot.businessObject.participants.length) {
+ 
+       // replace empty collaboration with process diagram
+-      modeling.makeProcess();
++      // Reuse the original process if possible to keep the same ID
++      var processRef;
++      if (collaborationRoot.businessObject.$parent && collaborationRoot.businessObject.$parent.rootElements) {
++        // Try to find the processRef that was used by the last participant
++        var lastParticipant = collaborationRoot.businessObject.participants && collaborationRoot.businessObject.participants[0];
++        if (lastParticipant && lastParticipant.processRef) {
++          processRef = lastParticipant.processRef;
++        }
++      }
++      modeling.makeProcess(processRef);
+     }
+   }, true);
+ 
+@@ -45,4 +54,4 @@ export default function RemoveParticipantBehavior(eventBus, modeling) {
+ 
+ RemoveParticipantBehavior.$inject = [ 'eventBus', 'modeling' ];
+ 
+-inherits(RemoveParticipantBehavior, CommandInterceptor);
+\ No newline at end of file
++inherits(RemoveParticipantBehavior, CommandInterceptor);

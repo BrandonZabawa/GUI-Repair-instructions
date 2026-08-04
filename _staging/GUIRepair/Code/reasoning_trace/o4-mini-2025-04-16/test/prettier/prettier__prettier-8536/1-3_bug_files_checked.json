@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "index.js",
+            "src/document/doc-printer.js",
+            "src/language-js/printer-estree.js"
+        ],
+        "explanation": "1. index.js (root): Contains the main formatting entry point and the addAlignmentSize/trim logic (around line 85) that attempts to remove or adjust trailing hardlines. It may need adjustment to handle the special case of a directive followed by a comment. 2. src/document/doc-printer.js: Implements printDocToString and is responsible for traversing the document tree and appending the final newline. It unconditionally ensures at least one trailing newline, so any extra hardline already present in the doc tree will produce two. 3. src/language-js/printer-estree.js: Responsible for printing JavaScript AST nodes, including directives. The code for ExpressionStatement with a directive always appends a hardline after the directive literal, which in this scenario combined with the final printer newline yields an extra blank line. These three files together govern how directives and comments are printed and trimmed at the end, making them the primary locations to investigate and fix the extra trailing hardline issue.",
+        "bug_scenario": "When a JavaScript file consists solely of a directive (e.g. 'use strict'), followed by a blank line and then a comment, Prettier emits two trailing newlines at the end of the formatted output instead of a single newline. In the example, the input\n\n'use strict';\n\n// comment\n\nis formatted as\n\n\"use strict\";\n\n// comment\n\n\n\n(i.e. two blank lines) rather than ending with only one newline. The extra hardline appears to come from the directive printer always appending a hardline plus the final printer logic adding its own newline."
+    },
+    "2": {
+        "bug_files": [
+            "index.js",
+            "src/document/doc-printer.js"
+        ],
+        "explanation": "1. index.js (root): around line 85 it implements the trim logic that removes trailing newlines and adjusts alignment sizes. In this special case (directive + comment) the existing trim only removes one newline, leaving the extra hardline intact.\n2. src/document/doc-printer.js: around line 199 it builds the document tree and injects the final hardline(s). For files ending in a comment after a lone directive, it currently always emits two hardlines at the end of the document. Together these two files cause the double newline behavior and must be updated to suppress the extra hardline for this scenario.",
+        "bug_scenario": "When formatting a file that contains only a directive (e.g. 'use strict') followed by a blank line and a comment, Prettier (with the babylon parser) ends the file with two newlines instead of one. In our repro the input is:\n\n'use strict';\n\n// comment\n\nand Prettier emits two trailing hardlines (an extra blank line) after the comment."
+    }
+}

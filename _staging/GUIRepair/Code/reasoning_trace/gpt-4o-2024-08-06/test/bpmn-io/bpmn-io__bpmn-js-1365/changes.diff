@@ -1,0 +1,54 @@
+diff --git a/lib/features/modeling/behavior/CreateDataObjectBehavior.js b/lib/features/modeling/behavior/CreateDataObjectBehavior.js
+index 57532feb..f98ec8be 100644
+--- a/lib/features/modeling/behavior/CreateDataObjectBehavior.js
++++ b/lib/features/modeling/behavior/CreateDataObjectBehavior.js
+@@ -22,8 +22,11 @@ export default function CreateDataObjectBehavior(eventBus, bpmnFactory, moddle)
+       // create a DataObject every time a DataObjectReference is created
+       var dataObject = bpmnFactory.create('bpmn:DataObject');
+ 
+-      // set the reference to the DataObject
+-      shape.businessObject.dataObjectRef = dataObject;
++// set the reference to the DataObject
++shape.businessObject.dataObjectRef = dataObject;
++
++// set isCollection property
++dataObject.isCollection = false; // default value
+     }
+   });
+ 
+diff --git a/lib/features/modeling/cmd/UpdatePropertiesHandler.js b/lib/features/modeling/cmd/UpdatePropertiesHandler.js
+index b9d35535..d5290ca4 100644
+--- a/lib/features/modeling/cmd/UpdatePropertiesHandler.js
++++ b/lib/features/modeling/cmd/UpdatePropertiesHandler.js
+@@ -96,8 +96,13 @@ UpdatePropertiesHandler.prototype.execute = function(context) {
+     }
+   }
+ 
+-  // update properties
+-  setProperties(businessObject, properties);
++// update properties
++setProperties(businessObject, properties);
++
++// handle isCollection property
++if (properties.hasOwnProperty('isCollection')) {
++businessObject.isCollection = properties.isCollection;
++}
+ 
+   // store old values
+   context.oldProperties = oldProperties;
+@@ -136,8 +141,13 @@ UpdatePropertiesHandler.prototype.revert = function(context) {
+ 
+   var element = context.element,
+       properties = context.properties,
+-      oldProperties = context.oldProperties,
+-      businessObject = element.businessObject,
++// update properties
++setProperties(businessObject, oldProperties);
++
++// revert isCollection property
++if (oldProperties.hasOwnProperty('isCollection')) {
++businessObject.isCollection = oldProperties.isCollection;
++}
+       elementRegistry = this._elementRegistry,
+       ids = this._moddle.ids;
+ 

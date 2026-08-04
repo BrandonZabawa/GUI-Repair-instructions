@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.drawText",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer.drawText_"
+        ],
+        "explanation": "The core of the bug is a rendering inconsistency between the vector layer renderer and the immediate renderer when offset and rotation are both applied to text. The relevant classes are CanvasTextBuilder (used for vector layers) and CanvasImmediateRenderer (used for immediate rendering/vector context). The methods likely responsible for the incorrect behavior are CanvasTextBuilder.drawText and CanvasImmediateRenderer.drawText_. These methods are responsible for placing and orienting text on the canvas, including applying offsets and rotations. To resolve the inconsistency, the logic determining the anchor/rotation point and the application sequence of offset and rotation must be made consistent in both methods. The bug is not related to VectorContext.js or VectorLayer.js, as those primarily provide abstract interfaces or layer-level orchestration, not the low-level drawing behavior where the inconsistency arises.",
+        "bug_scenario": "The bug report describes an inconsistency in how offset and rotated text is rendered between vector layers and immediate vector context in a mapping library. Specifically, when both text offset and rotation are applied, the vector layer renderer rotates the text around the feature (origin), while the immediate renderer rotates the text around its offset anchor (as determined by textAlign and textBaseline). This leads to different visual outcomes depending on which renderer is used, which is unexpected and confusing for users who expect consistent rendering regardless of context."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/TextBuilder.js//CanvasTextBuilder.drawText",
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer.drawText_"
+        ],
+        "explanation": "The core of the bug is that offset and rotation are handled differently in the two main rendering classes: CanvasTextBuilder (used for vector layer rendering) and CanvasImmediateRenderer (used for immediate vector context rendering). The relevant logic for rendering text with offset and rotation is implemented in the drawText (for CanvasTextBuilder) and drawText_ (for CanvasImmediateRenderer) methods. These functions compute how the text is placed, offset, and rotated. The bug arises because these computations are not consistent between the two, which leads to different visual outcomes. Therefore, these classes and methods are the primary candidates for inspection and modification to ensure consistent behavior across renderers.",
+        "bug_scenario": "The bug concerns inconsistent rendering of offset and rotated text between two different rendering contexts in OpenLayers: the vector layer renderer and the immediate (vector context) renderer. Specifically, when offset and rotation are applied together to text, the point around which the text is rotated differs between the two renderers. The vector layer renderer rotates offset text around the feature's location, while the immediate renderer rotates it around the text's anchor point, leading to visually inconsistent results. This is most noticeable when both offset and rotation are specified for a text style."
+    }
+}

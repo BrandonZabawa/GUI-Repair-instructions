@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-clike.js",
+            "components/prism-cpp.js"
+        ],
+        "bug_functions": [],
+        "explanation": "The root of the highlighting failure lies in the C-family grammar definitions for \"class-name\" in the clike and cpp language components. In components/prism-clike.js the pattern for \"class-name\" only matches simple class/trait/interface/new usages but does not catch names in an inheritance clause or scoped qualifiers. Similarly, in components/prism-cpp.js the \"class-name\" rule only recognizes standalone definitions (class/enum/struct) and ignores class names in member qualifiers and base specifiers. Fixing those two definitions (updating their regex to include colon-qualified and scope-qualified class names) will restore correct highlighting in both scenarios.",
+        "bug_scenario": "When PrismJS highlights C++ code, it fails to recognize and style class names in two contexts: (1) after the colon in an inheritance list (e.g. QMainWindow in \"class MainWindow : public QMainWindow\" is not highlighted as a class name), and (2) in a method definition qualifier (e.g. MainWindow in \"void MainWindow::changeWindowTitle()\" is not highlighted)."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-clike.js//Prism.languages.clike['class-name']",
+            "components/prism-cpp.js//Prism.languages.cpp['class-name']"
+        ],
+        "bug_functions": [
+            "components/prism-clike.js//Prism.languages.clike['function']"
+        ],
+        "explanation": "Prism\u2019s C-like grammar (in prism-clike.js) defines a \u201cclass-name\u201d token that only matches keywords like class, interface, extends, etc., followed by an identifier, but it doesn\u2019t cover C++-style inheritance (\u201c: public Base\u201d) so QMainWindow is never tokenized as a class name. The C++ grammar (in prism-cpp.js) similarly only matches class, enum, and struct declarations, not the inherited base classes or the qualifier in method definitions. Additionally, the generic \u2018function\u2019 rule in prism-clike.js (which underlies C++) only picks up bare identifiers before \u201c(\u201d, so it doesn\u2019t catch the qualifier MainWindow in MainWindow::changeWindowTitle. These grammar rules must be extended to recognize C++ inheritance lists and qualified names.",
+        "bug_scenario": "When highlighting C++ code, PrismJS correctly highlights the class name in a definition (e.g. MainWindow), but it fails to highlight the base class in an inheritance declaration (QMainWindow in \u201cclass MainWindow : public QMainWindow\u201d) and it also fails to highlight the class qualifier in a method definition (the \u201cMainWindow\u201d in \u201cvoid MainWindow::changeWindowTitle()\u201d)."
+    }
+}

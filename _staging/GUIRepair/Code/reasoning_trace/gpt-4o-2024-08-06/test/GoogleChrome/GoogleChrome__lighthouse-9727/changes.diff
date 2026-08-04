@@ -1,0 +1,79 @@
+diff --git a/lighthouse-core/audits/metrics/first-contentful-paint.js b/lighthouse-core/audits/metrics/first-contentful-paint.js
+index 7cf769571..692823420 100644
+--- a/lighthouse-core/audits/metrics/first-contentful-paint.js
++++ b/lighthouse-core/audits/metrics/first-contentful-paint.js
+@@ -53,7 +53,14 @@ class FirstContentfulPaint extends Audit {
+     const trace = artifacts.traces[Audit.DEFAULT_PASS];
+     const devtoolsLog = artifacts.devtoolsLogs[Audit.DEFAULT_PASS];
+     const metricComputationData = {trace, devtoolsLog, settings: context.settings};
+-    const metricResult = await ComputedFcp.request(metricComputationData, context);
++    let metricResult = await ComputedFcp.request(metricComputationData, context);
++
++    // Include iframe metrics in the computation
++    if (artifacts.IFrameElements) {
++      artifacts.IFrameElements.forEach(iframe => {
++        metricResult.timing += iframe.performanceMetrics.domContentLoadedEventEnd;
++      });
++    }
+ 
+     return {
+       score: Audit.computeLogNormalScore(
+diff --git a/lighthouse-core/audits/metrics/first-meaningful-paint.js b/lighthouse-core/audits/metrics/first-meaningful-paint.js
+index 2189e721b..3e78d15dc 100644
+--- a/lighthouse-core/audits/metrics/first-meaningful-paint.js
++++ b/lighthouse-core/audits/metrics/first-meaningful-paint.js
+@@ -56,7 +56,14 @@ class FirstMeaningfulPaint extends Audit {
+     const trace = artifacts.traces[Audit.DEFAULT_PASS];
+     const devtoolsLog = artifacts.devtoolsLogs[Audit.DEFAULT_PASS];
+     const metricComputationData = {trace, devtoolsLog, settings: context.settings};
+-    const metricResult = await ComputedFmp.request(metricComputationData, context);
++    let metricResult = await ComputedFmp.request(metricComputationData, context);
++
++    // Include iframe metrics in the computation
++    if (artifacts.IFrameElements) {
++      artifacts.IFrameElements.forEach(iframe => {
++        metricResult.timing += iframe.performanceMetrics.domContentLoadedEventEnd;
++      });
++    }
+ 
+     return {
+       score: Audit.computeLogNormalScore(
+diff --git a/lighthouse-core/audits/metrics/speed-index.js b/lighthouse-core/audits/metrics/speed-index.js
+index 3f6801def..a47a562a1 100644
+--- a/lighthouse-core/audits/metrics/speed-index.js
++++ b/lighthouse-core/audits/metrics/speed-index.js
+@@ -55,7 +55,14 @@ class SpeedIndex extends Audit {
+     const trace = artifacts.traces[Audit.DEFAULT_PASS];
+     const devtoolsLog = artifacts.devtoolsLogs[Audit.DEFAULT_PASS];
+     const metricComputationData = {trace, devtoolsLog, settings: context.settings};
+-    const metricResult = await ComputedSi.request(metricComputationData, context);
++    let metricResult = await ComputedSi.request(metricComputationData, context);
++
++    // Include iframe metrics in the computation
++    if (artifacts.IFrameElements) {
++      artifacts.IFrameElements.forEach(iframe => {
++        metricResult.timing += iframe.performanceMetrics.domContentLoadedEventEnd;
++      });
++    }
+ 
+     return {
+       score: Audit.computeLogNormalScore(
+diff --git a/lighthouse-core/gather/gatherers/iframe-elements.js b/lighthouse-core/gather/gatherers/iframe-elements.js
+index 97aea7d0b..848972b24 100644
+--- a/lighthouse-core/gather/gatherers/iframe-elements.js
++++ b/lighthouse-core/gather/gatherers/iframe-elements.js
+@@ -48,6 +48,14 @@ class IFrameElements extends Gatherer {
+ 
+     /** @type {LH.Artifacts['IFrameElements']} */
+     const iframeElements = await driver.evaluateAsync(expression, {useIsolation: true});
++    // Gather iframe performance metrics
++    const iframeMetrics = await driver.evaluateAsync('window.performance.timing', {useIsolation: true});
++    
++    // Aggregate iframe metrics with parent metrics
++    iframeElements.forEach(iframe => {
++      iframe.performanceMetrics = iframeMetrics;
++    });
++
+     return iframeElements;
+   }
+ }

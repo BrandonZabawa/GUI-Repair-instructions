@@ -1,0 +1,89 @@
+diff --git a/src/languages/bash.js b/src/languages/bash.js
+index cb134a07..15f8ddc4 100644
+--- a/src/languages/bash.js
++++ b/src/languages/bash.js
+@@ -52,16 +52,34 @@ export default function(hljs) {
+     className: 'string',
+     begin: /'/, end: /'/
+   };
+-  const ARITHMETIC = {
+-    begin: /\$\(\(/,
+-    end: /\)\)/,
+-    contains: [
+-      { begin: /\d+#[0-9a-f]+/, className: "number" },
+-      hljs.NUMBER_MODE,
+-      VAR
+-    ]
+-  };
+-  const SH_LIKE_SHELLS = [
++const HEREDOC = {
++className: 'string',
++begin: /<<-?\s*(\w+)\n([\s\S]*?)\n\1/,
++returnBegin: true,
++contains: [hljs.BACKSLASH_ESCAPE]
++};
++const REDIRECTION = {
++className: 'operator',
++begin: />|<|<<|>>|&>|&<|<>|<<<|&>>|&<<|>&|<&/
++};
++const PIPE = {
++className: 'operator',
++begin: /\|/
++};
++const CONTINUATION = {
++className: 'operator',
++begin: /\\\n/
++};
++const ARITHMETIC = {
++begin: /\$\(\(/,
++end: /\)\)/,
++contains: [
++{ begin: /\d+#[0-9a-f]+/, className: "number" },
++hljs.NUMBER_MODE,
++VAR
++]
++};
++const SH_LIKE_SHELLS = [
+     "fish",
+     "bash",
+     "zsh",
+@@ -93,17 +111,21 @@ export default function(hljs) {
+         'if then else elif fi for while in do done case esac function',
+       literal:
+         'true false',
+-      built_in:
+-        // Shell built-ins
+-        // http://www.gnu.org/software/bash/manual/html_node/Shell-Builtin-Commands.html
+-        'break cd continue eval exec exit export getopts hash pwd readonly return shift test times ' +
+-        'trap umask unset ' +
+-        // Bash built-ins
+-        'alias bind builtin caller command declare echo enable help let local logout mapfile printf ' +
+-        'read readarray source type typeset ulimit unalias ' +
+-        // Shell modifiers
+-        'set shopt ' +
+-        // Zsh built-ins
++contains: [
++KNOWN_SHEBANG, // to catch known shells and boost relevancy
++hljs.SHEBANG(), // to catch unknown shells but still highlight the shebang
++FUNCTION,
++ARITHMETIC,
++hljs.HASH_COMMENT_MODE,
++QUOTE_STRING,
++ESCAPED_QUOTE,
++APOS_STRING,
++VAR,
++HEREDOC,
++REDIRECTION,
++PIPE,
++CONTINUATION
++]
+         'autoload bg bindkey bye cap chdir clone comparguments compcall compctl compdescribe compfiles ' +
+         'compgroups compquote comptags comptry compvalues dirs disable disown echotc echoti emulate ' +
+         'fc fg float functions getcap getln history integer jobs kill limit log noglob popd print ' +
+@@ -123,4 +145,4 @@ export default function(hljs) {
+       VAR
+     ]
+   };
+-}
++}
+\ No newline at end of file

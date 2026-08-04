@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/Raster.js"
+        ],
+        "explanation": "All of the web-worker creation and scheduling for the Raster source happens in src/ol/source/Raster.js. That file instantiates pixelworks workers, tracks them on the source instance, and dispatches image requests to them \u2013 but it never calls worker.terminate() or otherwise disposes of them. To fix the leak you must add termination logic in this file (for example in a disposeInternal override or before spinning up a new round of workers). No other module in the repo creates the pixelworks workers at runtime, so this is the sole place to add cleanup.",
+        "bug_scenario": "When you use an ol/source/Raster with a pixel-processing function OpenLayers spins up one or more web-workers (via pixelworks) each time the source runs. Those workers are stored internally on the Raster source instance but never cleaned up or terminated, even when you change parameters or dispose of the source. As a result you can see dozens of worker instances piling up in Chrome DevTools and memory usage steadily climbs."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/Raster.js"
+        ],
+        "explanation": "All of the pixel-worker creation and handling logic lives in src/ol/source/Raster.js. That file creates a worker pool (using pixelworks) but never implements any termination or cleanup. To fix the leak, Raster.js must be extended to override disposeInternal (and/or handle parameter changes) so that it calls .terminate() on each worker in its pool when the source is disposed or re-initialized. No other files need to be touched for the core fix.",
+        "bug_scenario": "The Raster source creates a pool of web-workers via the pixelworks library whenever it needs to process or reproject raster data (for example, when you change the input parameters). However, those workers are never torn down or released after use\u2014nor on source disposal, nor when the source is re-initialized. As you repeatedly change the input number in the sandbox, new workers accumulate and never go away, leading to a steady growth in live VM instances (and memory usage) as shown in the Chrome DevTools \u201cSelect JavaScript VM instance\u201d pane."
+    }
+}

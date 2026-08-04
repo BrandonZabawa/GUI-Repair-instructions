@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer",
+            "src/ol/renderer/canvas/TileLayer.js//CanvasTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "CanvasLayerRenderer.useContainer",
+            "CanvasTileLayerRenderer.renderFrame"
+        ],
+        "explanation": "Both CanvasLayerRenderer and its subclass CanvasTileLayerRenderer manage a DOM <div> container and inner <canvas> for each layer, setting CSS transform and CSS opacity (via cssOpacity). The useContainer() method in CanvasLayerRenderer tests whether it can reuse an existing container based on matching style.opacity and style.transform. If both tiled layers use exactly the same opacity and transform, useContainer() will recycle the first layer\u2019s canvas for the second layer, so only one canvas is actually painted \u2014 giving the appearance that the top layer is fully opaque over the other. The fix will be in useContainer (to avoid reuse when it\u2019s a distinct layer) or in renderFrame (to ensure each layer gets its own canvas and globalAlpha instead of container reuse).",
+        "bug_scenario": "The user has two independent tiled ArcGIS REST layers on an OpenLayers map, each set to the same opacity (e.g. 0.5). In OL 6.9.0 (and 6.8.1+) the second (top) layer is drawn as fully opaque on top of the first OL layer, instead of blending at 50%. In versions \u22646.7.0 the same two layers both blend correctly through each other. The problem only occurs when the opacity values are identical \u2013 as soon as you give the layers slightly different opacity numbers, they render correctly again. From the screenshots, you can see that in 6.9.0 the yellow and purple layers stack without transparency between themselves, although the basemap below is still visible through them."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer",
+            "src/ol/renderer/canvas/TileLayer.js//CanvasTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/Layer.js//useContainer",
+            "src/ol/renderer/canvas/TileLayer.js//renderFrame",
+            "src/ol/renderer/canvas/TileLayer.js//drawTileImage"
+        ],
+        "explanation": "The root of the opacity stacking issue lies in CanvasLayerRenderer.useContainer (Layer.js). That method reuses an existing <div>/<canvas> container whenever the CSS opacity and className match, regardless of which layer instance it belongs to. Since all tile layers share the same className and\u2014in this bug scenario\u2014the same opacity, useContainer hands back the same canvas context to every layer. CanvasTileLayerRenderer.renderFrame and its drawTileImage helper then draw multiple layers into that one canvas instead of separate canvases, effectively making the top layer opaque over the lower one. To fix the bug, useContainer must be changed to account for layer identity (for example by including a unique layer uid or index in the container matching logic) so that each layer always gets its own canvas context when opacities (or transforms) collide.",
+        "bug_scenario": "When two or more independent tiled ArcGIS REST layers are added to an OpenLayers map at the same opacity (for example 0.5), in versions \u22656.8.1 the top\u2010most layer\u2019s canvas is being reused for all layers instead of each layer getting its own off\u2010screen canvas. As a result the overlaps between layers render fully opaque instead of blending through each other. In OL 6.7.0 and below each layer had its own canvas and blended correctly; in 6.9.0 the screenshots show that both layers share the same container/context and the top layer simply overwrites the bottom one."
+    }
+}

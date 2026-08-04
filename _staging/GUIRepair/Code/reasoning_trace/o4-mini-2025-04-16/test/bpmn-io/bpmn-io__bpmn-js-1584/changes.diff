@@ -1,0 +1,44 @@
+diff --git a/lib/features/copy-paste/BpmnCopyPaste.js b/lib/features/copy-paste/BpmnCopyPaste.js
+index f2c358ab..b76e43b1 100644
+--- a/lib/features/copy-paste/BpmnCopyPaste.js
++++ b/lib/features/copy-paste/BpmnCopyPaste.js
+@@ -84,10 +84,16 @@ export default function BpmnCopyPaste(bpmnFactory, eventBus, moddleCopy) {
+       is(parent, 'bpmn:Participant') &&
+       is(property, 'bpmn:Process')
+     ) {
++      // create a fresh process (with new ID) for the copied pool
+       bpmnProcess = bpmnFactory.create('bpmn:Process');
+ 
+-      // return copy of process
+-      return moddleCopy.copyElement(property, bpmnProcess);
++      // copy all properties into the new process
++      var newProcess = moddleCopy.copyElement(property, bpmnProcess);
++
++      // restore the newly generated ID to avoid duplicates
++      newProcess.id = bpmnProcess.id;
++
++      return newProcess;
+     }
+   });
+ 
+diff --git a/lib/features/modeling/behavior/UnclaimIdBehavior.js b/lib/features/modeling/behavior/UnclaimIdBehavior.js
+index 7e3560df..1738114f 100644
+--- a/lib/features/modeling/behavior/UnclaimIdBehavior.js
++++ b/lib/features/modeling/behavior/UnclaimIdBehavior.js
+@@ -28,7 +28,8 @@ export default function UnclaimIdBehavior(canvas, injector, moddle, modeling) {
+     }
+ 
+     if (is(shape, 'bpmn:Participant') && isExpanded(shape)) {
+-      moddle.ids.unclaim(shapeBo.processRef.id);
++      // do not unclaim the process ID on participant deletion
++      // so that undo/redo can restore the original process ID
+     }
+ 
+     modeling.unclaimId(shapeBo.id, shapeBo);
+@@ -53,4 +54,4 @@ export default function UnclaimIdBehavior(canvas, injector, moddle, modeling) {
+ 
+ inherits(UnclaimIdBehavior, CommandInterceptor);
+ 
+-UnclaimIdBehavior.$inject = [ 'canvas', 'injector', 'moddle', 'modeling' ];
+\ No newline at end of file
++UnclaimIdBehavior.$inject = [ 'canvas', 'injector', 'moddle', 'modeling' ];

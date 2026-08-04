@@ -1,0 +1,84 @@
+{
+    "1/1": {
+        "lib/features/modeling/behavior/DeleteLaneBehavior.js": [
+            {
+                "SEARCH": [
+                    "this.postExecuted('shape.delete', LOW_PRIORITY, function(event) {",
+                    "",
+                    "var context = event.context,",
+                    "hints = context.hints,",
+                    "shape = context.shape,",
+                    "oldParent = context.oldParent;",
+                    "",
+                    "// only compensate lane deletes",
+                    "if (!is(shape, 'bpmn:Lane')) {",
+                    "return;",
+                    "}",
+                    "",
+                    "// compensate root deletes only",
+                    "if (hints && hints.nested) {",
+                    "return;",
+                    "}",
+                    "",
+                    "compensateLaneDelete(shape, oldParent);",
+                    "});"
+                ],
+                "REPLACE": [
+                    "    this.postExecuted('shape.delete', LOW_PRIORITY, function(event) {",
+                    "  ",
+                    "      var context = event.context,",
+                    "          hints = context.hints,",
+                    "          shape = context.shape,",
+                    "          oldParent = context.oldParent;",
+                    "  ",
+                    "      // only compensate lane deletes",
+                    "      if (!is(shape, 'bpmn:Lane')) {",
+                    "        return;",
+                    "      }",
+                    "  ",
+                    "      // no longer skip nested deletes \u2013 compensate every lane deletion",
+                    "      // if (hints && hints.nested) {",
+                    "      //   return;",
+                    "      // }",
+                    "  ",
+                    "      compensateLaneDelete(shape, oldParent);",
+                    "    });"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "function compensateLaneDelete(shape, oldParent) {",
+                    "",
+                    "var siblings = getChildLanes(oldParent);",
+                    "",
+                    "var topAffected = [];",
+                    "var bottomAffected = [];",
+                    "",
+                    "eachElement(siblings, function(element) {"
+                ],
+                "REPLACE": [
+                    "  function compensateLaneDelete(shape, oldParent) {",
+                    "  ",
+                    "    var siblings = getChildLanes(oldParent);",
+                    "  ",
+                    "    // if this was the last child lane, collapse the parent by shrinking it",
+                    "    if (siblings.length === 0 && is(oldParent, 'bpmn:Lane')) {",
+                    "      // resize only the parent lane to remove the gap",
+                    "      spaceTool.makeSpace(",
+                    "        [],               // no other shapes to move",
+                    "        [ oldParent ],    // only resize the parent lane",
+                    "        { x: 0, y: -shape.height },",
+                    "        'n'",
+                    "      );",
+                    "      return;",
+                    "    }",
+                    "  ",
+                    "    var topAffected = [];",
+                    "    var bottomAffected = [];",
+                    "  ",
+                    "    eachElement(siblings, function(element) {"
+                ]
+            }
+        ]
+    }
+}

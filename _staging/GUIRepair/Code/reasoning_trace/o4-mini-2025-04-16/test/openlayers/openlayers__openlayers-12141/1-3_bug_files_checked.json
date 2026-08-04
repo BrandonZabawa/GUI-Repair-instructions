@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/featureloader.js",
+            "src/ol/source/Vector.js"
+        ],
+        "explanation": "In src/ol/featureloader.js (the xhr loader helper), the code currently invokes the `success` callback before calling `source.addFeatures(features)`. Because the VectorSource dispatches its `featuresloadend` event inside that `success` callback, no features have been added yet when the event runs. Moving the call to `addFeatures` ahead of the `success(features)` invocation ensures that by the time `featuresloadend` fires, the source already contains the loaded features. Additionally, src/ol/source/Vector.js wires up the loader callback and dispatches the event there, so its ordering in concert with featureloader.js must be adjusted to fix the bug.",
+        "bug_scenario": "When loading remote features into a VectorSource via XHR (e.g. KML), the code calls the user\u2019s `success` callback before actually adding the features to the source. As a result, the `featuresloadend` event fires with no features in the source yet, so `VectorSource.getExtent()` returns [Infinity, Infinity, -Infinity, -Infinity] instead of the real extent."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/featureloader.js"
+        ],
+        "explanation": "All of the problematic behavior originates in src/ol/featureloader.js. In its xhr callback (the inner function passed to loadFeaturesXhr), the code currently invokes the success callback before calling source.addFeatures(features). That means any downstream logic (including featuresloadend events or calls to getExtent) fire with an empty source. Swapping those two calls in this file\u2014calling source.addFeatures(features) first, then success(features)\u2014resolves the issue.",
+        "bug_scenario": "When using a VectorSource backed by an XHR-based loader (e.g.\nusing ol.featureloader.xhr), the library invokes the user-supplied \u201csuccess\u201d callback before it ever calls source.addFeatures. As a result, when you listen for the VectorSource\u2019s \u201cfeaturesloadend\u201d event (or call getExtent() in that handler), the source still has no features and its extent is [Infinity, Infinity, \u2013Infinity, \u2013Infinity]. You need to add the features to the source first, then invoke the callback so that subsequent events (and getExtent()) see the new features."
+    }
+}

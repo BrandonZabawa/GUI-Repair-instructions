@@ -1,0 +1,48 @@
+{
+    "1/1": {
+        "lighthouse-core/audits/user-timings.js": [
+            {
+                "SEARCH": [
+                    "tabTrace.processEvents.filter(evt => {",
+                    "if (!evt.cat.includes('blink.user_timing')) {",
+                    "return false;",
+                    "}",
+                    "",
+                    "// reject these \"userTiming\" events that aren't really UserTiming, by nuking ones with frame data (or requestStart)",
+                    "// https://cs.chromium.org/search/?q=trace_event.*?user_timing&sq=package:chromium&type=cs",
+                    "return evt.name !== 'requestStart' &&",
+                    "evt.name !== 'navigationStart' &&",
+                    "evt.name !== 'paintNonDefaultBackgroundColor' &&",
+                    "evt.args.frame === undefined;",
+                    "})"
+                ],
+                "REPLACE": [
+                    "    tabTrace.processEvents.filter(evt => {",
+                    "      if (!evt.cat.includes('blink.user_timing')) {",
+                    "        return false;",
+                    "      }",
+                    "",
+                    "      // reject these \"userTiming\" events that aren't really UserTiming, by nuking ones with frame data (or requestStart)",
+                    "      // https://cs.chromium.org/search/?q=trace_event.*?user_timing&sq=package:chromium&type=cs",
+                    "      // Also filter out known irrelevant marks, such as those injected by ads/analytics (e.g., names starting with 'goog_')",
+                    "      const irrelevantMarkPatterns = [",
+                    "        /^goog_/i, // Google Ads/Analytics",
+                    "        /^gtm\\./i, // Google Tag Manager",
+                    "        /^ga_/i,   // Google Analytics",
+                    "      ];",
+                    "      if (",
+                    "        evt.name === 'requestStart' ||",
+                    "        evt.name === 'navigationStart' ||",
+                    "        evt.name === 'paintNonDefaultBackgroundColor' ||",
+                    "        evt.args.frame !== undefined ||",
+                    "        irrelevantMarkPatterns.some(pattern => pattern.test(evt.name))",
+                    "      ) {",
+                    "        return false;",
+                    "      }",
+                    "      return true;",
+                    "    })"
+                ]
+            }
+        ]
+    }
+}

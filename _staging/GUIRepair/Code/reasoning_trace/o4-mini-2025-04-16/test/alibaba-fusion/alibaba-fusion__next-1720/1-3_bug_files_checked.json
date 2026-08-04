@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/search/Search.jsx",
+            "src/select/auto-complete.jsx"
+        ],
+        "explanation": "The Search component (src/search/Search.jsx) wires up both the input and dropdown autocomplete from Select.AutoComplete and invokes onSearch(value, filterValue). The actual keyboard handling and item selection logic lives in the AutoComplete component (src/select/auto-complete.jsx). Currently its Enter‐key handler only fires the search before confirming the highlighted item, so filterValue never gets set. To fix this, the keydown/Enter handler in auto-complete.jsx must select the highlighted suggestion (updating input and filterValue) before delegating back to Search.jsx’s onSearch.",
+        "bug_scenario": "When using the Search component in “combobox” (autocomplete) mode, typing a character (e.g. “r”) shows a list of suggestions, but pressing Enter does not pick the highlighted suggestion. Instead onSearch is called with the raw input (\"r\") and filterValue undefined rather than the highlighted item’s value (\"Recent\")."
+    },
+    "2": {
+        "bug_files": [
+            "src/search/Search.jsx",
+            "src/select/auto-complete.jsx"
+        ],
+        "explanation": "1. src/search/Search.jsx：Search 组件的核心实现文件，其中将 AutoComplete 的 onKeyDown（Enter）事件映射到 Search 的 onSearch 回调，同时传入输入框 value 和 filterValue，必须在此文件中正确传递高亮项的值（filterValue）。\n2. src/select/auto-complete.jsx：AutoComplete 的底层实现，负责渲染下拉列表、高亮项逻辑以及按键处理（包括 Enter 键选中逻辑）。目前的实现不会将高亮项的 value 传递给 Search，而是直接使用输入框的 value，需要在此处修正 Enter 键的处理，优先采用当前高亮项。",
+        "bug_scenario": "在 Search 组件的联想（AutoComplete）模式下，当输入“r”触发联想列表并且 autoHighlightFirstItem 默认为 true 时，第一项会被高亮，但用户直接按回车时，组件并未把高亮项作为搜索结果，而是把输入框内的原始字符串“r”当作搜索词，onSearch 的第二个参数 filterValue 也为 undefined，导致选中值与实际搜索不一致。"
+    }
+}

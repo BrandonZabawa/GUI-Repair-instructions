@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/interaction/Select.js//Select"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Select.js//setMap",
+            "src/ol/interaction/Select.js//getLayer"
+        ],
+        "explanation": "The issue is caused by the way ol/interaction/Select renders selected features: they are added to an internal unmanaged layer that is always rendered on top, regardless of zIndex settings. This is implemented inside the Select class. The setMap method is responsible for attaching the internal selection layer to the map, and it may be enforcing the top-most rendering order. The getLayer method is related to retrieving the associated vector layer of the selected feature, which is important for managing selection overlays and their rendering order. These elements are relevant because fixing the bug would require altering how and where the selection overlay is inserted in the rendering stack, likely within the Select class and specifically in its interaction with map layer management (setMap), and possibly how it resolves feature-layer relationships (getLayer). The issue is not rooted in the VectorLayer or CanvasVectorLayerRenderer classes, as they respect zIndex, but in the interaction logic that always draws the selection overlay above other layers.",
+        "bug_scenario": "The bug scenario described in the images and report shows that, when using ol.select.Interaction with a cluster layer, the selected feature (with a custom SVG icon) always renders above the red 'hover' dots, regardless of the zIndex set on the layers. The expected behavior is that the hover dots (in a separate layer) can be drawn on top of the selected feature, but currently, the selection overlay is always rendered on top, violating zIndex ordering. The two images show (1) the hover effect under the selected feature (current/buggy behavior), and (2) the desired effect, where the hover effect overlays the selected feature as per the user's zIndex preference."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/interaction/Select.js//Select"
+        ],
+        "bug_functions": [
+            "src/ol/interaction/Select.js//setMap"
+        ],
+        "explanation": "The core of the bug lies in how the Select interaction manages selected features\u2014by placing them into an internal, unmanaged overlay layer which is always rendered on top of all other vector layers, regardless of zIndex. The class 'Select' in 'src/ol/interaction/Select.js' is responsible for this behavior, as described in its class-level comments and internal field management. The 'setMap' method is likely responsible for attaching/detaching the unmanaged overlay layer to/from the map, thus controlling its render order. Fixing the bug would require changing how/where this overlay layer is inserted into the map's layer stack, potentially allowing zIndex to affect its rendering order. Other files (such as vector layer rendering) are not responsible for the overlay logic; it's specifically how Select manages and inserts its overlay that causes this issue.",
+        "bug_scenario": "The bug scenario involves the OpenLayers select interaction (`ol.select.Interaction`), where selected features are always rendered on the topmost layer, regardless of the zIndex of other layers. The provided images show the desired effect (custom SVG icon above red hover dots) versus the current behavior (selected feature always on top, covering the hover dots), indicating that the selection overlay ignores zIndex order, making it impossible to render other vector layers (like hover highlights) above selected features."
+    }
+}

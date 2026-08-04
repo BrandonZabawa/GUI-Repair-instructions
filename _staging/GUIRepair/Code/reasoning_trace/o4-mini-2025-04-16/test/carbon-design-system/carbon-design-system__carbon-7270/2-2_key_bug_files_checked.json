@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/MultiSelect/MultiSelect.js"
+        ],
+        "explanation": "Both Dropdown.js and MultiSelect.js use React.forwardRef and pass the forwarded ref into their inner <button> element via ref={ref}, but then immediately spread {...getToggleButtonProps()} (from Downshift/useSelect) _after_ that. getToggleButtonProps() returns its own ref prop, which overrides the forwarded ref when React reconciles the JSX props. As a result, the user\u2019s ref never actually attaches to the button, and ref.current remains undefined. To fix this, the code should either merge the two refs (e.g. using the existing mergeRefs utility) or spread getToggleButtonProps() first and apply ref last so the forwarded ref isn\u2019t overwritten.",
+        "bug_scenario": "The user adds a <Dropdown> (or <MultiSelect>) to their app and binds a ref to it, expecting ref.current to point to the underlying button DOM node so they can inspect or manipulate it. In practice console-logging that ref immediately after mount shows ref.current is undefined/null. In contrast, binding a ref directly to a plain <Button> component from Carbon works as expected (ref.current points to the <button> element). The supplied screenshots show \u201cDropdown {current: undefined}\u201d vs. \u201cButton {current: button.bx--btn\u2026}.\u201d"
+    }
+}

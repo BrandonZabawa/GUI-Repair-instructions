@@ -1,0 +1,42 @@
+diff --git a/lib/features/drilldown/DrilldownOverlayBehavior.js b/lib/features/drilldown/DrilldownOverlayBehavior.js
+index 1e845483..6feb0af1 100644
+--- a/lib/features/drilldown/DrilldownOverlayBehavior.js
++++ b/lib/features/drilldown/DrilldownOverlayBehavior.js
+@@ -11,7 +11,7 @@ var ARROW_DOWN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height=
+ var EMPTY_MARKER = 'bjs-drilldown-empty';
+ 
+ export default function DrilldownOverlayBehavior(
+-    canvas, eventBus, elementRegistry, overlays
++    canvas, eventBus, elementRegistry, overlays, directEditing
+ ) {
+   CommandInterceptor.call(this, eventBus);
+ 
+@@ -19,6 +19,7 @@ export default function DrilldownOverlayBehavior(
+   this._eventBus = eventBus;
+   this._elementRegistry = elementRegistry;
+   this._overlays = overlays;
++  this._directEditing = directEditing;
+ 
+   var self = this;
+ 
+@@ -150,6 +151,10 @@ DrilldownOverlayBehavior.prototype.addOverlay = function(element) {
+   var button = domify('<button class="bjs-drilldown">' + ARROW_DOWN_SVG + '</button>');
+ 
+   button.addEventListener('click', function() {
++    // cancel any active direct editing before switching plane
++    if (self._directEditing && self._directEditing.isActive()) {
++      self._directEditing.cancel();
++    }
+     canvas.setRootElement(canvas.findRoot(getPlaneIdFromShape(element)));
+   });
+ 
+@@ -177,5 +182,6 @@ DrilldownOverlayBehavior.$inject = [
+   'canvas',
+   'eventBus',
+   'elementRegistry',
+-  'overlays'
+-];
+\ No newline at end of file
++  'overlays',
++  'directEditing'
++];

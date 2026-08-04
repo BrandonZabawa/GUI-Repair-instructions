@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/TileQueue.js",
+            "src/ol/Map.js",
+            "src/ol/source/TileImage.js"
+        ],
+        "explanation": "\u2022 src/ol/TileQueue.js is the core scheduler for all tile loading in OpenLayers.  Any change here to the queueing logic or the maximum number of tiles pulled from the queue per frame can turn a batch of concurrent requests into a strictly serial sequence.  We suspect the 7.0 rewrite of loadMoreTiles or priority heuristics has introduced a per\u2010group or per\u2010frame cap of 1 tile at a time.\n\n\u2022 src/ol/Map.js is where the Map creates and drives the TileQueue each render frame (calling enqueue and loadMoreTiles).  If the code that hands off tiles to the queue or that pulls them out has changed default limits or is now invoking the queue from inside a promise chain, it would explain why new requests no longer overlap.\n\n\u2022 src/ol/source/TileImage.js implements the tile loading function for most raster layers and is responsible for handing individual Tile objects off to the TileQueue.  Any change here (for example switching to a Promise-based loader or altering when a tile\u2019s state moves to LOADED) will affect the timing of when the queue considers a tile finished and can start the next one.  Together these three files govern how many tile requests can be in flight, and changes in their logic between 6.1 and 7.0 are the most likely cause of the shift from parallel to sequential loading.",
+        "bug_scenario": "After upgrading from OpenLayers 6.1 to 7.0, when you put 20 TileLayers into a LayerGroup the tile\u2010request pattern changes from firing all 20 requests concurrently (as seen in 6.1) to firing them strictly one at a time in sequence (as seen in 7.0).  In your network panel screenshots you can see in 6.1 that all 20 requests overlap immediately, whereas in 7.0 each successive request only issues after the previous one finishes \u2014 dramatically slowing the overall imagery load time."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/TileQueue.js",
+            "src/ol/Map.js",
+            "src/ol/layer/Group.js",
+            "src/ol/renderer/Composite.js"
+        ],
+        "explanation": "\u2022 src/ol/TileQueue.js: This is where tile loading is scheduled and limited per frame. Any change here (e.g. to the number of tiles loaded per call or throttling logic) directly affects whether layers fire off requests in parallel or one at a time.\n\u2022 src/ol/Map.js: The map\u2019s post\u2010render loop invokes TileQueue.loadMoreTiles. Changes to how often or how many tiles are requested per frame can alter the perceived concurrency for grouped layers.\n\u2022 src/ol/layer/Group.js: This flattens and manages the order of child layers in a LayerGroup. A change here could cause tiles from one layer to enqueue only after the previous layer finishes, resulting in sequential loads.\n\u2022 src/ol/renderer/Composite.js: Responsible for iterating through all visible layers (including those in a Group) and rendering them. If it changed the order or batching of render calls, it could indirectly enforce sequential tile enqueuing instead of parallel.",
+        "bug_scenario": "The report describes a change in tile\u2010loading timing when upgrading from OpenLayers 6.1 to 7.0. In the 6.1 example (first screenshot) all 20 TileLayers in a LayerGroup fire off their tile requests concurrently, so you see a tight vertical stack of HTTP calls in the network panel. After the upgrade to 7.0 (second screenshot), each TileLayer\u2019s requests are spaced out one after the other, resulting in visibly slower, sequential imagery loads. You want to restore the old, concurrent request behavior for LayerGroup children."
+    }
+}

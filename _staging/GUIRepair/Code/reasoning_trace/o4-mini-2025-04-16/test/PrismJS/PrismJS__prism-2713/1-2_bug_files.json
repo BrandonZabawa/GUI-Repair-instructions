@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-javascript.js",
+            "components/prism-javascript.min.js",
+            "prism.js"
+        ],
+        "explanation": "The mis-highlighting originates in the JavaScript grammar definition. In components/prism-javascript.js (and its minified counterpart), the word \u201cfrom\u201d is hard-coded as a keyword pattern without context, so it matches inside $from. Likewise, prism.js bundles and uses that same grammar. Adjusting the regex or keyword list in these files to only treat \u201cfrom\u201d as a keyword in import/export contexts will resolve the issue.",
+        "bug_scenario": "When using a destructuring assignment with dollar-prefixed identifiers (e.g. const { $from, $to } = selection;), Prism\u2019s JavaScript grammar splits off the dollar at highlighting time and then treats \u201cfrom\u201d as a reserved keyword. As a result, $from is incorrectly highlighted as an identifier followed by the keyword from, even though $from is a valid identifier in JS."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-javascript.js",
+            "components/prism-javascript.min.js"
+        ],
+        "explanation": "Both files define the JavaScript syntax grammar in Prism. The regex for ES6 keywords (including \u201cfrom\u201d) uses `\\b` word-boundaries, which break at the dollar sign (`$`), causing `$from` to be split into `$` + `from`. As a result, \u201cfrom\u201d is recognized (and highlighted) as a keyword even though it\u2019s part of an identifier. You need to adjust the keyword-matching regex in these files so that `$` is treated as part of the identifier (for example by using a custom boundary that includes `$`).",
+        "bug_scenario": "When using object destructuring with property names that begin with a dollar sign, like \u201cconst { $from, $to } = selection;\u201d, Prism\u2019s JavaScript grammar treats the word \u201cfrom\u201d inside \u201c$from\u201d as the ES6 keyword \u2018from\u2019 and highlights it incorrectly."
+    }
+}

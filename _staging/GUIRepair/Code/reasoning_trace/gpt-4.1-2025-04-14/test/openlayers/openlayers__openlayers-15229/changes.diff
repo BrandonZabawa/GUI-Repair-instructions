@@ -1,0 +1,21 @@
+diff --git a/src/ol/renderer/webgl/PointsLayer.js b/src/ol/renderer/webgl/PointsLayer.js
+index be6a2041d8..f22ca1545b 100644
+--- a/src/ol/renderer/webgl/PointsLayer.js
++++ b/src/ol/renderer/webgl/PointsLayer.js
+@@ -620,6 +620,16 @@ class WebGLPointsLayerRenderer extends WebGLLayerRenderer {
+ 
+     do {
+       this.helper.makeProjectionTransform(frameState, this.currentTransform_);
++      // Fix: Compensate for non-square viewport aspect ratio when rotating icons
++      const aspect = frameState.size[1] / frameState.size[0];
++      // Only apply aspect ratio correction if icon-rotate-with-view is true
++      const layer = this.getLayer();
++      const style = layer.getStyle && layer.getStyle();
++      if (style && style['icon-rotate-with-view']) {
++        // Scale y by aspect ratio to prevent distortion
++        this.currentTransform_[3] *= aspect;
++        this.currentTransform_[4] *= aspect;
++      }
+       translateTransform(this.currentTransform_, world * worldWidth, 0);
+       multiplyTransform(this.currentTransform_, this.invertRenderTransform_);
+       this.helper.applyUniforms(frameState);

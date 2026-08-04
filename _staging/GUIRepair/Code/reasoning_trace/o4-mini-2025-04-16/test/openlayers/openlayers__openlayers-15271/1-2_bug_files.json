@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/expr/expression.js",
+            "src/ol/expr/cpu.js",
+            "src/ol/style/expressions.js"
+        ],
+        "explanation": "All of the expression support for styling lives under src/ol/expr and src/ol/style/expressions.js. \n1) src/ol/expr/expression.js defines the operators available and how they\u2019re validated. It currently only recognizes ['get', attributeName] for properties, with no special rule for 'id'.  \n2) src/ol/expr/cpu.js is the runtime evaluator: its 'get' case calls feature.get(attributeName) and never checks feature.getId(). To support id, cpu.js must special-case attributeName === 'id' and return feature.getId().  \n3) src/ol/style/expressions.js is the style-side hookup for expressions: it wires expression ASTs into style functions. It needs to be aware that ['get','id'] is valid and should be passed through to the core evaluator. These three files together must be updated so that expression parsing, validation, and execution all allow reading feature.getId() via the 'get' operator.",
+        "bug_scenario": "When writing a style expression like ['get', 'id'] on a GeoJSON-backed vector layer, the expression engine currently only reads feature properties (via feature.get('\u2026')) and returns undefined for 'id'. There is no built-in support for returning feature.getId() in a style expression, so users cannot reference the GeoJSON feature id without duplicating it into properties."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/expr/expression.js",
+            "src/ol/expr/cpu.js",
+            "src/ol/style/expressions.js"
+        ],
+        "explanation": "These three files make up the expression support pipeline for styling: \n\n1. src/ol/expr/expression.js defines the Expression AST and valid operators. It needs to be updated to accept \u201cid\u201d as a special \"get\" target or to introduce a dedicated \"id\" operator.\n2. src/ol/expr/cpu.js contains the runtime evaluator for expressions on the CPU, including the implementation of the ['get', name] operator. It currently only reads properties via feature.get(name) and must be extended to use feature.getId() when name==='id'.\n3. src/ol/style/expressions.js integrates the expression AST and CPU evaluator into the style engine; it wires up attribute lookups on features to expressions. It must be updated so that style expressions referencing \"id\" resolve against the feature\u2019s id rather than its properties.",
+        "bug_scenario": "The user is trying to use a style expression to read a feature\u2019s GeoJSON id (e.g. [\"get\",\"id\"]) without duplicating it as a property. Currently the style expression parser only fetches properties (feature.get(\"attributeName\")) and does not forward feature.getId(), so any expression targeting \u201cid\u201d returns undefined."
+    }
+}

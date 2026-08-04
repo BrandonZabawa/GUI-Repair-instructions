@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/index.js",
+            "packages/react/src/components/DataTable/DataTable.js",
+            "packages/react/src/index.js"
+        ],
+        "explanation": "All of the sub-components (TableContainer, Table, TableHead, TableRow, TableHeader, TableBody, TableCell) are defined and exported in DataTable/index.js and DataTable/DataTable.js, but the default DataTable export never has them attached as properties. As a result, destructuring them off DataTable returns undefined. Additionally, the root entry point (packages/react/src/index.js) re-exports these modules to form the public API. To support destructuring, static assignments (e.g. DataTable.TableContainer = TableContainer) must be added in DataTable/index.js or DataTable/DataTable.js so that DataTable carries its own sub-components as properties of the default export.",
+        "bug_scenario": "In v11 of @carbon/react, destructuring sub-components (TableContainer, Table, TableHead, TableRow, TableHeader, TableBody, TableCell) directly off the default DataTable export yields undefined and breaks the app (React.createElement: type is invalid). For example:\n\n  import { DataTable } from '@carbon/react';\n  const { TableContainer, Table, TableHead, TableRow, TableHeader, TableBody, TableCell } = DataTable;\n\ncauses console errors and no rendering. Switching to direct named imports:\n\n  import { DataTable, TableContainer, Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from '@carbon/react';\n\nresolves the issue, indicating that DataTable does not currently expose its sub-components as static properties on its default export."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/index.js",
+            "packages/react/src/components/DataTable/DataTable.js"
+        ],
+        "explanation": "The bug stems from the fact that DataTable no longer has its child components attached as static members, so expressions like DataTable.TableContainer are undefined. The file packages/react/src/components/DataTable/index.js is responsible for aggregating and re-exporting DataTable and its subcomponents, and needs to be updated to assign each Table* component as a property on DataTable. The file packages/react/src/components/DataTable/DataTable.js defines the DataTable function itself; you can add static assignments there (for example, DataTable.TableContainer = TableContainer, etc.). Together, these changes will restore the ability to destructure subcomponents off of DataTable without breaking the app.",
+        "bug_scenario": "When users destructure subcomponents off the DataTable import (for example, const { TableContainer, Table, TableHead, \u2026 } = DataTable), all of those values are undefined and React throws \u201cElement type is invalid\u201d errors. In v11 the DataTable component no longer attaches its related components as static properties, so destructuring breaks the app. Named imports (import { DataTable, TableContainer, Table, \u2026 } from '@carbon/react') still work correctly."
+    }
+}

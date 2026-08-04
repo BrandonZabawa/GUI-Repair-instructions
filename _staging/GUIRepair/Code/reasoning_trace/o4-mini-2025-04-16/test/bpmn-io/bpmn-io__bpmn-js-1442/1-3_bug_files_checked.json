@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js"
+        ],
+        "explanation": "DropOnFlowBehavior.js contains the logic for splitting a flow and inserting a single shape when it is dropped onto a connection. It currently triggers only once and doesn\u2019t account for multiple shapes being pasted in sequence. BpmnCopyPaste.js is responsible for handling the creation of shapes during paste operations and fires the events that DropOnFlowBehavior listens to. Together these two files drive the paste-onto-flow behavior; because DropOnFlowBehavior only handles one shape per paste event, the second shape falls back to a default connect operation (attaching to the first shape). Both files must be updated to detect multi-shape paste onto a flow and either suppress additional drop-on-flow actions or correctly chain multiple splits along the connection.",
+        "bug_scenario": "When copying two tasks and pasting them onto an existing sequence flow, the first task is correctly split into the flow (via DropOnFlowBehavior), but the second task does not get dropped onto the flow as intended \u2013 instead it attaches back onto the first pasted task, producing an unexpected zig-zag connection. In other words, multi-shape paste onto a connection only handles the first shape correctly; subsequent shapes end up connected to the wrong element."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/copy-paste/BpmnCopyPaste.js"
+        ],
+        "explanation": "\u2022 DropOnFlowBehavior.js contains the logic to split and reconnect a flow when a shape is dropped on it. It was designed for single-shape drops and naively applies its splitting logic for each shape in turn, causing multiple unexpected splits when more than one shape is dropped.  \n\u2022 BpmnCopyPaste.js drives the paste operation for multiple shapes. It iterates over all shapes in the clipboard and calls the core drop action on each one independently, without special handling for pasting multiple shapes onto the same flow. Adjusting this module to batch or suppress repeated splits for multi-shape drops is required to prevent the unintended chaining of split operations.",
+        "bug_scenario": "When copying two tasks and pasting them onto an existing sequence flow, each pasted task causes the original flow to be split and re-connected in turn. The first pasted task splits the flow near the start event, the second pasted task splits the remaining segment \u2013 resulting in two unexpected connections rather than treating the two tasks as a single unit or disabling split for multi-shape drops."
+    }
+}

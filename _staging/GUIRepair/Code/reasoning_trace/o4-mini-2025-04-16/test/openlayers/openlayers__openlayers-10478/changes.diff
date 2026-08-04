@@ -1,0 +1,41 @@
+diff --git a/src/ol/reproj/Tile.js b/src/ol/reproj/Tile.js
+index 909b125e7e..86ab509e47 100644
+--- a/src/ol/reproj/Tile.js
++++ b/src/ol/reproj/Tile.js
+@@ -274,20 +274,22 @@ class ReprojTile extends Tile {
+         if (state == TileState.IDLE || state == TileState.LOADING) {
+           leftToLoad++;
+ 
+-          const sourceListenKey = listen(tile, EventType.CHANGE,
+-            function(e) {
+-              const state = tile.getState();
+-              if (state == TileState.LOADED ||
+-                    state == TileState.ERROR ||
+-                    state == TileState.EMPTY) {
+-                unlistenByKey(sourceListenKey);
+-                leftToLoad--;
+-                if (leftToLoad === 0) {
+-                  this.unlistenSources_();
+-                  this.reproject_();
+-                }
+-              }
+-            }, this);
++      const sourceListenKey = listen(tile, EventType.CHANGE,
++        function(e) {
++          const state = tile.getState();
++          // also treat ABORT as a terminal state
++          if (state == TileState.LOADED ||
++                state == TileState.ERROR ||
++                state == TileState.EMPTY ||
++                state == TileState.ABORT) {
++            unlistenByKey(sourceListenKey);
++            leftToLoad--;
++            if (leftToLoad === 0) {
++              this.unlistenSources_();
++              this.reproject_();
++            }
++          }
++        }, this);
+           this.sourcesListenerKeys_.push(sourceListenKey);
+         }
+       }.bind(this));

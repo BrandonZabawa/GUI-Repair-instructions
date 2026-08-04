@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/VectorRenderTile.js"
+        ],
+        "explanation": "1. src/ol/renderer/canvas/VectorTileLayer.js (CanvasVectorTileLayerRenderer) is the core of the image-mode rendering pipeline for vector tiles. It contains the logic that decides when to clip low-resolution tiles in areas already covered by higher-resolution siblings, and how to composite and scale those canvas tiles. Under browser zoom, pixelRatio changes and the tile clipping bounds become misaligned, resulting in visible seams. Fixes will be needed here to adjust the clipping mask or transform calculations when pixelRatio != 1.\n\n2. src/ol/VectorRenderTile.js defines the per-tile off-screen canvases and contexts used in image-mode rendering. It manages the sizing of each tile\u2019s canvas and the context used to draw vector instructions into an image. Because browser zoom changes the effective CSS-to-device pixel ratio, the logic in getContext/getImage (and any implicit canvas resizing) must be updated so that no half-pixel offsets occur and features crossing tile borders will render smoothly without clipping.",
+        "bug_scenario": "When the map is displayed using a VectorTile layer with renderMode set to 'image' and the browser\u2019s zoom level is changed via Ctrl-+, the individual tile canvases get scaled non-uniformly and the ring features that cross tile boundaries get clipped at the tile edges. You see half-drawn circles or labels cut in two along the grid lines of the underlying 256\u2009\u00d7\u2009256 pixel tiles. This does not happen at 100% zoom, nor when using renderMode 'hybrid'."
+    }
+}

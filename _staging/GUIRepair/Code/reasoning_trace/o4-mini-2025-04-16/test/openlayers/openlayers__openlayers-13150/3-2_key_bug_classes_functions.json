@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/layer/Heatmap.js//Heatmap",
+            "src/ol/webgl/PostProcessingPass.js//WebGLPostProcessingPass"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Heatmap.js//Heatmap.createRenderer",
+            "src/ol/webgl/PostProcessingPass.js//WebGLPostProcessingPass.constructor",
+            "src/ol/webgl/PostProcessingPass.js//WebGLPostProcessingPass.apply"
+        ],
+        "explanation": "The `Heatmap` class\u2019s `createRenderer` method builds a `WebGLPointsLayerRenderer` with a custom post-processing pass whose fragment shader performs the gradient lookup but does not declare or multiply by `u_opacity`.  Meanwhile, `WebGLPostProcessingPass`\u2019s constructor still fetches the `u_opacity` location and its `apply` method uploads the layer opacity uniform, but because the gradient shader doesn\u2019t use `u_opacity` the uniform has no effect.  To fix the bug you must update the gradient fragment shader (in `Heatmap.createRenderer`) to declare and apply `u_opacity`, so that the `apply` call in `WebGLPostProcessingPass.apply` actually modulates the final output.",
+        "bug_scenario": "When setting the `opacity` option on an `ol/layer/Heatmap`, nothing changes on screen\u2014the heatmap is always drawn fully opaque even when `opacity` is set to, say, 0.1.  In the WebGL pipeline the heatmap is first rendered to a texture and then a custom \u201cgradient\u201d post-processing pass remaps the alpha to colors, but this shader never reads or applies the layer\u2019s opacity uniform, so the final blend step has no effect."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/layer/Heatmap.js//Heatmap",
+            "src/ol/webgl/PostProcessingPass.js//WebGLPostProcessingPass"
+        ],
+        "bug_functions": [
+            "src/ol/layer/Heatmap.js//createRenderer",
+            "src/ol/webgl/PostProcessingPass.js//apply"
+        ],
+        "explanation": "The Heatmap layer\u2019s `createRenderer` method constructs a WebGLPointsLayerRenderer with a custom post-processing pass that maps gray values to the color gradient but never takes the layer\u2019s `opacity` property into account (the shader has no `u_opacity` uniform and doesn\u2019t multiply the output by it).  Although the core PostProcessingPass.apply reads out an opacity value when it is composing the final WebGL canvas, that only affects the default compositing pass \u2014 it does not apply to the custom gradient pass that actually renders the heatmap.  To restore correct behavior, the gradient fragment shader (in Heatmap.createRenderer) must be updated to declare and use a `u_opacity` uniform (fed from the layer\u2019s `getOpacity()`), or the PostProcessingPass.apply logic must be extended so that any custom post-processing shaders also pick up and apply the layer\u2019s opacity.",
+        "bug_scenario": "When you create an ol/layer/Heatmap and pass an `opacity` option (for example `opacity: 0.1`), the layer is always drawn at full opacity.  In other words, the heatmap never becomes semi-transparent as expected \u2014 the opacity setting is completely ignored.  You can see this in the example sandbox where toggling back to v6.9.0 correctly respects `opacity`, but the latest dev build does not."
+    }
+}

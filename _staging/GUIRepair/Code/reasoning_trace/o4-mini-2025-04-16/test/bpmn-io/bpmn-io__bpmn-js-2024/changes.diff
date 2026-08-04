@@ -1,0 +1,41 @@
+diff --git a/lib/import/BpmnImporter.js b/lib/import/BpmnImporter.js
+index 3a91ccda..3396c66f 100644
+--- a/lib/import/BpmnImporter.js
++++ b/lib/import/BpmnImporter.js
+@@ -275,21 +275,32 @@ BpmnImporter.prototype.addLabel = function(semantic, di, element) {
+       text,
+       label;
+ 
++  // 1) compute external label bounds from the DI
+   bounds = getExternalLabelBounds(di, element);
+ 
+-  text = getLabel(element);
++  // 2) if the pool/lane is vertical, swap x/y and width/height
++  if (di.isHorizontal === false) {
++    var tmpX = bounds.x,
++        tmpW = bounds.width;
+ 
+-  if (text) {
++    bounds.x      = bounds.y;
++    bounds.y      = tmpX;
++    bounds.width  = bounds.height;
++    bounds.height = tmpW;
++  }
+ 
+-    // get corrected bounds from actual layouted text
++  // 3) allow the text renderer to refine those bounds (word wrapping, etc)
++  text = getLabel(element);
++  if (text) {
+     bounds = this._textRenderer.getExternalLabelBounds(bounds, text);
+   }
+ 
++  // 4) finally create the label
+   label = this._elementFactory.createLabel(elementData(semantic, di, {
+     id: semantic.id + '_label',
+     labelTarget: element,
+     type: 'label',
+-    hidden: element.hidden || !getLabel(element),
++    hidden: element.hidden || !text,
+     x: Math.round(bounds.x),
+     y: Math.round(bounds.y),
+     width: Math.round(bounds.width),

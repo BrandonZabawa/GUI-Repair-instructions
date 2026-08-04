@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/DataTable/TableToolbarSearch.js//TableToolbarSearch"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/TableToolbarSearch.js//TableToolbarSearch (the function component itself)"
+        ],
+        "explanation": "The only component that needs updating is the TableToolbarSearch function in TableToolbarSearch.js. This component currently destructures out the aria-label prop from rest but never applies it to the container <div>, and then spreads the original rest (including aria-label) onto the inner <Search> instead of the container. To fix the bug you should:\n1. In the TableToolbarSearch signature, destructure aria-label from rest into an ariaLabel variable and collect the rest as restProps.\n2. Add aria-label={ariaLabel} to the container <div> with role=\"search\".\n3. Spread restProps (not rest) into the <Search> component so that only supported props go to the input.\nThis change will allow users to pass an aria-label to TableToolbarSearch and have it applied correctly to the search container for proper accessibility.",
+        "bug_scenario": "In the Carbon storybook example for DataTable with a toolbar, the search trigger (the div with role=\"search\") does not render the aria-label attribute when you pass one on <TableToolbarSearch>. Visually, the highlighted div shows role=\"search\" and the styling classes but lacks any aria-label, making it inaccessible to screen readers even though the user passed aria-label=\"Search through table\"."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/DataTable/TableToolbarSearch.js//TableToolbarSearch"
+        ],
+        "explanation": "The functional component TableToolbarSearch in TableToolbarSearch.js is responsible for rendering the <div role=\"search\"/> container. It currently collects all extra props in `...rest` and spreads them onto the inner <Search> component, so any `aria-label` given to TableToolbarSearch never reaches the search container. To fix the issue, TableToolbarSearch must explicitly destructure `aria-label` from its props and pass it as `aria-label={ariaLabel}` on the outer container <div>.",
+        "bug_scenario": "The TableToolbarSearch component renders its search container as a <div role=\"search\"/> but does not apply any aria-label passed to it. In the storybook screenshot you can see the blue search icon region has role=\"search\" but no accessible name. When you try to add aria-label=\"Search through table\" on <TableToolbarSearch>, that attribute is swallowed (or passed to the inner Search), so the container remains unlabeled and screen readers won\u2019t announce the search region properly."
+    }
+}

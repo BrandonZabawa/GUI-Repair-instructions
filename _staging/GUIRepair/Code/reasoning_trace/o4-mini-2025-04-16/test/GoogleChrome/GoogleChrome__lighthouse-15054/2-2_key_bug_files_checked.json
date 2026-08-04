@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "core/gather/gatherers/global-listeners.js",
+            "core/audits/no-unload-listeners.js",
+            "core/gather/driver/execution-context.js"
+        ],
+        "explanation": "1. core/gather/gatherers/global-listeners.js only calls DOMDebugger.getEventListeners on the default execution context\u2019s window, so any unload listeners registered in isolated (extension) contexts are never collected.\n2. core/audits/no-unload-listeners.js simply consumes the GlobalListeners artifact and assumes it\u2019s exhaustive; it therefore reports no unload handlers when an extension listener lives in a different context.\n3. core/gather/driver/execution-context.js provides the machinery to evaluate in isolated worlds (via useIsolation), but GlobalListeners never leverages it. To fix this bug, GlobalListeners must iterate through all available execution contexts\u2014default and isolated\u2014using the ExecutionContext helper, aggregate unload listeners from each, and then feed those into the audit so that no-unload-listeners will correctly detect extension-injected handlers.",
+        "bug_scenario": "When running Lighthouse against a page with the LastPass extension installed, the back/forward-cache audit (bf-cache) fails with \u201cThe page has an unload handler in the main frame,\u201d yet the \u201cAvoids unload event listeners\u201d audit passes and reports zero unload listeners. Inspection in DevTools shows no unload listeners in the default world because LastPass registers its listener in an isolated content-script context, which the no-unload-listeners audit doesn\u2019t inspect. This mismatch makes the root cause invisible to developers."
+    }
+}

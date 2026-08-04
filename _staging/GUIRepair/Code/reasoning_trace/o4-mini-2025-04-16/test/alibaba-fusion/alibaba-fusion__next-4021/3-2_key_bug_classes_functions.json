@@ -1,0 +1,33 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/number-picker/number-picker.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/number-picker/number-picker.jsx//onChange",
+            "src/number-picker/number-picker.jsx//onBlur",
+            "src/number-picker/number-picker.jsx//shouldFireOnChange",
+            "src/number-picker/number-picker.jsx//withinMinMax",
+            "src/number-picker/number-picker.jsx//correctBoundary",
+            "src/number-picker/number-picker.jsx//correctValue"
+        ],
+        "explanation": "\n- NumberPicker: 整个组件的核心类，所有边界校验、输入处理逻辑都在此处实现。\n- onChange: 负责响应用户输入，但当前实现对超出最大值的输入没有即时拦截并触发 onChange，使得业务层未能获知最新的边界值。\n- shouldFireOnChange: 用于判断当前新值是否应当触发 onChange，需在此逻辑里加入对超过 max 的校验并直接拒绝或修正输入。\n- withinMinMax: 校验数值是否在 min/max 范围内，当前遗漏对手动输入超出范围时的实时拦截。\n- correctBoundary: 在 onBlur 时才对超出边界的值进行修正，需下沉到 onChange 或键入时即可生效。\n- correctValue: 对输入值做精度与边界修正，亦可在输入阶段提前遏制超过最大值的情况。\n- onBlur: 目前仅在失焦时才触发边界校正，体验不一致，需与 onChange 协同，或在键入时就阻止非法值。  ",
+        "bug_scenario": "在下单页面里，NumberPicker 的“+”按钮在到达最大值时被禁用，但用户仍然可以在输入框里手动输入超过最大值的数字（如图中输入了 9999999），此时 onChange 不会被立即触发，价格没有同步变化，只有在失去焦点（onBlur）时才会自动订正到边界值，导致用户体验不一致。"
+    },
+    "2": {
+        "bug_classes": [
+            "src/number-picker/number-picker.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/number-picker/number-picker.jsx//getDerivedStateFromProps",
+            "src/number-picker/number-picker.jsx//onChange",
+            "src/number-picker/number-picker.jsx//onBlur",
+            "src/number-picker/number-picker.jsx//withinMinMax",
+            "src/number-picker/number-picker.jsx//correctBoundary",
+            "src/number-picker/number-picker.jsx//shouldFireOnChange",
+            "src/number-picker/number-picker.jsx//correctValue"
+        ],
+        "explanation": "All listed methods live in NumberPicker and deal with value validation, change events, and boundary correction. getDerivedStateFromProps drives controlled value updates; onChange handles user typing; shouldFireOnChange decides when to emit changes; withinMinMax and correctBoundary enforce min/max constraints; correctValue normalizes precision and boundaries; onBlur applies the final correction. To prevent users from typing beyond max immediately, these methods need adjustment to block out-of-range input on each keystroke rather than only on blur.",
+        "bug_scenario": "In the NumberPicker component, when the user manually types a value beyond the configured max, the input box still allows the oversized number (e.g. “9999999”) and the displayed quantity keeps increasing as they type, but onChange is not fired immediately and the price does not update until onBlur auto-corrects the value back within the boundary. This leads to a confusing experience where the quantity shown in the input is out of sync with the actual value used for price calculation."
+    }
+}

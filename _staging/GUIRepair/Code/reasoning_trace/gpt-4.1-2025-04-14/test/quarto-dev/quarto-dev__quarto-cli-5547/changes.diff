@@ -1,0 +1,107 @@
+diff --git a/src/format/reveal/format-reveal.ts b/src/format/reveal/format-reveal.ts
+index 1ad2d72fa..5d4c92e3f 100644
+--- a/src/format/reveal/format-reveal.ts
++++ b/src/format/reveal/format-reveal.ts
+@@ -739,18 +739,38 @@ function applyStretch(doc: Document, autoStretch: boolean) {
+       }
+ 
+       // find the first level node that contains the img
+-      let selNode: Element | undefined;
++      let selNode: Element | undefined = undefined;
++      let anchorNode: Element | undefined = undefined;
+       for (const node of slide.childNodes) {
+         if (node.contains(image)) {
+-          selNode = node as Element;
++          // If the image is wrapped in an anchor, use the anchor as the node
++          if (
++            node.nodeName === "P" &&
++            node.childNodes.length === 1 &&
++            node.firstChild?.nodeName === "A" &&
++            (node.firstChild as Element).contains(image)
++          ) {
++            selNode = node as Element;
++            anchorNode = node.firstChild as Element;
++          } else {
++            selNode = node as Element;
++          }
+           break;
+         }
+       }
+       const nodeEl = selNode;
+ 
+       // Do not apply stretch if this is an inline image among text
++      // Also, if the image is wrapped in an anchor, check the anchor's children
+       if (
+-        !nodeEl || (nodeEl.nodeName === "P" && nodeEl.childNodes.length > 1)
++        !nodeEl ||
++        (
++          nodeEl.nodeName === "P" &&
++          (
++            (anchorNode && anchorNode.childNodes.length > 1) ||
++            (!anchorNode && nodeEl.childNodes.length > 1)
++          )
++        )
+       ) {
+         continue;
+       }
+@@ -792,7 +812,7 @@ function applyStretch(doc: Document, autoStretch: boolean) {
+           imageEl.classList.add("r-stretch");
+         }
+ 
+-        // If <img class="stetch"> is not a direct child of <section>, move it
++        // If <img class="stretch"> is not a direct child of <section>, move it
+         if (
+           hasStretchClass(imageEl) &&
+           imageEl.parentNode?.nodeName !== "SECTION"
+@@ -803,7 +823,7 @@ function applyStretch(doc: Document, autoStretch: boolean) {
+             parentEl?.removeChild(el);
+             if (
+               parentEl?.innerText.trim() === "" &&
+-              // Stop at section leveal and do not remove empty slides
++              // Stop at section level and do not remove empty slides
+               parentEl?.nodeName !== "SECTION"
+             ) {
+               removeEmpty(parentEl);
+@@ -827,20 +847,33 @@ function applyStretch(doc: Document, autoStretch: boolean) {
+             }
+           }
+ 
+-          // Target position of image
++          // Target position of image or anchor
+           // first level after the element
+           const nextEl = nodeEl.nextElementSibling;
+-          // Remove image from its parent
+-          removeEmpty(imageEl);
+-          // insert at target position
+-          slideEl.insertBefore(image, nextEl);
++          // Remove image or anchor from its parent
++          if (anchorNode) {
++            removeEmpty(anchorNode);
++            // insert at target position
++            slideEl.insertBefore(anchorNode, nextEl);
++          } else {
++            removeEmpty(imageEl);
++            // insert at target position
++            slideEl.insertBefore(image, nextEl);
++          }
+ 
+           // If there was a caption processed add it after
+           if (caption.classList.contains("caption")) {
+-            slideEl.insertBefore(
+-              caption,
+-              imageEl.nextElementSibling,
+-            );
++            if (anchorNode) {
++              slideEl.insertBefore(
++                caption,
++                anchorNode.nextElementSibling,
++              );
++            } else {
++              slideEl.insertBefore(
++                caption,
++                imageEl.nextElementSibling,
++              );
++            }
+           }
+           // Remove container if still there
+           if (quartoFig) removeEmpty(quartoFig);

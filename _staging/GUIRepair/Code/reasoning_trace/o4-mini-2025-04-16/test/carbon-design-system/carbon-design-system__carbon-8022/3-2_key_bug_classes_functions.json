@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/TooltipIcon/TooltipIcon.js//TooltipIcon",
+            "packages/components/src/components/tooltip/tooltip--simple.js//TooltipSimple"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/TooltipIcon/TooltipIcon.js//handleFocus",
+            "packages/react/src/components/TooltipIcon/TooltipIcon.js//handleMouseEnter",
+            "packages/components/src/components/tooltip/tooltip--simple.js//allowTooltipVisibility",
+            "packages/components/src/components/tooltip/tooltip--simple.js//tooltipFadeOut"
+        ],
+        "explanation": "The root of the overlap is that each tooltip instance independently shows itself on focus or hover, but never hides when another tooltip is triggered. In the React implementation (TooltipIcon), the handleFocus and handleMouseEnter functions both set the component\u2019s local allowTooltipVisibility state to true, but do not hide any other tooltips. In the vanilla JS version (TooltipSimple), allowTooltipVisibility and its fade-out helper (tooltipFadeOut) toggle CSS classes to show/hide the tooltip, but they only act on the current element. To fix the bug, these methods need to be enhanced so that when one tooltip is shown (on hover or focus), any other already-visible tooltip instances are programmatically hidden first.",
+        "bug_scenario": "When using two icon-only buttons side by side, clicking (or focusing via keyboard) the first button shows its tooltip as expected. However, if you then hover over the adjacent icon button, its tooltip also appears without hiding the previously focused tooltip. The two tooltips remain visible at the same time and overlap each other, leading to a confusing UI."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/components/src/components/tooltip/tooltip--simple.js//TooltipSimple"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/TooltipIcon/TooltipIcon.js//handleFocus",
+            "packages/react/src/components/TooltipIcon/TooltipIcon.js//handleMouseEnter",
+            "packages/components/src/components/tooltip/tooltip--simple.js//allowTooltipVisibility"
+        ],
+        "explanation": "In TooltipIcon.js the handlers handleFocus and handleMouseEnter both unconditionally show the tooltip for a given icon button, but there\u2019s no logic to hide any other visible tooltip (for example, the one shown on focus) when a new hover occurs. In the vanilla JS implementation (TooltipSimple) the allowTooltipVisibility method is responsible for toggling the tooltip\u2019s hidden/visible CSS classes, yet it only affects the single instance and doesn\u2019t coordinate hiding other tooltips. To fix the overlapping tooltips, these are the spots where we need to add logic to remove or hide the previously visible tooltip (for example, by clearing other triggers\u2019 visibility) before showing a new one.",
+        "bug_scenario": "When two icon-only buttons are placed side by side, clicking (or focusing via keyboard) one button shows its tooltip, and then hovering the other button shows a second tooltip\u2014resulting in two overlapping tooltips. The desired behavior is that when you hover a new icon-only button, any existing (focused) tooltip should immediately hide."
+    }
+}

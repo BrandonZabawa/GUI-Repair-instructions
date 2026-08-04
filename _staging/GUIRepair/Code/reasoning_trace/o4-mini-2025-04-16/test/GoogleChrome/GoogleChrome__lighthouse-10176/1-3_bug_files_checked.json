@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/lib/stack-collector.js",
+            "lighthouse-core/lib/stack-packs.js",
+            "lighthouse-core/audits/dobetterweb/js-libraries.js",
+            "stack-packs/index.js",
+            "stack-packs/packs/react.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/lib/stack-collector.js is where Lighthouse pulls in both the original js-library-detector results and the new Fast-Path detector results without merging or deduplicating by id.  \n\u2022 lighthouse-core/lib/stack-packs.js maps the raw detection results to the static stack-pack metadata and shovels every entry into the LHR, again with no filtering or dedupe logic.  \n\u2022 lighthouse-core/audits/dobetterweb/js-libraries.js is the audit that surfaces library detections to the user; it currently shows both stable and experimental entries so the \u201cReact (Fast Path)\u201d pack appears alongside the normal \u201cReact\u201d pack in the Best Practices \u2192 JavaScript Libraries view.  \n\u2022 stack-packs/index.js and stack-packs/packs/react.js define the canonical React pack (title, icon, help text) but have no notion of excluding experimental detections or merging duplicates by id, so adding or normalizing an explicit id here would be part of a proper fix.",
+        "bug_scenario": "When you run Lighthouse (or PageSpeed Insights) against https://abcnews.go.com/ and look at the \u201cMinify JavaScript\u201d audit under the Best Practices category, you\u2019ll see two identical React stack-pack entries \u2013 same icon, title and help text \u2013 rendered one after another. In the raw JSON there are two items in lhr.stackPacks both with id \u201creact\u201d: one from the original js-library-detector, and one from the new \u201cFast Path\u201d experimental checks. The code never deduplicates these, and there\u2019s no filtering of experimental packs, so both end up in the report."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/lib/stack-collector.js",
+            "lighthouse-core/lib/stack-packs.js",
+            "stack-packs/index.js",
+            "stack-packs/packs/react.js",
+            "lighthouse-core/audits/dobetterweb/js-libraries.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/lib/stack-collector.js is where Lighthouse pulls in stack packs from both the static pack definitions and the js-library-detector (including the new Fast Path checks). Because it matches and merges packs by title instead of a unique id, it ends up pushing two React entries into lhr.stackPacks.\n\u2022 lighthouse-core/lib/stack-packs.js contains the core logic for loading, normalizing, and formatting stack packs before they\u2019re delivered to the report. It currently has no deduplication keyed on an explicit id, so duplicates slip through.\n\u2022 stack-packs/index.js is the entry point that registers all of the built-in packs (amp, angular, magento, react, wordpress). It wires in the static React pack definition that our duplicate is colliding with.\n\u2022 stack-packs/packs/react.js is the static pack definition for React (title, icon, help text). The new Fast Path detector also reports React, so you get two identical definitions in the final output.\n\u2022 lighthouse-core/audits/dobetterweb/js-libraries.js is the Best Practices audit that surfaces the stack-pack entries to the user. It doesn\u2019t filter out duplicates, so any doubling in lhr.stackPacks appears directly in the rendered audit UI.",
+        "bug_scenario": "When you run Lighthouse (or PageSpeed Insights) against https://abcnews.go.com/ and view the \u201cMinify JavaScript\u201d audit under the \u201cBest Practices\u201d category, you see two identical React stack-pack entries rendered back-to-back (same icon, title, and help text). If you dump the JSON (`lhr.stackPacks`), there are two elements both with id \u201creact\u201d \u2013 one coming from the original js-library-detector integration and the other from the new \u201cFast Path\u201d checks added in the Library-Detector pull request."
+    }
+}

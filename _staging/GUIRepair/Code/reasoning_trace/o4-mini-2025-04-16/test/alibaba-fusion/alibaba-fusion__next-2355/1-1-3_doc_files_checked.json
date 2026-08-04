@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "table/index.en-us.md",
+            "table/index.md",
+            "table/demo/basic-columns.md",
+            "table/demo/column.md",
+            "table/demo/advanced.md",
+            "table/adaptor/index.jsx"
+        ],
+        "explanation": "\n\u2022 table/index.en-us.md & table/index.md: these files define the public API for Table and Column, including how dataIndex is described in the documentation and what patterns are officially supported.\n\u2022 table/demo/basic-columns.md: shows the simplest usage of dataIndex with flat keys, matching the working scenario (\u2018time\u2019 column).\n\u2022 table/demo/column.md: demonstrates nested and single\u2010level array\u2010access notation (e.g. lists[1].name), which uses the same fetchDataByPath implementation and highlights where bracket notation is expected to work.\n\u2022 table/demo/advanced.md: contains advanced Table demos and may hint at deeper dataIndex patterns. It helps confirm what syntax is currently supported.\n\u2022 table/adaptor/index.jsx: this is the core implementation of fetchDataByPath and the regex logic that splits the key. Editing this file is necessary to adjust the bracket notation parsing and fix the bug.",
+        "bug_scenario": "The Table component\u2019s \u201cdataIndex\u201d property currently supports simple keys (e.g. 'id'), nested paths with dot-notation (e.g. 'user.name') and single\u2010level array access (e.g. 'lists[1].name'), but does not handle bracketed array notation that contains commas\u2014specifically strings like '[start,end]'. In the screenshots we see:\n\n\u2022 A developer asks for compatibility with dataIndex strings of the form '[start,end]', to map a single column to two values (startDate and endDate) for form-based editing.\n\u2022 In the render demo, <Table.Column title=\"Time\" dataIndex=\"time\" /> works fine, but when dataIndex=\"[start,end]\" is used, fetchDataByPath in the Table adaptor tries to match /(.*)\\[(.*)\\]/ and splits into two parts, but the comma inside prevents correct capture of two distinct keys. As a result, val becomes undefined and later code attempts to read .startDate and .endDate from undefined, throwing \u201cCannot read property 'startDate, endDate' of undefined\u201d.\n\nKey elements involved:\n- Table.Column dataIndex prop\n- fetchDataByPath utility in table/adaptor/index.jsx\n- The regex match and object lookup logic for bracket notation\n- API docs and demos showing dataIndex usage"
+    }
+}

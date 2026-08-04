@@ -1,0 +1,79 @@
+{
+    "1/1": {
+        "src/ol/renderer/canvas/VectorLayer.js": [
+            {
+                "SEARCH": [
+                    "const width = Math.round((getWidth(extent) / resolution) * pixelRatio);",
+                    "const height = Math.round((getHeight(extent) / resolution) * pixelRatio);"
+                ],
+                "REPLACE": [
+                    "        const width = Math.round((getWidth(extent) / resolution) * pixelRatio);",
+                    "        const height = Math.round((getHeight(extent) / resolution) * pixelRatio);",
+                    "        // if the view is rotated, grow the canvas to the rotated bounding box",
+                    "        const rotation = frameState.viewState.rotation;",
+                    "        let renderWidth = width;",
+                    "        let renderHeight = height;",
+                    "        if (rotation !== 0) {",
+                    "          const absCos = Math.abs(Math.cos(rotation));",
+                    "          const absSin = Math.abs(Math.sin(rotation));",
+                    "          renderWidth = Math.round(width  * absCos + height * absSin);",
+                    "          renderHeight = Math.round(width * absSin + height * absCos);",
+                    "        }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "composeTransform(",
+                    "this.pixelTransform,",
+                    "frameState.size[0] / 2,",
+                    "frameState.size[1] / 2,",
+                    "1 / pixelRatio,",
+                    "1 / pixelRatio,",
+                    "0,",
+                    "-width / 2,",
+                    "-height / 2,",
+                    ");"
+                ],
+                "REPLACE": [
+                    "        composeTransform(",
+                    "          this.pixelTransform,",
+                    "          frameState.size[0] / 2,",
+                    "          frameState.size[1] / 2,",
+                    "          1 / pixelRatio,",
+                    "          1 / pixelRatio,",
+                    "          0,",
+                    "          // center the (possibly enlarged) canvas",
+                    "          -renderWidth  / 2,",
+                    "          -renderHeight / 2,",
+                    "        );"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "// resize and clear",
+                    "if (canvas.width != width || canvas.height != height) {",
+                    "canvas.width = width;",
+                    "canvas.height = height;",
+                    "if (canvas.style.transform !== canvasTransform) {",
+                    "canvas.style.transform = canvasTransform;",
+                    "}",
+                    "} else if (!this.containerReused) {",
+                    "context.clearRect(0, 0, width, height);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "        // resize and clear (use the rotated dimensions!)",
+                    "        if (canvas.width != renderWidth || canvas.height != renderHeight) {",
+                    "          canvas.width  = renderWidth;",
+                    "          canvas.height = renderHeight;",
+                    "          if (canvas.style.transform !== canvasTransform) {",
+                    "            canvas.style.transform = canvasTransform;",
+                    "          }",
+                    "        } else if (!this.containerReused) {",
+                    "          context.clearRect(0, 0, renderWidth, renderHeight);",
+                    "        }"
+                ]
+            }
+        ]
+    }
+}

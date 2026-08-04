@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/drilldown/SubprocessCompatibility.js",
+            "lib/features/drilldown/DrilldownCentering.js",
+            "lib/features/modeling/cmd/UpdateCanvasRootHandler.js"
+        ],
+        "explanation": "\u2022 BpmnReplace.js: this is the module that implements wrapping a process in a pool (bpmn:Participant). It handles toggling collapsed/en-expanded state and ends up replacing the BPMNPlane reference, which in turn may trigger commands that change the canvas root.\\n\\n\u2022 SubprocessCompatibility.js: on collapse of a subprocess (or wrapping in a container) this module creates new BPMNPlane/Diagram entries and moves DI elements around. Its creation of new planes for collapsed subprocesses can implicitly alter which plane is considered the root \u2014 leading to a canvas root swap.\\n\\n\u2022 DrilldownCentering.js: listens for \\\"root.set\\\" events on the canvas and automatically scrolls/zooms the canvas back to a stored origin. When the root changes (as triggered by BpmnReplace or SubprocessCompatibility), this logic recenters your viewport.\\n\\n\u2022 UpdateCanvasRootHandler.js: implements the actual switch of canvas root elements. Whenever a new root is set (for example by replacing the process with a pool or by drill-down), this handler updates the canvas, which fires the \\\"root.set\\\" event that DrilldownCentering then picks up and scrolls/zooms.",
+        "bug_scenario": "When you take an existing BPMN process, wrap it in a pool (i.e. replace a process shape with a bpmn:Participant) and then collapse or expand it, the entire diagram suddenly jumps back to the origin (or otherwise recenters), rather than staying where you were working. In the repro gif you can see the modeler panned to the right, you wrap the process in a pool, and boom \u2014 the viewport resets, losing your current pan/zoom."
+    }
+}

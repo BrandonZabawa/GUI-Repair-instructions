@@ -1,0 +1,323 @@
+{
+    "1/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "if (this.targetPointers.length > 0) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "if (this.targetPointers.length > 0) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "this.targetPointers = getValues(this.trackedPointers_);"
+                ],
+                "REPLACE": [
+                    "this.targetPointers = this.trackedPointers_[event.pointerId] ? [event] : [];"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "updateTrackedPointers_(mapBrowserEvent) {",
+                    "if (isPointerDraggingEvent(mapBrowserEvent)) {",
+                    "const event = mapBrowserEvent.originalEvent;",
+                    "",
+                    "const id = event.pointerId.toString();",
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERUP) {",
+                    "delete this.trackedPointers_[id];",
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERDOWN) {",
+                    "this.trackedPointers_[id] = event;",
+                    "} else if (id in this.trackedPointers_) {",
+                    "// update only when there was a pointerdown event for this pointer",
+                    "this.trackedPointers_[id] = event;",
+                    "}",
+                    "this.targetPointers = getValues(this.trackedPointers_);",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "updateTrackedPointers_(mapBrowserEvent) {",
+                    "const event = mapBrowserEvent.originalEvent;",
+                    "const id = event.pointerId.toString();",
+                    "",
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERUP) {",
+                    "delete this.trackedPointers_[id];",
+                    "this.targetPointers = getValues(this.trackedPointers_);",
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERDOWN",
+                    "|| mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE",
+                    "&& id in this.trackedPointers_) {",
+                    "this.trackedPointers_[id] = event;",
+                    "this.targetPointers = getValues(this.trackedPointers_);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "// Optimization: Check if pointer actually moved before handling",
+                    "if (this.targetPointers.length > 0) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/MapBrowserEventHandler.js": [
+            {
+                "SEARCH": [
+                    "relayEvent_(pointerEvent) {",
+                    "this.originalPointerMoveEvent_ = pointerEvent;",
+                    "const dragging = !!(this.down_ && this.isMoving_(pointerEvent));",
+                    "this.dispatchEvent(",
+                    "new MapBrowserEvent(pointerEvent.type, this.map_, pointerEvent, dragging)",
+                    ");",
+                    "}"
+                ],
+                "REPLACE": [
+                    "relayEvent_(pointerEvent) {",
+                    "// Optimization: Use cached event handling for pointermove",
+                    "if (pointerEvent.type !== MapBrowserEventType.POINTERMOVE || this.isMoving_(pointerEvent)) {",
+                    "this.originalPointerMoveEvent_ = pointerEvent;",
+                    "const dragging = !!(this.down_ && this.isMoving_(pointerEvent));",
+                    "this.dispatchEvent(",
+                    "new MapBrowserEvent(pointerEvent.type, this.map_, pointerEvent, dragging)",
+                    ");",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "if (this.shouldTrackMoveEvent(mapBrowserEvent)) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}",
+                    "",
+                    "/**",
+                    "* Determine if a move event should be tracked for updates.",
+                    "* @param {import(\"../MapBrowserEvent.js\").default} mapBrowserEvent Event.",
+                    "* @return {boolean} Whether the move event should be handled.",
+                    "* @private",
+                    "*/",
+                    "shouldTrackMoveEvent(mapBrowserEvent) {",
+                    "// Add conditions to ignore move events with insignificant delta",
+                    "return Math.abs(mapBrowserEvent.originalEvent.movementX) > 1 ||",
+                    "Math.abs(mapBrowserEvent.originalEvent.movementY) > 1;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}",
+                    "return !stopEvent;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "// Skip processing if no listeners are active to improve performance",
+                    "if (this.hasListener(MapBrowserEventType.POINTERMOVE)) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}",
+                    "}",
+                    "return !stopEvent;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* Handles the {@link module:ol/MapBrowserEvent map browser event} and may call into",
+                    "* other functions, if event sequences like e.g. 'drag' or 'down-up' etc. are",
+                    "* detected.",
+                    "* @param {import(\"../MapBrowserEvent.js\").default} mapBrowserEvent Map browser event.",
+                    "* @return {boolean} `false` to stop event propagation.",
+                    "* @api",
+                    "*/",
+                    "handleEvent(mapBrowserEvent) {",
+                    "if (!mapBrowserEvent.originalEvent) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "let stopEvent = false;",
+                    "this.updateTrackedPointers_(mapBrowserEvent);",
+                    "if (this.handlingDownUpSequence) {",
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERDRAG) {",
+                    "this.handleDragEvent(mapBrowserEvent);",
+                    "// prevent page scrolling during dragging",
+                    "mapBrowserEvent.preventDefault();",
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERUP) {",
+                    "const handledUp = this.handleUpEvent(mapBrowserEvent);",
+                    "this.handlingDownUpSequence =",
+                    "handledUp && this.targetPointers.length > 0;",
+                    "}",
+                    "} else {",
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERDOWN) {",
+                    "const handled = this.handleDownEvent(mapBrowserEvent);",
+                    "this.handlingDownUpSequence = handled;",
+                    "stopEvent = this.stopDown(handled);",
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}",
+                    "return !stopEvent;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* Handles the {@link module:ol/MapBrowserEvent map browser event} and may call into",
+                    "* other functions, if event sequences like e.g. 'drag' or 'down-up' etc. are",
+                    "* detected.",
+                    "* @param {import(\"../MapBrowserEvent.js\").default} mapBrowserEvent Map browser event.",
+                    "* @return {boolean} `false` to stop event propagation.",
+                    "* @api",
+                    "*/",
+                    "handleEvent(mapBrowserEvent) {",
+                    "if (!mapBrowserEvent.originalEvent) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "let stopEvent = false;",
+                    "this.updateTrackedPointers_(mapBrowserEvent);",
+                    "if (this.handlingDownUpSequence) {",
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERDRAG) {",
+                    "this.handleDragEvent(mapBrowserEvent);",
+                    "// prevent page scrolling during dragging",
+                    "mapBrowserEvent.preventDefault();",
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERUP) {",
+                    "const handledUp = this.handleUpEvent(mapBrowserEvent);",
+                    "this.handlingDownUpSequence =",
+                    "handledUp && this.targetPointers.length > 0;",
+                    "}",
+                    "} else {",
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERDOWN) {",
+                    "const handled = this.handleDownEvent(mapBrowserEvent);",
+                    "this.handlingDownUpSequence = handled;",
+                    "stopEvent = this.stopDown(handled);",
+                    "} else if (",
+                    "mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE &&",
+                    "this.targetPointers.length > 0",
+                    ") {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}",
+                    "return !stopEvent;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {},
+    "9/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "} else if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "if (this.shouldHandleMoveEvent(mapBrowserEvent)) {",
+                    "this.handleMoveEvent(mapBrowserEvent);",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/interaction/Pointer.js": [
+            {
+                "SEARCH": [
+                    "// Ensuring minimal processing during pointer move by narrowing down operations",
+                    "// that truly require updates.",
+                    "",
+                    "if (this.handlingDownUpSequence) {",
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERDRAG) {",
+                    "this.handleDragEvent(mapBrowserEvent);",
+                    "mapBrowserEvent.preventDefault();"
+                ],
+                "REPLACE": [
+                    "if (mapBrowserEvent.type == MapBrowserEventType.POINTERMOVE) {",
+                    "// Optimization suggestion: Only updating pointers should they differ.",
+                    "this.handleMoveEvent(mapBrowserEvent);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "} else if (id in this.trackedPointers_) {",
+                    "// Update only when there was a pointerdown event for this pointer.",
+                    "// Added code for optimization",
+                    "if (this.trackedPointers_[id] !== event) {",
+                    "this.trackedPointers_[id] = event;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "// This is the crucial optimization area to reduce unnecessary operations.",
+                    "this.trackedPointers_[id] = event;"
+                ]
+            }
+        ]
+    }
+}

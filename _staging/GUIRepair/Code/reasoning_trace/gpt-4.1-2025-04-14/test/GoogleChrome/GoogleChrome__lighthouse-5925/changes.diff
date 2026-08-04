@@ -1,0 +1,32 @@
+diff --git a/lighthouse-core/audits/byte-efficiency/unminified-javascript.js b/lighthouse-core/audits/byte-efficiency/unminified-javascript.js
+index 6b505aaf4..c2d370b34 100644
+--- a/lighthouse-core/audits/byte-efficiency/unminified-javascript.js
++++ b/lighthouse-core/audits/byte-efficiency/unminified-javascript.js
+@@ -56,9 +56,16 @@ class UnminifiedJavaScript extends ByteEfficiencyAudit {
+     let totalTokenLength = 0;
+ 
+     /** @type {Array<esprima.Token> & {errors: Error[]}} */
+-    const tokens = (esprima.tokenize(scriptContent, {tolerant: true}));
++    let tokens;
++    try {
++      tokens = esprima.tokenize(scriptContent, {tolerant: true});
++    } catch (e) {
++      // If esprima fails (likely due to a copyright header or non-code at the top), skip this file.
++      return null;
++    }
+     if (!tokens.length && tokens.errors && tokens.errors.length) {
+-      throw tokens.errors[0];
++      // If tokenization fails, skip this file instead of throwing.
++      return null;
+     }
+ 
+     for (const token of tokens) {
+@@ -94,6 +101,8 @@ class UnminifiedJavaScript extends ByteEfficiencyAudit {
+ 
+       try {
+         const result = UnminifiedJavaScript.computeWaste(scriptContent, networkRecord);
++        // If computeWaste returns null, skip this file (likely due to non-code header).
++        if (!result) continue;
+         // If the ratio is minimal, the file is likely already minified, so ignore it.
+         // If the total number of bytes to be saved is quite small, it's also safe to ignore.
+         if (result.wastedPercent < IGNORE_THRESHOLD_IN_PERCENT ||

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/Layer.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: this is the layer class that currently accepts a style option in its constructor but does not implement a setStyle method or fire a \"change:style\" event, so downstream code never knows when to rebuild its shaders.  \n2. src/ol/renderer/webgl/TileLayer.js: this renderer instance uses the layer\u2019s style only on initial shader construction. Without listening for a \"change:style\" event it will never rebuild the program when a new style is applied.  \n3. src/ol/renderer/webgl/Layer.js: the shared base for WebGL layer renderers where change-event wiring is set up. It should handle the new \"change:style\" event emitted by WebGLTile (and forward it to per\u2010layer renderers) so that the TileLayer renderer can reinitialize its ShaderBuilder on demand.",
+        "bug_scenario": "When using a WebGLTile layer you can supply a styling function at construction time but there is no layer.setStyle(...) method exposed to change that styling on the fly. Unlike other webgl-backed layers (for example WebGLPoints), WebGLTile neither exposes a setter nor emits a \u201cchange:style\u201d event, so you cannot swap in a new style (rebuild the shaders, rebind textures/buffers, etc.) at runtime. As a result you must tear down the layer and create a new one whenever the user changes visualization parameters."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: this is the core layer class for WebGL-driven tile rendering. It currently accepts a style in the constructor but does not expose getStyle/setStyle. We need to add these methods here, mirror the pattern in WebGLPoints or other style-aware layers, fire a layer property change event, and store the new style so the renderer can pick it up.\n2. src/ol/renderer/webgl/TileLayer.js: this is the renderer that builds WebGL shaders and buffers for a WebGLTile. It currently runs its build pipeline only on creation. By listening for the style property change event (from the layer\u2019s setStyle) it must recompile the shader and rebind any uniforms/attributes/textures based on the new style, without reloading tile data. Without these changes here, calling setStyle on the layer would have no effect.",
+        "bug_scenario": "When working with a WebGL\u2010backed tile layer (WebGLTile), there is no public API to update its styling once the layer has been created. Unlike vector or point layers (e.g. WebGLPoints) which expose getStyle/setStyle to rebuild their shaders and rebind their buffers/textures, WebGLTile only takes a style in its constructor. In practice this forces users to tear down the entire layer\u2014discarding already\u2010downloaded tile data\u2014just to change visualization parameters (colors, color ramps, classification etc). The request is to add a setStyle method (and corresponding getter) to WebGLTile, and wire it through its renderer so that changing the style dynamically triggers shader recompilation and buffer/texture rebinds, without reloading all tile data."
+    }
+}

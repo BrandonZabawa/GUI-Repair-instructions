@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/uses-rel-preconnect.js",
+            "lighthouse-core/lib/element.js",
+            "lighthouse-core/gather/gatherers/html-without-javascript.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/audits/uses-rel-preconnect.js is the heart of the audit that scans only network records (devtools logs) for DNS+TCP timing. It never reads the page\u2019s DOM to check for existing <link rel=preconnect|dns-prefetch> hints, so it always reports savings even when hints are present.  \n\u2022 lighthouse-core/lib/element.js is the helper library used by other audits to query DOM nodes; to extend uses-rel-preconnect to inspect <link> tags you\u2019d use element.js to locate those hints in the document.  \n\u2022 lighthouse-core/gather/gatherers/html-without-javascript.js is the gatherer that returns the page\u2019s static HTML. You\u2019d update the audit to depend on this artifact (or introduce a new link-elements gatherer) so it can parse out existing preconnect/dns-prefetch link tags before computing savings.",
+        "bug_scenario": "When you run Lighthouse\u2019s \u201cAvoid multiple, costly round trips to any origin\u201d (uses-rel-preconnect) audit against a page that already includes <link rel=\"preconnect\"> (or dns-prefetch) hints for the same origins, Lighthouse still flags those origins as opportunities. In other words, the audit is blind to preconnect hints already present in the DOM and reports a false positive."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/uses-rel-preconnect.js",
+            "lighthouse-core/config/default-config.js"
+        ],
+        "explanation": "1. uses-rel-preconnect.js is the heart of the audit logic. It only analyzes networkRecords from DevTools and computes which origins could benefit from preconnect, but never checks the DOM for existing <link rel=preconnect> or dns-prefetch hints. 2. default-config.js must be updated so that if we introduce an artifact (e.g. a LinkElements gatherer) to surface <link rel> tags from the page, that gatherer is actually wired up in the config. Without adding the gatherer to default-config, artifacts.LinkElements will be empty and the audit won\u2019t be able to detect existing hints.",
+        "bug_scenario": "When you run Lighthouse (v3.0.3) on a page that already includes <link rel=\"preconnect\"> or dns-prefetch hints for certain third-party origins (e.g. Google Analytics or Google Fonts), the \u201cAvoid multiple, costly round trips to any origin\u201d opportunity (uses-rel-preconnect audit) still reports those same origins as if no preconnect hints exist. In short, the audit only inspects network records and never looks at the page\u2019s DOM for existing <link rel=\"preconnect\"|\"dns-prefetch\"> tags, so it produces a false positive."
+    }
+}

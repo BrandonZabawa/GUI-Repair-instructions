@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "core/config/config-helpers.js",
+            "core/runner.js",
+            "core/config/validation.js"
+        ],
+        "bug_functions": [
+            "core/config/config-helpers.js//expandGathererShorthand",
+            "core/config/config-helpers.js//resolveGathererToDefns",
+            "core/config/config-helpers.js//expandAuditShorthand",
+            "core/runner.js//Runner._runAudit",
+            "core/config/validation.js//assertValidAudit"
+        ],
+        "explanation": "The root of the bug is that user-provided configs with a custom artifacts array never implicitly include the built-in \u2018traces\u2019 gatherer. In config-helpers.js, the shorthand expansion functions (expandGathererShorthand, resolveGathererToDefns, expandAuditShorthand) are responsible for converting user JSON into internal gatherer and audit definitions\u2014but they do not inject the default traces/de\u200b\u200bvtoolsLog gatherers when artifacts is explicitly defined. Downstream, Runner._runAudit in core/runner.js checks for requiredArtifacts (including traces) and immediately errors if missing. assertValidAudit in validation.js also enforces that each audit\u2019s requiredArtifacts array is satisfied. To fix the issue, the config-helpers expansion/merge logic must detect when performance audits are requested and automatically add the traces gatherer (and devtoolsLog artifact) before Runner._runAudit runs.",
+        "bug_scenario": "When a user supplies a custom Lighthouse config that declares only the URL and ViewportDimensions gatherers (omitting any trace-gathering artifacts), all performance audits and downstream opportunities/diagnostics fail with \u201cRequired traces gatherer did not run.\u201d The report UI shows every performance audit, opportunity, and diagnostic as an Error because no trace data was gathered."
+    },
+    "2": {
+        "bug_classes": [
+            "core/config/config-helpers.js//mergeConfigFragment",
+            "core/config/config-helpers.js//mergeConfigFragmentArrayByKey",
+            "core/config/default-config.js//defaultConfig",
+            "core/runner.js//_runAudit"
+        ],
+        "bug_functions": [],
+        "explanation": "The core of the problem is that when a user provides an explicit artifacts array in their config, the mergeConfigFragment (and its helper mergeConfigFragmentArrayByKey) in config-helpers.js currently overwrites the default artifact list wholesale\u2014dropping the trace and devtoolsLog gatherers that performance metrics rely on. Those gatherers are originally defined in default-config.js under defaultConfig.artifacts. Later, Runner._runAudit checks for the presence of trace and devtoolsLog artifacts and, finding them missing, throws the \u201cRequired traces gatherer did not run.\u201d error for each audit. To fix this, the merge logic in config-helpers.js must be updated so that supplying a custom artifacts array appends or merges with the default trace-gathering artifacts rather than replacing them entirely.",
+        "bug_scenario": "When running Lighthouse with a custom config that explicitly defines its own artifacts list (omitting the built-in trace and devtoolsLog gatherers), every performance metric, opportunity, and diagnostic fails at runtime with \u201cRequired traces gatherer did not run.\u201d  In the report UI you see red \u201cError\u201d badges under Metrics, Opportunities, and Diagnostics because the audits expect trace data that was never collected."
+    }
+}

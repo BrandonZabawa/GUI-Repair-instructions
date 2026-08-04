@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/Builder.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/renderer/canvas/VectorLayer.js",
+            "src/ol/style/Text.js"
+        ],
+        "explanation": "The bug centers around drawing rotated text in translated (moved) contexts. 'TextBuilder.js' is responsible for constructing canvas instructions for text placement, including rotation and translation. 'Builder.js' contains core drawing logic that may handle geometrical transformations, which could interplay with how translation and rotation order is applied. 'Executor.js' and 'Immediate.js' are involved in executing canvas rendering instructions; any error or omission here could cause context transformations to be misapplied or ignored for rotated objects. 'VectorLayer.js' is responsible for orchestrating rendering of vector layers and ensures translation and clipping logic is coordinated. Finally, 'Text.js' in style controls the specifics of rotation for text styles, which must interact correctly with transformation logic in renderers and builders. All these files are likely to contain logic directly connected with the bug described in the scenario. Fixing the bug may require a deeper audit or modification in how these modules compose transformation matrices for text with rotation in non-default (non-origin) locations.",
+        "bug_scenario": "The bug concerns rendering vector layer text styles with rotation when the rendering context is both clipped and translated\u2014a typical use-case for a 'spyglass' or magnifier tool on a map. Rotated text (as seen with the green '3') is not displayed at the expected translated position within the spyglass area, but instead at the original map location. The bug does not occur for non-rotated text (red '2' or blue '1'), which do render at the expected translated positions. This indicates that the application of the translation transformation is skipped or improperly ordered when rotation is present, likely in the vector layer or text style rendering pipeline."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/render/canvas/Builder.js",
+            "src/ol/render/canvas/Executor.js",
+            "src/ol/render/canvas/ExecutorGroup.js",
+            "src/ol/render/canvas/style.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "These files are likely to contain the logic for rendering text styles in a canvas context for vector layers, and handle context save/restore, translation, rotation, and clipping. The bug is specifically about rotated text not being translated with the context, indicating possible issues in the render/canvas/TextBuilder.js (which draws text), or render/canvas/style.js (where style and transforms for drawing are computed). Builder.js, Executor.js, and ExecutorGroup.js are involved in the batching and execution of canvas instructions, which must correctly apply translations and rotations in the right order. renderer/canvas/VectorLayer.js is the entry point for vector layer rendering and ties the rest together. If context translation or rotation is mishandled at any stage (especially for rotated text), this bug could arise. These files are the main candidates for fixing the translation issue for rotated text styles.",
+        "bug_scenario": "The scenario involves using a 'spyglass' tool to reveal hidden vector layers on a map with OpenLayers (OL), where the visible area (highlighted by a box) is shifted and clipped. When text styles on vector layers are rotated (non-zero rotation), their rendered positions ignore the visual translation and clipping, showing up at their original map locations, whereas non-rotated text appears at the correct translated locations. This is highlighted in the bug images: only the rotated '3' text fails to follow the translation, while '1' and non-rotated '2' succeed."
+    }
+}

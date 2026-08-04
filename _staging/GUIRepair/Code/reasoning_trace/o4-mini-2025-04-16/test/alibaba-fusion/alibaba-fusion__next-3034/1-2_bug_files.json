@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/upload/list.jsx",
+            "src/upload/card.jsx",
+            "src/upload/upload.jsx",
+            "types/upload/index.d.ts"
+        ],
+        "explanation": "1. src/upload/list.jsx: This is the core list renderer for default and image list types. It currently renders only what `itemRender` returns (or its own default layout) and never appends the built-in remove button or wires up `onRemove` when `itemRender` is used.\n\n2. src/upload/card.jsx: The Card variant also accepts `itemRender`, but its implementation follows a similar pattern\u2014if you override the item entirely you lose the close icon. It needs to merge the rendered item with the default action area.\n\n3. src/upload/upload.jsx: The top-level `Upload` component is responsible for passing props (including `itemRender` and `onRemove`) down into `list.jsx` and `card.jsx`. It should ensure that the remove handler is bound and the close icon inserted even when `itemRender` is provided.\n\n4. types/upload/index.d.ts: The TypeScript definitions currently describe `itemRender`, but may not define that `actionRender` or `onRemove` are still required/injected alongside it. The types need updating to reflect that `itemRender` merges the custom content with the default action area (delete, preview, download).\n\nTogether, these files are where the list-item rendering, the delete-button insertion, and the prop-flow live. Modifying them to always include the close icon component and to call `onRemove(file)` after your `itemRender` output will restore deletion support when `itemRender` is used.",
+        "bug_scenario": "In the Upload component (listType=\"image\"), when a user supplies a custom `itemRender` to completely override how each uploaded item is drawn, the built-in delete (\u201c\u00d7\u201d) button is never rendered and the `onRemove` callback is never invoked. In other words, by using `itemRender` alone, you lose the ability to remove files from the list\u2014the overlay and image render correctly, but there is no close icon or delete handler."
+    },
+    "2": {
+        "bug_files": [
+            "src/upload/list.jsx",
+            "src/upload/index.jsx",
+            "src/upload/base.jsx",
+            "src/upload/upload.jsx"
+        ],
+        "explanation": "All of the delete\u2010and-list logic for Upload lives in the list and upload components; as soon as you return a custom node in itemRender, the default remove button (and its click handler) is never rendered. \n\n\u2022 src/upload/list.jsx \u2014 this is where each file item is actually drawn. it checks for itemRender and then simply spits out your node, without wrapping it in the built-in remove icon or wiring up onRemove.  \n\n\u2022 src/upload/base.jsx \u2014 the base Upload component picks up props like onRemove and closable and hands them off into the list; when you override itemRender it never passes them down.  \n\n\u2022 src/upload/index.jsx \u2014 the entry point that wires together Upload, Upload.List, Upload.Card, etc., and where itemRender is plucked off props; we need to make sure the remove UI is injected even when itemRender is defined.  \n\n\u2022 src/upload/upload.jsx \u2014 contains the higher-level lifecycle and state (value/defaultValue, onChange/onRemove); it currently doesn\u2019t drive any remove behavior into an overridden itemRender.  \n\nTo restore delete functionality when itemRender is used, you\u2019ll need to update list.jsx to merge in the default remove icon (and its onClick \u2192 onRemove) even when itemRender is supplied, and ensure base.jsx/index.jsx/upload.jsx are passing onRemove & closable through to that patched list layer.",
+        "bug_scenario": "When you supply your own itemRender to the <Upload> component (version 1.22.0), the list of files renders exactly what your function returns\u2014but the built-in \u201cremove\u201d (\u00d7) button and any onRemove handling are dropped. In other words, as soon as you override the default item template, you lose the delete functionality (see screenshot: custom preview overlay shows up but no \u00d7 appears)."
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//Driver.connect",
+            "lighthouse-core/gather/driver.js//Driver.sendCommand",
+            "lighthouse-core/gather/driver.js//Driver.on",
+            "lighthouse-core/gather/driver.js//Driver.once"
+        ],
+        "explanation": "The Driver class in driver.js is in charge of talking to the DevTools Protocol. Its connect method and subsequent commands only target the main session, and sendCommand is never used to call Target.setDiscoverTargets or Target.attachToTarget. Driver.on/once are the hooks that should listen for 'Target.targetCreated' events so the driver can attach to OOPIF sessions and then call Network.enable/Page.enable on those new sessions. Because none of this discovery/attachment logic is implemented in Driver, Lighthouse never sees iframe\u2010origin network events.",
+        "bug_scenario": "When a page includes a cross-origin iframe that Chrome spins into its own process (an OOPIF), Lighthouse\u2019s driver only enables the Network and Page domains on the main target session. Unlike DevTools\u2014which calls Target.setDiscoverTargets, listens for Target.targetCreated, attaches to the new session via Target.attachToTarget, and then issues Network.enable/Page.enable on that session\u2014Lighthouse never discovers or attaches to the iframe\u2019s CDP session and so never sees its network requests."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//Driver.connect",
+            "lighthouse-core/gather/driver.js//Driver.beginDevtoolsLog",
+            "lighthouse-core/gather/driver.js//Driver.sendCommand"
+        ],
+        "explanation": "All of the target-discovery and multi-session work needs to live in the Driver class.  \u2022 Driver.connect currently only opens one WebSocket session and never calls Target.setDiscoverTargets.  \u2022 Driver.beginDevtoolsLog initializes log capture but doesn\u2019t subscribe to Target.targetCreated or make the protocol calls to attach to a new session.  \u2022 Driver.sendCommand provides the raw wiring for any CDP method, but we need to use it to call Target.attachToTarget and Target.sendMessageToTarget (Network.enable) on each iframe\u2019s session.  By updating these methods to mirror DevTools (discover targets, attach, and enable Network on each session), Lighthouse will be able to see OOPIF network requests.",
+        "bug_scenario": "When Lighthouse drives Chrome via the DevTools Protocol it only ever enables the Network domain on the single, main target session.  In contrast, Chrome DevTools calls Target.setDiscoverTargets({discover:true}), listens for Target.targetCreated (for out-of-process iframes), calls Target.attachToTarget on each new session, and then issues Network.enable (via Target.sendMessageToTarget) on the iframe session so that it sees network events from OOPIFs.  Lighthouse\u2019s Driver never discovers or attaches to those extra targets and so never sees the iframe\u2019s network requests."
+    }
+}

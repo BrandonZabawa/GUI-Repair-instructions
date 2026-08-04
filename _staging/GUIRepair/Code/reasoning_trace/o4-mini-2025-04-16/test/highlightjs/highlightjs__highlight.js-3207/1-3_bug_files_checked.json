@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "src/languages/elixir.js",
+            "src/lib/regex.js"
+        ],
+        "explanation": "\u2022 src/languages/elixir.js defines Elixir\u2019s syntax rules, including how sigils and operators should be recognized. It currently does not distinguish the slash in function\u2010capture notation (\u201c&name?/arity\u201d) from the slash that begins a regex. That file must be updated so that \u2018&\u2026/\u27e8number\u27e9\u2019 is picked up as a capture, not a regex delimiter.  \n\u2022 src/lib/regex.js implements the generic slash\u2010vs-regex detection that all languages in Highlight.js inherit. The bug arises because that logic is over-eager with Elixir\u2019s slash, so a small exception or context-check needs to be added there (e.g. don\u2019t start a regex if the slash follows an ampersand and a number).",
+        "bug_scenario": "When you highlight an Elixir snippet that uses the function\u2010capture shorthand (\u201c&letter?/1\u201d), the highlighter sees the \u201c/\u201d after the \u201c1\u201d as the start of a regex literal and colors everything until the next \u201c/\u201d as if it were a regex. That throws off the rest of the highlighting. In other words \u201c&letter?/1\u201d gets split \u2013 the \u201c/1\u201d is treated like \u201c/\u2026/\u201d (a regex) rather than part of a capture expression."
+    },
+    "2": {
+        "bug_files": [
+            "src/languages/elixir.js"
+        ],
+        "explanation": "The only place Elixir-specific highlighting rules live is in src/languages/elixir.js. Inside that file it currently pulls in the generic hljs.REGEXP_MODE (slash-delimited regex) even though Elixir\u2019s regex is always introduced by a sigil (~r). Because of this, the standalone \u201c/\u201d in the capture operator (&..?/arity) is being mistaken for the start of a regex. Removing or constraining the REGEXP_MODE entry (or adding logic to ignore a slash immediately following a '?') in elixir.js will prevent the function-capture slash from being highlighted as a regular expression literal.",
+        "bug_scenario": "When highlighting Elixir code that uses the function-capture syntax (&letter?/1), the highlighter sees the \u201c/\u201d in \u201c?/1\u201d as the start of a regex literal and treats everything up to the next slash as part of that regex. As a result, the rest of the line (\"/1)\") is mis-colored until the following slash, breaking the intended syntax highlighting for the capture operator."
+    }
+}

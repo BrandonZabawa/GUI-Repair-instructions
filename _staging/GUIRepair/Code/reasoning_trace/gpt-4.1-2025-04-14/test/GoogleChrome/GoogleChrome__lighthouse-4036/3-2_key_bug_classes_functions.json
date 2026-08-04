@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js//ExternalAnchorsUseRelNoopenerAudit",
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js//AnchorsWithNoRelNoopener"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js//ExternalAnchorsUseRelNoopenerAudit.audit",
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js//AnchorsWithNoRelNoopener.afterPass"
+        ],
+        "explanation": "The root cause is Lighthouse's audit logic treating all external anchors (including mailto: links) as requiring rel=\"noopener\" when opened with target=\"_blank\". The class ExternalAnchorsUseRelNoopenerAudit and especially its static audit() method filter and flag such links. The AnchorsWithNoRelNoopener gatherer collects these anchors, and its afterPass() method identifies all <a> tags with target=\"_blank\" and missing rel=\"noopener\". Both need to be updated to ignore mailto: (and possibly similar) links to prevent this broken recommendation. These classes/functions are directly responsible for identifying and reporting the problematic anchors.",
+        "bug_scenario": "The bug scenario involves Lighthouse incorrectly auditing <a> tags with mailto: links that use target=\"_blank\" but do not have rel=\"noopener\". The audit suggests adding rel=\"noopener\" to all such links, but doing so breaks mailto: links on Chrome for Android and iOS Safari, causing them to open a blank page instead of launching the email client. The images show the Lighthouse audit failure and the resulting broken behavior in the browser (blank page with mailto: URL)."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js//ExternalAnchorsUseRelNoopenerAudit",
+            "lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js//AnchorsWithNoRelNoopener"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js//ExternalAnchorsUseRelNoopenerAudit.audit"
+        ],
+        "explanation": "The core of the bug is that Lighthouse's audit and gatherer do not distinguish between typical external HTTP(S) links and mailto: links. The class ExternalAnchorsUseRelNoopenerAudit (in external-anchors-use-rel-noopener.js) is responsible for determining which anchors 'fail' the rel=\"noopener\" check, and its audit method should be updated to ignore mailto: links. The AnchorsWithNoRelNoopener gatherer (in anchors-with-no-rel-noopener.js) collects the relevant anchors but, as per the bug, it currently includes mailto: links. To fix the bug, logic needs to be added (in either or both of these classes/functions) to skip or filter out mailto: links so that the audit does not erroneously report them. These are the elements directly responsible for the bug.",
+        "bug_scenario": "The bug scenario involves Lighthouse's audit for rel=\"noopener\" flagging mailto: links opened with target=\"_blank\" as needing rel=\"noopener\". However, adding rel=\"noopener\" to mailto: links causes these links to break on Chrome for Android and iOS Safari\u2014rather than opening the email client, the browser opens a blank page with the mailto: URL. The first image shows Lighthouse reporting a failure for not using rel=\"noopener\" on external anchors, including mailto: links. The second image demonstrates the broken behavior on a mobile device, where clicking the support mailto: link results in a blank page."
+    }
+}

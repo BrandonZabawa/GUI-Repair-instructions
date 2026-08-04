@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ListBox/ListBoxSelection.js",
+            "packages/react/src/components/ListBox/ListBox.js",
+            "packages/react/src/components/Dropdown/Dropdown.js"
+        ],
+        "explanation": "\u2022 ListBoxSelection.js is responsible for Carbon\u2019s live-region announcements of the currently focused/selected item.  It always renders a live-region that announces the item text plus \u201cselected (n of m)\u201d.\n\n\u2022 ListBox.js composes ListBoxSelection alongside the menu and does not distinguish single-select dropdowns from multi-select or combobox variants, so for a basic single-select it still emits that live announcement.\n\n\u2022 Dropdown.js is the top-level component that uses ListBox under the hood.  It doesn\u2019t disable or override the secondary announcement, so end users hear the same text twice: once from the native focus announcement and again from the custom live region.\n\nTo fix this, you need to adjust ListBox and/or Dropdown so that for a simple single-select dropdown you suppress the extra live-region announcement in ListBoxSelection, avoiding the duplicate readout.",
+        "bug_scenario": "When you open a Carbon <Dropdown> on macOS 11.1 with Safari and VoiceOver enabled (\u2318-F5), VO will read each item twice as you arrow through the menu.  The first announcement comes from the native reading of the focused <li role=\"option\">.  The second comes from Carbon\u2019s custom live-region announcement (built into ListBoxSelection) that repeats the text and adds \u201cselected (n of m)\u201d.  The result is \u201cOption 4 Option 4, selected (5 of 6)\u201d."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/ListBox/ListBox.js",
+            "packages/react/src/components/ListBox/ListBoxMenuItem.js"
+        ],
+        "explanation": "1. packages/react/src/components/Dropdown/Dropdown.js  \n   \u2022 This is the entry point for the React <Dropdown> component. It passes down default Downshift props (including the built-in getA11yStatusMessage for announcing selection changes) alongside Carbon\u2019s own a11y handling. Misconfiguration here means both Carbon\u2019s and Downshift\u2019s announcements fire, leading to duplicate reads.  \n2. packages/react/src/components/ListBox/ListBox.js  \n   \u2022 ListBox wraps Downshift and wires up both aria-activedescendant and a polite aria-live region for announcing focus and selection state. Because it doesn\u2019t suppress Downshift\u2019s default status messages when Carbon also renders its own, VoiceOver receives two separate announcements for each navigation event.  \n3. packages/react/src/components/ListBox/ListBoxMenuItem.js  \n   \u2022 The individual <ListBoxMenuItem> injects visually-hidden text for the highlighted item (to read out its text and selection position), while the element\u2019s visible text is also present. VoiceOver therefore reads the same text twice (once from the visible content and once from the hidden region) before reading the listbox status, compounding the duplication.",
+        "bug_scenario": "On macOS 11.1 with Safari and VoiceOver enabled (\u2318 F5), navigating through the Carbon React <Dropdown> options causes each option to be announced twice: once for the visible label and once again for the assistive-technology-only status message showing \u201c<OptionText>, selected (n of n)\u201d. In Storybook\u2019s a11y panel this shows up as the merged overlay \u201cOption 4 Option 4, selected (5 of 6)\u201d."
+    }
+}

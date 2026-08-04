@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/callout.lua"
+        ],
+        "explanation": "The file resources/filters/quarto-pre/callout.lua contains the Lua filter logic that builds the LaTeX \\tcolorbox for callouts. It currently stringifies caption nodes into plain text and sets title=caption without bracing, so markdown formatting is dropped and special characters (e.g. %, comma) are interpreted as tcolorbox options, leading to errors. The proposed fixes in this file wrap the caption in braces and switch from pandoc.utils.stringify to pandoc.write for proper markdown rendering and escaping.",
+        "bug_scenario": "When rendering PDF output, callout captions defined as markdown headers inside ::: callout blocks are taken \u201cas is\u201d (via pandoc.utils.stringify) and inserted directly into the tcolorbox title option without proper escaping or markdown processing. As a result, formatting like **bold** or `code` is lost, and special characters such as %, commas, or braces cause LaTeX errors."
+    },
+    "2": {
+        "bug_files": [
+            "src/resources/filters/quarto-pre/callout.lua"
+        ],
+        "explanation": "All of the offending behavior\u2014title escaping and markdown (bold, code) being ignored\u2014is implemented in the Lua filter at resources/filters/quarto-pre/callout.lua. That file contains both the latexCalloutBoxDefault function (which builds the tcolorbox options, including the raw title) and the calloutLatex function (which currently uses pandoc.utils.stringify on the caption). Patching only this file to wrap the title in braces and replace stringify() with a full pandoc.write() invocation addresses both escaping special characters and applying markdown formatting.",
+        "bug_scenario": "When rendering callout blocks to PDF, the caption text (a header inside a ::: callout) is taken literally (via pandoc.utils.stringify) and inserted directly into the tcolorbox title without escaping or markdown processing. Captions that contain special LaTeX characters (e.g. \u201c%<-%\u201d or commas) or markdown formatting (bold, inline code) either cause compilation errors or lose their formatting in the final PDF."
+    }
+}

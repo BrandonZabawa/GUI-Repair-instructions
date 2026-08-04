@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "plugins/file-highlight/prism-file-highlight.js",
+            "components/prism-javascript.js",
+            "prism.js"
+        ],
+        "explanation": "1. plugins/file-highlight/prism-file-highlight.js \u2013 This hook fetches the external file and calls Prism.highlightElement on the loaded content, so any mis-tokenization in Prism\u2019s core/grammar will manifest here when the file contains back-ticks.\n2. components/prism-javascript.js \u2013 Defines the JavaScript grammar, including the `template-string` token that (too greedily) treats any back-tick sequence as a template literal and doesn\u2019t respect comment contexts. This mis-parses back-ticks inside comments.\n3. prism.js \u2013 Prism\u2019s core highlighting engine that loads the above grammar and applies it via hooks. The core methods triggered by file-highlight (before-sanity-check, highlightElement, etc.) rely on the grammar in prism-javascript.js to correctly tokenize back-ticks, which currently they do not.",
+        "bug_scenario": "The Prism site\u2019s \u201chighlight\u201d demo on the homepage uses the File-Highlight plugin to fetch external JavaScript source files and then invokes Prism.highlightElement on each <code> block. One of the demo files contains JSDoc comments with back-ticks (e.g. in \u201c`language-xxxx`\u201d). The JavaScript grammar in Prism mis-interprets those back-ticks as template-string delimiters, causing it to eat the remainder of the code block and break highlighting downstream once you scroll far enough (around 90%)."
+    }
+}

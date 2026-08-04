@@ -1,0 +1,7 @@
+{
+    "1": {
+        "reproduce_code": "const {Driver} = require('../../gather/driver');\nconst {createMockSendCommandFn} = require('./driver-test');\n\nasync function testTimeoutScenario() {\n  const connectionStub = {\n    sendCommand: createMockSendCommandFn()\n      .mockResponse('Page.navigate', {})\n      .mockResponse('Runtime.evaluate', {result: {value: 2}}, 65000),\n  };\n\n  const driver = new Driver(connectionStub);\n  driver.setNextProtocolTimeout(60000);\n\n  try {\n    await driver.evaluateAsync('1 + 1');\n  } catch (err) {\n    console.error('Error:', err);\n  }\n}\n\ntestTimeoutScenario();",
+        "explanation": "The code sets up a mock driver with a delayed response to simulate the 60-second timeout issue. The `evaluateAsync` function is called with a timeout of 60 seconds, which should trigger the timeout error, reproducing the bug scenario.",
+        "bug_scenario": "The bug scenario involves increased failures due to a 60-second timeout on PSI/LR. The error rate on the LR backend has increased, as shown by the red line in the first image. The latency has also increased, as indicated in the second image. The third image shows a heatmap of the `loadPage-defaultPass` timing, which has a significant jump, indicating a potential issue with the `waitForFCP` implementation in the Lighthouse code."
+    }
+}

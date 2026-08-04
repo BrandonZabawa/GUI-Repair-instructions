@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Icon.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "The misalignment stems from how displacement is applied independently of scale. In src/ol/style/Icon.js the getAnchor() method computes anchor positions by simply adding the raw displacement array returned from the style, without taking the style\u2019s scale into account. Later, in src/ol/render/canvas/ImageBuilder.js (drawPoint/drawMultiPoint), the anchor offsets passed to drawImage are also used unscaled, then the image is drawn with a separate scale factor. Because neither Icon.getAnchor nor the CanvasImageBuilder logic multiplies the displacement (or the anchor) by the chosen scale, icons shift vertically when you change scale even though displacement hasn\u2019t changed. To fix the issue you need to multiply the displacement by the scale (from getScaleArray()) when computing the anchor, or adjust the drawPoint logic to apply the scale to the anchor offsets as well as the image dimensions.",
+        "bug_scenario": "In the CodePen example two icons are rendered with identical \"displacement\" settings so that their bottoms should align at the same Y position. However, when you change the icon \"scale\", the bottom of the scaled icon drifts away from the other. In other words, displacement is applied in raw pixel units and is not recomputed or scaled along with the icon, so varying the scale breaks the expected bottom alignment."
+    }
+}

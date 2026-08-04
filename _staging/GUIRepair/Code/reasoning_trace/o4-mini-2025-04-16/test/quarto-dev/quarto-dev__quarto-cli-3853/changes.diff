@@ -1,0 +1,89 @@
+diff --git a/src/resources/filters/crossref/theorems.lua b/src/resources/filters/crossref/theorems.lua
+index bd2c8d10d..de50824dc 100644
+--- a/src/resources/filters/crossref/theorems.lua
++++ b/src/resources/filters/crossref/theorems.lua
+@@ -67,9 +67,10 @@ function crossrefTheorems()
+             "\\label{" .. label .. "}")
+           )
+           el.content:insert(1, preamble)
+-          el.content:insert(pandoc.Para(pandoc.RawInline("latex", 
+-            "\\end{" .. theoremType.env .. "}"
+-          )))
++          el.content:insert(
++            pandoc.RawBlock("latex",
++              "\\end{" .. theoremType.env .. "}"
++            ))
+         elseif _quarto.format.isJatsOutput() then
+ 
+           -- JATS XML theorem
+@@ -99,39 +100,41 @@ function crossrefTheorems()
+           end
+         end
+ 
+-      else
+-        -- see if this is a proof, remark, or solution
+-        local proof = proofType(el)
+-        if proof ~= nil then
++        else
++          -- see if this is a proof, remark, or solution
++          local proof = proofType(el)
++          if proof ~= nil then
+ 
+-          -- ensure requisite latex is injected
+-          crossref.usingTheorems = true
++            -- ensure requisite latex is injected
++            crossref.usingTheorems = true
+ 
+-          if proof.env ~= "proof" then
+-            el.attr.classes:insert("proof")
+-          end
++            if proof.env ~= "proof" then
++              el.attr.classes:insert("proof")
++            end
+ 
+-          -- capture then remove name
+-          local name = markdownToInlines(el.attr.attributes["name"])
+-          if not name or #name == 0 then
+-            name = resolveHeadingCaption(el)
+-          end
+-          el.attr.attributes["name"] = nil 
++            -- capture then remove name
++            local name = markdownToInlines(el.attr.attributes["name"])
++            if not name or #name == 0 then
++              name = resolveHeadingCaption(el)
++            end
++            el.attr.attributes["name"] = nil 
+ 
+-          -- output
+-          if _quarto.format.isLatexOutput() then
+-            local preamble = pandoc.Para(pandoc.RawInline("latex", 
+-              "\\begin{" .. proof.env .. "}"))
+-            if name ~= nil then
+-              preamble.content:insert(pandoc.RawInline("latex", "["))
+-              tappend(preamble.content, name)
+-              preamble.content:insert(pandoc.RawInline("latex", "]"))
+-            end 
+-            el.content:insert(1, preamble)
+-            el.content:insert(pandoc.Para(pandoc.RawInline("latex", 
+-              "\\end{" .. proof.env .. "}"
+-            )))
+-          elseif _quarto.format.isJatsOutput() then
++            -- output
++            if _quarto.format.isLatexOutput() then
++              -- insert raw block for proof begin to avoid extra vspace
++              local name_opt = ""
++              if name ~= nil then
++                name_opt = "[" .. pandoc.utils.stringify(name) .. "]"
++              end
++              el.content:insert(1,
++                pandoc.RawBlock("latex",
++                  "\\begin{" .. proof.env .. "}" .. name_opt
++                ))
++              el.content:insert(
++                pandoc.RawBlock("latex",
++                  "\\end{" .. proof.env .. "}"
++                ))
++            elseif _quarto.format.isJatsOutput() then
+             el = jatsTheorem(el,  nil, name )
+           else
+             local span = pandoc.Span(

@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/layer/Tile.js",
+            "src/ol/renderer/Layer.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/Tile.js",
+            "src/ol/TileQueue.js"
+        ],
+        "explanation": "These files are implicated based on their key roles in managing, rendering, and requesting tiles for TileLayers (and groups thereof):\n\n- src/ol/layer/Group.js: Manages collections of layers (LayerGroup) and how they trigger updates or requests.\n- src/ol/layer/Tile.js: Primary class for tile layers, likely affected by changes in request scheduling or LayerGroup behavior.\n- src/ol/renderer/Layer.js: Base rendering class for layers, may manage how tile requests are scheduled or grouped.\n- src/ol/renderer/canvas/TileLayer.js: Handles rendering of tile layers using canvas; implementation may affect tile queuing/request order.\n- src/ol/renderer/webgl/TileLayer.js: Handles rendering of tile layers using WebGL; required for completeness and because parallel request logic may be similar to or inherited from the canvas version.\n- src/ol/source/Tile.js: Manages tile sources and tile loading; may have logic for concurrent vs sequential loading and prioritization.\n- src/ol/TileQueue.js: Manages the queue and concurrent execution of tile loading requests, directly responsible if concurrency is throttled improperly.\n\nFixing the sequential vs concurrent loading regression will likely require investigation and changes in how LayerGroups propagate loading and how TileQueue schedules tile fetches across multiple layers.",
+        "bug_scenario": "The bug report discusses a change in tile request handling for TileLayers within a LayerGroup after upgrading from version 6.1 to 7.0. In v6.1, tile requests for all TileLayers in a LayerGroup were sent concurrently (leading to fast loading), as seen in the second screenshot. In v7.0, the requests are now being sent sequentially\u2014one TileLayer at a time\u2014resulting in slower tile imagery load times (as seen in the first screenshot). The bug is that the parallel/concurrent requests for TileLayers in a group are now sent serially instead. The two images illustrate the difference in network request timing: one with many simultaneous requests (desired) and one with staggered/sequential requests (the regression)."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/layer/Tile.js",
+            "src/ol/source/Tile.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/TileQueue.js"
+        ],
+        "explanation": "- src/ol/layer/Group.js: The LayerGroup logic could influence how loading is initiated and coordinated among its children, so changes in its implementation could have led to a change in request timing.\n- src/ol/layer/Tile.js: This contains the TileLayer implementation, which would be directly responsible for making tile requests and may control whether requests for different layers are serialized or parallelized.\n- src/ol/source/Tile.js: Responsible for the data source and loading behavior of tiles; any modification to how sources queue or sequence requests may affect observed timing.\n- src/ol/renderer/canvas/TileLayer.js and src/ol/renderer/webgl/TileLayer.js: These are responsible for rendering tile layers; changes to request scheduling or orchestration may be present here, especially if renderer-specific logic impacts load operation order.\n- src/ol/TileQueue.js: Manages the prioritization and order of tile loading and might have new throttling or queueing strategies introduced in v7.0, leading to sequential loading behavior.\n\nCollectively, these files implement the tile request management, rendering, grouping, and loading control mechanisms that could explain the shift from concurrent to sequential HTTP requests when LayerGroups contain multiple TileLayers.",
+        "bug_scenario": "The screenshots of network activity show how HTTP requests for map tiles are made when loading multiple TileLayers in a LayerGroup. In version 6.1, tile requests from these layers are sent concurrently, resulting in rapid tile loading (seen by the many requests started nearly simultaneously). After upgrading to version 7.0, the tile requests for each TileLayer appear to be serialized\u2014each one starts after the previous finishes\u2014impacting the user experience with noticeably slower imagery loading. The bug report points out that this change may be associated with changes in how tile loading is managed internally when many TileLayers are grouped."
+    }
+}

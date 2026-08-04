@@ -1,0 +1,39 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/index.js",
+            "lighthouse-core/gather/connections/connection.js",
+            "lighthouse-core/gather/connections/cri.js",
+            "lighthouse-core/audits/service-worker.js",
+            "lighthouse-core/audits/works-offline.js",
+            "lighthouse-core/audits/cache-start-url.js",
+            "lighthouse-core/audits/load-fast-enough-for-pwa.js",
+            "lighthouse-core/audits/is-on-https.js",
+            "lighthouse-core/audits/consistently-interactive.js",
+            "lighthouse-core/audits/first-interactive.js",
+            "lighthouse-core/audits/time-to-first-byte.js",
+            "lighthouse-cli/run.js",
+            "lighthouse-cli/index.js",
+            "lighthouse-core/runner.js",
+            "lighthouse-extension/app/src/lighthouse-background.js",
+            "lighthouse-extension/app/src/lighthouse-ext-background.js"
+        ],
+        "explanation": "The issue centers on Lighthouse's audit lifecycle logic for Progressive Web Apps, which specifically requires waiting for load events, service worker activation, and offline capability checks\u2014these are handled in files like 'gather-runner.js', 'driver.js', and the various PWA-related audits. If the tool never gets the 'onload' signal or a timeout fails to trigger, the audit hangs as described. 'gather-runner.js' and 'driver.js' orchestrate navigation, waiting for onload, and overall page interaction. The specific audit implementations for 'service-worker', 'works-offline', and related PWA requirements are involved because they trigger load waits and check for readiness. The CLI and extension background files manage the audit process, triggering and monitoring progress, and update UI states based on audit completion or hang. Any bug in these could stall the overall run, as shown in the bug images and described in the report. UI rendering files specific to the spinner/loader and their event bindings may also be relevant if the UI doesn't update after an internal failure or never receives the audit-complete signal.",
+        "bug_scenario": "Lighthouse, when running a 'Progressive Web App' audit, hangs indefinitely on the 'Loading page & waiting for onload' step. The modal/spinner indicating this never disappears and the audit never completes. This is confirmed in both the native Chrome audit and Lighthouse extension UI, as seen in the bug scenario images. The issue occurs across all pages tested, not just one specific URL. No other extensions are enabled, and the problem persists even with defaults. The problem likely lies in the lifecycle waiting logic (waiting for window.onload, page load events, or related navigation triggers), the gather phase or service worker audits, or a related component that signals readiness (or times out) before audits can proceed. The UI files that show the spinner and handle the async audit process may also be involved."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/gather/gatherers/service-worker.js",
+            "lighthouse-core/audits/works-offline.js",
+            "lighthouse-core/audits/service-worker.js",
+            "lighthouse-core/audits/cache-start-url.js",
+            "lighthouse-core/audits/load-fast-enough-for-pwa.js"
+        ],
+        "explanation": "These files are related to the steps and requirements Lighthouse uses to assess Progressive Web App criteria, especially service worker handling and page load/offline readiness, which are mentioned in the stuck step. Specifically: \n- 'lighthouse-core/gather/driver.js' and 'gather/gather-runner.js' manage the loading, waiting for onload, and progression through audit phases.\n- 'gatherers/service-worker.js' and the audits 'works-offline.js', 'service-worker.js', and 'cache-start-url.js' deal directly with ServiceWorker registration/activation and caching\u2014critical to the PWA audit segment stuck in the bug scenario.\n- 'audits/load-fast-enough-for-pwa.js' is involved in the timing and threshold for PWA audits.\n\nIf there is a failure to recognize onload, or a timeout or condition is missing or incorrectly implemented (e.g., failure to detect ServiceWorker or onload), these are the files where code likely needs inspection and fixes.",
+        "bug_scenario": "The bug scenario shows that when running a Lighthouse audit (specifically for Progressive Web App), the process hangs indefinitely at the 'Loading page & waiting for onload' step, both in the Chrome DevTools and extension UI. The audit never completes, preventing users from getting results for their Progressive Web App. The screenshots confirm that the audit step waiting for 'onload' never progresses, which is an indication that Lighthouse is stuck waiting for a page event or ServiceWorker registration that never occurs or is not properly detected."
+    }
+}

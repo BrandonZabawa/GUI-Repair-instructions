@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/language-markdown/unified-plugins/front-matter.js",
+            "src/language-markdown/printer-markdown.js",
+            "src/language-yaml/printer-yaml.js",
+            "src/utils/front-matter/parse.js",
+            "src/utils/front-matter/print.js"
+        ],
+        "explanation": "The bug involves YAML frontmatter parsing and formatting inside Markdown files. The following files are involved in the bug:\n\n- src/language-markdown/unified-plugins/front-matter.js: Handles extraction and parsing of front matter blocks from Markdown; likely involved in the transformation or normalization of newlines and whitespace.\n- src/language-markdown/printer-markdown.js: Responsible for printing markdown files, including how frontmatter and its formatting (including newlines and whitespace) appears in the output.\n- src/language-yaml/printer-yaml.js: Involved if Prettier parses and prints YAML blocks (such as frontmatter) as part of its unified processing\u2014could impact how whitespace and blank lines are handled in YAML.\n- src/utils/front-matter/parse.js: Logic for parsing YAML frontmatter, including how it interprets whitespace and blank lines; if blank lines get dropped at the parsing stage, they may be lost during re-printing.\n- src/utils/front-matter/print.js: Handles rendering/printing of the frontmatter after parsing, controls whitespace and spacing between array entries, and could be responsible for inadvertently removing blank lines.\n\nThese files together contribute to the process of parsing, formatting, and printing Markdown frontmatter (YAML), including the preservation or removal of blank lines between array items. Fixing the misplaced removal of empty lines will likely require changes in how parse.js and print.js handle blank lines, and ensuring the markdown and yaml printers collaborate in preserving them.",
+        "bug_scenario": "Some empty lines are being removed in markdown YAML frontmatter when using Prettier (parser: markdown). Specifically, the input YAML contains empty lines within frontmatter arrays (for example, between blog entries), but after formatting, those empty lines are removed; the expected behavior is that they are preserved. This negatively impacts formatting expectations for users, especially for visually separating array items in YAML frontmatter."
+    },
+    "2": {
+        "bug_files": [
+            "src/language-markdown/unified-plugins/front-matter.js",
+            "src/language-markdown/print-whitespace.js",
+            "src/language-markdown/printer-markdown.js",
+            "src/language-yaml/printer-yaml.js",
+            "src/language-yaml/utils.js"
+        ],
+        "explanation": "These files are closely related to the parsing and printing of Markdown and YAML frontmatter in Prettier, based on the repo structure and standard separation of functionality in Prettier's codebase:\n\n1. src/language-markdown/unified-plugins/front-matter.js: Handles detection and processing of frontmatter in Markdown; issues with stripping or incorrectly merging whitespace between YAML items may originate here.\n2. src/language-markdown/print-whitespace.js: Deals with the preservation and reconstruction of whitespace (such as empty lines) in Markdown, which is directly relevant to the bug.\n3. src/language-markdown/printer-markdown.js: The primary printer for Markdown, where decisions about output formatting, including whitespace and structure, are made and propagated.\n4. src/language-yaml/printer-yaml.js: Involved in printing YAML nodes and could affect the formatting of YAML blocks, including blank line handling between items.\n5. src/language-yaml/utils.js: Utility functions for YAML that might influence how entries or newlines are detected/handled during print.\n\nTo fix the bug, the implementation in these files would need to be reviewed and potentially adjusted to ensure that intentional empty lines within YAML frontmatter lists are preserved during formatting.",
+        "bug_scenario": "The bug described concerns Prettier's handling of Markdown files containing YAML frontmatter with structured blocks (such as lists). Currently, when formatting, Prettier version 3.3.0 removes certain empty lines inside the frontmatter, particularly within nested lists (e.g., inside the 'blogs' block separating different entries). This undesirably merges items that were visually separated by blank lines, which impacts both readability and potentially the behavior of tools consuming the YAML. The expected behavior is to preserve empty lines between list entries inside the frontmatter when formatting Markdown with YAML frontmatter."
+    }
+}

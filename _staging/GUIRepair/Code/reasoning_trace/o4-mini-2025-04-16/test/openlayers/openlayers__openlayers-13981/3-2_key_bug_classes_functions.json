@@ -1,0 +1,35 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer",
+            "src/ol/render/canvas/Executor.js//Executor"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer.drawText_",
+            "src/ol/render/canvas/Executor.js//Executor.calculateImageOrLabelDimensions_",
+            "src/ol/render/canvas/Executor.js//Executor.drawLabelWithPointPlacement_",
+            "src/ol/render/canvas/Executor.js//horizontalTextAlign"
+        ],
+        "explanation": "The CanvasImmediateRenderer.drawText_ method in the vector\u2010layer renderer applies offset and rotation around the feature coordinates. In contrast, the Executor pipeline computes image/text placement and rotation in calculateImageOrLabelDimensions_ and drawLabelWithPointPlacement_ (with alignment adjustments in horizontalTextAlign), anchoring and rotating around the text\u2019s align/baseline point. Because these calculations differ, offset text in the immediate renderer ends up pivoting around the wrong point\u2014hence the fix must harmonize the anchor and rotation math in Executor\u2019s placement and dimension methods to match the vector\u2010layer behavior.",
+        "bug_scenario": "When both an offset and a rotation are applied to a text label, the vector\u2010layer renderer (CanvasImmediateRenderer) rotates the label about the feature point from which it is offset, but the immediate renderer (Executor in the vector context pipeline) rotates it about its text anchor (as computed from textAlign/textBaseline). The two pipelines therefore place and rotate offset text differently, causing inconsistency in label positioning when the view is rotated."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer",
+            "src/ol/render/canvas/Executor.js//Executor",
+            "src/ol/style/Text.js//Text"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/Immediate.js//drawText_",
+            "src/ol/render/canvas/Executor.js//calculateImageOrLabelDimensions_",
+            "src/ol/render/canvas/Executor.js//drawLabelWithPointPlacement_",
+            "src/ol/render/canvas/Executor.js//replayImageOrLabel_",
+            "src/ol/style/Text.js//getOffsetX",
+            "src/ol/style/Text.js//getOffsetY",
+            "src/ol/style/Text.js//getRotation",
+            "src/ol/style/Text.js//getRotateWithView"
+        ],
+        "explanation": "\u2022 CanvasImmediateRenderer.drawText_: this private method is responsible for positioning and rotating text in the immediate rendering path; it applies rotation around the wrong pivot (the text anchor) instead of the feature origin.  \n\u2022 Executor.calculateImageOrLabelDimensions_: computes the screen offsets, anchor, and rotation used by the vector\u2010layer renderer; any inconsistency here directly affects where rotated/offset text is drawn.  \n\u2022 Executor.drawLabelWithPointPlacement_ & replayImageOrLabel_: handle the final placement of text+icon combos in vector layers, including applying rotation around the feature coordinate.  \n\u2022 Text.getOffsetX/Y, getRotation, getRotateWithView (in Text.js): these style getters provide the offset and rotation parameters to both rendering paths. If one path mis-interprets these values, the two renderers will diverge.  \nTogether these classes and methods define how offsets and rotations are applied; the bug arises from the differing pivot point calculations in Immediate.js versus Executor.js/TextBuilder.js.",
+        "bug_scenario": "When rendering styled text labels with both an offset (offsetX/offsetY) and a rotation (rotation or rotateWithView) applied, you can see that the vector\u2010layer renderer (using Executor/TextBuilder) rotates the text around the original feature geometry (so the text \u201corbits\u201d the feature as the view rotates), whereas the immediate renderer (CanvasImmediateRenderer) rotates the text around its offset anchor point (so the text appears to swing around the anchor rather than the feature). This leads to mismatched positions and orientations between the two rendering paths."
+    }
+}

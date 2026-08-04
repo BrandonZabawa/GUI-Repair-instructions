@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/typescript.js//INTERFACE"
+        ],
+        "bug_functions": [
+            "src/languages/typescript.js//default",
+            "src/languages/typescript.js//swapMode"
+        ],
+        "explanation": "The core of the bug lives in src/languages/typescript.js where the exported `default` function builds on the JavaScript grammar to produce TypeScript highlighting rules. It injects an INTERFACE mode (with `beginKeywords: 'interface'` and `keywords: 'interface extends'`) and then reuses the existing JS modes for everything else. However, there is no dedicated mode to match and consume a `<\u2026 extends \u2026>` generic parameter list, so the highlighter treats the `extends` keyword as part of the normal code stream and never closes the `<` bracket, leaking the remainder of the file into that mode. The helper `swapMode` function is also involved (it swaps out other modes by label) and any incorrect replacement there can exacerbate the generics-matching issue. To fix this, the default grammar setup should introduce or correct a mode that explicitly matches TypeScript generic parameters (including nested `<\u2026>` and `extends` clauses) so that the parser can close the generics block and continue normal tokenizing afterwards.",
+        "bug_scenario": "When highlighting TypeScript code that declares generic type parameters with the \u201cextends\u201d keyword (for example:\n\n  interface Prefixer<Something extends string> { \u2026 }\n  const cloneWith = <T, A extends keyof T, V>(\u2026): \u2026 => { \u2026 };\n\n) version 10.3.0 of highlight.js fails to recognize and close the generic angle-bracket section. As a result the rest of the file (the parse signature, arrow functions, consts, type aliases, etc.) is mis-highlighted or rendered in the wrong color. In 10.2.1 the same code is highlighted correctly (the generics are isolated and the remainder of the code resumes normal highlighting)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/typescript.js",
+            "src/languages/lib/ecmascript.js"
+        ],
+        "bug_functions": [
+            "src/languages/typescript.js//INTERFACE",
+            "src/languages/typescript.js//swapMode",
+            "src/languages/lib/ecmascript.js//KEYWORDS"
+        ],
+        "explanation": "The core of the breakage lives in src/languages/typescript.js. Its INTERFACE mode only scans for \u201cinterface \u2026 extends\u201d up until the opening brace and never accounts for the use of extends inside generic parameter lists (<T extends U>). Because generics with extends never match any active mode, the parser abandons highlighting for all subsequent tokens. The swapMode helper only swaps out existing top-level rules (shebang, use_strict) and has no bearing on generic parsing. Meanwhile, the global KEYWORDS in lib/ecmascript.js does list \u201cextends\u201d but, without a dedicated generic parameter rule in the TypeScript grammar, it never gets consumed correctly. Fixing this requires adding or extending a mode in typescript.js to recognize \u201cextends\u201d inside \u2039\u2026\u203a so that the rest of the code remains highlighted.",
+        "bug_scenario": "In the provided screenshots you can see that as soon as a generic type uses the \u201cextends\u201d keyword (for example: interface Prefixer<Something extends string> or parse<From extends string>), the syntax highlighter in highlight.js v10.3.0 stops matching any further tokens and the rest of your TypeScript code is rendered as plain text."
+    }
+}

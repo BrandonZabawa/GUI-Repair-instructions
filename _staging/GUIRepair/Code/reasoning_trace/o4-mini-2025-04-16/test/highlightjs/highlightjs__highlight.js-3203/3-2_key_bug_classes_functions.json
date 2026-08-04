@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/powershell.js//PS_ARGUMENTS",
+            "src/languages/powershell.js//COMPARISON_OPERATORS",
+            "src/languages/powershell.js//CMDLETS"
+        ],
+        "explanation": "All three constants define the regex rules that Highlight.js uses to detect flags and operators in PowerShell code. \n\n\u2022 PS_ARGUMENTS holds the patterns for matching arguments (literal flags) but only matches a single leading hyphen (begin: /(-)[\\w\\d]+/), so \u201c--flag\u201d is skipped.  \n\u2022 COMPARISON_OPERATORS is a big alternation of single-hyphen comparison operators (e.g. '-eq', '-gt', etc.); it also omits any double-hyphen form.  \n\u2022 CMDLETS defines how cmdlet names plus parameters are highlighted (using \u2018)+(-)[\\w\\d]+\u2019), again only matching a single hyphen before the parameter name.  \n\nTo support \u201c--flag\u201d syntax, these patterns must be adjusted (e.g. allow /-{1,2}[\\w\\d]+/ or explicitly include \u201c--\u201d variants).",
+        "bug_scenario": "In the user-provided screenshot and HTML/js setup, a PowerShell code block is highlighted via Highlight.js. The line \u201cfoo --bar baz\u201d displays no special styling for \u201c--bar\u201d (the double-hyphen flag), while the single-hyphen \u201c-bar\u201d on the next line is correctly highlighted. In contrast, a native PowerShell 7.1.3 console screenshot shows both \u201c--bar\u201d and \u201c-bar\u201d rendered in yellow, indicating that dual-hyphen flags should be recognized. The discrepancy arises because the current PowerShell grammar in Highlight.js only recognizes single-hyphen operators and parameters."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/powershell.js//PS_ARGUMENTS",
+            "src/languages/powershell.js//CMDLETS"
+        ],
+        "explanation": "The PS_ARGUMENTS variant defines how named parameters are highlighted via the regex /(-)[\\w\\d]+/, which only matches a single leading hyphen. Similarly, the CMDLETS variant uses a pattern that appends '(-)[\\w\\d]+' to VALID_VERBS, also only capturing one hyphen. To support double-hyphen flags (\"--flag\"), these two regex patterns must be updated to allow one or two leading hyphens (for example, using /-{1,2}[\\w\\d]+/). This change will ensure that both single- and double-hyphen parameters are recognized and styled correctly.",
+        "bug_scenario": "In the PowerShell language definition for highlight.js, tokens beginning with a single hyphen (e.g. \"-bar\") are correctly styled as literals/operators, but tokens beginning with two hyphens (e.g. \"--bar\") aren\u2019t matched by the regex rules and thus remain unhighlighted. The images show that \"--bar\" appears plain text while \"-bar\" is colored."
+    }
+}

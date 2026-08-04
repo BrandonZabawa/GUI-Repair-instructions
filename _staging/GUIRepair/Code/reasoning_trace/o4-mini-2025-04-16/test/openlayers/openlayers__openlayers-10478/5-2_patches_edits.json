@@ -1,0 +1,72 @@
+{
+    "1/1": {
+        "src/ol/reproj/Tile.js": [
+            {
+                "SEARCH": [
+                    "// collect only fully loaded tiles today, discard all others",
+                    "this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "if (tile && tile.getState() == TileState.LOADED) {",
+                    "sources.push({",
+                    "extent: this.sourceTileGrid_.getTileCoordExtent(tile.tileCoord),",
+                    "image: tile.getImage()",
+                    "});",
+                    "}",
+                    "}.bind(this));"
+                ],
+                "REPLACE": [
+                    "    // collect tiles that are ready (loaded, empty, error or abort)",
+                    "    this.sourceTiles_.forEach(function(tile, i, arr) {",
+                    "      var state = tile && tile.getState();",
+                    "      if (tile && (",
+                    "            state == TileState.LOADED ||",
+                    "            state == TileState.EMPTY  ||",
+                    "            state == TileState.ERROR  ||",
+                    "            state == TileState.ABORT",
+                    "          )) {",
+                    "        sources.push({",
+                    "          extent: this.sourceTileGrid_.getTileCoordExtent(tile.tileCoord),",
+                    "          image: tile.getImage()",
+                    "        });",
+                    "      }",
+                    "    }.bind(this));"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const sourceListenKey = listen(tile, EventType.CHANGE,",
+                    "function(e) {",
+                    "const state = tile.getState();",
+                    "if (state == TileState.LOADED ||",
+                    "state == TileState.ERROR ||",
+                    "state == TileState.EMPTY) {",
+                    "unlistenByKey(sourceListenKey);",
+                    "leftToLoad--;",
+                    "if (leftToLoad === 0) {",
+                    "this.unlistenSources_();",
+                    "this.reproject_();",
+                    "}",
+                    "}",
+                    "}, this);"
+                ],
+                "REPLACE": [
+                    "      const sourceListenKey = listen(tile, EventType.CHANGE,",
+                    "        function(e) {",
+                    "          const state = tile.getState();",
+                    "          // also treat ABORT as a terminal state",
+                    "          if (state == TileState.LOADED ||",
+                    "                state == TileState.ERROR ||",
+                    "                state == TileState.EMPTY ||",
+                    "                state == TileState.ABORT) {",
+                    "            unlistenByKey(sourceListenKey);",
+                    "            leftToLoad--;",
+                    "            if (leftToLoad === 0) {",
+                    "              this.unlistenSources_();",
+                    "              this.reproject_();",
+                    "            }",
+                    "          }",
+                    "        }, this);"
+                ]
+            }
+        ]
+    }
+}

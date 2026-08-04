@@ -1,0 +1,28 @@
+diff --git a/lighthouse-core/audits/manifest-short-name-length.js b/lighthouse-core/audits/manifest-short-name-length.js
+index 10fc0e976..ed28a5541 100644
+--- a/lighthouse-core/audits/manifest-short-name-length.js
++++ b/lighthouse-core/audits/manifest-short-name-length.js
+@@ -50,12 +50,17 @@ class ManifestShortNameLength extends Audit {
+       // Historically, Chrome recommended 12 chars as the maximum length to prevent truncation.
+       // See #69 for more discussion.
+       // https://developer.chrome.com/apps/manifest/name#short_name
+-      const manifestValue = manifest.short_name.value || manifest.name.value || '';
+-      isShortNameShortEnough = manifestValue && manifestValue.length <= suggestedLength;
+-
+-      if (!isShortNameShortEnough) {
+-        debugString = `${suggestedLength} chars is the suggested maximum homescreen label length`;
+-        debugString += ` (Found: ${manifestValue.length} chars).`;
++      // Only audit the length of a provided short_name; otherwise skip length checking.
++      if (manifest.short_name && manifest.short_name.value) {
++        const shortName = manifest.short_name.value;
++        isShortNameShortEnough = shortName.length <= suggestedLength;
++        if (!isShortNameShortEnough) {
++          debugString = `${suggestedLength} chars is the suggested maximum homescreen label length` +
++                        ` (Found: ${shortName.length} chars).`;
++        }
++      } else {
++        // No short_name provided → let the short-name existence audit handle this.
++        isShortNameShortEnough = true;
+       }
+     }
+ 

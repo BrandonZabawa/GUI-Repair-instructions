@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/languages/ruby.js//STRING"
+        ],
+        "bug_functions": [
+            "src/languages/ruby.js//hljs.END_SAME_AS_BEGIN"
+        ],
+        "explanation": "The heredoc highlighting lives inside the STRING grammar rule in src/languages/ruby.js. Within STRING.variants there\u2019s a block intended to match <<[-~]?'TAG' heredocs, driven by a begin regex and an hljs.END_SAME_AS_BEGIN() call to find the matching TAG. That regex only handles an optional single quote on the opener and never accounts for the exact quoted form or single-quoted delimiters properly, so the closing TAG isn\u2019t matched. Fixing or extending the begin/end patterns inside STRING.variants (and thus adjusting the hljs.END_SAME_AS_BEGIN invocation) will ensure <<-'TAG' heredocs without interpolation are highlighted and terminated correctly.",
+        "bug_scenario": "In Ruby you can start a heredoc without interpolation by writing <<-'TAG'\u2026TAG. In the screenshot and tests, the standard <<-MESSAGE heredoc highlights correctly, but the single-quoted form <<-'MESSAGE' is not recognized as one string\u2014its closing delimiter isn\u2019t detected, so the rest of the file (including the def) is colored as code instead of part of the string."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/ruby.js//const STRING (heredoc variant)",
+            "src/languages/ruby.js//hljs.END_SAME_AS_BEGIN usage"
+        ],
+        "explanation": "In src/languages/ruby.js the STRING constant defines a list of variants for different string types, including a heredoc variant. That variant uses a regex to detect the start marker (<<[-~]?\\'? (\\w+)) and then hljs.END_SAME_AS_BEGIN to find the matching closing identifier. However, it does not correctly handle single-quoted delimiters (<<-'DELIM') \u2013 the initial quote is consumed by the start pattern but not re-applied to the end, so the ending marker isn\u2019t matched. Consequently the highlighter never leaves the string mode. To fix this, the heredoc variant\u2019s begin/end regex (and the END_SAME_AS_BEGIN invocation) inside STRING must be updated to preserve and use the quotation marks when matching the closing delimiter.",
+        "bug_scenario": "The screenshots show that a Ruby heredoc without interpolation (using <<-'DELIM') isn\u2019t being closed correctly by the highlighter. The opening <<-'MESSAGE' is parsed, but the closing MESSAGE marker is not recognized, so the rest of the code (including the def/end) is still highlighted as if it were inside the string."
+    }
+}

@@ -1,0 +1,34 @@
+diff --git a/src/js/components/DataTable/DataTable.js b/src/js/components/DataTable/DataTable.js
+index 6c02fd954..78a77226c 100644
+--- a/src/js/components/DataTable/DataTable.js
++++ b/src/js/components/DataTable/DataTable.js
+@@ -107,7 +107,28 @@ const DataTable = ({
+   const [filters, setFilters] = useState(initializeFilters(columns));
+ 
+   // which column we are sorting on, with direction
+-  const [sort, setSort] = useState(sortProp || {});
++const [sort, setSort] = useState(() => {
++const params = new URLSearchParams(window.location.search);
++return {
++property: params.get("property") || sortProp?.property || "a",
++direction: params.get("direction") || sortProp?.direction || "asc",
++};
++});
++
++useEffect(() => {
++const handlePopState = () => {
++const params = new URLSearchParams(window.location.search);
++setSort({
++property: params.get("property") || "a",
++direction: params.get("direction") || "asc",
++});
++};
++
++window.addEventListener("popstate", handlePopState);
++return () => {
++window.removeEventListener("popstate", handlePopState);
++};
++}, []);
+ 
+   // the data filtered and sorted, if needed
+   // Note: onUpdate mode expects the data to be passed

@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/php.js//export default function(hljs)"
+        ],
+        "explanation": "All of the PHP\u2010specific highlighting rules live inside the anonymous default export in php.js. In that function you\u2019ll find the declaration of `var VARIABLE = { begin: '\\\\$+[a-zA-Z_\u2026]' };` and its subsequent inclusion in the grammar\u2019s `contains` array. Because the VARIABLE rule has no `className` property, highlight.js never assigns the `variable` scope to `$foo`-style identifiers. To fix this bug you should update that `VARIABLE` definition to include `className: 'variable'` (or otherwise map it to the `variable` style) inside the default export function in php.js.",
+        "bug_scenario": "In the provided screenshots you can see that PHP variables (e.g. $response) are not being colored as variables at all. In the expected view they should be marked with the `variable` scope (purple/green), but in the actual rendered snippet they remain plain text. This is because the PHP grammar shipped in highlight.js isn\u2019t tagging standalone variables with a `className: 'variable'` rule."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/php.js//VARIABLE"
+        ],
+        "bug_functions": [],
+        "explanation": "In php.js the rule named VARIABLE defines the regexp that matches PHP variables, but it does not include a className property. Without setting className: 'variable', highlight.js will not apply the variable highlighting style to those tokens. By adding a className (e.g. className: 'variable') to the VARIABLE definition (inside the exported function in src/languages/php.js), those dollar-prefixed identifiers will be recognized and styled correctly.",
+        "bug_scenario": "The screenshots show that PHP variables (for example, \"$response\") are rendered as plain text rather than being styled as variables. In the first image you can see a PHP snippet with \"$response = '1234567890';\" and a header() call, but the dollar-prefixed token and header arguments aren\u2019t given the variable color. In the expected screenshot (with a green background), all variables (including $response) are highlighted in the variable color. Currently, only \"$this\" is picked up (as a keyword), and other variables remain unstyled."
+    }
+}

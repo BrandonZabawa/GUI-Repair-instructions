@@ -1,0 +1,14 @@
+{
+    "1": {
+        "documents": [
+            "architecture.md",
+            "configuration.md",
+            "understanding-results.md",
+            "error-reporting.md",
+            "puppeteer.md",
+            "recipes/custom-gatherer-puppeteer/readme.md"
+        ],
+        "explanation": "To fully reproduce and debug this issue you need:\n\u2022 architecture.md          \u2013 overview of Lighthouse\u2019s pipeline and where trace-processor fits in\n\u2022 configuration.md         \u2013 how Lighthouse configures trace categories (to ensure FrameCommittedInBrowser is captured)\n\u2022 understanding-results.md \u2013 how raw trace events map to audit data (context for FrameCommittedInBrowser and threads)\n\u2022 error-reporting.md       \u2013 details on this specific \"Unable to determine tid\" error and troubleshooting tips\n\u2022 puppeteer.md             \u2013 example of running Lighthouse via Puppeteer/Node (same environment as the user)\n\u2022 recipes/custom-gatherer-puppeteer/readme.md \u2013 concrete code showing how to collect a DevTools timeline trace with Puppeteer so you can inspect the failing trace and iterate on the trace-processor fix",
+        "bug_scenario": "When Lighthouse is run (via Node) against the Treo.sh site with default trace categories, the DevTools timeline emits a FrameCommittedInBrowser event carrying a processPseudoId (instead of processId). The trace-processor\u2019s findMainFramePidTids() function filters for that event, then calls .map(e => e.args.data.processId) (leaving undefined in the pid array).  Because no valid pid is found, the subsequent search for a \"CrRendererMain\" thread entry returns no tid and throws the error \"Unable to determine tid for renderer process.\"  In the paused debugger snapshot you can see:\n  \u2022 frameCommittedEvts[0].args.data.processPseudoId is set, but processId is missing\n  \u2022 mainFramePids ends up [undefined]\n  \u2022 pidToTid map remains empty and triggers the error throw"
+    }
+}

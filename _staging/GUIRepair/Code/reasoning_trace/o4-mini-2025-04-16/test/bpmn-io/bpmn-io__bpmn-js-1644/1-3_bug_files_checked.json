@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js"
+        ],
+        "explanation": "\n1. lib/features/replace/BpmnReplace.js: The replace logic here handles switching between parallel and sequential loop types. Currently it creates a fresh loopCharacteristics element with only the isSequential flag set, thereby wiping out previously configured properties.\n\n2. lib/features/replace/ReplaceOptions.js: This file defines which properties are carried over when elements are replaced. It doesn\u2019t include the full set of multi-instance sub-properties (loopCardinality, inputDataItem, outputDataItem, completionCondition), so they get dropped.\n\n3. lib/features/modeling/cmd/UpdateModdlePropertiesHandler.js: This command handler is used when updating moddle properties from the properties panel. When toggling isSequential it replaces the entire loopCharacteristics rather than merging only the changed property, again leading to loss of existing child properties.\n\nTogether these three files govern how the loopCharacteristics are replaced or updated, and because they rebuild the object instead of preserving all nested properties, the user\u2019s configuration gets lost when switching between parallel and sequential modes.",
+        "bug_scenario": "When you configure a subprocess with parallel multi-instance and set e.g. a loop cardinality (or input/output data items) and then switch the subprocess to sequential multi-instance, all of your existing multi-instance properties (cardinality, data item bindings, completion condition, etc.) vanish. In other words, toggling between parallel and sequential replaces the entire loopCharacteristics on the element instead of just flipping the isSequential flag, so anything you had inside loopCharacteristics is dropped."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/modeling/BpmnFactory.js",
+            "lib/features/modeling/cmd/UpdatePropertiesHandler.js"
+        ],
+        "explanation": "All of these files participate in creating, replacing and updating BPMN elements when you toggle multi-instance settings. \n\n\u2022 BpmnReplace.js: Contains the logic that actually swaps one element definition for another when you switch between parallel and sequential multi-instance. Any mishandling here can drop existing loop characteristics.  \n\n\u2022 ReplaceOptions.js: Defines the specific replacement configurations for parallel vs. sequential multi-instance tasks and subprocesses. If these options do not merge existing loopCardinality or other loop properties, they will be discarded.  \n\n\u2022 BpmnFactory.js: Responsible for creating the underlying BPMN moddle elements (including multiInstanceLoopCharacteristics). If a new characteristics element is instantiated without copying over the old loop cardinality, the value is lost.  \n\n\u2022 UpdatePropertiesHandler.js: When the modeler applies property changes (as happens during a replacement), this handler merges new and existing moddle properties. A bug here can cause loopCardinality or complex loop characteristics to be wiped out instead of merged back onto the new multi-instance element.",
+        "bug_scenario": "When you configure a subprocess for parallel multi-instance (||| marker) and set a loop cardinality, then switch it to sequential multi-instance (| marker), the loop cardinality and other multi-instance properties vanish. In the demo GIF you see a subprocess with three parallel bars and a loop count specified; after toggling the multi-instance type to sequential, the indicator updates but the loop cardinality input resets and all stored values are lost."
+    }
+}

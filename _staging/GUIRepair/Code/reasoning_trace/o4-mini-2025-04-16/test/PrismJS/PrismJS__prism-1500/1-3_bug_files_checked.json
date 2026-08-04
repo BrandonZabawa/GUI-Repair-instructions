@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "components/prism-sql.js",
+            "components/prism-sql.min.js"
+        ],
+        "explanation": "Both prism-sql.js and its minified counterpart define the SQL language\u2019s comment and string patterns. The current comment pattern isn\u2019t marked greedy (and/or is ordered after the string rule in a way that lets the escaped-quote string interferes with comment termination), so the \u201c--\u201d comment swallows the rest of the code block. Fixing the grammar in prism-sql.js (and then rebuilding or updating prism-sql.min.js) will correct SQL comment highlighting in this scenario.",
+        "bug_scenario": "When you feed Prism a SQL snippet that contains a string with escaped single\u2010quotes (two single\u2010quotes to escape) and then immediately follow it with a \u201c-- comment\u201d line, Prism\u2019s SQL grammar doesn\u2019t close the comment at the end of that line. As a result, everything that follows (including the second INSERT) is highlighted as if it were part of the comment."
+    },
+    "2": {
+        "bug_files": [
+            "components/prism-sql.js",
+            "components/prism-sql.min.js"
+        ],
+        "explanation": "All of the SQL\u2010specific token definitions (for strings, comments, keywords, etc.) live in prism-sql.js. The regular expressions in that file determine how Prism recognizes and terminates single-quoted strings and line comments. Because the current comment regex doesn\u2019t properly break out of a string literal after doubled quotes, the comment line isn\u2019t matched correctly. The minified companion prism-sql.min.js also needs updating since it\u2019s just a compressed copy of the same logic.",
+        "bug_scenario": "When you feed Prism a SQL snippet that contains single\u2010quoted string literals with doubled quotes (e.g. ''hello world'') followed by a standalone line comment (-- this is a comment), Prism\u2019s SQL grammar doesn\u2019t correctly exit the string context before matching the comment. The result is that either the comment isn\u2019t recognized properly or the string highlighting bleeds into it. In the screenshot you can see the value strings are closed in the code, but the next line\u2019s \u201c-- this is a comment\u201d is not treated as a true comment (or is partially garbled) because the grammar is still stuck in string mode."
+    }
+}

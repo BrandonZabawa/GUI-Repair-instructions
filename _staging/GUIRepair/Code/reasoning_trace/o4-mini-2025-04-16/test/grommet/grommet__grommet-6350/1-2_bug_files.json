@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "src/components/List/List.js",
+            "src/components/List/index.js",
+            "src/components/List/propTypes.js"
+        ],
+        "explanation": "The heart of the problem is in the List component itself: List.js contains the rendering logic for items, including slots for an action control and for the ordering controls when onOrder is provided. index.js simply re-exports that component, and propTypes.js defines the action and onOrder props. To restore the correct alignment of the action button when onOrder is used, List.js must be updated to include the same layout wrapper (e.g. a Box with justify='between') it uses when only action is present. index.js and propTypes.js may also need minor tweaks (for example to adjust defaultProps or prop definitions), so all three files are implicated.",
+        "bug_scenario": "When you render a Grommet List with both an action button and the onOrder property, the layout breaks: the action button stretches full-width in the row instead of hugging the right edge as it does when onOrder is not present. In the screenshots you can see that without onOrder the \u201cClick Me\u201d button stays right-aligned, but as soon as onOrder is enabled the button fills the row and the order arrows appear all the way on the right, leaving the action out of place."
+    },
+    "2": {
+        "bug_files": [
+            "src/components/List/List.js",
+            "src/components/List/propTypes.js",
+            "src/components/List/index.js",
+            "src/components/List/__tests__/List-test.js",
+            "src/components/List/__tests__/__snapshots__/List-test.js.snap"
+        ],
+        "explanation": "All of the logic that renders a list row\u2014conditionally inserting reorder controls when onOrder is provided, laying out item content, and positioning the action node\u2014lives in List.js (with its prop signatures in propTypes.js and its public export in index.js).  The mis-alignment only occurs when both onOrder and action are passed, so the code that arranges those two elements needs to be fixed in List.js.  Once the markup and styles change, the component snapshot in __tests__/List-test.js (and its .snap file) will also diverge and must be updated to match the corrected layout.",
+        "bug_scenario": "When you supply both an action (for example, a Click Me button) and an onOrder callback to the Grommet List component, the action no longer sits flush at the right edge of each row.  Instead it is rendered between the item content and the reorder controls (the up/down arrows), making the layout look broken.  If you remove onOrder, the action button immediately jumps back to its expected right-aligned position."
+    }
+}

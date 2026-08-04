@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js",
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js"
+        ],
+        "explanation": "The gatherer response-compression.js inspects networkRecords and determines which resources were served without compression. Because it filters by MIME type and/or header detection, it isn\u2019t recognizing gzip on application/json responses. The audit uses-request-compression.js then reads the gatherer\u2019s results to flag uncompressed text resources. Fixing MIME detection or header checks in the gatherer (and, if necessary, adjusting the audit\u2019s expectations in uses-request-compression.js) will resolve the false positive for gzipped JSON responses.",
+        "bug_scenario": "When running Lighthouse\u2019s \u201cEnable text compression\u201d audit against a JSON endpoint (/api/blob) served with gzip (Content-Encoding: gzip), the audit still reports /api/blob as uncompressed and lists large GZIP savings. A curl -I and Chrome\u2019s Network panel both show compression is correctly applied, yet Lighthouse flags it as uncompressed."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/dobetterweb/response-compression.js",
+            "lighthouse-core/audits/byte-efficiency/uses-request-compression.js",
+            "lighthouse-core/gather/computed/network-records.js"
+        ],
+        "explanation": "All of the compression-related logic lives in these three files:  \n\u2022 response-compression.js is the gatherer that inspects networkRecords to detect and report which responses were compressed.  \n\u2022 network-records.js is the computed artifact that normalizes DevTools Protocol resource timing and header fields (including transferSize/resourceSize and content-encoding) into the networkRecords that the gatherer consumes.  \n\u2022 uses-request-compression.js is the audit that takes those records and flags any text-based resources that appear uncompressed.  \nBecause the gatherer/computed artifact isn\u2019t picking up the gzip Content-Encoding header (or transferSize) correctly under this Chrome version, the audit always falls back to marking the resource as uncompressed. Fixing how networkRecords reads the Content-Encoding header or transferSize in network-records.js (and propagating that through response-compression.js into the audit) will resolve the false positives.",
+        "bug_scenario": "When running Lighthouse (Chrome 63 dev) against an Express endpoint that responds with Content-Encoding: gzip, the \u201cEnable text compression\u201d (aka uses-text-compression / uses-response-compression) audit still flags every /api/blob response as uncompressed (~30 KB original, ~23 KB savings) even though curl -I and Chrome\u2019s Network panel confirm gzip is applied."
+    }
+}

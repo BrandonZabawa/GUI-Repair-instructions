@@ -1,0 +1,24 @@
+diff --git a/core/lib/tracehouse/trace-processor.js b/core/lib/tracehouse/trace-processor.js
+index eff4c6f0d..ce7cf87ff 100644
+--- a/core/lib/tracehouse/trace-processor.js
++++ b/core/lib/tracehouse/trace-processor.js
+@@ -495,7 +495,7 @@ class TraceProcessor {
+ 
+     // "Modern" traces with a navigation have a FrameCommittedInBrowser event
+     const mainFramePids = frameCommittedEvts.length
+-      ? frameCommittedEvts.map(e => e?.args?.data?.processId)
++      ? frameCommittedEvts.map(e => e?.args?.data?.processId ?? e?.args?.data?.processPseudoId)
+       // …But old traces and some timespan traces may not. In these situations, we'll assume the
+       // primary process ID remains constant (as there were no navigations).
+       : [mainFrameInfo.startingPid];
+@@ -503,6 +503,10 @@ class TraceProcessor {
+     const pidToTid = new Map();
+ 
+     mainFramePids.forEach(pid => {
++      if (pid === undefined) {
++        // Skip undefined pids, as they can't be mapped to a thread.
++        return;
++      }
+       // While renderer tids are generally predictable, we'll doublecheck it
+       const threadNameEvt = keyEvents.find(e =>
+         e.cat === '__metadata' &&

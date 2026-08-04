@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js",
+            "lib/features/modeling/cmd/UpdatePropertiesHandler.js"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape",
+            "lib/features/modeling/cmd/UpdatePropertiesHandler.js//UpdatePropertiesHandler.prototype.execute"
+        ],
+        "explanation": "The bug is triggered when an event is dropped on a sequence flow, causing a split and insertion of the event. The key logic for this is in DropOnFlowBehavior.js, specifically in the insertShape function, which handles the splitting of the flow and reconnection logic. This is likely where the flow's 'default' attribute association with the gateway is lost. UpdatePropertiesHandler.js (specifically execute) is responsible for updating BPMN properties, including the 'default' attribute, and is thus directly involved in how default flow references are set or removed from gateways. The bug likely stems from the behavior during flow splitting, where the new model state does not preserve the original 'default' attribute reference on the gateway. UnsetDefaultFlowBehavior.js handles unsetting the default when a connection is deleted, but the bug scenario involves splitting, not deletion, so it's less central to this specific issue.",
+        "bug_scenario": "The bug scenario, as shown in the GIF, involves a BPMN diagram with an exclusive gateway that has two outgoing sequence flows, where one is marked as the default. When the user drags a Timer Intermediate Catch Event from the palette and drops it onto the non-default flow, the 'default' attribute is removed from the gateway in the model data (the XML), although the flow is still visually rendered as the default in the diagram. This results in a mismatch between the diagram's state and the underlying model: the gateway loses its default flow reference, breaking the expected process semantics."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//DropOnFlowBehavior"
+        ],
+        "bug_functions": [
+            "lib/features/modeling/behavior/DropOnFlowBehavior.js//insertShape"
+        ],
+        "explanation": "The core of the bug relates to modifying a sequence flow (by dropping an intermediate event on it) and inadvertently causing the exclusive gateway's 'default' attribute to be removed, even though the flow itself is not the default one. The DropOnFlowBehavior class and its insertShape function are responsible for handling the behavior of dropping elements onto sequence flows. Specifically, this logic manipulates connections, possibly removing and recreating them. If the underlying implementation does not carefully preserve the 'default' attribute when a non-default flow is modified, it can result in the gateway losing its 'default' reference. The other provided files (UpdatePropertiesHandler.js, Modeling.js, UnsetDefaultFlowBehavior.js) are related to property updates and explicit handling of default flows during element deletion, but the bug as described is triggered by the drop/move/insert logic in DropOnFlowBehavior, which is directly responsible for this scenario.",
+        "bug_scenario": "The bug scenario, as depicted in the GIF, involves a BPMN diagram with an exclusive gateway that has two outgoing sequence flows, one marked as the default flow. When a Timer Intermediate Catch Event is dropped onto the non-default sequence flow, the 'default' attribute is removed from the gateway's business object (in the XML), even though the default flow still appears visually in the diagram. This leads to a mismatch between the diagram's underlying data (no default flow set) and its rendered appearance (default flow still highlighted), causing potential confusion and errors in further model processing or export."
+    }
+}

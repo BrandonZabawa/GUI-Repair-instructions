@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "packages/react/src/components/DangerButton/DangerButton.js//DangerButton",
+            "packages/react/src/components/Button/Button.js//Button"
+        ],
+        "explanation": "1. packages/react/src/components/DangerButton/DangerButton.js::DangerButton \u2013 this is the top\u2010level component for our danger style button. It currently just forwards kind=\"danger\" to <Button> and never emits an aria-describedBy or visually hidden label. We need to extend this component to include a hidden <span> (e.g. \u201cDanger!\u201d) and set aria-describedBy on the wrapping <Button> so screen readers know the button is dangerous.\n\n2. packages/react/src/components/Button/Button.js::Button \u2013 this core component is responsible for rendering assistive text for icon-only buttons but has no built-in support for danger semantics. We may choose instead to embed the danger assistive text here whenever kind === 'danger', or at a minimum ensure it correctly accepts and renders the aria-describedBy prop passed down by DangerButton. Fixes in Button.js will guarantee that the hidden span is rendered in the right place alongside children and icons, and that aria-describedBy attributes aren\u2019t stripped out.",
+        "bug_scenario": "The screenshots show three variations of the danger button (primary, tertiary, and ghost) styled in red, but when inspected in the DOM (or used by a screen reader), no indication of \u201cdanger\u201d is exposed. In the second image you can see a pattern where a visually\u2010hidden <span id=\"danger-info\">Danger!</span> is paired with aria-describedBy on the button, but our built\u2010in DangerButton component simply renders <Button kind=\"danger\" \u2026> without any hidden assistive text. As a result, screen readers will only announce \u201cButton\u201d or the button label but won\u2019t communicate that this is a destructive/dangerous action."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/DangerButton/DangerButton.js//DangerButton"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/DangerButton/DangerButton.js//DangerButton"
+        ],
+        "explanation": "The only file that needs updating is DangerButton.js. The DangerButton component currently just forwards props into the core Button and does not inject any hidden text or ARIA relationships. To fix the issue, modify the DangerButton function to render the visually hidden <span id=\"danger-info\">Danger!</span> as a child of the Button and add aria-describedby=\"danger-info\" on the Button element it returns. This change will ensure that screen readers announce the danger state along with the button\u2019s label.",
+        "bug_scenario": "The DangerButton variants (primary, tertiary, ghost) are styled with the red \u201cdanger\u201d color, but the rendered <button> element does not include any hidden descriptive text or ARIA attribute to communicate its danger state to screen readers. In the screenshot of the DOM, you can see <button class=\"bx--overflow-menu-options__btn\" aria-describedby=\"danger-info\" tabindex=\"-1\" index=\"4\">\u2026</button> paired with a <span id=\"danger-info\" class=\"bx--visually-hidden\">Danger!</span>, but this markup isn\u2019t produced by the current DangerButton component. As a result, screen-reader users only hear \u201cButton\u201d rather than \u201cDanger! Button.\u201d"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/draw/PathMap.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js",
+            "lib/features/context-pad/ContextPadProvider.js"
+        ],
+        "explanation": "1. lib/draw/PathMap.js defines both DATA_OBJECT_PATH and DATA_OBJECT_COLLECTION_PATH \u2013 without the collection path the marker cannot be drawn. 2. lib/draw/BpmnRenderer.js is responsible for actually calling drawPath for data objects; it must be extended to pick DATA_OBJECT_COLLECTION_PATH when element.businessObject.isCollection is true. 3. lib/draw/BpmnRenderUtil.js already provides an isCollection(e) helper but BpmnRenderer never uses it \u2013 this util should be imported and consulted when drawing DataObjectReferences. 4. lib/features/context-pad/ContextPadProvider.js generates the little \u2018III\u2019 icon in the pad but has no action bound to toggle businessObject.isCollection; it needs a new entry that calls modeling.updateProperties({ isCollection: !bo.isCollection }). These four files together implement both the UI toggle and the rendering of the collection marker.",
+        "bug_scenario": "According to the BPMN 2.0 spec (see Figure 10.53) a Data Object can be marked as a collection by drawing three little parallel lines on its folded corner. In the screenshots you see (1) the spec\u2019s example of a collection Data Object and (2) the Camunda Modeler\u2019s context\u2010pad offering a \u201cIII\u201d toggle button, but clicking it does nothing. The library has the path definition for DATA_OBJECT_COLLECTION_PATH, but it never shows up in the diagram and there is no UI action wired up to flip the underlying businessObject.isCollection flag."
+    }
+}

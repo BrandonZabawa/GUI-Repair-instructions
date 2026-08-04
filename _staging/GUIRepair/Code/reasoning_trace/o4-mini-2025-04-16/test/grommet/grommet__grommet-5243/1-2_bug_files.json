@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/RadioButton/StyledRadioButton.js",
+            "src/js/components/RadioButton/RadioButton.js"
+        ],
+        "explanation": "StyledRadioButton.js contains the CSS-in-JS logic that reads theme.radioButton.check.background.color and applies it to the radio button\u2019s container. Its styling currently does not guard against the checked state, causing the background color to be applied unconditionally. RadioButton.js passes the checked state into StyledRadioButton; any bug in how it wires the checked prop through or how StyledRadioButton interprets that prop can cause the style to be applied to all items. Fixing the conditional rendering or styled logic in these two files will ensure only the checked radio button receives the background color.",
+        "bug_scenario": "When the user applies a theme override for the checked RadioButton background color (via theme.radioButton.check.background.color), all RadioButton circles receive that background color instead of only the one whose checked prop is true. In the provided JSX example and screenshot, after selecting one option, every radio button\u2014including ones that are not selected\u2014renders with the blue background, whereas only the selected radio circle should be colored."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/RadioButton/StyledRadioButton.js",
+            "src/js/components/RadioButton/RadioButton.js"
+        ],
+        "explanation": "StyledRadioButton.js is responsible for rendering the circle and inner dot of each RadioButton. In its styling logic, it picks up theme.radioButton.check.background.color and applies it directly to the outer circle without gating it behind the checked prop. As a result, once the theme value exists, every instance is rendered with that background color, regardless of its checked state. RadioButton.js wires the checked state into its styled component, but because StyledRadioButton.js doesn\u2019t conditionally apply the \u2018check.background\u2019 styles, the checked flag has no effect on the background style. Both files must be updated so that the check.background.color from the theme is only used when the component\u2019s checked prop is true.",
+        "bug_scenario": "The user applies a custom theme via deepMerge to set radioButton.check.background.color to a blue shade. They expect only the currently checked radio button to show that blue background, with all others remaining the default grey. In practice, however, as soon as the theme is merged, every radio button\u2014checked or not\u2014renders with the blue background (see the screenshot where even unchecked buttons are filled blue)."
+    }
+}

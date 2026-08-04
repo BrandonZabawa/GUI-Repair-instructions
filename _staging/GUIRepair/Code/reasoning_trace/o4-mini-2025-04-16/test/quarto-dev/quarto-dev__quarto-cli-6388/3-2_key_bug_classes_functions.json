@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/format/markdown/format-markdown.ts//markdownFormat",
+            "src/format/markdown/format-markdown.ts//gfmFormat",
+            "src/execute/markdown.ts//partitionedMarkdown"
+        ],
+        "explanation": "The function markdownFormat in src/format/markdown/format-markdown.ts (and its wrapper gfmFormat) defines how Quarto emits Markdown for code-cell outputs, including whether to wrap them in divs and how to indent content. Because these formats control the rendering pipeline, they are responsible for the extra spaces being added around list items. The partitionedMarkdown function in src/execute/markdown.ts is where the raw Markdown from Pandoc is first partitioned into cells and outputs; it hands off the content that gets indented later. By adjusting markdownFormat (or gfmFormat) to strip leading spaces on list items or by modifying partitionedMarkdown\u2019s output treatment, we can prevent unintended sub-lists and restore the correct flat bullet formatting.",
+        "bug_scenario": "When rendering a Quarto document (.qmd) that calls pander::pander(list()), the intermediate Markdown that Quarto emits for the cell output wraps the bullet list inside a .cell-output-display div and prepends two spaces to every list item after the first. Because Markdown treats an indented list item as a sub-list, the second and subsequent items appear as nested bullets instead of top-level bullets. In other words, Quarto\u2019s post-processing of the pander output is inserting leading spaces that break the intended flat list formatting."
+    },
+    "2": {
+        "bug_classes": [
+            "src/format/markdown/format-markdown.ts//markdownFormat",
+            "src/format/markdown/format-markdown.ts//gfmFormat",
+            "src/execute/markdown.ts//markdownEngine"
+        ],
+        "bug_functions": [
+            "src/format/markdown/format-markdown.ts//shortcodeUnescapePostprocessor",
+            "src/execute/markdown.ts//partitionedMarkdown",
+            "src/execute/markdown.ts//execute"
+        ],
+        "explanation": "The markdownFormat and gfmFormat functions define how Quarto generates and renders Markdown (including whether it emits cell div wrappers via kOutputDivs). Although markdownFormat sets outputDivs:false, the presence of \u2018::: {.cell}\u2019 wrappers indicates those flags aren\u2019t being honored. partitionedMarkdown is responsible for splitting the .qmd into code and text blocks wrapped in cell containers; execute returns that raw markdown for post-processing. Finally, shortcodeUnescapePostprocessor may run after Pandoc but before final write-out. Together these classes and functions control the injection or removal of cell div wrappers and thus directly affect list indentation, making them the correct touchpoints to fix the nested-list formatting issue.",
+        "bug_scenario": "When a Quarto document with keep-md:true is rendered, code chunks using pander::pander produce an intermediate Markdown that wraps the output list in \u201c::: {.cell}\u201d containers. Those containers break the list hierarchy so that sub\u2013bullet indentation appears (\u20221, then \u25e62, \u25e63, \u25e61 and 2) instead of four top-level bullets. Knitting the same document with knitr::knit produces correctly flattened bullets, confirming the bug lives in Quarto\u2019s Markdown engine or post-processing."
+    }
+}

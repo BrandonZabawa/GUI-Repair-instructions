@@ -1,0 +1,32 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/TimePicker/TimePicker.js//TimePicker",
+            "packages/react/src/components/TimePickerSelect/TimePickerSelect.js//TimePickerSelect",
+            "packages/react/src/components/TimePicker/TimePicker.stories.js",
+            "packages/react/src/components/TimePicker/TimePicker-test.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/TimePicker/TimePicker.js//handleOnClick",
+            "packages/react/src/components/TimePicker/TimePicker.js//handleOnChange",
+            "packages/react/src/components/TimePicker/TimePicker.js//handleOnBlur",
+            "packages/react/src/components/TimePicker/TimePicker.stories.js//Playground",
+            "packages/react/src/components/TimePickerSelect/TimePickerSelect.js//render"
+        ],
+        "explanation": "1. TimePicker (packages/.../TimePicker.js):\n   - Needs a new readOnly prop in its signature and PropTypes.\n   - The <input> must receive readOnly so the user can\u2019t type, and CSS classes must be added (e.g. `${prefix}--text-input--readonly` and `${prefix}--time-picker--readonly`) to match the designs.\n   - Its three event-handler functions (handleOnClick, handleOnChange, handleOnBlur) currently only guard against disabled; they must also no-op when readOnly is true.\n\n2. TimePickerSelect (packages/.../TimePickerSelect.js):\n   - The select dropdown must also reflect readOnly (rather than disabled) by adding a readOnly prop and applying the disabled attribute and a readonly style class when readOnly is true, so users can\u2019t change the AM/PM or timezone.\n\n3. TimePicker stories (TimePicker.stories.js):\n   - The Playground story controls need to expose the new readOnly prop (add it to argTypes and default args).\n   - A new default ReadOnly story should be created to demonstrate copy-and-paste usage of the readOnly variant.\n\n4. TimePicker tests (TimePicker-test.js):\n   - Add RTL tests asserting that when readOnly is passed, the input has the readonly attribute, the appropriate CSS classes are applied, and that events (typing, clicking) are blocked just as they are for disabled.",
+        "bug_scenario": "The bug centers on adding a new \u201cread-only\u201d variation of the TimePicker component per the design screenshots. In read-only mode, the hh:mm input and the two selects (AM/PM and time zone) must be non-editable but maintain the same visual structure, spacing, and typography as the enabled component (rather than the greyed-out disabled style). The first image shows the color, typography, and border specs for the empty read-only state; the second image shows the filled state and exact px/rem spacing between segments."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/TimePicker/TimePicker.js//TimePicker",
+            "packages/react/src/components/TimePickerSelect/TimePickerSelect.js//TimePickerSelect"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/TimePicker/TimePicker.js//handleOnClick",
+            "packages/react/src/components/TimePicker/TimePicker.js//handleOnChange",
+            "packages/react/src/components/TimePicker/TimePicker.js//handleOnBlur"
+        ],
+        "explanation": "The TimePicker component (in TimePicker.js) currently only checks for \"disabled\" in its event handlers (handleOnClick, handleOnChange, handleOnBlur) and applies only \"disabled\" CSS classes. To support a read-only state, these handlers must also guard against readOnly, and the className computations (timePickerInputClasses and timePickerClasses) must be extended to include a new read-only modifier class. Similarly, the TimePickerSelect component (in TimePickerSelect.js) does not accept or style a readOnly prop on its <select> element, so its render logic and classNames need to be updated to support and style read-only select elements alongside disabled ones.",
+        "bug_scenario": "The user wants to add a \"readOnly\" prop to the TimePicker component so that both the input field and the time-zone selects render in a read-only style (per the provided design mockups) and cannot be edited, while still preserving keyboard focus. Currently the component only supports \"disabled\" styling and behavior and does not treat \"readOnly\" specially. The captured screenshots show the expected typography, color, spacing, and spacing tokens for a read-only TimePicker."
+    }
+}

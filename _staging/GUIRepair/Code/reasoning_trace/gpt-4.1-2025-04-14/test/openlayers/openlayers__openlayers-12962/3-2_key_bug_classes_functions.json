@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/TileLayer.js//CanvasTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/TileLayer.js//renderFrame",
+            "src/ol/renderer/canvas/TileLayer.js//drawTileImage"
+        ],
+        "explanation": "The core of the issue is in how tiled layers are rendered and composited in the canvas. The bug report and images indicate that layer opacity stacking is not respected when multiple tile layers have the same opacity, suggesting that the opacity is being applied in a way that causes the topmost layer to appear fully opaque over others. In the skeleton, 'CanvasTileLayerRenderer' is the class responsible for rendering tile layers to canvas. The 'renderFrame' method is directly responsible for drawing the stack of tiles onto the canvas, and 'drawTileImage' is likely responsible for drawing each tile image with the appropriate opacity. Any change in how opacity is managed or composited (such as using globalAlpha or layer stacking order in canvas) would be in these methods. Other files (like src/ol/layer/Tile.js and src/ol/layer/Layer.js) are primarily about layer configuration and instantiation, not the actual rendering logic where the bug arises.",
+        "bug_scenario": "The bug is about a regression in layer opacity stacking after upgrading to OpenLayers 6.8.1 or newer: when several independent tiled ArcGIS REST layers are stacked and all have the same opacity (e.g., 0.5), the topmost layer becomes opaque relative to other OL layers, but basemaps still show through. The issue does not occur in versions 6.7.0 and below, where layer opacities are respected for each layer and stacking preserves transparency. The bug seems to relate to how canvas rendering composites tiles with the same opacity values."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/TileLayer.js//CanvasTileLayerRenderer",
+            "src/ol/renderer/canvas/Layer.js//CanvasLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/TileLayer.js//renderFrame",
+            "src/ol/renderer/canvas/TileLayer.js//drawTileImage",
+            "src/ol/renderer/canvas/Layer.js//useContainer"
+        ],
+        "explanation": "The bug concerns the rendering of stacked tile layers with identical opacity, resulting in unexpected opacity stacking behavior. The key class 'CanvasTileLayerRenderer' in 'src/ol/renderer/canvas/TileLayer.js' is the main renderer for tile layers and is directly responsible for drawing the tiles onto the canvas, including handling their opacity during rendering. The 'renderFrame' and 'drawTileImage' methods in this class are likely responsible for applying the opacity setting to each tile or layer during rendering. If opacity is not correctly composited per layer or per tile, stacking issues can occur as described. Additionally, the 'CanvasLayerRenderer' class in 'src/ol/renderer/canvas/Layer.js' provides the utility 'useContainer', which sets up the canvas element and applies the opacity style. If this method does not distinguish between layers with identical opacity, or reuses containers incorrectly based on opacity, it could cause the described stacking bug. These classes and functions are central to how layers are drawn and composited, making them likely candidates for any required bug fix.",
+        "bug_scenario": "The bug scenario involves a rendering issue with layer opacity stacking in OpenLayers (OL) after version 6.8.1, specifically with tiled ArcGIS REST layers. When multiple layers have the same opacity (e.g., 0.5), the top-most layer becomes fully opaque relative to the other OL layers, obscuring them rather than blending transparently as expected. However, the base map beneath these layers still displays through as intended. The issue appears only in OL 6.8.1 and later, not in earlier versions (as demonstrated by the provided images). The problem likely relates to how opacity is handled during canvas rendering of stacked tile layers, particularly when their opacity values are identical."
+    }
+}

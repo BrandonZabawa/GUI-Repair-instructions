@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/config/constants.js",
+            "lighthouse-cli/cli-flags.js",
+            "lighthouse-cli/run.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/gather/driver.js \u2013 Contains the new waitForFCP logic and the default timeout values (maxWaitForFcp, maxWaitForLoad). The driver now never calls Tracing.end until after FCP, so pages without FCP will hang here for the full 60\u2009s protocol timeout.\n\n\u2022 lighthouse-core/gather/gather-runner.js \u2013 Orchestrates the \u201cdefaultPass\u201d timing segments (including loadPage-defaultPass). This is where the trace is started, the page is navigated and Tracing.end is invoked after FCP, so it directly records the long-running timing that spikes and eventually errors.\n\n\u2022 lighthouse-core/config/constants.js \u2013 Defines the default timeout constants (e.g. DEFAULT_MAX_WAIT_FOR_LOAD and the underlying protocol timeout). These values determine how long driver.waitForFCP and driver.sendCommand('Tracing.end') will wait before throwing.\n\n\u2022 lighthouse-cli/cli-flags.js \u2013 Introduces and parses the maxWaitForFcp and maxWaitForLoad flags. Any adjustments to thresholds for FCP or load time need to be exposed here.\n\n\u2022 lighthouse-cli/run.js \u2013 Reads the CLI flags and passes maxWaitForFcp/maxWaitForLoad through to the core runner and ultimately into the driver. Without modifying this file, changes to the CLI flags would not propagate to driver.waitForFCP or the navigation timeout.",
+        "bug_scenario": "After merging the change that causes the default pass to wait for First-Contentful-Paint (FCP) before ending the trace, any page that never fires FCP (or fires it after the 35\u2009s maxWaitForLoad) will keep Chrome\u2019s tracing session open until the 60\u2009s CRI protocol timeout in Tracing.end. In our production heatmaps the 95th-percentile of the \u201cloadPage-defaultPass\u201d timing jumps from ~20\u2009s up to ~40\u2009s and then consistently times out at 60\u2009s when FCP never occurs."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/config/default-config.js",
+            "lighthouse-cli/cli-flags.js",
+            "lighthouse-cli/run.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/gather/driver.js: This is where `waitForFCP`, `maxWaitForLoad`, and the tracing commands (`Tracing.start`/`Tracing.end`) live. PR #6944 added the FCP wait here, and this is where the 60 s protocol timeout is triggered.  \n\n\u2022 lighthouse-core/gather/gather-runner.js: Orchestrates the \u201cdefaultPass,\u201d passing the `maxWaitForFcp` and `maxWaitForLoad` options down to the driver. Any fix to bail out early or adjust thresholds for FCP must be wired in here.  \n\n\u2022 lighthouse-core/config/default-config.js: Defines the default pass settings (timeouts, thresholds) for all users. We\u2019ll need to adjust or add sensible defaults for maxWaitForFcp/maxWaitForLoad so that FCP hangs don\u2019t lead to a 60 s trace timeout.  \n\n\u2022 lighthouse-cli/cli-flags.js & lighthouse-cli/run.js: These parse and map the CLI flags (`--max-wait-for-fcp`, `--max-wait-for-load`) into the runner options. If we introduce a new cap on FCP waiting, or change the defaults, we must update the flag definitions and the mapping logic in these files so that the end user can override the new behavior correctly.",
+        "bug_scenario": "After merging PR #6944 \u201ccore(driver): waitForFCP when tracing,\u201d Lighthouse\u2019s \u201cdefaultPass\u201d now waits for the First-Contentful-Paint before ending the trace.  On pages that never fire FCP (or take longer than our maxWaitForLoad), tracing doesn\u2019t end until the 60\u2009s protocol timeout.  Our production heatmaps show the 95\u1d57\u02b0 percentile for `lh:gather:loadPage-defaultPass` jumping to 40 s and eventually timing out at 60 s, which correlates exactly with increased render errors in PSI/LR."
+    }
+}

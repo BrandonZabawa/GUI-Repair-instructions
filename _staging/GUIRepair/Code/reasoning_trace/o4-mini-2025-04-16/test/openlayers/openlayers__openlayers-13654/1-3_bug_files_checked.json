@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/source/GeoTIFF.js"
+        ],
+        "explanation": "\n\u2022 src/ol/layer/WebGLTile.js \u2013 defines the WebGLTile layer\u2019s tile management and styling. It doesn\u2019t hook into the reprojection pipeline (ol/reproj) when the source projection differs from the view.\n\n\u2022 src/ol/render/webgl/TileLayer.js \u2013 implements the WebGL renderer for Tile layers. It generates quads in view coordinates but never invokes the reproj/Tile code to triangulate or warp a source tile in a differing CRS.\n\n\u2022 src/ol/reproj/Tile.js \u2013 contains the logic for reprojecting raster tiles (triangulation, vertex buffers, etc.). It\u2019s used by the Canvas renderer but is not wired into the WebGLTile and its WebGL renderer.\n\n\u2022 src/ol/source/GeoTIFF.js \u2013 reads the COG\u2019s native projection metadata and exposes a projection option. The WebGLTile layer currently ignores this projection field, so it cannot trigger reprojection when rendering.\n\nBy updating WebGLTile.js and its WebGL renderer (render/webgl/TileLayer.js) to use the reproj/Tile pipeline (in reproj/Tile.js) and honoring the source.projection set by GeoTIFF.js, WebGLTile layers will automatically reproject COGs in arbitrary CRSs onto the map\u2019s view projection.",
+        "bug_scenario": "The reporter is trying to display a Cloud-Optimized GeoTIFF (COG) stored in a UTM zone (EPSG:32636) on a map whose view projection is EPSG:4326 (or EPSG:3857) by using ol.source.GeoTIFF with an ol.layer.WebGLTile. When they omit the manual \u201cprojection\u201d option on the GeoTIFF source, the COG never appears on the map. OSM tiles load fine and the view can be fitted to the COG\u2019s native extent, but the WebGLTile layer does not perform automatic reprojection the way the built-in Image/GDI layers do. As a result, no tiles render for the EPSG:32636 source in the WebGLTile layer."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/reproj/Tile.js",
+            "src/ol/source/Tile.js"
+        ],
+        "explanation": "\u2022 src/ol/source/GeoTIFF.js defines the GeoTIFF tile source and reads the source projection but never applies reprojection for WebGL-based layers.  \n\u2022 src/ol/layer/WebGLTile.js implements the WebGLTile layer and ignores any projection parameter on its source, so it never requests reprojected tiles.  \n\u2022 src/ol/renderer/webgl/TileLayer.js is responsible for feeding tiles to the WebGL shader pipeline; it only handles tiles already in the view projection and has no reprojection step.  \n\u2022 src/ol/reproj/Tile.js contains the logic for canvas-based reprojection of tiles but is not invoked anywhere in the WebGL tile rendering path.  \n\u2022 src/ol/source/Tile.js orchestrates reprojection when a source projection differs from the view but only in the canvas renderer, so WebGLTile consumers never get reprojected data.",
+        "bug_scenario": "The user is trying to display a Cloud Optimized GeoTIFF (COG) in EPSG:32636 (UTM zone 36) on a map whose view projection is EPSG:4326 (or WebMercator 3857), using a WebGLTile layer. While the OSM base layer renders correctly and fitting the view to the COG extent works, the COG itself never appears. In the HTML repro the user even registers the UTM projection via proj4 and tries passing it via a commented-out \u201cprojection\u201d option to the GeoTIFF source. The root cause is that reprojection of GeoTIFF tiles is supported in the canvas pipeline but is not wired into the WebGLTile layer, so no pixels ever get drawn when the source projection differs from the view projection."
+    }
+}

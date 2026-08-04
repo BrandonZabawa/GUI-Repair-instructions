@@ -1,0 +1,513 @@
+{
+    "1/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "drawFeature(feature, style) {}"
+                ],
+                "REPLACE": [
+                    "drawFeature(feature, style) {",
+                    "// Assuming drawGeometry already handles extent checks correctly",
+                    "this.setStyle(style);",
+                    "this.drawGeometry(feature.getGeometry());",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "",
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;"
+                ],
+                "REPLACE": [
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "const radius = this.getRadius();",
+                    "",
+                    "// Check if the circle's center is within the extent",
+                    "if (extent[0] <= center[0] && extent[2] >= center[0] &&",
+                    "extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "// Check if any corner of the extent is within the circle",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this)) ||",
+                    "this.containsXY(extent[0], extent[1]) ||",
+                    "this.containsXY(extent[2], extent[3]) ||",
+                    "this.containsXY(extent[0], extent[3]) ||",
+                    "this.containsXY(extent[2], extent[1]);",
+                    "}",
+                    "return false;"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* @param {import(\"../Feature.js\").default} feature Feature.",
+                    "* @param {import(\"../style/Style.js\").default} style Style.",
+                    "*/",
+                    "drawFeature(feature, style) {",
+                    "// Some extent comparison logic here suspected of causing issues.",
+                    "}"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* @param {import(\"../Feature.js\").default} feature Feature.",
+                    "* @param {import(\"../style/Style.js\").default} style Style.",
+                    "*/",
+                    "drawFeature(feature, style) {",
+                    "// Removed extent comparison logic if it's redundant and addressed in subsequent drawGeometry call",
+                    "this.setStyle(style);",
+                    "this.drawGeometry(feature.getGeometry());",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* Test if the geometry and the passed extent intersect.",
+                    "* @param {import(\"../extent.js\").Extent} extent Extent.",
+                    "* @return {boolean} `true` if the geometry and the extent intersect.",
+                    "* @api",
+                    "*/",
+                    "intersectsExtent(extent) {"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* Test if the geometry and the passed extent intersect.",
+                    "* If the feature is rendered else where via drawGeometry, this should be verified to handle extents correctly.",
+                    "* @param {import(\"../extent.js\").Extent} extent Extent.",
+                    "* @return {boolean} `true` if the geometry and the extent intersect.",
+                    "* @api",
+                    "*/",
+                    "intersectsExtent(extent) {",
+                    "// Ensuring extent checks correctly allow visibility outside origin-centered scope"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "drawFeature(feature, style) {",
+                    "// Redundant extent check here in drawFeature",
+                    "this.drawGeometry(feature.getGeometry());",
+                    "}"
+                ],
+                "REPLACE": [
+                    "drawFeature(feature, style) {",
+                    "this.drawGeometry(feature.getGeometry());",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (extent[0] <= center[0] && extent[2] >= center[0] && extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "drawFeature(feature, style) {",
+                    "}",
+                    "",
+                    "drawGeometryCollection(geometryCollectionGeometry, feature) {"
+                ],
+                "REPLACE": [
+                    "drawFeature(feature, style) {",
+                    "// Add logic or fix for proper extent comparison",
+                    "let geometry = feature.getGeometry();",
+                    "if (geometry && geometry.isWithinView()) {",
+                    "this.drawGeometry(geometry);",
+                    "}",
+                    "}",
+                    "",
+                    "drawGeometryCollection(geometryCollectionGeometry, feature) {"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "const circleExtent = this.getExtent();",
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "",
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;"
+                ],
+                "REPLACE": [
+                    "const circleExtent = this.getExtent();",
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "",
+                    "// Simplified and corrected extent check",
+                    "if (this.containsXY(extent[0], extent[1]) ||",
+                    "this.containsXY(extent[2], extent[3]) ||",
+                    "this.containsXY(extent[0], extent[3]) ||",
+                    "this.containsXY(extent[2], extent[1])) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));"
+                ],
+                "REPLACE": [
+                    "const withinLongitudeRange = extent[0] <= center[0] && extent[2] >= center[0];",
+                    "const withinLatitudeRange = extent[1] <= center[1] && extent[3] >= center[1];",
+                    "if (withinLongitudeRange || withinLatitudeRange) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, corner => this.intersectsCoordinate(corner));"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* @param {import(\"../Feature.js\").default} feature Feature.",
+                    "* @param {import(\"../style/Style.js\").default} style Style.",
+                    "*/",
+                    "drawFeature(feature, style) {",
+                    "/* Assuming there's some extent check not fully shown here */",
+                    "}"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* @param {import(\"../Feature.js\").default} feature Feature.",
+                    "* @param {import(\"../style/Style.js\").default} style Style.",
+                    "*/",
+                    "drawFeature(feature, style) {",
+                    "this.setStyle(style);",
+                    "this.drawGeometry(feature.getGeometry());",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* Test if the geometry and the passed extent intersect.",
+                    "* @param {import(\"../extent.js\").Extent} extent Extent.",
+                    "* @return {boolean} `true` if the geometry and the extent intersect.",
+                    "* @api",
+                    "*/",
+                    "intersectsExtent(extent) {",
+                    "const circleExtent = this.getExtent();",
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "",
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* Test if the geometry and the passed extent intersect.",
+                    "* @param {import(\"../extent.js\").Extent} extent Extent.",
+                    "* @return {boolean} `true` if the geometry and the extent intersect.",
+                    "* @api",
+                    "*/",
+                    "intersectsExtent(extent) {",
+                    "const circleExtent = this.getExtent();",
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "// Removed redundant checks and simplified condition",
+                    "return extent[0] <= center[0] && extent[2] >= center[0] &&",
+                    "extent[1] <= center[1] && extent[3] >= center[1] ||",
+                    "forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* @param {import(\"../Feature.js\").default} feature Feature.",
+                    "* @param {import(\"../style/Style.js\").default} style Style.",
+                    "*/",
+                    "drawFeature(feature, style) {",
+                    "// Check extent and possibly redundant logic",
+                    "if (this.getFeature() !== feature && this.checkExtent(feature)) {",
+                    "this.setStyle(style);",
+                    "this.drawGeometry(feature.getGeometry());",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* @param {import(\"../Feature.js\").default} feature Feature.",
+                    "* @param {import(\"../style/Style.js\").default} style Style.",
+                    "*/",
+                    "drawFeature(feature, style) {",
+                    "// Simplified logical check as most are done in drawGeometry",
+                    "this.setStyle(style);",
+                    "this.drawGeometry(feature.getGeometry());",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "intersectsExtent(extent) {",
+                    "const circleExtent = this.getExtent();",
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "",
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "intersectsExtent(extent) {",
+                    "const circleExtent = this.getExtent();",
+                    "return intersects(extent, circleExtent) ||",
+                    "this.containsExtent(extent);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "/**",
+                    "* @param {import(\"../Feature.js\").default} feature Feature.",
+                    "* @param {import(\"../style/Style.js\").default} style Style.",
+                    "*/",
+                    "drawFeature(feature, style) {",
+                    "const geometry = feature.getGeometry();",
+                    "if (geometry.getType() !== 'Point' && !this.extent_ && !intersects(this.extent_, geometry.getExtent())) {",
+                    "return;",
+                    "}",
+                    "this.setStyle(style);",
+                    "this.drawGeometry(geometry);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "/**",
+                    "* @param {import(\"../Feature.js\").default} feature Feature.",
+                    "* @param {import(\"../style/Style.js\").default} style Style.",
+                    "*/",
+                    "drawFeature(feature, style) {",
+                    "const geometry = feature.getGeometry();",
+                    "this.setStyle(style);",
+                    "this.drawGeometry(geometry);",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "const circleExtent = this.getExtent();",
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "",
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;"
+                ],
+                "REPLACE": [
+                    "const center = this.getCenter();",
+                    "const circleExtent = this.getExtent();",
+                    "",
+                    "if (intersects(extent, circleExtent) || containsCoordinate(circleExtent, [center[0], center[1]])) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "drawFeature(feature, style) {",
+                    "// Original extent comparison logic here, which needs removal or adjustment"
+                ],
+                "REPLACE": [
+                    "drawFeature(feature, style) {",
+                    "this.setStyle(style);",
+                    "this.drawGeometry(feature.getGeometry());"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;"
+                ],
+                "REPLACE": [
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "const radius = this.getRadius();",
+                    "if (extent[0] <= center[0] + radius && extent[2] >= center[0] - radius) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] + radius && extent[3] >= center[1] - radius) {",
+                    "return true;",
+                    "}",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}",
+                    "return false;"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/render/VectorContext.js": [
+            {
+                "SEARCH": [
+                    "drawFeature(feature, style) {",
+                    "// Presumed extent checking logic",
+                    "if (extentConditionNotMet) {",
+                    "return;",
+                    "}",
+                    "drawGeometry(feature.getGeometry());",
+                    "}"
+                ],
+                "REPLACE": [
+                    "drawFeature(feature, style) {",
+                    "// Correct extent checking logic (pseudocode)",
+                    "if (!this.intersectsExtent(viewportExtent, feature.getGeometry().getExtent())) {",
+                    "return;",
+                    "}",
+                    "drawGeometry(feature.getGeometry());",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/geom/Circle.js": [
+            {
+                "SEARCH": [
+                    "if (intersects(extent, circleExtent)) {",
+                    "const center = this.getCenter();",
+                    "",
+                    "if (extent[0] <= center[0] && extent[2] >= center[0]) {",
+                    "return true;",
+                    "}",
+                    "if (extent[1] <= center[1] && extent[3] >= center[1]) {",
+                    "return true;",
+                    "}",
+                    "",
+                    "return forEachCorner(extent, this.intersectsCoordinate.bind(this));",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const center = this.getCenter();",
+                    "const radius = this.getRadius();",
+                    "",
+                    "// Fix for geodesic calculations",
+                    "return intersectsGeographically(extent, center, radius) || forEachCorner(extent, this.intersectsCoordinate.bind(this));"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/source/GeoTIFF.js",
+            "src/ol/tilegrid/TileGrid.js"
+        ],
+        "explanation": "1. src/ol/layer/WebGLTile.js: This is the main layer class for WebGLTile layers. It manages the source, style, and extent properties. The bug likely involves how the layer's extent is set and passed to the renderer, and whether it is enforced during rendering.\n2. src/ol/renderer/webgl/TileLayer.js: This is the WebGL renderer for tile layers. It is responsible for rendering tiles, managing tile textures, and determining which tiles to draw. If tiles are rendered outside the valid extent, the logic here may not be correctly clipping or masking tiles to the source extent.\n3. src/ol/source/GeoTIFF.js: This is the source class for GeoTIFF/COG data. It provides the extent and tile data. If the source's extent is not correctly reported or used, the layer and renderer may not know where to clip the image.\n4. src/ol/tilegrid/TileGrid.js: This class manages the tiling scheme and the mapping between extents and tile coordinates. If the tile grid does not properly restrict tile generation to the valid extent, extra tiles may be requested and rendered outside the data area.\n\nThese files are key because the bug is about the interaction between the data source's extent, the tile grid, the layer's extent property, and the renderer's logic for drawing tiles. Fixing the bug will likely require ensuring that the renderer only draws tiles within the intersection of the layer and source extents, and that the tile grid and source correctly communicate the valid data area.",
+        "bug_scenario": "The bug scenario involves rendering a GeoTIFF (COG) image as a WebGLTile layer in a web map. The correct extent of the image is shown by a red box, but the rendered image tiles extend outside this box, displaying error images (black or empty areas) outside the original data extent. When zooming in, the area of error narrows but still persists. In QGIS, the same COG displays correctly, with the image clipped to its true extent. The issue is that the WebGLTile layer does not properly restrict rendering to the source's extent, leading to visual artifacts outside the valid data area."
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu.render",
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu.defaultProps"
+        ],
+        "explanation": "The OverflowMenu component defines defaultProps that include tabIndex: 0 and, in its render method, spreads all incoming props onto the trigger <button> and renders any children inside a <span> without filtering out focusable. As a result, tabindex=\"0\" ends up on the button unnecessarily, and focusable=\"false\" is applied to the span (invalid HTML). To fix the issue, remove or make optional the tabIndex default prop on the button and ensure that focusable is only applied to SVG icons (which support it) and not propagated onto spans or other non-SVG elements.",
+        "bug_scenario": "When rendering the OverflowMenu trigger button, the produced DOM contains an unsupported focusable=\"false\" attribute on a <span> element (span does not support focusable) and an explicit tabindex=\"0\" on the <button> (buttons are natively focusable and in the tab order by default)."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//OverflowMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js//render"
+        ],
+        "explanation": "The OverflowMenu class in OverflowMenu.js defines defaultProps for both the icon (setting focusable=false) and the trigger button (setting tabIndex=0), then in its render() method spreads these props onto the <button> and child elements. Because buttons are natively focusable and span elements don\u2019t support focusable, these defaults are unnecessary or invalid. Removing or making configurable the focusable and tabIndex settings in OverflowMenu.defaultProps and the render() method will eliminate the invalid span attribute and duplicate tabindex on the button.",
+        "bug_scenario": "The screenshots show the OverflowMenu trigger rendering a button element with an explicit tabindex=\"0\" even though buttons are focusable by default, and a nested span element receiving focusable=\"false\" (an invalid attribute on span). In the DOM you can see:\n\n<button \u2026 tabindex=\"0\" \u2026>\n  <svg focusable=\"false\" \u2026/>\n  <span class=\"add-job-text\" focusable=\"false\">Add job</span>\n</button>\n\nThese extra attributes are hard-coded in the OverflowMenu component\u2019s defaults and render logic."
+    }
+}

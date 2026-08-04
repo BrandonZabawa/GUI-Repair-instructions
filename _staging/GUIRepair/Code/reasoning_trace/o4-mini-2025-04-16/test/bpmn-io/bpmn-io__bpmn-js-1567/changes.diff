@@ -1,0 +1,50 @@
+diff --git a/lib/features/drilldown/DrilldownBreadcrumbs.js b/lib/features/drilldown/DrilldownBreadcrumbs.js
+index 20447a86..b3a897b1 100644
+--- a/lib/features/drilldown/DrilldownBreadcrumbs.js
++++ b/lib/features/drilldown/DrilldownBreadcrumbs.js
+@@ -29,7 +29,12 @@ export default function DrilldownBreadcrumbs(eventBus, elementRegistry, overlays
+       var link = domify('<li><span class="bjs-crumb"><a title="' + title + '">' + title + '</a></span></li>');
+ 
+       link.addEventListener('click', function() {
+-        canvas.setRootElement(canvas.findRoot(planeId(el)) || canvas.findRoot(el.id));
++        // try to find the correct root by plane-id or by the element id,
++        // otherwise fall back to the registered element itself
++        var newRoot = canvas.findRoot(planeId(el))
++                   || canvas.findRoot(el.id)
++                   || elementRegistry.get(el.id);
++        canvas.setRootElement(newRoot);
+       });
+ 
+       return link;
+@@ -68,4 +73,4 @@ function getParentChain(child) {
+   }
+ 
+   return parents.reverse();
+-}
+\ No newline at end of file
++}
+diff --git a/lib/features/drilldown/DrilldownOverlayBehavior.js b/lib/features/drilldown/DrilldownOverlayBehavior.js
+index 7d6b690a..c157c43c 100644
+--- a/lib/features/drilldown/DrilldownOverlayBehavior.js
++++ b/lib/features/drilldown/DrilldownOverlayBehavior.js
+@@ -150,7 +150,12 @@ DrilldownOverlayBehavior.prototype.addOverlay = function(element) {
+   var button = domify('<button class="bjs-drilldown">' + ARROW_DOWN_SVG + '</button>');
+ 
+   button.addEventListener('click', function() {
+-    canvas.setRootElement(canvas.findRoot(planeId(element)));
++    // first try the plane-element lookup, then the plain id,
++    // finally fall back to the element itself
++    var newRoot = canvas.findRoot(planeId(element))
++               || canvas.findRoot(element.id)
++               || element;
++    canvas.setRootElement(newRoot);
+   });
+ 
+   overlays.add(element, 'drilldown', {
+@@ -178,4 +183,4 @@ DrilldownOverlayBehavior.$inject = [
+   'eventBus',
+   'elementRegistry',
+   'overlays'
+-];
+\ No newline at end of file
++];

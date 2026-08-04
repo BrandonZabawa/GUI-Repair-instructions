@@ -1,0 +1,56 @@
+diff --git a/lighthouse-core/audits/byte-efficiency/efficient-animated-content.js b/lighthouse-core/audits/byte-efficiency/efficient-animated-content.js
+index 18e9d736f..319769a82 100644
+--- a/lighthouse-core/audits/byte-efficiency/efficient-animated-content.js
++++ b/lighthouse-core/audits/byte-efficiency/efficient-animated-content.js
+@@ -31,6 +31,51 @@ class EfficientAnimatedContent extends ByteEfficiencyAudit {
+     };
+   }
+ 
++  /**
++   * Override to score based on byte savings, not TTI.
++   * @param {LH.Audit.ByteEfficiencyProduct} result
++   * @param {import('../../lib/dependency-graph/node.js')} graph
++   * @param {import('../../lib/dependency-graph/simulator/simulator.js')} simulator
++   * @return {LH.Audit.Product}
++   */
++  static createAuditProduct(result, graph, simulator) {
++    const debugString = result.debugString;
++    const results = result.results.sort((itemA, itemB) => itemB.wastedBytes - itemA.wastedBytes);
++
++    const wastedBytes = results.reduce((sum, item) => sum + item.wastedBytes, 0);
++    const wastedKb = Math.round(wastedBytes / 1024);
++
++    // Score: 1 if no wastedBytes, else 0. (Or use a more nuanced scale if desired)
++    const score = wastedBytes === 0 ? 1 : 0;
++
++    let displayValue = result.displayValue || '';
++    if (typeof result.displayValue === 'undefined' && wastedBytes) {
++      displayValue = `Potential savings of ${wastedBytes} bytes`;
++    }
++
++    const summary = {
++      wastedBytes,
++    };
++
++    // @ts-ignore - TODO(bckenny): unify details types. items shouldn't be an indexed type.
++    const details = ByteEfficiencyAudit.makeTableDetails(result.headings, results, summary);
++
++    return {
++      debugString,
++      displayValue,
++      rawValue: wastedBytes,
++      score,
++      extendedInfo: {
++        value: {
++          wastedKb,
++          wastedBytes,
++          results,
++        },
++      },
++      details,
++    };
++  }
++
+   /**
+    * Calculate rough savings percentage based on 1000 real gifs transcoded to video
+    * @param {number} bytes

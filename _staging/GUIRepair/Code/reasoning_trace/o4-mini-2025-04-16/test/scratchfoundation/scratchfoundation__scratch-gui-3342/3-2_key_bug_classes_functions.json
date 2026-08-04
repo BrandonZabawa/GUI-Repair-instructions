@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/containers/blocks.jsx//Blocks",
+            "src/components/blocks/blocks.jsx//BlocksComponent"
+        ],
+        "bug_functions": [
+            "src/containers/blocks.jsx//render",
+            "src/containers/blocks.jsx//componentDidMount",
+            "src/containers/blocks.jsx//onTargetsUpdate",
+            "src/containers/blocks.jsx//onWorkspaceMetricsChange"
+        ],
+        "explanation": "The Blocks container (src/containers/blocks.jsx, class Blocks) is responsible for mounting and rendering the Blockly workspace and responding to changes in the editing target and workspace metrics. The render method is where the workspace DOM is generated, and it needs to be extended to include the watermark overlay. The componentDidMount hook is where initial workspace setup happens, and may need to register a resize or render pass for the watermark. The onTargetsUpdate method fires whenever the user selects a new sprite or backdrop, so it must trigger updating the watermark image. The onWorkspaceMetricsChange method fires on zoom or resize, which is required to properly position the watermark relative to the zoom controls. Finally, BlocksComponent (src/components/blocks/blocks.jsx) is the React wrapper for the workspace container (a Box), and is the appropriate place to insert the watermark DOM node and apply CSS (size, position, opacity, RTL). These classes and methods collectively control when and where the watermark should appear, making them the key places to implement the fix.",
+        "bug_scenario": "In the Blocks workspace (the left\u2010hand code editing area), the selected sprite or backdrop watermark (a semi\u2010transparent thumbnail) is missing. In previous versions (2.0) a watermark of the currently selected target was rendered behind the blocks to remind the user which sprite/backdrop they were editing. The new workspace no longer shows this watermark. Based on the provided mocks and specs, the watermark should be a 48\u00d748px icon, positioned at the top\u2010right corner of the workspace, aligned to the zoom controls, with ~35% opacity and correct RTL handling."
+    },
+    "2": {
+        "bug_classes": [
+            "src/components/blocks/blocks.jsx//BlocksComponent",
+            "src/containers/blocks.jsx//Blocks"
+        ],
+        "bug_functions": [
+            "src/components/blocks/blocks.jsx//BlocksComponent (the functional component\u2019s returned JSX)",
+            "src/containers/blocks.jsx//Blocks.render",
+            "src/containers/blocks.jsx//Blocks.onTargetsUpdate",
+            "src/containers/blocks.jsx//Blocks.componentDidUpdate"
+        ],
+        "explanation": "To show a watermark you need to inject the watermark element into the Block workspace\u2019s DOM. The wrapper component (BlocksComponent in src/components/blocks/blocks.jsx) is responsible for rendering the Box that contains Blockly, so that\u2019s where you\u2019d add the watermark markup and positioning markup/CSS. In the container (src/containers/blocks.jsx: Blocks class) you need to listen for target changes (onTargetsUpdate) or lifecycle updates (componentDidUpdate/componentDidMount) to update the watermark source (sprite or backdrop thumbnail), and then include it in the render() output alongside the workspace. Those methods drive when to change the watermark image, and render() is where it actually gets inserted into the workspace layout.",
+        "bug_scenario": "When you select a sprite or the stage in the Scratch GUI, there is no faint watermark of that target showing behind the blocks workspace. In the mocks you can see a 48\u00d748-px, 35% opacity silhouette of the selected sprite (or backdrop) sitting just to the right of the block categories (aligned with the zoom controls). In the current build nothing is rendered there at all."
+    }
+}

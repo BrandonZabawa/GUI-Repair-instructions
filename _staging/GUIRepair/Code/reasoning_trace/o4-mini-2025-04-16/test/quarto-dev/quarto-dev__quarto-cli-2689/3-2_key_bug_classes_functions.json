@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/command/render/crossref.ts//crossrefFilterActive",
+            "src/command/render/crossref.ts//crossrefFilterParams",
+            "src/command/render/pandoc.ts//runPandoc"
+        ],
+        "explanation": "\u2022 crossrefFilterActive (crossref.ts): this predicate is intended to turn off the crossref Lua filter when metadata.format.crossref is false, but appears not to be honored downstream. Fixing its logic or ensuring it\u2019s consulted is critical.  \n\u2022 crossrefFilterParams (crossref.ts): even when crossrefs are disabled, parameter metadata for the crossref filter may still be injected into Pandoc. This function should no-op when crossref is false.  \n\u2022 runPandoc (pandoc.ts): this is where filters (including the crossref filter) and their parameters are actually added to the Pandoc invocation. It must call crossrefFilterActive and skip adding the filter (and filterParamsJson) when crossref is disabled. Ensuring these checks are wired up here will prevent numbered captions from appearing.",
+        "bug_scenario": "When a Quarto document sets format: html \u2192 crossref: false, the Pandoc crossref filter is not being disabled and the generated HTML still includes numbered figure/table captions (e.g. \u201cFig. 1\u201d), despite tests expecting no numbering."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/command/render/crossref.ts//crossrefFilterActive",
+            "src/command/render/crossref.ts//crossrefFilterParams",
+            "src/command/render/pandoc.ts//runPandoc"
+        ],
+        "explanation": "All of the cross-reference behavior for HTML is driven by the crossref filter and the invocation of that filter in the Pandoc pipeline.\n\n\u2022 crossrefFilterActive(options: PandocOptions) \u2013 decides whether the crossref Lua filter should be applied based on options.format.metadata.crossref. If this returns true when the user has set crossref: false (or is never called correctly), the filter will still run and number figures.\n\n\u2022 crossrefFilterParams(options: PandocOptions, defaults?: FormatPandoc) \u2013 builds the metadata parameters passed to the crossref filter. If crossref is disabled, this function should avoid emitting any numbering parameters, but may currently be returning defaults that cause numbering to appear.\n\n\u2022 runPandoc(options: PandocOptions, sysFilters: string[]) \u2013 in pandoc.ts this function constructs the Pandoc invocation and unconditionally injects or fails to remove the crossref filter (and associated metadata args). It contains logic around \"only add post-processors or remove metadata when crossref is disabled,\" but that logic appears not to detect crossref: false correctly, so the crossref filter still runs.\n\nTo fix the bug, crossrefFilterActive must properly detect and disable the filter when metadata.crossref is false, crossrefFilterParams must omit all numbering parameters in that case, and runPandoc must respect crossrefFilterActive to remove or skip adding the crossref filter and its metadata parameters altogether.",
+        "bug_scenario": "The user has a Quarto document with front-matter specifying format: html: crossref: false but the generated HTML still shows numbered cross-references (e.g. \u201cFig. 1\u201d). The screenshot shows the red underline under \u201ccrossref: false,\u201d indicating that disabling cross-references in HTML isn\u2019t being honored, so figures and tables remain numbered despite setting crossref to false."
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//sendCommand",
+            "lighthouse-core/gather/driver.js//_innerSendCommand",
+            "lighthouse-core/gather/driver.js//gotoURL",
+            "lighthouse-core/gather/driver.js//beginDevtoolsLog",
+            "lighthouse-core/gather/driver.js//endDevtoolsLog",
+            "lighthouse-core/gather/driver.js//getRequestContent",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.run",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.loadPage",
+            "lighthouse-core/gather/gather-runner.js//GatherRunner.afterPass"
+        ],
+        "explanation": "The key issue is that Lighthouse doesn't perform target discovery and communication for OOPIFs (Out-of-Process Iframes), as evidenced by the absence of logic similar to what Chrome DevTools does with Target.sendMessageToTarget and Target.receivedMessageFromTarget. The main class responsible for interacting with the protocol is Driver (in lighthouse-core/gather/driver.js), which provides methods for sending commands, evaluating scripts, and handling network events. Functions like sendCommand, _innerSendCommand, gotoURL, beginDevtoolsLog, endDevtoolsLog, and getRequestContent are all involved in protocol communication and network request handling. However, none appear to support multi-target (OOPIF) awareness. In lighthouse-core/gather/gather-runner.js, GatherRunner.run, loadPage, and afterPass orchestrate the page load and artifact gathering, but similarly do not account for OOPIF target discovery and communication. To fix the bug, changes are needed in these classes and functions to implement target discovery and to forward protocol commands/events to OOPIFs, as DevTools does.",
+        "bug_scenario": "The bug scenario involves Lighthouse not handling OOPIFs (Out-of-Process Iframes). The provided browser DevTools log image shows that Chrome DevTools uses the Target domain to send messages (such as Network.enable) to discovered targets associated with iframes. This allows DevTools to analyze network requests from OOPIFs, but Lighthouse appears not to do this, suggesting it can only see and analyze requests from the main frame, missing OOPIFs' requests."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/driver.js//Driver"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/driver.js//sendCommand",
+            "lighthouse-core/gather/driver.js//evaluateAsync",
+            "lighthouse-core/gather/driver.js//_evaluateInContext",
+            "lighthouse-core/gather/driver.js//gotoURL",
+            "lighthouse-core/gather/driver.js//beginDevtoolsLog",
+            "lighthouse-core/gather/driver.js//beginTrace",
+            "lighthouse-core/gather/driver.js//getRequestContent"
+        ],
+        "explanation": "The bug is about missing handling of OOPIFs\u2014subframes that are rendered in a different process and require special protocol handling via the Target domain. The compressed skeleton of 'lighthouse-core/gather/driver.js' shows that the Driver class is responsible for all protocol interactions, navigation, and tracing. However, there is no indication in the provided skeleton that OOPIF target discovery (i.e., handling Target.targetCreated, Target.attachedToTarget, and sending commands via Target.sendMessageToTarget) is implemented. Functions like sendCommand, evaluateAsync, _evaluateInContext, gotoURL, beginDevtoolsLog, beginTrace, and getRequestContent are key because they encapsulate how protocol commands are sent, how navigation occurs, and how network/trace data is collected. To support OOPIFs, these functions (and the Driver class in general) would need to be enhanced to discover and attach to OOPIF targets and relay relevant protocol commands and event listeners to them, similar to what is shown in the DevTools log screenshot.",
+        "bug_scenario": "The bug scenario is that Lighthouse does not handle Out-Of-Process IFrames (OOPIFs). The user observed that Chrome DevTools uses the DevTools Protocol's Target domain to discover and interact with OOPIFs, specifically by sending commands such as Network.enable to these targets via Target.sendMessageToTarget and receiving their data via Target.receivedMessageFromTarget. The screenshot shows a log of these interactions. The question/issue is that Lighthouse's gather code does not do similar target discovery, which may mean Lighthouse only sees and analyzes requests from the main frame and not from OOPIFs."
+    }
+}

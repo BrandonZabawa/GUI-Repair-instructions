@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer",
+            "src/ol/renderer/webgl/Layer.js//WebGLLayerRenderer",
+            "src/ol/webgl/Helper.js//WebGLHelper",
+            "src/ol/webgl.js//(module)"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/Layer.js//prepareFrame",
+            "src/ol/webgl/Helper.js//constructor",
+            "src/ol/webgl.js//getContext"
+        ],
+        "explanation": "All WebGL TileLayers inherit from WebGLLayerRenderer, whose prepareFrame method unconditionally creates a new WebGLHelper for each layer. WebGLHelper\u2019s constructor in turn calls getContext (from src/ol/webgl.js), instantiating a fresh WebGLRenderingContext every time. These three locations are the root of per-layer context allocation: prepareFrame (allocates a helper), WebGLHelper.constructor (initializes the context), and getContext (actually requests it from the browser). To reduce the number of contexts, the code here needs to be refactored so that multiple TileLayer renderers share a single WebGLHelper/GL context rather than each constructing their own.",
+        "bug_scenario": "When an application adds multiple WebGL-backed TileLayers (for example each rendering a separate GeoTIFF), each layer\u2019s renderer allocates its own WebGL context. Browsers cap the total number of concurrent contexts (commonly around 16), so creating more layers than that causes older contexts to be recycled and leads to broken or missing layers on the map."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/Layer.js//WebGLLayerRenderer",
+            "src/ol/renderer/webgl/TileLayer.js//WebGLTileLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/Layer.js//prepareFrame",
+            "src/ol/renderer/webgl/Layer.js//constructor",
+            "src/ol/renderer/webgl/TileLayer.js//constructor"
+        ],
+        "explanation": "Each WebGLTileLayerRenderer (in TileLayer.js) inherits from WebGLLayerRenderer (in Layer.js). In WebGLLayerRenderer.constructor and its prepareFrame method, a new WebGLHelper (and thus a new canvas and WebGLRenderingContext) is instantiated per layer. This per-layer creation directly causes each TileLayer to consume its own WebGL context. To allow sharing a single context across all WebGL TileLayers in one map, these methods and constructors must be refactored so that a shared WebGLHelper (and context) instance is reused rather than created anew for each layer.",
+        "bug_scenario": "An application using multiple WebGL TileLayers (e.g. rendering several GeoTIFF layers) runs into the browser\u2019s hard limit on WebGL contexts (\u224816). When the 17th TileLayer is created, the browser recycles or loses older contexts, causing existing maps to break or mis-render. The screenshots show many separate WebGL canvas elements (one per TileLayer) and errors when contexts are lost."
+    }
+}

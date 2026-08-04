@@ -1,0 +1,35 @@
+diff --git a/src/ol/renderer/webgl/Layer.js b/src/ol/renderer/webgl/Layer.js
+index d3de5d205f..b56aa773f7 100644
+--- a/src/ol/renderer/webgl/Layer.js
++++ b/src/ol/renderer/webgl/Layer.js
+@@ -97,18 +97,25 @@ class WebGLLayerRenderer extends LayerRenderer {
+    * Determine whether renderFrame should be called.
+    * @param {import("../../PluggableMap.js").FrameState} frameState Frame state.
+    * @return {boolean} Layer is ready to be rendered.
+-   */
+   prepareFrame(frameState) {
++    // Share one WebGLHelper—and thus one WebGL context—per map
++    const map = frameState.map;
+     if (!this.helper && !!this.getLayer().getSource()) {
+-      this.helper = new WebGLHelper({
+-        postProcesses: this.postProcesses_,
+-        uniforms: this.uniforms_,
+-      });
++      if (!map.__sharedWebGLHelper) {
++        map.__sharedWebGLHelper = new WebGLHelper({
++          postProcesses: this.postProcesses_,
++          uniforms: this.uniforms_,
++        });
++      }
++      this.helper = map.__sharedWebGLHelper;
+ 
++      // If the layer declares a className, apply it to the shared canvas
+       const className = this.getLayer().getClassName();
+       if (className) {
+         this.helper.getCanvas().className = className;
+       }
++      this.afterHelperCreated();
++    }
+ 
+       this.afterHelperCreated();
+     }

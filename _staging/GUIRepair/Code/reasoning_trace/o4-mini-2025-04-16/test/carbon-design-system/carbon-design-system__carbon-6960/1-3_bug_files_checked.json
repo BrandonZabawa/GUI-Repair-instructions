@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/CodeSnippet/CodeSnippet.js",
+            "packages/react/src/components/CodeSnippet/CodeSnippet-story.js",
+            "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet-test.js",
+            "packages/components/src/components/code-snippet/code-snippet.js"
+        ],
+        "explanation": "\u2022 CodeSnippet.js (React wrapper): this is where the wrapText prop must be accepted and applied to the rendered <textarea> or <pre> element (for multi-line vs inline) by adding the appropriate class or HTML attribute (for example wrap=\"soft\" or a CSS class that sets white-space: pre-wrap). Without touching this file the prop is never applied.  \n\u2022 CodeSnippet-story.js: the Storybook story needs to demonstrate and document the new wrapText behavior so developers can preview and test it interactively.  \n\u2022 CodeSnippet-test.js: unit tests for the CodeSnippet component must cover wrapText (e.g., verify that the proper class is added when the prop is provided). Otherwise CI will not catch regressions.  \n\u2022 CodeSnippet.mdx: the MDX documentation must include wrapText in the API table and usage examples so authors know how to enable wrapping.  \n\u2022 code-snippet.js (vanilla): the underlying Carbon vanilla implementation for multi-line snippets needs to handle the CSS class or textarea wrap attribute so that the style cascades correctly to the React wrapper. If the vanilla script enforces nowrap or unconditionally sets white-space: pre, it needs to be updated to allow wrapping when the new modifier is present.",
+        "bug_scenario": "When a very long single\u2010line string (for example a CRN) is placed inside a multi\u2010line <CodeSnippet> with the new wrapText prop, it still renders on one line and forces a horizontal scroll instead of wrapping at the container width. The screenshot shows wrapText was passed in, but the text remains unbroken. We need to make the code snippet wrap long lines into multiple lines."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/CodeSnippet/CodeSnippet.js",
+            "packages/components/src/components/code-snippet/code-snippet.js",
+            "packages/components/src/components/code-snippet/code-snippet.config.js"
+        ],
+        "explanation": "\u2022 CodeSnippet.js (React wrapper): this file reads the wrapText prop and must pass a matching attribute or class to the underlying web component. Since wrapText currently has no effect, this is where the prop\u2010to\u2010DOM mapping must be implemented or adjusted.\n\u2022 code-snippet.js (vanilla web component): this file implements the core CodeSnippet behavior. To support wrapping, it needs to observe a \"wrap\" attribute (or similar) and toggle the correct CSS class or inline style to allow text to break and wrap.\n\u2022 code-snippet.config.js: this defines the CSS class names and configuration for the code-snippet component. To enable wrapping, a new modifier class (e.g. `bx--snippet--wrap`) should be added here so that the SCSS/CSS can apply `word-break` or `white-space: pre-wrap` as needed when the wrap attribute is present.",
+        "bug_scenario": "When rendering a long, single\u2010line string (e.g. a CRN) inside a <CodeSnippet type=\"multi\"/>, the content does not wrap. Instead it overflows horizontally, requiring a scroll bar. Even when \"wrapText\" is provided on the React component, the underlying web component and styles don\u2019t break the line. The user wants long text to wrap into multiple lines (with optional max\u2010width or column count feedback)."
+    }
+}

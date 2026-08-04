@@ -1,0 +1,34 @@
+diff --git a/lib/features/drilldown/DrilldownOverlayBehavior.js b/lib/features/drilldown/DrilldownOverlayBehavior.js
+index 1e845483..1b7765a1 100644
+--- a/lib/features/drilldown/DrilldownOverlayBehavior.js
++++ b/lib/features/drilldown/DrilldownOverlayBehavior.js
+@@ -88,6 +88,22 @@ export default function DrilldownOverlayBehavior(
+     });
+   });
+ 
++  // Add overlays when the root element (diagram/plane) is changed
++  eventBus.on('root.set', function(event) {
++    var rootElement = event.element;
++    // Remove all existing drilldown overlays
++    elementRegistry.forEach(function(e) {
++      self.removeOverlay(e);
++    });
++    // Add overlays for all elements in the new root that can drill down
++    elementRegistry.filter(function(e) {
++      // Only consider elements in the current root
++      return e.parent === rootElement && self.canDrillDown(e);
++    }).forEach(function(el) {
++      self.addOverlay(el);
++    });
++  });
++
+ }
+ 
+ inherits(DrilldownOverlayBehavior, CommandInterceptor);
+@@ -178,4 +194,4 @@ DrilldownOverlayBehavior.$inject = [
+   'eventBus',
+   'elementRegistry',
+   'overlays'
+-];
+\ No newline at end of file
++];

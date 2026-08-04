@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/style/Image.js//ImageStyle"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//Icon.clone",
+            "src/ol/style/Icon.js//Icon.setScale",
+            "src/ol/style/Image.js//ImageStyle.clone",
+            "src/ol/style/Image.js//ImageStyle.setScale"
+        ],
+        "explanation": "The root of this bug lies in the clone and scale-setting logic. ImageStyle.clone() will copy the scale property as an array if scaleArray_ is used, but Icon.override of clone() does not preserve the original numeric scale type. Furthermore, both ImageStyle.setScale() and Icon.setScale() convert any numeric scale into an array form (via toSize()), so after cloning the subclass ends up with an array even if the original was a plain number. To fix this, Icon.clone() must explicitly pass through the original scale_ value when constructing the new Icon (rather than always using the array form), and the override of setScale in Icon should maintain the primitive number type when appropriate.",
+        "bug_scenario": "When you set an Icon\u2019s scale to a single number on the original and then call its clone() method, the cloned Icon ends up with scale as a two-element array instead of preserving the original number. This mismatch in datatype (number \u2192 array) is visible in the cloned style and violates the documented behavior that width/height and scale cannot be used together."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/style/Icon.js//Icon",
+            "src/ol/style/Image.js//ImageStyle"
+        ],
+        "bug_functions": [
+            "src/ol/style/Icon.js//Icon.clone",
+            "src/ol/style/Icon.js//Icon.setScale",
+            "src/ol/style/Image.js//ImageStyle.clone"
+        ],
+        "explanation": "The Icon class overrides setScale and clone but does not preserve the original data type for scale. Its clone() method likely calls the constructor with the internal scaleArray_ (an Array<number> produced by toSize) instead of the raw numeric scale_. Meanwhile, the base ImageStyle.clone always normalizes scale into either a sliced array or passes the number, but Icon.clone doesn\u2019t follow the same pattern. As a result, when you call Icon.setScale( number ), the internal scaleArray_ becomes [number, number], and Icon.clone ends up passing that array into the new Icon\u2019s options.scale, so the clone\u2019s scale_ is set to an array rather than the original number. Fixing this requires adjusting Icon.clone (and/or Icon.setScale) to preserve the primitive numeric scale when no explicit width/height is provided.",
+        "bug_scenario": "When you create an Icon style without explicit width/height, call setScale( number ), then clone the icon style, the cloned icon\u2019s scale property becomes an array ([n,n]) rather than the original number. In other words, you start with a numeric scale (e.g. 2), but after cloning you end up with scale: [2,2], and the type has changed."
+    }
+}

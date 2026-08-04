@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/renderer/canvas/Composite.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/renderer/webgl/VectorTileLayer.js",
+            "src/ol/render/webgl/VectorStyleRenderer.js"
+        ],
+        "explanation": "Group.js defines the opacity property for layer groups, but neither the canvas nor WebGL vector\u2010tile renderers incorporate the group\u2019s combined opacity. Composite.js applies parent opacity when rendering ordinary layers, but VectorTileLayer.js (canvas) and its WebGL counterpart ignore the parent (group) opacity and use only layer.getOpacity(). In WebGL, the VectorStyleRenderer builds shaders using only the layer\u2019s own opacity uniform, never including state.opacity from the group. As a result vector\u2010tile labels always draw at full opacity unless you manually set the layer\u2019s opacity.",
+        "bug_scenario": "When the opacity of a layer group is changed via setOpacity(), any vector\u2010tile labels inside that group remain at full opacity. Turning down the group opacity fades ordinary vector labels correctly but has no effect on labels rendered by the vector\u2010tile layer. Only by changing the opacity on the vector\u2010tile layer itself do its labels fade."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Group.js",
+            "src/ol/renderer/canvas/ExecutorGroup.js",
+            "src/ol/renderer/canvas/Executor.js",
+            "src/ol/renderer/canvas/VectorTileLayer.js",
+            "src/ol/render/canvas/TextBuilder.js",
+            "src/ol/renderer/webgl/VectorTileLayer.js"
+        ],
+        "explanation": "\u2022 src/ol/layer/Group.js defines the group layer and its opacity property, which should cascade to children but currently isn\u2019t affecting vector-tile text.  \n\u2022 src/ol/renderer/canvas/ExecutorGroup.js and src/ol/renderer/canvas/Executor.js are responsible for batching and executing draw instructions with a globalAlpha. They apply group opacity for normal fill/text but vector-tile text instructions bypass or misinherit that alpha.  \n\u2022 src/ol/renderer/canvas/VectorTileLayer.js builds per-tile executors for vector-tile layers; its executor setup must incorporate the parent group\u2019s opacity but currently does not.  \n\u2022 src/ol/render/canvas/TextBuilder.js generates the low-level canvas text drawing calls for labels. It sets up fillText/strokeText with an explicit style but doesn\u2019t factor in a composite globalAlpha coming from a parent group.  \n\u2022 src/ol/renderer/webgl/VectorTileLayer.js handles the WebGL rendering path for vector-tile layers (including labels). It uploads opacity uniforms for layer-level and view-level transforms but doesn\u2019t incorporate the group\u2019s opacity uniform.  \nAll together, these files form the pipeline where group opacity should be multiplied into each child\u2019s draw routines but is currently only applied for non-tile vector labels.",
+        "bug_scenario": "The user has created a map with a top-level layer group that contains both a standard vector layer and a vector-tile layer with text labels. When they call setOpacity() on the vector or vector-tile layer directly, its labels fade in and out correctly. However, calling setOpacity() on the parent group only affects the standard vector-layer labels; the vector-tile labels remain fully opaque. The bug is that group-level opacity isn\u2019t being propagated into the canvas/webgl drawing path for vector-tile text labels."
+    }
+}

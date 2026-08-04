@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-markdown/printer-markdown.js//genericPrint",
+            "src/language-markdown/printer-markdown.js//printListItem",
+            "src/language-markdown/printer-markdown.js//alignListPrefix",
+            "src/language-markdown/printer-markdown.js//printChildren",
+            "src/language-markdown/printer-markdown.js//clean"
+        ],
+        "explanation": "This bug lives entirely in the Markdown printer. genericPrint is the entry point that handles every AST node (including raw HTML). For list items it delegates to printListItem, which uses alignListPrefix to compute how much indent to give to the block\u2019s content. printChildren then walks the HTML lines and re-applies that indent to each line. Finally clean tries to collapse or normalize whitespace and newlines for code blocks and HTML, but ends up preserving the padded spaces as part of the printed content. Because these functions recompute and reapply the same indent every time you re-format, the raw HTML table is cumulatively indented on each save. Fixing how alignListPrefix and printChildren dedent or skip indentation for HTML blocks (and/or adjusting clean to strip out the extra padding) will prevent the runaway indent behavior.",
+        "bug_scenario": "When you put a raw HTML table inside a numbered Markdown list and save with format-on-save enabled in VS Code (using Prettier), each save indents the entire table one level deeper. On the first save the table shifts one indent, on the second save it shifts two indents, and so on\u2014eventually breaking your intended nesting. You can see it in the GIF: each save pushes the `<table>` block out further instead of preserving the original four-space nesting."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/language-markdown/printer-markdown.js//genericPrint",
+            "src/language-markdown/printer-markdown.js//printListItem",
+            "src/language-markdown/printer-markdown.js//alignListPrefix",
+            "src/language-markdown/printer-markdown.js//printChildren",
+            "src/language-markdown/printer-markdown.js//printLine"
+        ],
+        "explanation": "All of the indentation logic for Markdown lives in the printer module. genericPrint dispatches on node type (including HTML blocks), printListItem wraps and indents each list item\u2019s content, alignListPrefix computes how much to offset nested content, printChildren recurses into nested nodes and applies the computed indent, and printLine actually emits each line with that indent. Since raw HTML blocks are not being normalized or have their indent reset between saves, alignListPrefix/printChildren continually increase their indent on every format. Fixing this requires adjusting genericPrint\u2019s HTML\u2010block case (or the way printChildren/printLine handles HTML nodes) so that nested HTML resets to the list\u2019s base indent rather than accumulating across invocations.",
+        "bug_scenario": "When repeatedly saving a Markdown file with format-on-save enabled in VS Code and Prettier, any raw HTML block (in this case, an HTML table) nested under a list item gains one extra indentation level on each save. After the first save the table is still roughly aligned, but by the fourth save it\u2019s been pushed far to the right. Code fences are handled more gracefully, but raw HTML is never \u201creset\u201d to the correct indent."
+    }
+}

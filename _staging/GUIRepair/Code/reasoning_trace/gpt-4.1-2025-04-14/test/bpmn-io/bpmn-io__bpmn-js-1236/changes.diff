@@ -1,0 +1,43 @@
+diff --git a/lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js b/lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js
+index d533272f..1f3eb3aa 100644
+--- a/lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js
++++ b/lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js
+@@ -114,18 +114,23 @@ export default function ToggleElementCollapseBehaviour(
+         newBounds;
+ 
+     if (shape.collapsed) {
+-
+-      // resize to default size of collapsed shapes
+-      newBounds = collapsedBounds(shape, defaultSize);
++      // Only resize if not already at default collapsed size
++      if (
++        shape.width !== defaultSize.width ||
++        shape.height !== defaultSize.height
++      ) {
++        newBounds = collapsedBounds(shape, defaultSize);
++        modeling.resizeShape(shape, newBounds, null, {
++          autoResize: false
++        });
++      }
+     } else {
+-
+       // resize to bounds of max(visible children, defaultSize)
+       newBounds = expandedBounds(shape, defaultSize);
++      modeling.resizeShape(shape, newBounds, null, {
++        autoResize: 'nwse'
++      });
+     }
+-
+-    modeling.resizeShape(shape, newBounds, null, {
+-      autoResize: shape.collapsed ? false : 'nwse'
+-    });
+   });
+ 
+ }
+@@ -146,4 +151,4 @@ function filterVisible(elements) {
+   return elements.filter(function(e) {
+     return !e.hidden;
+   });
+-}
+\ No newline at end of file
++}

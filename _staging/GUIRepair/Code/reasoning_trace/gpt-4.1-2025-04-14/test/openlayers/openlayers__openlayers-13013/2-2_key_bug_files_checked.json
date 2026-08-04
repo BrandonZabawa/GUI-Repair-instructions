@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/source/DataTile.js",
+            "src/ol/layer/WebGLTile.js",
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/webgl/TileTexture.js"
+        ],
+        "explanation": "These files are key to the bug because:\n\n1. `src/ol/source/DataTile.js`: Handles the loading and structure of data tiles, including how custom tile grids and sizes are managed. Any mismatch in expected vs. actual tile data dimensions could originate here.\n2. `src/ol/layer/WebGLTile.js`: The main layer class for rendering tiles with WebGL. It connects the data source to the renderer and may have logic that assumes default tile sizes or grid layouts.\n3. `src/ol/renderer/webgl/TileLayer.js`: The WebGL renderer for tile layers. It is responsible for preparing and drawing tiles, and may not correctly handle non-standard tile sizes or grids, leading to the observed rendering issue.\n4. `src/ol/webgl/TileTexture.js`: Manages the upload of tile data to WebGL textures. The warning about 'texImage' and the mismatch in expected data size strongly suggests that the bug may be in how this file calculates or uploads the data for custom-sized tiles.\n\nTogether, these files cover the data flow from tile source, through the layer and renderer, to the final WebGL texture upload, which is where the bug manifests.",
+        "bug_scenario": "The bug scenario involves the use of `ol.layer.WebGLTile` with a custom `ol.source.DataTile` and tile grid, resulting in black tiles being rendered instead of the expected data. The console logs a WebGL warning: 'texImage: Desired upload requires more data than is available: (767 rows plus 770 pixels needed, 767 rows plus 258 pixels available)'. The screenshot shows a viewer with a black tile area and some grid lines, and the console output reveals details about the tile grid configuration (extent, resolutions, tileSizes, etc.). This suggests a mismatch or miscalculation in how tile data is uploaded to the GPU, likely related to custom tile sizes or grid configuration."
+    }
+}

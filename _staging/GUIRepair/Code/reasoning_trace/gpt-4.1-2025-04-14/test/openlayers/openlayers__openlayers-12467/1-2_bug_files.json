@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/style/Circle.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/canvas/Builder.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "1. src/ol/style/Circle.js: This file implements the 'ol.style.Circle' style class. Since the bug is about the visual appearance and animation behavior of styled circles (especially snapToPixel option and its removal), this file is likely involved.\n\n2. src/ol/render/canvas/Immediate.js, src/ol/render/canvas/Builder.js, src/ol/render/canvas/ImageBuilder.js: These files are responsible for rendering vector features (such as animated circles) onto a canvas. The bug specifically involves snapping to pixel behavior during animation, which is governed by renderer logic\u2014especially the canvas renderer's decision to snap or not snap circle positions to integer coordinates during repaint. Since the change in 'snapToPixel' logic happened in renderer internals, these files (which contain logic for rendering and possibly snapping decisions) are very likely related to fixing the jitter issue.\n\nOther files dealing with general style, vector context, or renderers (like src/ol/style/Style.js, src/ol/render/VectorContext.js) may be tangentially related, but the most direct, suspect files are the ones specifically handling the circle style class and their canvas rendering, hence the above list.",
+        "bug_scenario": "When animating circles using OpenLayers (after upgrading from v4.6.5 to v6.5), there is noticeable 'jitter' in the animation. In previous versions, setting the snapToPixel: false option on ol.style.Circle enabled accurate rendering to prevent jitter during animation. This option was removed in v5.2.0, as snapping behavior was changed in the renderer: it should now automatically avoid snapping to integer pixels during interaction or animation, thus preventing jitter. However, jitter is still observed, indicating that either the renderer is snapping to pixels incorrectly during animation, or some related logic was lost or regressed during the upgrade. Smoother circle animation is desired, as was previously possible."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/style/Circle.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/canvas/ImageBuilder.js"
+        ],
+        "explanation": "The key bug relates to how circles are rendered during animations (pixel snapping), and how the ol.style.Circle interacts with the rendering process in OpenLayers. 1. src/ol/style/Circle.js: This is the main implementation for circle styles; previously, this file would handle the snapToPixel option and control rendering precision for circle images. Changes in its API or internal logic may be responsible for current behavior, or may need updating to reintroduce or better integrate animation-aware rendering. 2. src/ol/render/canvas/Immediate.js and 3. src/ol/render/canvas/ImageBuilder.js: These files are both part of the core lower-level rendering pipeline for vector features (including circles). They control how point/circle styles are drawn onto the canvas, and contain the logic where (as per upgrade notes) pixel snapping is handled differently depending on whether animation/interaction is active. Therefore, if snapping is happening when it shouldn't, or vice versa, the bug would manifest in these files. If a fix, API re-introduction, or conditional logic addition is needed, it is likely to occur in these rendering files and the Circle style definition.",
+        "bug_scenario": "After upgrading OpenLayers from 4.6.5 to 6.5, animated circles (styled with ol.style.Circle) now display visible jitter, especially at large radii, during or after animations. Previously, setting snapToPixel: false prevented this, but that parameter has been removed in 6.5. Per the changelogs, snapping is supposed to be automatic and accurate during animations, but observed behavior indicates regression or change in pixel snapping logic affecting smoothness."
+    }
+}

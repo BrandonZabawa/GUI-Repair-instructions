@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/typescript.js//default export (LanguageFn)",
+            "src/languages/lib/ecmascript.js//IDENT_RE"
+        ],
+        "explanation": "The heart of the bug lies in the TypeScript language definition (the default-exported function in src/languages/typescript.js). That module builds on the JavaScript grammar but never adds a mode to recognize full generic identifiers (it simply reuses JS keyword/identifier rules). As a result, when the generic name contains a lowercase-to-uppercase boundary (e.g. \u201cOutT\u201d), the built-in IDENT_RE from ecmascript.js (`[A-Za-z$_][0-9A-Za-z$_]*`) is never applied in the generics context, and the highlighter splits the token at the uppercase boundary. To fix, we must augment the TS grammar in the default export so that generic type parameters are lexed by IDENT_RE as a single token (for example by injecting a `<IDENT_RE(?:\\s*,\\s*IDENT_RE)*>` mode into tsLanguage.contains), ensuring full camel-case names like OutT are highlighted consistently.",
+        "bug_scenario": "When highlighting TypeScript generics like \u201cOutT\u201d in a signature such as\ntype ParseFunc<OutT, InT> = (val: InT) => OutT;\nonly the \u201cOut\u201d portion is being picked up by the highlighter in the custom TS mode\u2014 the trailing \u201cT\u201d is treated as plain text. The snapshots show that \u201cOut\u201d is marked with the \u201ctype\u201d color and \u201cT\u201d remains unstyled, so camel-case type parameters are not highlighted as single identifiers."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/typescript.js//default"
+        ],
+        "explanation": "The core of the TypeScript grammar (the default-exported function in src/languages/typescript.js) composes and tweaks the JavaScript grammar to support TypeScript constructs, including generic parameters. Because the highlighting issue manifests in how generic identifiers (like \u201cOutT\u201d) are tokenized and colored, the fault lies in the language definition\u2019s modes for generics\u2014which are initialized in the default export\u2014and potentially the underlying IDENT_RE from ecmascript.js. Fixing the camel-case split will require adjusting the generic-parameter handling inside the default function (or the imported JavaScript grammar), so that multi-part identifiers like \u201cOutT\u201d are recognized as a single unit rather than two separate tokens.",
+        "bug_scenario": "When highlighting TypeScript generic type parameters in code like \u201ctype ParseFunc<OutT, InT> = \u2026\u201d, only the first camel-case component (\u201cOut\u201d) is picked up by the highlighter and colored as a type, while the trailing uppercase letter (\u201cT\u201d) is left unstyled. The user expects the entire identifier \u201cOutT\u201d or \u201cInT\u201d to be treated as a single token and highlighted uniformly."
+    }
+}

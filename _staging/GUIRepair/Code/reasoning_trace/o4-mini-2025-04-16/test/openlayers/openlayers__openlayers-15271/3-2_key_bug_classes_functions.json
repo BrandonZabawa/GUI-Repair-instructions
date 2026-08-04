@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/ol/expr/expression.js//withGetArgs",
+            "src/ol/expr/expression.js//parseCallExpression",
+            "src/ol/style/expressions.js//Operators",
+            "src/ol/style/expressions.js//expressionToGlsl"
+        ],
+        "explanation": "\u2022 withGetArgs (in src/ol/expr/expression.js) is the argument validator that recognizes the \u2018get\u2019 operator and records which feature properties will be accessed. It never treats \u2018id\u2019 as a special case, so feature.getId() is never added to the parsing context.  \n\u2022 parseCallExpression (in src/ol/expr/expression.js) invokes the parser created for each operator, including \u2018get\u2019; since no parser handles a standalone \u2018id\u2019 operator, calls to fetch id fall through.  \n\u2022 Operators (in src/ol/style/expressions.js) is the registry of style\u2010expression operators (including \u2018get\u2019). It has no entry for \u2018id\u2019, and the existing \u2018get\u2019 implementation only works against properties.  \n\u2022 expressionToGlsl (in src/ol/style/expressions.js) turns parsed expressions into GLSL code. Its logic for the \u2018get\u2019 operator generates code invoking feature.get('attr') and cannot generate feature.getId().\n\nTo support reading id, the parser must either extend the existing \u2018get\u2019 handler (withGetArgs) to detect when the attribute name is \u2018id\u2019 and register a callback against feature.getId(), or add a new \u2018id\u2019 operator (in Operators and in expressionToGlsl) that emits the correct call. parseCallExpression must be updated to route that operator name to the new handler as well.",
+        "bug_scenario": "When writing a style expression against a GeoJSON source, users expect to be able to fetch a feature\u2019s \u201cid\u201d (i.e. what you get from feature.getId()) via the same bracketed operators used for properties (`['get', '\u2026']`). Currently the expression parser only looks in the feature\u2019s properties collection, so passing `['get','id']` does nothing (or errors) and there is no standalone `['id']` operator. In short, style expressions can read properties but not the feature id."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/expr/expression.js//CallExpression"
+        ],
+        "bug_functions": [
+            "src/ol/expr/expression.js//withGetArgs",
+            "src/ol/expr/expression.js//parseCallExpression",
+            "src/ol/expr/cpu.js//compileAccessorExpression",
+            "src/ol/style/expressions.js//expressionToGlsl"
+        ],
+        "explanation": "All of the listed elements participate in parsing, compiling and code\u2010generation for the \u2018get\u2019 operator:  \n\n\u2022 CallExpression is the AST node created for any operator call, including ['get', \u2026].  It underlies how \u2018get\u2019 expressions are represented.  \n\u2022 withGetArgs in src/ol/expr/expression.js validates and pulls the attribute name from the encoded array and records it in the parsing context.properties; it needs to be extended to recognize 'id' and not just properties in feature.properties.  \n\u2022 parseCallExpression dispatches on the operator name ('get') and builds a CallExpression via createParser/withGetArgs; it will need a special branch for 'id' or allow 'get' to accept 'id' (and possibly ignore the type hint).  \n\u2022 compileAccessorExpression in src/ol/expr/cpu.js turns a CallExpression with operator 'get' into an evaluator function (e.g. ctx.properties[name] or feature.get(name)).  It needs to be updated so that when name==='id' it calls feature.getId() instead of reading from ctx.properties.  \n\u2022 expressionToGlsl in src/ol/style/expressions.js emits GLSL code for style expressions.  For ['get','attr'] it injects code to fetch a vertex attribute or uniform; it must be updated to generate the correct shader code for retrieving a feature\u2019s id (possibly via a varying or a special built\u2010in).  \n\nTogether these cover all stages\u2014parsing the expression, representing it, evaluating it on the CPU, and compiling it to GLSL on the GPU\u2014so they are the key places to modify to support reading feature.id.",
+        "bug_scenario": "Currently MapLibre\u2019s style\u2010expression system lets you fetch any feature property via [\"get\",\"attributeName\"] (which is mapped to feature.get('attributeName')), but there\u2019s no way to read a feature\u2019s id through an expression.  In GeoJSON the id lives at the root level, not in properties, so expressions like [\"get\",\"id\"] simply fail and force users to duplicate id into properties.  The user wants [\"get\",\"id\"] (or a dedicated [\"id\"] operator) to map to feature.getId() so they can style by feature id without duplicating it."
+    }
+}

@@ -1,0 +1,31 @@
+diff --git a/core/gather/navigation-runner.js b/core/gather/navigation-runner.js
+index f8c48947c..20c940308 100644
+--- a/core/gather/navigation-runner.js
++++ b/core/gather/navigation-runner.js
+@@ -188,8 +188,24 @@ async function _computeNavigationResult(
+     /** @type {Partial<LH.GathererArtifacts>} */
+     const artifacts = {};
+     const pageLoadErrorId = `pageLoadError-${navigationContext.navigation.id}`;
+-    if (debugData.devtoolsLog) artifacts.devtoolsLogs = {[pageLoadErrorId]: debugData.devtoolsLog};
+-    if (debugData.trace) artifacts.traces = {[pageLoadErrorId]: debugData.trace};
++    if (debugData.devtoolsLog) {
++      artifacts.devtoolsLogs = {
++        [pageLoadErrorId]: debugData.devtoolsLog,
++        // Also attach under the expected artifact id if available
++        ...(phaseState.artifactDefinitions.find(def => def.gatherer.instance.meta.symbol === DevtoolsLog.symbol)
++          ? { [phaseState.artifactDefinitions.find(def => def.gatherer.instance.meta.symbol === DevtoolsLog.symbol).id]: debugData.devtoolsLog }
++          : {}),
++      };
++    }
++    if (debugData.trace) {
++      artifacts.traces = {
++        [pageLoadErrorId]: debugData.trace,
++        // Also attach under the expected artifact id if available
++        ...(phaseState.artifactDefinitions.find(def => def.gatherer.instance.meta.symbol === Trace.symbol)
++          ? { [phaseState.artifactDefinitions.find(def => def.gatherer.instance.meta.symbol === Trace.symbol).id]: debugData.trace }
++          : {}),
++      };
++    }
+ 
+     return {
+       pageLoadError,

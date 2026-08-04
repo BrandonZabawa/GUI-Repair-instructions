@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy"
+        ],
+        "bug_functions": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('moddleCopy.canCopyProperty')",
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('copyPaste.pasteElement')",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyElement",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype._copyId"
+        ],
+        "explanation": "The core of the bug is that when a Pool (Participant) and its referenced Process are copied, the copied Process retains the same ID as the original, leading to duplicate IDs in the exported XML. In the skeletons: (1) BpmnCopyPaste.js is responsible for the copy-paste logic of BPMN elements, including Pools and Processes. In its pasteElement handler, it creates new business objects for the copy, but may not ensure unique IDs for deep-copied child elements (like the processRef of a participant). (2) The ModdleCopy class (ModdleCopy.js) is responsible for copying properties and elements, including IDs. Its copyElement and _copyId methods should manage ID uniqueness. If _copyId does not generate a new ID for copied elements, duplicates can result. (3) The eventBus.on('moddleCopy.canCopyProperty') function in BpmnCopyPaste.js specifically copies the processRef for participants and should ensure that a new process with a unique ID is created and referenced. Thus, these classes and functions are directly related to the bug because they are responsible for (a) copying BPMN elements, (b) handling references between participants and processes, and (c) managing IDs during the copy process.",
+        "bug_scenario": "The bug scenario involves copying a BPMN Pool element (which contains a Task) and pasting it, followed by exporting and re-importing the BPMN XML. Upon inspection, the exported XML contains duplicate process IDs (\"Process_17iojvx\" appears twice), which violates BPMN's requirement for unique IDs. This can cause import errors and model inconsistencies."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//BpmnCopyPaste",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy"
+        ],
+        "bug_functions": [
+            "lib/features/copy-paste/BpmnCopyPaste.js//eventBus.on('moddleCopy.canCopyProperty')",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyElement",
+            "lib/features/copy-paste/ModdleCopy.js//ModdleCopy.prototype.copyProperty"
+        ],
+        "explanation": "The bug is caused by the processRef (which points to a process business object) being copied directly when duplicating a Pool (Participant). This means the same process id is reused for both the original and copied pools. The key logic for copying pools and their referenced processes is in the BpmnCopyPaste class and its eventBus handlers, especially the 'moddleCopy.canCopyProperty' event (which creates a new process but may not ensure a unique id). The ModdleCopy class's copyElement and copyProperty methods are responsible for how properties (including ids) are copied. If ids are not properly regenerated for copied processes, duplicates result. The fix likely involves ensuring a new, unique process id is generated during the copy operation for pools.",
+        "bug_scenario": "The bug scenario involves copying a BPMN Pool (Participant) with a Task inside, pasting it, exporting the diagram, and then importing it back. The bug is that both the original and copied pools have the same process id, causing duplicate process ids in the exported XML (as shown in the provided XML snippet). This leads to invalid BPMN, as process ids should be unique."
+    }
+}

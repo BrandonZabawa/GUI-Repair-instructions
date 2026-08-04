@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ListBox/ListBox.js//ListBox",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField"
+        ],
+        "bug_functions": [
+            "handleOnKeyDown",
+            "handleClick"
+        ],
+        "explanation": "The ListBox component (ListBox.js) unconditionally renders its root <div> with role=\"listbox\" and no option children when closed, causing the \u201cmust contain particular children\u201d violation. It also accepts and blindly spreads getRootProps plus all other props, so the role and id references do not match the menu when collapsed. In ListBoxField (ListBoxField.js), the component uses both internally generated aria-controls/aria-owns values and then spreads ...rest (which may include user-passed aria-controls and aria-owns), resulting in invalid ARIA attribute values. The helper functions handleOnKeyDown and handleClick in ListBox.js also participate in event handling around the listbox but are less central to the accessibility issue. To fix this, ListBox should only render role=\"listbox\" on the open menu (not on the root wrapper) or use role=\"combobox\" for the trigger, and ListBoxField should stop spreading user aria-controls/owns or merge them correctly with the internal IDs so that the attributes always point to existing elements.",
+        "bug_scenario": "When rendering the Carbon React Dropdown, two accessibility violations are reported: 1) \u201cARIA attributes must conform to valid values\u201d because the trigger button (.bx--list-box__field) ends up with user-supplied aria-controls and aria-owns attributes that don\u2019t match the generated menu element at runtime; and 2) \u201cCertain ARIA roles must contain particular children\u201d because the outer ListBox root is always rendered with role=\"listbox\" even when collapsed and contains no option children. Both of these violations show up in the screenshots against the <div role=\"button\"\u2026> trigger and the <div role=\"listbox\"\u2026> root wrapper."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ListBox/ListBox.js//ListBox",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField",
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ListBox/ListBoxField.js//<div \u2026 aria-label={\u2026}>",
+            "packages/react/src/components/Dropdown/Dropdown.js//render()"
+        ],
+        "explanation": "1) ListBox (in ListBox.js) unconditionally renders a <div role=\"listbox\"> around the entire field\u2014even when closed\u2014and its only child is the toggle button, not any <ListBoxMenuItem> with role=\"option\". According to ARIA, a listbox must contain option elements, so this wrapper role is invalid until the menu is open.\n\n2) ListBoxField (in ListBoxField.js) always applies an aria-label of \u201cOpen menu\u201d or \u201cClose menu\u201d, overriding the visible label text. This causes the accessible name to differ from what the user sees, triggering the \u201cAccessible name does not contain the visible label\u201d error.\n\n3) Dropdown (in Dropdown.js) generates the menu id by taking the id prop (e.g. \"carbon-dropdown-example\") and appending \"__menu\".  However the way aria-owns/aria-controls are forwarded (via getButtonProps and ListBoxField\u2019s spread of rest props) can lead to mismatches or invalid ID references when the menu isn\u2019t yet rendered, resulting in the invalid identifier violation.  To fix it, you must ensure that:\n  \u2022 role=\"listbox\" is only applied to the actual menu container (ListBoxMenu), not the outer wrapper (ListBox)\n  \u2022 the toggle button uses aria-labelledby that points at the visible label, rather than aria-label\n  \u2022 the menu id and aria-controls/aria-owns values are generated consistently and only applied once the menu element exists.",
+        "bug_scenario": "When you open the Carbon React <Dropdown> with VoiceOver (or Axe) turned on, two distinct ARIA violations are reported: 1) \u201cARIA attributes must conform to valid values\u201d (the id used in aria\u00ad-owns/aria\u00ad-controls does not match a valid target) and 2) \u201cCertain ARIA roles must contain particular children\u201d (the element with role=\"listbox\" never actually contains any option children when closed).  In addition, the visible label text (\u201cDropdown menu options\u201d) is not part of the accessible name (because ListBoxField forces an aria-\u00adlabel of \u201cOpen menu\u201d or \u201cClose menu\u201d)."
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/control/Attribution.js//Attribution",
+            "src/ol/layer/Group.js//LayerGroup",
+            "src/ol/layer/Layer.js//Layer"
+        ],
+        "bug_functions": [
+            "src/ol/control/Attribution.js//collectSourceAttributions_",
+            "src/ol/layer/Group.js//getLayersArray",
+            "src/ol/layer/Layer.js//getAttributions"
+        ],
+        "explanation": "The Attribution control\u2019s collectSourceAttributions_ method blindly iterates getAllLayers() and merges every layer\u2019s getAttributions() output, without checking whether a layer falls under an invisible group. getAllLayers() relies on Group.getLayersArray(), which recursively flattens all child layers regardless of the parent\u2019s visible flag. Finally, Layer.getAttributions(view) returns the source\u2019s attributions purely on the individual layer\u2019s visibility, ignoring group state. To fix this bug, you need to adjust: (1) collectSourceAttributions_ to filter out layers that are not effectively visible (including via group visibility), or (2) modify getLayersArray to skip children of invisible groups, or (3) enhance getAttributions to consider the full visibility chain (layer + ancestor groups). Together, these edits will prevent hidden\u2010group children from contributing to the popup attribution list.",
+        "bug_scenario": "In the info\u2010popup (the \u201ci\u201d button in the bottom right), attributions from a WMS sub-layer are appearing even when its parent group layer is turned off. In this screenshot you can see: 1) the parent \u201cSEZON\u201d group unchecked (invisible), 2) its child layer \u201cbudynki sezon\u201d checked (visible), and 3) the attribution text \u201cSEZON: Budynki\u201d still displayed in the popup. Because group visibility isn\u2019t taken into account, the attribution control is pulling in the child\u2019s attribution even when the group is hidden."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/control/Attribution.js",
+            "src/ol/layer/Group.js",
+            "src/ol/layer/Layer.js"
+        ],
+        "bug_functions": [
+            "src/ol/control/Attribution.js//collectSourceAttributions_",
+            "src/ol/layer/Group.js//getLayerStatesArray",
+            "src/ol/layer/Layer.js//getAttributions"
+        ],
+        "explanation": "The root cause is that the attribution control collects and displays attributions from every sub-layer indiscriminately via collectSourceAttributions_, without checking whether the layer is actually visible when accounting for its parent group\u2019s visibility. Although LayerGroup.getLayerStatesArray correctly computes a composite \"visible\" flag (multiplying child visibility by the group\u2019s visibility), collectSourceAttributions_ simply calls layer.getAttributions(frameState) on all layers returned by map.getAllLayers(), and Layer.getAttributions(view) by default returns attributions regardless of that computed state. To fix the bug, collectSourceAttributions_ must filter out layers whose computed state.visible is false (propagating the group\u2019s invisibility), or Layer.getAttributions must respect the frameState and not return attributions for invisible layers. The three identified methods are the key touchpoints for injecting that visibility check.",
+        "bug_scenario": "In the attribution control popup (the \u201ci\u201d info box) at the bottom of the map, the attributions for a WMS sub-layer are still rendered even when its parent group layer has been turned off (made invisible). In the example screenshot: (1) the top-level \u201cSEZON\u201d group is unchecked (invisible), (2) the child layer \u201cbudynki sezon\u201d remains checked (visible) in the layer switcher, yet (3) its attribution line \u201cSEZON: Budynki \u2026\u201d still appears in the popup despite the parent group being hidden."
+    }
+}

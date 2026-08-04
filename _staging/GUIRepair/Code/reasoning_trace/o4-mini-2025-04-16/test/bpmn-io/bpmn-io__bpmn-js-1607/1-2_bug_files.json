@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/behavior/GroupBehavior.js",
+            "lib/features/modeling/BpmnFactory.js",
+            "lib/util/DiUtil.js",
+            "lib/features/modeling/behavior/SubProcessPlaneBehavior.js",
+            "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js",
+            "lib/features/di-ordering/BpmnDiOrdering.js"
+        ],
+        "explanation": "\n- GroupBehavior.js: This is where new group elements are wired up with a CategoryValue reference. It never adds the CategoryValue DI element into the nested (collapsed) subprocess plane.\n- BpmnFactory.js: Responsible for instantiating the BPMN group and its CategoryValue moddle elements. The factory call for nested planes is not invoked or wired correctly when the subprocess is collapsed.\n- DiUtil.js: Provides helper methods for creating and attaching DI shapes (including CategoryValue). It only targets the top-level BPMNPlane, so nested planes never get the CategoryValue shape.\n- SubProcessPlaneBehavior.js: Creates a separate DI plane for the contents of a collapsed subprocess. It currently moves child shapes but ignores CategoryValue entries.\n- ToggleElementCollapseBehaviour.js: Handles moving DI children on collapse/expand but doesn\u2019t relocate CategoryValue elements into the subprocess\u2019s own DI plane.\n- BpmnDiOrdering.js: Determines insertion order of DI elements inside a plane. It doesn\u2019t account for CategoryValue entries in nested planes, so even if created they wouldn\u2019t be ordered into the correct place, preventing them from appearing in the exported XML.\n\nTogether these files control how group CategoryValue elements are created, placed into DI planes, and ultimately serialized. Because CategoryValue elements for groups inside collapsed subprocesses never make it into the subprocess\u2019s DI plane, the exporter still writes the categoryValueRef but omits the element definition, leading to unresolved reference warnings on import.",
+        "bug_scenario": "When you collapse a sub-process and then add a BPMN group inside that collapsed sub-process, the modeler creates a group businessObject with a categoryValueRef pointing to a BPMN DI CategoryValue element. However the DI element itself never ends up in the exported XML for that collapsed subprocess plane. On re-import the categoryValueRef cannot be resolved (unresolved reference <CategoryValue_\u2026>) and you get a warning."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/behavior/util/CategoryUtil.js",
+            "lib/features/modeling/behavior/GroupBehavior.js",
+            "lib/features/modeling/BpmnFactory.js",
+            "lib/import/BpmnImporter.js",
+            "lib/import/BpmnTreeWalker.js",
+            "lib/import/Importer.js"
+        ],
+        "explanation": "\u2022 CategoryUtil.js is the utility that creates and retrieves CategoryValue entries for groups. If a group is created in a collapsed subprocess, its CategoryValue must be recorded in the BPMN definitions. \n\n\u2022 GroupBehavior.js is where the modeling command for creating a group lives. It invokes CategoryUtil but currently skips adding the CategoryValue when the host is a collapsed subprocess. \n\n\u2022 BpmnFactory.js is responsible for actually instantiating the CategoryValue element. Without its use in the subprocess context, no moddle element gets generated. \n\n\u2022 BpmnImporter.js and BpmnTreeWalker.js coordinate reading the BPMN XML, resolving DI references (including categoryValueRefs). They throw the unresolved reference warning because there was never a corresponding CategoryValue in the XML. \n\n\u2022 Importer.js strings these pieces together. Since the CategoryValue was never written out by the modeling layer, the importer can\u2019t resolve it. Fixing the write path in the modeling/category util and behavior ensures the import code can find the element and drop the warning.",
+        "bug_scenario": "When you collapse a subprocess and then create a BPMN \u201cGroup\u201d (the dashed\u2010border annotation) inside it, the modeler correctly shows the group in the diagram. However upon saving and then re\u2010importing the same diagram you immediately get an import warning \u201cunresolved reference <CategoryValue_\u2026>\u201d. In other words, the Group\u2019s underlying CategoryValue element is never serialized (or hooked up) when the Group lives inside a collapsed subprocess boundary."
+    }
+}

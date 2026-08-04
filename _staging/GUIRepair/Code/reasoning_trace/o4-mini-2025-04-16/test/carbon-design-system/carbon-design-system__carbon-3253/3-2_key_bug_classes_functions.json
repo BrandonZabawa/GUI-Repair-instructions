@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js//Dropdown",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//render"
+        ],
+        "explanation": "The core of the issue lives in the React Dropdown component\u2019s render method: it unconditionally renders <ListBox.Field tabIndex=\"0\" \u2026>, overriding any incoming tabIndex and ignoring the disabled state. The ListBoxField component itself applies tabIndex based on rest.tabIndex || -1, so if Dropdown passed down -1 it would work. By hard-coding 0, the disabled dropdown still yields a focusable child. To fix this, Dropdown.render should compute and pass the correct tabIndex (e.g. -1 when disabled) or omit the hard-coded value so ListBoxField\u2019s default logic can apply.",
+        "bug_scenario": "When a <Dropdown> is rendered with disabled=true and tabIndex=\"-1\", the outer dropdown does receive tabIndex=-1 but its inner ListBox.Field still has tabIndex=0. As a result, even though the control is disabled, its child remains focusable via the Tab key, breaking keyboard navigation flow."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/ListBox/ListBoxField.js"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/Dropdown/Dropdown.js//render",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField"
+        ],
+        "explanation": "The bug manifests because the React `Dropdown` render method always injects `tabIndex=\"0\"` on the inner field regardless of the `disabled` or outer `tabIndex` props. The `ListBoxField` component is responsible for setting its own `tabIndex` (falling back to -1) based on incoming props, but it never receives an override from the parent because `Dropdown` hard-codes `tabIndex=\"0\"`. To fix the problem, the render method in `packages/react/src/components/Dropdown/Dropdown.js` must pass a conditional `tabIndex`: when `disabled` or `tabIndex={-1}` is specified at the top, it should override the inner field\u2019s `tabIndex` instead of always setting it to `0`. In parallel, `ListBoxField` already supports a `rest.tabIndex` prop and will properly render `-1` when provided, so updating the parent render to forward the correct `tabIndex` will ensure disabled dropdowns become unfocusable as expected.",
+        "bug_scenario": "In the React `<Dropdown>` component when `disabled = true` and `tabIndex = -1` are passed in, the outer `<div>` wrapper (the `ListBox` container) correctly renders with `tabIndex=\"-1\"`, but its child field element still has `tabIndex=\"0\"`. In the inspector screenshot you can see the root listbox is unfocusable, yet the nested `<div role='combobox'>` (the clickable field) remains in the tab order despite being disabled, breaking expected keyboard navigation."
+    }
+}

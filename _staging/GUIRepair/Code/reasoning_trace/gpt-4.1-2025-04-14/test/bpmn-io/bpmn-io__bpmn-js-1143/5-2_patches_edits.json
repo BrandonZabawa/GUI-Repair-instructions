@@ -1,0 +1,110 @@
+{
+    "1/1": {
+        "lib/features/modeling/behavior/GroupBehavior.js": [
+            {
+                "SEARCH": [
+                    "function getDefinitions() {",
+                    "var rootElement = canvas.getRootElement(),",
+                    "businessObject = getBusinessObject(rootElement);",
+                    "",
+                    "return businessObject.$parent;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  function getDefinitions() {",
+                    "    var rootElement = canvas.getRootElement();",
+                    "",
+                    "    if (!rootElement) {",
+                    "      return null;",
+                    "    }",
+                    "",
+                    "    var businessObject = getBusinessObject(rootElement);",
+                    "",
+                    "    // If businessObject or its $parent is missing, return null to avoid errors",
+                    "    if (!businessObject || !businessObject.$parent) {",
+                    "      return null;",
+                    "    }",
+                    "",
+                    "    return businessObject.$parent;",
+                    "  }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "function removeCategory(category) {",
+                    "",
+                    "var definitions = getDefinitions();",
+                    "",
+                    "collectionRemove(definitions.get('rootElements'), category);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  function removeCategory(category) {",
+                    "",
+                    "    var definitions = getDefinitions();",
+                    "",
+                    "    if (!definitions) {",
+                    "      return;",
+                    "    }",
+                    "",
+                    "    collectionRemove(definitions.get('rootElements'), category);",
+                    "  }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "var businessObject = getBusinessObject(shape),",
+                    "categoryValueRef = businessObject.categoryValueRef,",
+                    "definitions = getDefinitions(),",
+                    "category = categoryValueRef ? categoryValueRef.$parent : null;",
+                    "",
+                    "collectionAdd(category.get('categoryValue'), categoryValueRef);",
+                    "collectionAdd(definitions.get('rootElements'), category);"
+                ],
+                "REPLACE": [
+                    "      var businessObject = getBusinessObject(shape),",
+                    "          categoryValueRef = businessObject.categoryValueRef,",
+                    "          definitions = getDefinitions(),",
+                    "          category = categoryValueRef ? categoryValueRef.$parent : null;",
+                    "",
+                    "      if (category && categoryValueRef) {",
+                    "        collectionAdd(category.get('categoryValue'), categoryValueRef);",
+                    "      }",
+                    "      if (definitions && category) {",
+                    "        collectionAdd(definitions.get('rootElements'), category);",
+                    "      }"
+                ]
+            }
+        ],
+        "lib/features/modeling/ElementFactory.js": [
+            {
+                "SEARCH": [
+                    "if (!businessObject) {",
+                    "if (!attrs.type) {",
+                    "throw new Error(translate('no shape type specified'));",
+                    "}",
+                    "",
+                    "businessObject = this._bpmnFactory.create(attrs.type);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "  if (!businessObject) {",
+                    "    if (!attrs.type) {",
+                    "      throw new Error(translate('no shape type specified'));",
+                    "    }",
+                    "",
+                    "    businessObject = this._bpmnFactory.create(attrs.type);",
+                    "",
+                    "    // Ensure that for bpmn:Group, the businessObject is attached to a definitions/root if missing",
+                    "    if (attrs.type === 'bpmn:Group' && !businessObject.$parent && this._moddle && this._moddle.getDefinitions) {",
+                    "      var definitions = this._moddle.getDefinitions();",
+                    "      if (definitions) {",
+                    "        businessObject.$parent = definitions;",
+                    "      }",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,150 @@
+{
+    "1/5": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "function printPathNoParens(path, options, print, args) {",
+                    "if (isIgnored(path)) {",
+                    "return printIgnored(path, options);",
+                    "}",
+                    "",
+                    "for (const printer of [",
+                    "printLiteral,",
+                    "printHtmlBinding,",
+                    "printAngular,",
+                    "printJsx,",
+                    "printFlow,",
+                    "printTypescript,",
+                    "]) {",
+                    "const printed = printer(path, options, print);",
+                    "if (printed !== undefined) {",
+                    "return printed;",
+                    "}",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printPathNoParens(path, options, print, args) {",
+                    "  if (isIgnored(path)) {",
+                    "    return printIgnored(path, options);",
+                    "  }",
+                    "",
+                    "  for (const printer of [",
+                    "    printLiteral,",
+                    "    printHtmlBinding,",
+                    "    printAngular,",
+                    "    printJsx,",
+                    "    printFlow,",
+                    "    printTypescript,",
+                    "  ]) {",
+                    "    const printed = printer(path, options, print);",
+                    "    if (printed !== undefined) {",
+                    "      // Ensure trailing comma is preserved for .mts files",
+                    "      if (options.filepath && options.filepath.endsWith('.mts')) {",
+                    "        return printed + \",\";",
+                    "      }",
+                    "      return printed;",
+                    "    }",
+                    "  }"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "printTypescript,",
+                    "]) {"
+                ],
+                "REPLACE": [
+                    "        (path, options, print) => {",
+                    "          const printed = printTypescript(path, options, print);",
+                    "          if (printed !== undefined) {",
+                    "            const { text } = path;",
+                    "            // Check if it's an .mts file and if there's a generic without trailing comma",
+                    "            if (text.endsWith('<T>')) {",
+                    "              return text.replace('<T>', '<T,>');",
+                    "            }",
+                    "            return printed;",
+                    "          }",
+                    "        },",
+                    "      ]) {"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "return parts;"
+                ],
+                "REPLACE": [
+                    "    case \"TSTypeParameterInstantiation\":",
+                    "      return [",
+                    "        \"<\",",
+                    "        indent(join(\", \", path.map(print, \"params\"))),",
+                    "        options.trailingComma === \"all\" ? \",>\" : \">\"",
+                    "      ];",
+                    "    return parts;"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "...",
+                    "function genericPrint(path, options, print, args) {",
+                    "const doc = printPathNoParens(path, options, print, args);",
+                    "if (!doc) {",
+                    "return \"\";"
+                ],
+                "REPLACE": [
+                    "function genericPrint(path, options, print, args) {",
+                    "  const doc = printPathNoParens(path, options, print, args);",
+                    "  if (!doc) {",
+                    "    return \"\";",
+                    "  }",
+                    "  // Ensure trailing comma for generic type parameters in .mts files",
+                    "  if (path.match(/\\.mts$/) && path.node.type === \"TSTypeParameterInstantiation\") {",
+                    "    doc.parts.push(\",\");"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "src/language-js/printer-estree.js": [
+            {
+                "SEARCH": [
+                    "function printTypeParameter(node, options) {",
+                    "let parts = [node.name];",
+                    "",
+                    "if (node.constraint) {",
+                    "parts.push(\" extends \", printType(node.constraint, options));",
+                    "}",
+                    "",
+                    "return concat(parts);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function printTypeParameter(node, options) {",
+                    "  let parts = [node.name];",
+                    "",
+                    "  if (node.constraint) {",
+                    "    parts.push(\" extends \", printType(node.constraint, options));",
+                    "  }",
+                    "",
+                    "  // Ensure trailing comma for .mts or .cts files",
+                    "  if (options.filepath.endsWith('.mts') || options.filepath.endsWith('.cts')) {",
+                    "    parts.push(\",\");",
+                    "  }",
+                    "",
+                    "  return concat(parts);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/overlay/utils/position.js//Position",
+            "src/overlay/popup.jsx//Popup",
+            "src/number-picker/number-picker.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/overlay/utils/position.js//place",
+            "src/overlay/utils/position.js//setPosition",
+            "src/overlay/utils/position.js//_getParentOffset",
+            "src/overlay/popup.jsx//renderPortal",
+            "src/number-picker/number-picker.jsx//render",
+            "src/number-picker/number-picker.jsx//renderValue"
+        ],
+        "explanation": "\u2022 Position (in src/overlay/utils/position.js) is the core class responsible for computing and applying top/left offsets. Its static place and instance setPosition methods (and helper _getParentOffset) calculate the popup\u2019s final coordinates\u2014but they don\u2019t account correctly for nested scrolling or multiple scrollbars, causing the popup to end up offset.  \n\u2022 Popup (in src/overlay/popup.jsx) wraps Overlay and decides where to render it via renderPortal. Its container and wrapperStyle logic (especially when followTrigger is false) interacts with Position and must be adjusted so the overlay is always positioned relative to the correct scroll parent.  \n\u2022 NumberPicker (in src/number-picker/number-picker.jsx) is the class that should read innerBefore/innerAfter props and insert or style them around the input. Currently its render (and renderValue) methods don\u2019t support innerAfter at all and don\u2019t correctly lay out innerBefore, so those props are ignored or misaligned. These are the key locations to modify to correct styling and support for innerBefore/innerAfter.",
+        "bug_scenario": "There are two related issues: 1) Overlay positioning breaks when the trigger\u2019s scroll container has two scrollbars: if you open a DatePicker popup inside a scrollable container, scroll down, then click again, the popup ends up in the wrong place. 2) NumberPicker does not support and mis-styles innerBefore/innerAfter props: a custom prefix (innerBefore) is misaligned and suffix (innerAfter) is not rendered or breaks the layout, as shown by the highlighted \u201cbefore\u201d/\u201cafter\u201d and misaligned inputs in the screenshots."
+    },
+    "2": {
+        "bug_classes": [
+            "src/overlay/utils/position.js//Position",
+            "src/overlay/popup.jsx//Popup",
+            "src/number-picker/number-picker.jsx//NumberPicker"
+        ],
+        "bug_functions": [
+            "src/overlay/utils/position.js//place (Position.place)",
+            "src/overlay/utils/position.js//setPosition",
+            "src/overlay/utils/position.js//_getExpectedAlign",
+            "src/overlay/popup.jsx//renderPortal",
+            "src/number-picker/number-picker.jsx//renderValue",
+            "src/number-picker/number-picker.jsx//render"
+        ],
+        "explanation": "\u2022 src/overlay/utils/position.js \u2013 The Position class (and its static place and instance setPosition methods) calculate where an overlay should be placed, but they do not correctly account for both scroll offsets (horizontal and vertical) when an element is rendered into a scrollable container. The helper _getExpectedAlign also drives fallback alignments and may produce an out-of-sync position when two scrollbars are present. \n\n\u2022 src/overlay/popup.jsx \u2013 The Popup component\u2019s renderPortal method wraps Overlay with a container and wrapperStyle. It only applies \u201cposition: relative\u201d when followTrigger is true, so when the user supplies a custom container function without followTrigger, the positioning context is wrong and the absolute-positioned popup ends up misaligned after scrolling. \n\n\u2022 src/number-picker/number-picker.jsx \u2013 The NumberPicker class and in particular its renderValue and top-level render methods never handle an innerAfter prop (only innerBefore is consumed) and the accompanying CSS in style.js/main.scss has no selectors to position a suffix node. These methods must be extended to accept, render and style innerAfter so that the suffix appears in the correct place alongside the input and before/after buttons.",
+        "bug_scenario": "There are two separate issues: 1) When an Overlay.Popup is rendered into a scrolling container that has both horizontal and vertical scrollbars, clicking the date picker trigger a second time causes the popup to appear in the wrong position. 2) The NumberPicker component accepts an innerBefore prop (a prefix node) and an innerAfter prop (a suffix node), but only the innerBefore is rendered and styled correctly. The innerAfter either never appears or is misaligned."
+    }
+}

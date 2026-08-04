@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/interaction/Draw.js",
+            "src/ol/interaction/Pointer.js",
+            "src/ol/interaction/DragPan.js"
+        ],
+        "explanation": "1. src/ol/interaction/Draw.js: This is where the polygon drawing interaction lives. Its handleUpEvent()/finishDrawing() logic fires drawend but never signals the base PointerInteraction that the pointer sequence is over. As a result Draw stays \u2018handling\u2019 the last down\u2013up sequence and continues consuming pointer events after drawend.\n\n2. src/ol/interaction/Pointer.js: PointerInteraction.handleEvent() is the low-level sequencer that tracks down/drag/up. Because Draw never returns false from handleUpEvent after finishing, PointerInteraction still sees itself in an active down\u2013up sequence and suppresses further pointer events to later interactions.\n\n3. src/ol/interaction/DragPan.js: The pan interaction never sees a fresh pointerdown (or sees it but is told to ignore it) because Draw is blocking the event chain. Fixing Draw so that handleUpEvent returns false when the polygon is complete \u2014 thus ending its drag sequence \u2014 will allow PointerInteraction to release the sequence and allow DragPan to receive the next pointerdown and resume map dragging.",
+        "bug_scenario": "In the provided GIF the user holds Alt, clicks to start drawing a polygon, clicks three times to complete the shape (triggering the DrawEvent \u2018drawend\u2019), and then attempts to pan/drag the map as usual with the mouse. After finishing the polygon the map no longer responds to drags\u2014even though the DragPan interaction is still active. If the user doesn\u2019t fire drawend (i.e. never completes the polygon) the map can be dragged normally. Rolling back to OL-4.6.5 removes the problem."
+    }
+}

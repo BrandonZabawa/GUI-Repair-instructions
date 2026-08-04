@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/css-usage.js",
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js"
+        ],
+        "explanation": "1. gather/css-usage.js is the gatherer that pulls all stylesheet texts (including inline <style> tags created by injected CSS). It records the raw CSS text but does not link it back to the network payload that was gzipped and fetched (so unused-css-rules has no real transferSize to use).\n2. audits/byte-efficiency/unused-css-rules.js is the audit that calculates \u201cunused CSS\u201d savings. It sums up text.length for each stylesheet and, lacking a networkRecord for inline CSS, assumes the full raw length is transfer bytes.\n3. audits/byte-efficiency/byte-efficiency-audit.js defines the default gzip compression ratio used to estimate savings when no real networkRecord is available. The hard-coded ratio is too pessimistic for CSS (underestimates real compression), further inflating the reported unused bytes.\n\nTogether, these files cause the audit to overestimate unused CSS: they need to be updated so that inline\u2010injected CSS uses the actual transferSize of its source payload (e.g. the gzipped JSON) and/or adopts a more realistic compression ratio for CSS.",
+        "bug_scenario": "On pages that fetch gzipped CSS payloads (e.g. JSON\u2010serialized CSS) and then inject the full CSS text into a <style> tag, the \u201cDefer unused CSS\u201d (unused\u2010css\u2010rules) audit measures the raw DOM text length (\u224880 KB) rather than the actual over\u2010the\u2010wire transfer size (\u224820 KB). Lighthouse therefore reports ~70 KB of \u201cunused\u201d bytes even though only ~20 KB was downloaded. The audit is pessimistic because it (1) treats inline CSS text length as the transfer size and (2) applies a default gzip compression ratio that is too low for CSS."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/css-usage.js",
+            "lighthouse-core/audits/byte-efficiency/unused-css-rules.js"
+        ],
+        "explanation": "The css-usage gatherer (css-usage.js) collects usage data based on raw CSS text (via CSS.getStyleSheetText and CSS.getUsage) and provides contentLength and usedLength to the audit, but does not record the actual compressed transfer size. The unused-css-rules audit (unused-css-rules.js) then computes wasted bytes purely from that raw contentLength, leading to overestimation. To fix this, we must extend the gatherer (or use networkRecords) to capture the encodedDataLength for each stylesheet, and update the audit to use that transfer size when calculating \"wastedBytes\" instead of the uncompressed text length.",
+        "bug_scenario": "On a test page we serve a CSS configuration over JSON, gzipped in transit (~20 KB compressed), but then inject the full CSS text into a <style> tag (~80 KB raw) via script. Lighthouse\u2019s \u201cDefer unused CSS\u201d (unused-css-rules) audit measures the raw injected CSS size (80 KB) and reports ~70 KB of potential savings\u2014even though only ~20 KB was fetched over the wire. The audit is therefore pessimistic, because it uses DOM/text size rather than actual transfer size."
+    }
+}

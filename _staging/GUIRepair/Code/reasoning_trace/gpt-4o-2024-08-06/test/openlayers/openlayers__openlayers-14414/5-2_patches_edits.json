@@ -1,0 +1,460 @@
+{
+    "1/10": {
+        "index.js": [
+            {
+                "SEARCH": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "//raster.changed();",
+                    "})"
+                ],
+                "REPLACE": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "raster.changed(); // Ensure the raster source is updated",
+                    "})"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "function floodRegion(inputs, data) {",
+                    "const image = inputs[0];",
+                    "const inputData = image.data;",
+                    "const width = image.width;",
+                    "const height = image.height;",
+                    "let seed = data.pixel;",
+                    "",
+                    "if (seed) {",
+                    "seed = seed.map(Math.round);",
+                    "const seedIdx = (seed[1] * width + seed[0]) * 4;",
+                    "console.log(\"Value: \" + inputData[seedIdx]);",
+                    "}",
+                    "",
+                    "return { data: image.data, width: width, height: height };",
+                    "}"
+                ],
+                "REPLACE": [
+                    "function floodRegion(inputs, data) {",
+                    "const image = inputs[0];",
+                    "const inputData = image.data;",
+                    "const width = image.width;",
+                    "const height = image.height;",
+                    "let seed = data.pixel;",
+                    "",
+                    "if (seed) {",
+                    "seed = seed.map(Math.round);",
+                    "const seedIdx = (seed[1] * width + seed[0]) * 4;",
+                    "console.log(\"R Value: \" + inputData[seedIdx]); // Ensure correct logging",
+                    "}",
+                    "",
+                    "return { data: image.data, width: width, height: height };",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/source/Raster.js": [
+            {
+                "SEARCH": [
+                    "sharedContext = createCanvasContext2D(width, height, undefined, {",
+                    "willReadFrequently: true,",
+                    "});"
+                ],
+                "REPLACE": [
+                    "sharedContext = createCanvasContext2D(width, height, undefined, {",
+                    "willReadFrequently: true, // Set this attribute to true",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "2/10": {
+        "index.js": [
+            {
+                "SEARCH": [
+                    "const floodRegion = (inputs, data) => {",
+                    "const image = inputs[0];",
+                    "const inputData = image.data;",
+                    "const width = image.width;",
+                    "const height = image.height;",
+                    "let seed = data.pixel;",
+                    "",
+                    "if (seed) {",
+                    "seed = seed.map(Math.round);",
+                    "const seedIdx = (seed[1] * width + seed[0]) * 4;",
+                    "console.log(\"Value: \" + inputData[seedIdx]);",
+                    "}",
+                    "",
+                    "return { data: image.data, width: width, height: height };",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const floodRegion = (inputs, data) => {",
+                    "const image = inputs[0];",
+                    "const inputData = image.data;",
+                    "const width = image.width;",
+                    "const height = image.height;",
+                    "let seed = data.pixel;",
+                    "",
+                    "if (seed) {",
+                    "seed = seed.map(Math.round);",
+                    "const seedIdx = (seed[1] * width + seed[0]) * 4;",
+                    "const rValue = inputData[seedIdx]; // R value of the pixel",
+                    "console.log(\"R Value: \" + rValue); // Correctly log the R value",
+                    "}",
+                    "",
+                    "return { data: image.data, width: width, height: height };",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "//raster.changed();",
+                    "})"
+                ],
+                "REPLACE": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "raster.changed(); // ensure raster is re-processed",
+                    "})"
+                ]
+            }
+        ]
+    },
+    "3/10": {
+        "index.js": [
+            {
+                "SEARCH": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "//raster.changed();",
+                    "});"
+                ],
+                "REPLACE": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "raster.changed(); // Ensure the raster source updates on level change",
+                    "});"
+                ]
+            }
+        ],
+        "src/ol/source/Raster.js": [
+            {
+                "SEARCH": [
+                    "if (!sharedContext) {",
+                    "sharedContext = createCanvasContext2D(width, height, undefined, {",
+                    "willReadFrequently: true,",
+                    "});",
+                    "} else {",
+                    "const canvas = sharedContext.canvas;",
+                    "if (canvas.width !== width || canvas.height !== height) {",
+                    "sharedContext = createCanvasContext2D(width, height, undefined, {",
+                    "willReadFrequently: true,",
+                    "});",
+                    "} else {",
+                    "sharedContext.clearRect(0, 0, width, height);",
+                    "}",
+                    "}",
+                    "sharedContext.drawImage(element, 0, 0, width, height);",
+                    "return sharedContext.getImageData(0, 0, width, height);"
+                ],
+                "REPLACE": [
+                    "if (!sharedContext || sharedContext.canvas.width !== width || sharedContext.canvas.height !== height) {",
+                    "sharedContext = createCanvasContext2D(width, height, undefined, {",
+                    "willReadFrequently: true,",
+                    "});",
+                    "} else {",
+                    "sharedContext.clearRect(0, 0, width, height);",
+                    "}",
+                    "sharedContext.drawImage(element, 0, 0, width, height);",
+                    "return sharedContext.getImageData(0, 0, width, height);"
+                ]
+            }
+        ]
+    },
+    "4/10": {
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "if (this.renderedImageCanvas_) {",
+                    "context = this.renderedImageCanvas_.getImage().getContext('2d');",
+                    "} else {"
+                ],
+                "REPLACE": [
+                    "context = this.renderedImageCanvas_ ? this.renderedImageCanvas_.getImage().getContext('2d') : createCanvasContext2D(width, height);"
+                ]
+            }
+        ],
+        "index.js": [
+            {
+                "SEARCH": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "//raster.changed();",
+                    "})"
+                ],
+                "REPLACE": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "raster.changed();",
+                    "})"
+                ]
+            }
+        ],
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "let seed = data.pixel;",
+                    "",
+                    "if (seed) {",
+                    "seed = seed.map(Math.round);",
+                    "const seedIdx = (seed[1] * width + seed[0]) * 4;",
+                    "console.log(\"Value: \" + inputData[seedIdx]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (data.pixel) {",
+                    "const seed = data.pixel.map(Math.round);",
+                    "const seedIdx = (seed[1] * width + seed[0]) * 4;",
+                    "console.log(\"R Value: \" + inputData[seedIdx]);",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/10": {
+        "index.js": [
+            {
+                "SEARCH": [
+                    "const outputLevel = document.getElementById('output');",
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "//raster.changed();",
+                    "});"
+                ],
+                "REPLACE": [
+                    "const outputLevel = document.getElementById('output');",
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "raster.changed(); // Trigger a change",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "6/10": {
+        "src/ol/source/Raster.js": [
+            {
+                "SEARCH": [
+                    "sharedContext = createCanvasContext2D(width, height, undefined, {"
+                ],
+                "REPLACE": [
+                    "sharedContext = createCanvasContext2D(width, height, {"
+                ]
+            }
+        ],
+        "index.js": [
+            {
+                "SEARCH": [
+                    "const image = inputs[0];",
+                    "const inputData = image.data;",
+                    "const width = image.width;",
+                    "const height = image.height;",
+                    "let seed = data.pixel;",
+                    "",
+                    "if (seed) {",
+                    "seed = seed.map(Math.round);",
+                    "const seedIdx = (seed[1] * width + seed[0]) * 4;",
+                    "console.log(\"Value: \" + inputData[seedIdx]);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "const image = inputs[0];",
+                    "const inputData = image.data;",
+                    "const width = image.width;",
+                    "const height = image.height;",
+                    "const seed = data.pixel;",
+                    "",
+                    "if (seed) {",
+                    "const seedIdx = (Math.round(seed[1]) * width + Math.round(seed[0])) * 4;",
+                    "console.log(\"Value: \" + inputData[seedIdx]);",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "//raster.changed();",
+                    "})"
+                ],
+                "REPLACE": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "raster.changed();",
+                    "})"
+                ]
+            }
+        ]
+    },
+    "7/10": {
+        "src/index.js": [
+            {
+                "SEARCH": [
+                    "const control = document.getElementById('level');",
+                    "const FloodStyle = {",
+                    "variables: {",
+                    "level: parseFloat(control.value),",
+                    "},",
+                    "color: [",
+                    "'case',",
+                    "['==', ['band', 2], 0],",
+                    "'#00000000',",
+                    "[\"case\", [\"<=\", [\"band\", 1], [\"var\", \"level\"]], \"#ffffffff\", '#00000000']",
+                    "],",
+                    "}",
+                    "// Register projection definition",
+                    "proj4.defs(",
+                    "'EPSG:32633', '+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'",
+                    ");",
+                    "register(proj4);"
+                ],
+                "REPLACE": [
+                    "const control = document.getElementById('level');",
+                    "const FloodStyle = {",
+                    "variables: {",
+                    "level: parseFloat(control.value),",
+                    "},",
+                    "color: [",
+                    "'case',",
+                    "['==', ['band', 2], 0],",
+                    "'#00000000',",
+                    "[\"case\", [\"<=\", [\"band\", 1], [\"var\", \"level\"]], \"#ffffffff\", '#00000000']",
+                    "],",
+                    "alpha: 1.0 // Ensure transparency handling",
+                    "}",
+                    "// Register projection definition and coordinate transformation",
+                    "proj4.defs(",
+                    "'EPSG:32633', '+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'",
+                    ");",
+                    "register(proj4);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "//raster.changed();",
+                    "})"
+                ],
+                "REPLACE": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "raster.changed(); // Refresh raster on any level change",
+                    "})"
+                ]
+            }
+        ]
+    },
+    "8/10": {
+        "src/ol/source/Raster.js": [
+            {
+                "SEARCH": [
+                    "context = createCanvasContext2D(width, height);"
+                ],
+                "REPLACE": [
+                    "context = createCanvasContext2D(width, height, undefined, {willReadFrequently: true});"
+                ]
+            }
+        ],
+        "src/ol/source/GeoTIFF.js": [
+            {
+                "SEARCH": [
+                    "console.log(\"Value: \" + inputData[seedIdx]);"
+                ],
+                "REPLACE": [
+                    "console.log(\"Red Value: \" + inputData[seedIdx + 0]);"
+                ]
+            }
+        ]
+    },
+    "9/10": {
+        "index.js": [
+            {
+                "SEARCH": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "//raster.changed();",
+                    "})"
+                ],
+                "REPLACE": [
+                    "control.addEventListener('input', () => {",
+                    "outputLevel.innerText = control.value;",
+                    "elevationTile.updateStyleVariables({ level: parseFloat(control.value) });",
+                    "raster.changed(); // Ensure raster source recognizes the style variable change",
+                    "})"
+                ]
+            }
+        ]
+    },
+    "10/10": {
+        "src/ol/source/Raster.js": [
+            {
+                "SEARCH": [
+                    "const width = image.width;",
+                    "const height = image.height;",
+                    "let seed = data.pixel;"
+                ],
+                "REPLACE": [
+                    "const width = image.width;",
+                    "const height = image.height;",
+                    "let seed = data.pixel;",
+                    "",
+                    "// Ensure to reset pixel connections and recalculate on level update",
+                    "if (prevLevel !== FloodStyle.variables.level) {",
+                    "recalculateConnections();",
+                    "prevLevel = FloodStyle.variables.level;",
+                    "}"
+                ]
+            }
+        ],
+        "src/ol/layer/WebGLTile.js": [
+            {
+                "SEARCH": [
+                    "color: [",
+                    "'case',",
+                    "['==', ['band', 2], 0],",
+                    "'#00000000',",
+                    "[\"case\", [\"<=\", [\"band\", 1], [\"var\", \"level\"]], \"#ffffffff\", '#00000000']",
+                    "],"
+                ],
+                "REPLACE": [
+                    "color: [",
+                    "'case',",
+                    "['==', ['band', 2], 0],",
+                    "'#00000000',",
+                    "[\"case\", [\"<=\", [\"band\", 1], [\"var\", \"level\"]], \"#ffffffff\", '#00000000']",
+                    "],",
+                    "// Ensuring that style updates are reflected",
+                    "this.changed();"
+                ]
+            }
+        ]
+    }
+}

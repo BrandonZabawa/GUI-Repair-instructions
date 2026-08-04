@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/cli.js//cli",
+            "lib/eslint/eslint.js//ESLint",
+            "lib/cli-engine/cli-engine.js//CLIEngine"
+        ],
+        "bug_functions": [
+            "lib/cli.js//printResults",
+            "lib/eslint/eslint.js//loadFormatter",
+            "lib/cli-engine/cli-engine.js//getFormatter"
+        ],
+        "explanation": "All of these locations are directly involved in loading and invoking formatters:  \n\n\u2022 lib/cli.js \u2192 printResults(): this function awaits engine.loadFormatter(), then immediately calls formatter.format(results) synchronously and treats its return value as a string.  An async formatter whose format() returns a Promise will never be awaited here.  \n\n\u2022 lib/eslint/eslint.js \u2192 ESLint.loadFormatter(): this async method resolves a formatter module but currently returns an object whose format() method is assumed to be synchronous.  It must allow returning an async format() method or wrap Promise results.  \n\n\u2022 lib/cli-engine/cli-engine.js \u2192 CLIEngine.getFormatter(): the core CLIEngine picks and returns the formatter function (for the old CLIEngine API) synchronously.  It likewise needs to support an async formatter function that returns a Promise and propagate that up so the CLI can await it.  \n\nTo support async formatters (like Shiki\u2019s), the implementation here must detect when the formatter.format() call returns a Promise and properly await it, as well as allow loadFormatter()/getFormatter() to hand back async formatters.",
+        "bug_scenario": "The reporter has written a custom ESLint formatter that uses code highlighting and now wants to switch to the Shiki highlighter, which provides an asynchronous API.  When ESLint\u2019s CLI loads and runs that formatter, it calls its format-method synchronously and does not await any Promise.  As a result, async formatters cannot be used and the output either fails to render or simply never appears.  The attached screenshot shows the incomplete or missing token colors in the CLI output when attempting to use an async highlighter."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/cli.js//cli",
+            "lib/eslint/eslint.js//ESLint",
+            "lib/cli-engine/cli-engine.js//CLIEngine"
+        ],
+        "bug_functions": [
+            "lib/cli.js//printResults",
+            "lib/eslint/eslint.js//ESLint.loadFormatter",
+            "lib/cli-engine/cli-engine.js//getFormatter"
+        ],
+        "explanation": "All of these touch the lifecycle of loading and invoking formatters:  \n1) lib/cli.js \u2192 printResults: this function invokes formatter.format(results) without awaiting it. To support async formatters, it must detect and await promises returned by format().  \n2) lib/eslint/eslint.js \u2192 ESLint.loadFormatter: this method resolves a formatter module but assumes its format() is synchronous. It should allow format to be async (e.g. return an async function or wrap its output in a promise).  \n3) lib/cli-engine/cli-engine.js \u2192 CLIEngine.getFormatter: this returns the low-level formatting function for legacy CLIEngine usage, again assuming a sync function. It must be updated to accept and propagate async formatter functions so that downstream code can await them.",
+        "bug_scenario": "The user wants to write an ESLint formatter that uses the Shiki highlighter (which is asynchronous), but ESLint\u2019s CLI currently only supports synchronous formatters. In the provided screenshot the formatter output is being generated without waiting for the highlighter to finish, so colours and code\u2010highlighting aren\u2019t applied correctly. The CLI\u2019s printResults function calls formatter.format(results) synchronously and immediately writes or logs the result, dropping any promise or async behaviour."
+    }
+}

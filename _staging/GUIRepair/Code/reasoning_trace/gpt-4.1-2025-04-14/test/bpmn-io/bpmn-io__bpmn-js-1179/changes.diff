@@ -1,0 +1,37 @@
+diff --git a/lib/features/modeling/behavior/DropOnFlowBehavior.js b/lib/features/modeling/behavior/DropOnFlowBehavior.js
+index 4d1c35ba..e610161a 100644
+--- a/lib/features/modeling/behavior/DropOnFlowBehavior.js
++++ b/lib/features/modeling/behavior/DropOnFlowBehavior.js
+@@ -56,6 +56,10 @@ export default function DropOnFlowBehavior(eventBus, bpmnRules, modeling) {
+       if (!isPointInsideBBox(shape, waypointsAfter[0])) {
+         waypointsAfter.unshift(copy(dockingPoint));
+       }
++
++      // Ensure the docking point is stored for later use
++      // This will be used as the docking for the new connection to the shape
++      shape._dropOnFlowDocking = copy(dockingPoint);
+     }
+ 
+     source = targetFlow.source;
+@@ -64,7 +68,9 @@ export default function DropOnFlowBehavior(eventBus, bpmnRules, modeling) {
+     if (bpmnRules.canConnect(source, shape, targetFlow)) {
+ 
+       // reconnect source -> inserted shape
+-      modeling.reconnectEnd(targetFlow, shape, waypointsBefore || position);
++      // Use the calculated docking point if available
++      var docking = shape._dropOnFlowDocking || (waypointsBefore ? waypointsBefore[waypointsBefore.length - 1] : position);
++      modeling.reconnectEnd(targetFlow, shape, waypointsBefore || position, docking);
+ 
+       incomingConnection = targetFlow;
+     }
+@@ -74,7 +80,9 @@ export default function DropOnFlowBehavior(eventBus, bpmnRules, modeling) {
+       if (!incomingConnection) {
+ 
+         // reconnect inserted shape -> end
+-        modeling.reconnectStart(targetFlow, shape, waypointsAfter || position);
++        // Use the calculated docking point if available
++        var docking = shape._dropOnFlowDocking || (waypointsAfter ? waypointsAfter[0] : position);
++        modeling.reconnectStart(targetFlow, shape, waypointsAfter || position, docking);
+ 
+         outgoingConnection = targetFlow;
+       } else {

@@ -1,0 +1,22 @@
+diff --git a/lighthouse-core/gather/gatherers/dobetterweb/response-compression.js b/lighthouse-core/gather/gatherers/dobetterweb/response-compression.js
+index 41610fdf9..f6b9dddef 100644
+--- a/lighthouse-core/gather/gatherers/dobetterweb/response-compression.js
++++ b/lighthouse-core/gather/gatherers/dobetterweb/response-compression.js
+@@ -33,10 +33,16 @@ class ResponseCompression extends Gatherer {
+         return;
+       }
+ 
+-      const isContentEncoded = record.responseHeaders.find(header =>
++      // Detect compression either via a Content-Encoding header
++      // or by the fact that fewer bytes were actually transferred than the
++      // full uncompressed resource size.
++      const hasContentEncodingHeader = record.responseHeaders.find(header =>
+         header.name.toLowerCase() === 'content-encoding' &&
+         compressionTypes.includes(header.value)
+       );
++      const isContentEncoded = hasContentEncodingHeader ||
++        (typeof record.transferSize === 'number' &&
++         record.transferSize < record.resourceSize);
+ 
+       if (!isContentEncoded) {
+         unoptimizedResponses.push({

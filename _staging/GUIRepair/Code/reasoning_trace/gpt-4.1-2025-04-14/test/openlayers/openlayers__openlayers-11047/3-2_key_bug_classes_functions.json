@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/source/Raster.js//RasterSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/Raster.js//setOperation",
+            "src/ol/source/Raster.js//processSources_",
+            "src/ol/source/Raster.js//onWorkerComplete_"
+        ],
+        "explanation": "The key bug class is RasterSource, as it encapsulates the logic for creating and managing raster operations, including the handling of webworkers. The functions setOperation, processSources_, and onWorkerComplete_ are relevant because: 1) 'setOperation' is likely involved in initializing or resetting the raster operation and should handle the cleanup of any previously created workers; 2) 'processSources_' is responsible for starting the processing work, which likely involves creating or managing webworkers; 3) 'onWorkerComplete_' is called when worker processing finishes and would be a logical place to ensure workers are properly terminated. To fix the bug, changes would likely be required in these areas to track, terminate, and clean up workers when they are no longer needed.",
+        "bug_scenario": "The bug scenario is that when using a raster source in OpenLayers with pixelworks, the webworkers created for raster operations are never terminated. This causes memory usage to increase over time, as seen in the Chrome devtools memory tab, where multiple webworkers persist and accumulate, each with a unique UUID. The expected behavior is that these workers are properly terminated and memory is freed when they are no longer needed. The current workaround involves manually terminating these workers, but this is hacky and breaks with OpenLayers updates."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/source/Raster.js//RasterSource"
+        ],
+        "bug_functions": [
+            "src/ol/source/Raster.js//setOperation",
+            "src/ol/source/Raster.js//processSources_"
+        ],
+        "explanation": "The memory leak is caused by web workers created by raster sources not being properly terminated. The 'RasterSource' class is responsible for managing raster operations, including worker creation. The 'setOperation' method is involved in (re)setting the raster operation, which may trigger the creation of new workers, but there is no indication that it cleans up old workers. The 'processSources_' method is likely responsible for managing the processing of input data and possibly the lifecycle of workers. Any fix to ensure proper termination of old/unused workers (when operations change or the source is disposed) would need to be implemented in these class and function locations.",
+        "bug_scenario": "The bug scenario involves raster source web workers (created by pixelworks) not being terminated in an OpenLayers-based web application. As the user interacts with the application (e.g., changing a value in an input field), new web workers are created, but old ones are never terminated, leading to increasing memory usage and a potential memory leak. This is visible in the Chrome DevTools memory tab, where multiple workers (with unique IDs) accumulate over time, as shown in the provided image."
+    }
+}

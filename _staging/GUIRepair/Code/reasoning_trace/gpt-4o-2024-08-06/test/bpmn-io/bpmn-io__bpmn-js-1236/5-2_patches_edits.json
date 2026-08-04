@@ -1,0 +1,242 @@
+{
+    "1/5": {
+        "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js": [
+            {
+                "SEARCH": [
+                    "if (shape.collapsed) {",
+                    "",
+                    "// resize to default size of collapsed shapes",
+                    "newBounds = collapsedBounds(shape, defaultSize);",
+                    "} else {",
+                    "",
+                    "// resize to bounds of max(visible children, defaultSize)",
+                    "newBounds = expandedBounds(shape, defaultSize);",
+                    "}",
+                    "",
+                    "modeling.resizeShape(shape, newBounds, null, {",
+                    "autoResize: shape.collapsed ? false : 'nwse'",
+                    "});"
+                ],
+                "REPLACE": [
+                    "if (shape.collapsed) {",
+                    "",
+                    "// resize to default size of collapsed shapes",
+                    "newBounds = collapsedBounds(shape, defaultSize);",
+                    "} else {",
+                    "",
+                    "// resize to bounds of max(visible children, defaultSize)",
+                    "newBounds = expandedBounds(shape, defaultSize);",
+                    "}",
+                    "",
+                    "// Ensure dimensions remain consistent for Ad Hoc Sub Process",
+                    "if (is(shape, 'bpmn:AdHocSubProcess')) {",
+                    "newBounds.width = shape.width;",
+                    "newBounds.height = shape.height;",
+                    "}",
+                    "",
+                    "modeling.resizeShape(shape, newBounds, null, {",
+                    "autoResize: shape.collapsed ? false : 'nwse'",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js": [
+            {
+                "SEARCH": [
+                    "this.postExecuted([ 'shape.toggleCollapse' ], LOW_PRIORITY, function(e) {",
+                    "var shape = e.context.shape,",
+                    "defaultSize = elementFactory._getDefaultSize(shape),",
+                    "newBounds;",
+                    "",
+                    "if (shape.collapsed) {",
+                    "",
+                    "// resize to default size of collapsed shapes",
+                    "newBounds = collapsedBounds(shape, defaultSize);",
+                    "} else {",
+                    "",
+                    "// resize to bounds of max(visible children, defaultSize)",
+                    "newBounds = expandedBounds(shape, defaultSize);",
+                    "}",
+                    "",
+                    "modeling.resizeShape(shape, newBounds, null, {",
+                    "autoResize: shape.collapsed ? false : 'nwse'",
+                    "});",
+                    "});"
+                ],
+                "REPLACE": [
+                    "this.postExecuted([ 'shape.toggleCollapse', 'shape.turnIntoAdHoc' ], LOW_PRIORITY, function(e) {",
+                    "var shape = e.context.shape,",
+                    "defaultSize = elementFactory._getDefaultSize(shape),",
+                    "newBounds;",
+                    "",
+                    "if (shape.collapsed || is(shape, 'bpmn:AdHocSubProcess')) {",
+                    "",
+                    "// keep default size for collapsed or Ad Hoc subprocess shapes",
+                    "newBounds = collapsedBounds(shape, defaultSize);",
+                    "} else {",
+                    "",
+                    "// resize to bounds of max(visible children, defaultSize)",
+                    "newBounds = expandedBounds(shape, defaultSize);",
+                    "}",
+                    "",
+                    "modeling.resizeShape(shape, newBounds, null, {",
+                    "autoResize: shape.collapsed || is(shape, 'bpmn:AdHocSubProcess') ? false : 'nwse'",
+                    "});",
+                    "});"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js": [
+            {
+                "SEARCH": [
+                    "if (shape.collapsed) {",
+                    "",
+                    "// resize to default size of collapsed shapes",
+                    "newBounds = collapsedBounds(shape, defaultSize);",
+                    "} else {",
+                    "",
+                    "// resize to bounds of max(visible children, defaultSize)",
+                    "newBounds = expandedBounds(shape, defaultSize);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (shape.collapsed) {",
+                    "",
+                    "// resize to default size of collapsed shapes",
+                    "newBounds = is(shape, 'bpmn:AdHocSubProcess')",
+                    "? defaultSize",
+                    ": collapsedBounds(shape, defaultSize);",
+                    "} else {",
+                    "",
+                    "// resize to bounds of max(visible children, defaultSize)",
+                    "newBounds = expandedBounds(shape, defaultSize);",
+                    "}"
+                ]
+            }
+        ],
+        "lib/features/modeling/behavior/ResizeBehavior.js": [
+            {
+                "SEARCH": [
+                    "if (is(shape, 'bpmn:SubProcess') && isExpanded(shape)) {",
+                    "context.minDimensions = SUB_PROCESS_MIN_DIMENSIONS;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (is(shape, 'bpmn:SubProcess')) {",
+                    "if (isExpanded(shape) || is(shape, 'bpmn:AdHocSubProcess')) {",
+                    "context.minDimensions = SUB_PROCESS_MIN_DIMENSIONS;",
+                    "}",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js": [
+            {
+                "SEARCH": [
+                    "if (!shape.collapsed) {",
+                    "",
+                    "// all children got made visible through djs, hide empty labels",
+                    "hideEmptyLabels(shape.children);",
+                    "",
+                    "// remove collapsed marker",
+                    "getBusinessObject(shape).di.isExpanded = true;"
+                ],
+                "REPLACE": [
+                    "if (!shape.collapsed) {",
+                    "",
+                    "// all children got made visible through djs, hide empty labels",
+                    "hideEmptyLabels(shape.children);",
+                    "",
+                    "// remove collapsed marker",
+                    "getBusinessObject(shape).di.isExpanded = true;",
+                    "",
+                    "// fix dimensions when transitioning to Ad Hoc",
+                    "if (/* condition to check ad hoc */) {",
+                    "// specific size handling for ad hoc",
+                    "newBounds.width = Math.max(defaultSize.width, newBounds.width);",
+                    "newBounds.height = Math.max(defaultSize.height, newBounds.height);",
+                    "}"
+                ]
+            }
+        ],
+        "lib/features/modeling/behavior/ResizeBehavior.js": [
+            {
+                "SEARCH": [
+                    "if (is(shape, 'bpmn:SubProcess') && isExpanded(shape)) {",
+                    "context.minDimensions = SUB_PROCESS_MIN_DIMENSIONS;"
+                ],
+                "REPLACE": [
+                    "if (is(shape, 'bpmn:SubProcess')) {",
+                    "if (isExpanded(shape)) {",
+                    "context.minDimensions = SUB_PROCESS_MIN_DIMENSIONS;",
+                    "} else {",
+                    "// Ensure minimum dimensions are set correctly when ad hoc",
+                    "context.minDimensions = /* ad hoc dimensions */;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "lib/features/modeling/behavior/ToggleElementCollapseBehaviour.js": [
+            {
+                "SEARCH": [
+                    "if (shape.collapsed) {",
+                    "",
+                    "// resize to default size of collapsed shapes",
+                    "newBounds = collapsedBounds(shape, defaultSize);",
+                    "} else {",
+                    "",
+                    "// resize to bounds of max(visible children, defaultSize)",
+                    "newBounds = expandedBounds(shape, defaultSize);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (shape.collapsed) {",
+                    "",
+                    "// resize to default size of collapsed shapes",
+                    "newBounds = collapsedBounds(shape, defaultSize);",
+                    "} else {",
+                    "",
+                    "// resize to bounds of max(visible children, defaultSize)",
+                    "newBounds = expandedBounds(shape, defaultSize);",
+                    "",
+                    "// Ensure Ad Hoc Sub Process maintains expected dimensions",
+                    "if (is(shape, 'bpmn:AdHocSubProcess')) {",
+                    "newBounds.width = Math.max(newBounds.width, defaultSize.width);",
+                    "newBounds.height = Math.max(newBounds.height, defaultSize.height);",
+                    "}",
+                    "}"
+                ]
+            }
+        ],
+        "lib/features/modeling/behavior/ResizeBehavior.js": [
+            {
+                "SEARCH": [
+                    "if (is(shape, 'bpmn:SubProcess') && isExpanded(shape)) {",
+                    "context.minDimensions = SUB_PROCESS_MIN_DIMENSIONS;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (is(shape, 'bpmn:SubProcess') && isExpanded(shape)) {",
+                    "context.minDimensions = SUB_PROCESS_MIN_DIMENSIONS;",
+                    "}",
+                    "",
+                    "// Add resize constraints for Ad Hoc Sub Process",
+                    "if (is(shape, 'bpmn:AdHocSubProcess')) {",
+                    "context.minDimensions = {",
+                    "width: SUB_PROCESS_MIN_DIMENSIONS.width,",
+                    "height: SUB_PROCESS_MIN_DIMENSIONS.height",
+                    "};",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

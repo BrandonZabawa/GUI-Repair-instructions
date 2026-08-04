@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/Data/Data.js//Data",
+            "src/js/components/DataFilters/DataFilters.js//DataFilters",
+            "src/js/components/DataSearch/DataSearch.js//DataSearch"
+        ],
+        "bug_functions": [
+            "src/js/components/Data/Data.js//contextValue.clearFilters",
+            "src/js/components/Data/Data.js//contextValue.addToolbarKey",
+            "src/js/components/Data/Data.js//toolbarContent rendering",
+            "src/js/components/DataFilters/DataFilters.js//clearControl computation",
+            "src/js/components/DataSearch/DataSearch.js//useEffect(addToolbarKey)"
+        ],
+        "explanation": "The Data component wires up clearFilters and tracks toolbarKeys, but never renders a global Clear Filters button when toolbarKeys changes. DataFilters only shows its clearControl when its own \u2018touched\u2019 badge is nonzero, so search\u2010only scenarios never produce a Clear button. DataSearch incorrectly calls addToolbarKey('_search') on mount rather than on user input. To fix: \u2013 In Data.js, extend toolbarContent to include a Clear Filters <Button> whenever contextValue.toolbarKeys.length > 0. \u2013 In DataFilters.js, compute clearControl based on contextValue.toolbarKeys (not just its own badge). \u2013 In DataSearch.js, move addToolbarKey('_search') into the onChange handler so the search interaction really registers it and triggers the Clear Filters control.",
+        "bug_scenario": "Across multiple Data examples (Servers, Hosts, Orders), when a user types in the DataSearch or selects filters via DataFilters in the toolbar, the \u201cClear Filters\u201d button fails to appear next to the toolbar controls. Only when the DataFilters component has a non\u2010zero badge (i.e. at least one filter touched) does its own clear button render; search interactions alone or toolbarKeys registered by DataSearch never trigger a top\u2010level Clear Filters control."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/Data/Data.js//Data",
+            "src/js/components/DataFilters/DataFilters.js//DataFilters"
+        ],
+        "bug_functions": [
+            "src/js/components/Data/Data.js//clearFilters"
+        ],
+        "explanation": "The Data component in Data.js is responsible for wiring up the toolbar content and providing a clearFilters function in its DataContext. Although clearFilters is defined, Data\u2019s toolbarContent array never includes a Clear Filters button, so the action never appears. Meanwhile, DataFilters.js implements a clearControl (using clearFilters) but only when filters are rendered in a drop or layer, not promoted to the top-level toolbar. To restore the missing Clear Filters action, Data.js must insert a toolbar button bound to context.clearFilters. The DataFilters component could also be adjusted to surface its clearControl alongside the DropButton in the toolbar. These two components/functions are the core elements managing filter state and toolbar rendering, so they must be updated to fix the issue.",
+        "bug_scenario": "The user interface for a Data table shows search and filter controls in the toolbar, but once the user types in the search box or opens the filter drop, there is no \u201cClear Filters\u201d button visible at the top level. According to the Design System examples, a \u201cClear Filters\u201d action should appear in the toolbar whenever any DataToolbar interaction (search or filters) has been applied. In the screenshots: 1) initial state shows search, view, and filter icons without clear action; 2) after applying search or filter, the filtered count updates but no clear action appears; 3) in other templates the Clear Filters button is correctly rendered alongside the toolbar controls."
+    }
+}

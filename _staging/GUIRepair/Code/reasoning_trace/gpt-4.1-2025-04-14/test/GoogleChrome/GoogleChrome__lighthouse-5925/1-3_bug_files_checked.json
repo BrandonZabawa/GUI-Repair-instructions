@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js"
+        ],
+        "explanation": "These files are responsible for detecting and reporting unminified JavaScript in Lighthouse. 'unminified-javascript.js' contains the main audit for detecting minification issues and is the primary candidate for where the overestimation occurs, particularly if the logic doesn't correctly handle files with legal notices or whitespace in comments. 'byte-efficiency-audit.js' provides shared logic for all byte efficiency audits and may contain utility or helper functions called during the assessment/calculation, and could play a role if the issue is from common byte savings calculations or error handling (such as Esprima failures). Changes to these files would be required to fix how Lighthouse estimates and reports potential savings, particularly for cases where minification fails due to non-code whitespace or comments.",
+        "bug_scenario": "When Lighthouse audits an AMP page, it incorrectly flags a minified JavaScript file (amp-date-picker-0.1.js) as unminified, significantly overestimating potential savings. The root cause is that the copyright notice in the minified file includes carriage returns and whitespace, which Lighthouse's byte efficiency audit over-penalizes, likely due to a failure in its minification assessment logic (possibly related to Esprima parsing)."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/unminified-javascript.js",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js"
+        ],
+        "explanation": "The primary logic for auditing minified JavaScript is in 'lighthouse-core/audits/byte-efficiency/unminified-javascript.js', which runs the minification check, likely using Esprima as a parser. If Esprima parsing fails, the module might incorrectly estimate savings, as described in the report. 'lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js' provides common utilities used by other byte-efficiency audits, including reporting and aggregation logic for potential savings. Fixing this bug would likely involve handling parse errors or customizing how non-minified JS is detected even when copyright blocks with whitespace are present.",
+        "bug_scenario": "The bug scenario is related to Lighthouse incorrectly reporting that a minified JavaScript file (amp-date-picker-0.1.js) could be further minified, due to the presence of a copyright notice with carriage returns and whitespace. Lighthouse's `Minify JavaScript` audit identifies this file as not being minified and overestimates the potential savings, likely because the Esprima parser fails to parse the copyright block properly, leading to an inaccurate assessment of the file's minification status."
+    }
+}

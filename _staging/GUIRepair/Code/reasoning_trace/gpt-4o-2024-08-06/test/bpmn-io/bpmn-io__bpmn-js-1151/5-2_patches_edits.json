@@ -1,0 +1,215 @@
+{
+    "1/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "if (isLabel(descriptor)) {",
+                    "return descriptor;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);",
+                    "return;",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "2/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);",
+                    "",
+                    "return;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);",
+                    "",
+                    "// Ensure labels are copied correctly",
+                    "descriptor.oldLabel = descriptor.businessObject.name;",
+                    "",
+                    "return;",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "eventBus.on('copyPaste.pasteElement', function(context) {",
+                    "var cache = context.cache,",
+                    "descriptor = context.descriptor,",
+                    "oldBusinessObject = descriptor.oldBusinessObject,",
+                    "newBusinessObject;",
+                    "",
+                    "// do NOT copy business object if external label",
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);",
+                    "",
+                    "return;",
+                    "}",
+                    "",
+                    "newBusinessObject = bpmnFactory.create(oldBusinessObject.$type);"
+                ],
+                "REPLACE": [
+                    "eventBus.on('copyPaste.pasteElement', function(context) {",
+                    "var cache = context.cache,",
+                    "descriptor = context.descriptor,",
+                    "oldBusinessObject = descriptor.oldBusinessObject,",
+                    "newBusinessObject;",
+                    "",
+                    "// Properly handle labels during paste",
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);",
+                    "",
+                    "if (descriptor.oldLabel) {",
+                    "descriptor.businessObject.name = descriptor.oldLabel;",
+                    "}",
+                    "",
+                    "return;",
+                    "}",
+                    "",
+                    "newBusinessObject = bpmnFactory.create(oldBusinessObject.$type);"
+                ]
+            }
+        ]
+    },
+    "3/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "if (isLabel(descriptor)) {",
+                    "return descriptor;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = {",
+                    "id: descriptor.oldBusinessObject.id,",
+                    "type: descriptor.type,",
+                    "labelTarget: descriptor.oldBusinessObject.labelTarget",
+                    "};",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "descriptor.businessObject = moddleCopy.copyElement(",
+                    "oldBusinessObject,",
+                    "newBusinessObject",
+                    ");"
+                ],
+                "REPLACE": [
+                    "// Check if the descriptor represents a label",
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[descriptor.labelTarget]);",
+                    "} else {",
+                    "descriptor.businessObject = moddleCopy.copyElement(",
+                    "oldBusinessObject,",
+                    "newBusinessObject",
+                    ");",
+                    "}"
+                ]
+            }
+        ]
+    },
+    "4/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);",
+                    "",
+                    "return;",
+                    "}",
+                    "",
+                    "newBusinessObject = bpmnFactory.create(oldBusinessObject.$type);"
+                ],
+                "REPLACE": [
+                    "if (isLabel(descriptor)) {",
+                    "// Preserve label's business object during copy",
+                    "descriptor.businessObject = moddleCopy.copyElement(",
+                    "getBusinessObject(cache[descriptor.labelTarget]),",
+                    "bpmnFactory.create(oldBusinessObject.$type)",
+                    ");",
+                    "return;",
+                    "}",
+                    "",
+                    "newBusinessObject = bpmnFactory.create(oldBusinessObject.$type);"
+                ]
+            }
+        ]
+    },
+    "5/5": {
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "eventBus.on('copyPaste.copyElement', LOW_PRIORITY, function(context) {",
+                    "var descriptor = context.descriptor,",
+                    "element = context.element;",
+                    "",
+                    "var businessObject = descriptor.oldBusinessObject = getBusinessObject(element);",
+                    "",
+                    "descriptor.type = element.type;",
+                    "",
+                    "descriptor.di = {};",
+                    "",
+                    "copyProperties(businessObject.di, descriptor.di, [",
+                    "'fill',"
+                ],
+                "REPLACE": [
+                    "eventBus.on('copyPaste.copyElement', LOW_PRIORITY, function(context) {",
+                    "var descriptor = context.descriptor,",
+                    "element = context.element;",
+                    "",
+                    "var businessObject = descriptor.oldBusinessObject = getBusinessObject(element);",
+                    "",
+                    "// Check if there is a label and copy it",
+                    "if (element.label) {",
+                    "descriptor.label = copyElement(element.label);",
+                    "}",
+                    "",
+                    "descriptor.type = element.type;",
+                    "",
+                    "descriptor.di = {};",
+                    "",
+                    "copyProperties(businessObject.di, descriptor.di, [",
+                    "'fill',"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[ descriptor.labelTarget ]);",
+                    "",
+                    "return;",
+                    "}",
+                    "",
+                    "newBusinessObject = bpmnFactory.create(oldBusinessObject.$type);",
+                    "",
+                    "descriptor.businessObject = moddleCopy.copyElement("
+                ],
+                "REPLACE": [
+                    "if (descriptor.label) {",
+                    "var newLabel = moddleCopy.copyElement(descriptor.label);",
+                    "newLabel.labelTarget = cache[descriptor.id];",
+                    "descriptor.businessObject = newLabel;",
+                    "return;",
+                    "}",
+                    "",
+                    "if (isLabel(descriptor)) {",
+                    "descriptor.businessObject = getBusinessObject(cache[descriptor.labelTarget]);",
+                    "return;",
+                    "}",
+                    "",
+                    "newBusinessObject = bpmnFactory.create(oldBusinessObject.$type);",
+                    "",
+                    "descriptor.businessObject = moddleCopy.copyElement("
+                ]
+            }
+        ]
+    }
+}

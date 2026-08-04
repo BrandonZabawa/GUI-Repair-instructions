@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/command/render/pandoc.ts"
+        ],
+        "bug_functions": [
+            "src/command/render/pandoc.ts//runPandoc"
+        ],
+        "explanation": "The bug centers on how Quarto handles figure captions in R code blocks, especially when the caption is set to an empty R character vector (`character(0)`). The compressed bug file for 'src/command/render/pandoc.ts' contains the main export function `runPandoc`, which is responsible for rendering and processing metadata, including figure captions. Any logic that decides whether to include figures based on the caption value (or the presence/absence of a caption) would reside here. If the evaluation of the caption results in a zero-length character vector, and the logic mistakenly treats this as an instruction to suppress the entire figure, it would explain the observed behavior. Therefore, the key bug function is 'runPandoc', and the relevant bug class is the file itself, as all related logic (including metadata processing for figures and captions) is likely centralized there.",
+        "bug_scenario": "The bug scenario is that when rendering a Quarto document containing an R code block with a figure caption set via an inline R expression (`fig-cap: !expr caption`), if this caption expression evaluates to `character(0)` (an empty character vector in R), the figure is not rendered at all in the output HTML. This is problematic because, even if the caption is empty, the figure itself should still appear. The image provided shows the expected figure output (a pony and a Jigglypuff singing together), highlighting what should be visible but is missing when the bug is triggered."
+    },
+    "2": {
+        "bug_classes": [
+            "src/command/render/pandoc.ts//runPandoc"
+        ],
+        "bug_functions": [
+            "src/command/render/pandoc.ts//runPandoc"
+        ],
+        "explanation": "The core of the bug relates to how metadata\u2014specifically, the figure caption\u2014is processed and passed to Pandoc in the Quarto rendering pipeline. The bug occurs when a zero-length character vector is used as a caption, resulting in the figure being omitted. The function runPandoc in src/command/render/pandoc.ts is responsible for preparing and merging metadata (including code chunk options like fig-cap), and for running the Pandoc process. If this function does not correctly handle the case where the fig-cap value is character(0), it may result in the figure being dropped from the output. Ensuring that empty or zero-length captions are still processed (e.g., converting character(0) to NULL, or an empty string) so that the figure is rendered is the key fix. Other files, such as filters.ts, are less likely to be directly responsible for this bug, as they focus on filter parameter extraction and handling rather than core metadata preparation and Pandoc invocation.",
+        "bug_scenario": "The bug scenario concerns figures generated from R code blocks in Quarto. When the figure caption is set using an R expression that evaluates to character(0) (i.e., an empty caption), the figure is not rendered in the output HTML at all. This can occur, for example, when a caption is accidentally computed as a zero-length character vector, such as via a mistaken sprintf call. The intended behavior is that the figure should still be rendered, possibly with no caption, but not omitted entirely. The bug scenario image demonstrates a figure that should appear in the output, but does not when the caption is empty."
+    }
+}

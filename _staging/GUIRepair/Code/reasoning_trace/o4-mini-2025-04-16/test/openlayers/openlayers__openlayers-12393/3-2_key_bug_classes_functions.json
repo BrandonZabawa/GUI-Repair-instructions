@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer.renderFrame"
+        ],
+        "explanation": "All of the scaling and drawing calculations for an image layer happen in CanvasImageLayerRenderer.renderFrame. This method computes a scale factor and then uses Math.round on the target width/height (dw, dh) and offsets (dx, dy). Because these roundings are applied independently to width and height (and were earlier using Math.ceil in related logic), one axis can end up rounded up while the other is rounded down, stretching the image. To fix the bug, the rounding strategy here needs to be adjusted (for example, using a consistent ceil/nearest\u2010pixel policy or tying both dimensions to the same rounding) so that a perfect square image placed in a perfect square extent always renders as a perfect square.",
+        "bug_scenario": "When a square image is drawn to fill a square tile extent, the pixel\u2010perfect fit is lost because floating\u2010point scale factors and subsequent rounding (via Math.round or Math.ceil) cause one dimension to round up by a pixel even though the other rounds down, so the image is slightly stretched. In the provided scenario a 256\u00d7256 image on a 256\u00d7256 tile ends up drawn as, say, 257\u00d7255 or similar, giving visible distortion."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/ImageLayer.js//CanvasImageLayerRenderer.renderFrame"
+        ],
+        "explanation": "The CanvasImageLayerRenderer.renderFrame method is where the image\u2019s on-screen width and height (dw, dh) and its pixel offsets (dx, dy) are computed and then all four values are snapped to integer pixels via Math.round. This rounding up leads to the image exceeding the exact tile extent. Although the intention was to avoid zero-width/height issues (hence the use of ceil/round), it causes square images to become slightly oversized. Adjusting this code\u2014replacing Math.round (or Math.ceil) with a rounding strategy that never exceeds the target extent (e.g. nearest-pixel rounding with floor when scaling down)\u2014will eliminate the stretch error.",
+        "bug_scenario": "When drawing a perfectly square image into a square tile, the floating-point scale factors are rounded up when computing the destination rectangle, so the image is drawn slightly larger than the tile. This causes unnecessary stretching. The provided scenario shows a static image being scaled to fit an extent and ending up a few pixels too wide or tall because of the use of pixel rounding (Math.round or ceil) in the canvas draw loop."
+    }
+}

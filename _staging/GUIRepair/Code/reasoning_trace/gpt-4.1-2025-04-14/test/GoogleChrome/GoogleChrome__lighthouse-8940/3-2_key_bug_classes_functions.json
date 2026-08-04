@@ -1,0 +1,29 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js//UsesOptimizedImages",
+            "lighthouse-core/gather/gatherers/dobetterweb/optimized-images.js//OptimizedImages"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js//UsesOptimizedImages.computeSavings",
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js//UsesOptimizedImages.estimateJPEGSizeFromDimensions",
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js//UsesOptimizedImages.audit_",
+            "lighthouse-core/gather/gatherers/dobetterweb/optimized-images.js//OptimizedImages.calculateImageStats",
+            "lighthouse-core/gather/gatherers/dobetterweb/optimized-images.js//OptimizedImages.computeOptimizedImages"
+        ],
+        "explanation": "The main logic for determining image optimization savings is in UsesOptimizedImages (lighthouse-core/audits/byte-efficiency/uses-optimized-images.js). The methods computeSavings, estimateJPEGSizeFromDimensions, and audit_ are directly responsible for calculating and reporting potential byte savings. If these calculations are off\u2014such as estimating unrealistic savings for already optimized images\u2014the audit will produce misleading results. On the gathering side, the OptimizedImages gatherer (lighthouse-core/gather/gatherers/dobetterweb/optimized-images.js) and its functions calculateImageStats and computeOptimizedImages are responsible for collecting image size data and performing the actual re-encoding or estimation. Any bug in these areas (e.g., using incorrect heuristics for PNGs or overestimating re-encoding savings) would produce the kind of erroneous output shown in the bug scenario.",
+        "bug_scenario": "The bug scenario involves a Lighthouse audit suggesting that the image 'spritesheet2.png' (54 KB) could be further optimized, claiming a potential saving of 53 KB. However, the user has already minified the image using popular online tools, and the indicated savings seem unreasonably high given the actual file size. The audit result is likely due to a miscalculation or overly aggressive estimation in the image optimization logic, rather than a genuine optimization opportunity."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js//UsesOptimizedImages"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js//UsesOptimizedImages.estimateJPEGSizeFromDimensions",
+            "lighthouse-core/audits/byte-efficiency/uses-optimized-images.js//UsesOptimizedImages.audit_",
+            "lighthouse-core/gather/gatherers/dobetterweb/optimized-images.js//OptimizedImages.calculateImageStats"
+        ],
+        "explanation": "The class 'UsesOptimizedImages' (in uses-optimized-images.js) is responsible for the audit logic that computes potential savings for image optimization in Lighthouse. The function 'estimateJPEGSizeFromDimensions' is used when actual JPEG size cannot be determined\u2014it estimates the JPEG size using dimensions and a heuristic, which can dramatically overestimate savings for already optimized PNGs or small images. The 'audit_' function implements the main audit workflow, applying these calculations and filtering which images get flagged. In optimized-images.js, 'calculateImageStats' attempts to encode images and falls back to undefined size when encoding fails or times out, which triggers the heuristic in 'estimateJPEGSizeFromDimensions'. Thus, the bug likely lies in these functions using or triggering inaccurate estimations for small or optimized images, resulting in incorrect savings being reported.",
+        "bug_scenario": "The bug scenario is that Lighthouse's 'Properly Size Images' audit reports a potential savings of 53 KB for the image 'spritesheet2.png', which is only 54 KB in total. The site owner already optimized the image using popular tools, yet Lighthouse still flags it as needing optimization, suggesting almost the entire file size could be saved. The bug is that the audit is incorrectly flagging the image as unoptimized, possibly due to flawed heuristics or estimation logic."
+    }
+}

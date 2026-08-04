@@ -1,0 +1,110 @@
+diff --git a/src/ol/layer/WebGLTile.js b/src/ol/layer/WebGLTile.js
+index 4e2f042232..ed6b299305 100644
+--- a/src/ol/layer/WebGLTile.js
++++ b/src/ol/layer/WebGLTile.js
+@@ -103,10 +103,11 @@ function parseStyle(style, bandCount) {
+     uniform float ${Uniforms.TEXTURE_ORIGIN_Y};
+     uniform float ${Uniforms.DEPTH};
+ 
+-    varying vec2 v_textureCoord;
++uniform float u_gutter;
++varying vec2 v_textureCoord;
+     varying vec2 v_mapCoord;
+ 
+-    void main() {
++v_textureCoord = ${Attributes.TEXTURE_COORD} * (1.0 - 2.0 * u_gutter) + u_gutter;
+       v_textureCoord = ${Attributes.TEXTURE_COORD};
+       v_mapCoord = vec2(
+         ${Uniforms.TEXTURE_ORIGIN_X} + ${Uniforms.TEXTURE_RESOLUTION} * ${Uniforms.TEXTURE_PIXEL_WIDTH} * v_textureCoord[0],
+@@ -254,7 +255,8 @@ function parseStyle(style, bandCount) {
+     uniform float ${Uniforms.TEXTURE_PIXEL_HEIGHT};
+     uniform float ${Uniforms.RESOLUTION};
+     uniform float ${Uniforms.ZOOM};
+-
++uniform float u_gutter;
++${uniformDeclarations.join('\n')}
+     ${uniformDeclarations.join('\n')}
+ 
+     ${functionDefintions.join('\n')}
+@@ -409,7 +411,13 @@ class WebGLTileLayer extends BaseTileLayer {
+   }
+ 
+   createRenderer() {
+-    const parsedStyle = parseStyle(this.style_, this.getSourceBandCount_());
++const gutter = this.getSource().getGutterForProjection(frameState.viewState.projection);
++
++return new WebGLTileLayerRenderer(this, {
++uniforms: {
++...parsedStyle.uniforms,
++u_gutter: gutter / this.getSource().getTilePixelSize(0, 1, frameState.viewState.projection)[0],
++},
+ 
+     return new WebGLTileLayerRenderer(this, {
+       vertexShader: parsedStyle.vertexShader,
+diff --git a/src/ol/source/DataTile.js b/src/ol/source/DataTile.js
+index 3836457d7a..1782aa45c2 100644
+--- a/src/ol/source/DataTile.js
++++ b/src/ol/source/DataTile.js
+@@ -66,7 +66,10 @@ class DataTileSource extends TileSource {
+       });
+     }
+ 
+-    super({
++const gutter = options.gutter || 0;
++
++super({
++gutter: gutter,
+       cacheSize: 0.1, // don't cache on the source
+       attributions: options.attributions,
+       attributionsCollapsible: options.attributionsCollapsible,
+diff --git a/src/ol/source/Tile.js b/src/ol/source/Tile.js
+index b09e812d4c..02b68dbfcb 100644
+--- a/src/ol/source/Tile.js
++++ b/src/ol/source/Tile.js
+@@ -38,7 +38,8 @@ import {scale as scaleSize, toSize} from '../size.js';
+  * @property {number} [transition] Transition.
+  * @property {string} [key] Key.
+  * @property {number|import("../array.js").NearestDirectionFunction} [zDirection=0] ZDirection.
+- * @property {boolean} [interpolate=false] Use interpolated values when resampling.  By default,
++* @property {number} [gutter=0] Gutter size in pixels.
++* @property {boolean} [interpolate=false] Use interpolated values when resampling.  By default,
+  * the nearest neighbor is used when resampling.
+  */
+ 
+@@ -61,7 +62,8 @@ class TileSource extends Source {
+       projection: options.projection,
+       state: options.state,
+       wrapX: options.wrapX,
+-      interpolate: options.interpolate,
++gutter: options.gutter || 0,
++});
+     });
+ 
+     /***
+@@ -197,8 +199,8 @@ class TileSource extends Source {
+ 
+   /**
+    * @param {import("../proj/Projection.js").default} projection Projection.
+-   * @return {number} Gutter.
+-   */
++getGutterForProjection(projection) {
++return this.gutter;
+   getGutterForProjection(projection) {
+     return 0;
+   }
+diff --git a/src/ol/source/XYZ.js b/src/ol/source/XYZ.js
+index 15b11cb380..2257eb5010 100644
+--- a/src/ol/source/XYZ.js
++++ b/src/ol/source/XYZ.js
+@@ -95,7 +95,10 @@ class XYZ extends TileImage {
+             tileSize: options.tileSize,
+           });
+ 
+-    super({
++const gutter = options.gutter || 0;
++
++super({
++gutter: gutter,
+       attributions: options.attributions,
+       cacheSize: options.cacheSize,
+       crossOrigin: options.crossOrigin,

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/php.js//export default function(hljs)"
+        ],
+        "explanation": "The bug lives in the grammar definition inside src/languages/php.js\u2019s default export. That function builds a `className: 'function'` mode which matches both traditional functions and PHP\u2019s arrow functions (beginKeywords: 'fn function') and sets `end: /[;{]/`, so the arrow-function body (the part after => up to the semicolon) remains inside the \u201cfunction\u201d mode. Because that mode includes hljs.UNDERSCORE_TITLE_MODE, identifiers in the expression are incorrectly marked as titles. To fix this, the arrow-function mode should be split or ended at the arrow token (=>) so that the body is parsed by the normal expression rules (including VARIABLE), not by the function rule with UNDERSCORE_TITLE_MODE.",
+        "bug_scenario": "When using PHP\u2019s short arrow functions (fn($x) => $x + $y;), the highlighter picks up the identifiers in the expression after the \u201c=>\u201d as titles (i.e. hljs.UNDERSCORE_TITLE_MODE), so both $x and $y are rendered as titles instead of variables. In the provided screenshots the actual result shows \u201ctitle x\u201d and \u201ctitle y,\u201d but the expected highlighting should treat them as variables."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/php.js//export default function(hljs)",
+            "src/languages/php.js//function parsing rule (object with className: 'function', beginKeywords: 'fn function')"
+        ],
+        "explanation": "All of the arrow\u2010function highlighting logic lives in src/languages/php.js inside the default export. In particular the rule with className:'function' and beginKeywords:'fn function' is used both for named function declarations and anonymous arrow functions. That rule still includes hljs.UNDERSCORE_TITLE_MODE (which forces a title after fn), so when you write an arrow function without a name it mis-applies the title style to the next token(s). Fixing this requires splitting the fn case out or removing UNDERSCORE_TITLE_MODE when beginKeywords matches only an arrow function (fn), so that no title is expected and all variables get the correct \u201cvariable\u201d class.",
+        "bug_scenario": "When highlighting PHP arrow functions of the form fn($x) => $x + $y (anonymous functions without a {} block), highlight.js treats the first identifier after the fn keyword and even the return\u2010expression variables ($x and $y) as a function name (title) instead of as parameters or regular variables. In the screenshot you can see fn is recognized as a keyword, the parameter $x is correctly recognized as variable, but the $x and $y after the arrow are marked as \u201ctitle\u201d. The expected behavior is to highlight both parameters and return\u2010body variables with the \u201cvariable\u201d style."
+    }
+}

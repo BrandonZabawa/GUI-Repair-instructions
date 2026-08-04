@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Tile.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/render/VectorContext.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "The bug is specific to rendering vector features using a 'vector context' on top of a tile layer, and the bug occurs at certain map rotation angles. The relevant files are:\n- src/ol/layer/Tile.js: Handles the general behavior and definition of tile layers.\n- src/ol/renderer/canvas/TileLayer.js: Implements the logic for rendering tile layers onto the canvas, including creating and managing vector contexts used for drawing.\n- src/ol/render/canvas/Immediate.js: Provides the implementation for immediate mode vector context rendering to the canvas, which is likely used when features are animated or drawn directly to the canvas overlay of a tile layer.\n- src/ol/render/VectorContext.js: The abstract base for all vector context (canvas or otherwise) and may define interfaces that are misused or not consistently transformed at rotated angles.\n- src/ol/layer/Vector.js & src/ol/renderer/canvas/VectorLayer.js: Included for comparison and reference, as rendering to a vector context atop a vector layer is not affected. These may provide clues or code structure that should be consistent with TileLayer rendering.\n\nThe bug arises from the interaction between the tile layer's canvas rendering at arbitrary rotations and the drawing/transformation logic of vector features, thus implicating primarily the TileLayer rendering file and its associated context code.",
+        "bug_scenario": "When rendering vector data (such as animated flights or styled features) on top of a tile layer in OpenLayers, close to view rotations of 90 or 270 degrees, the graphics display incorrectly. This includes issues with stroke width, text scaling, and geometry precision. The bug only affects rendering to the vector context of tile layers, while the vector context of vector layers is unaffected. This leads to inconsistent visual output for features rendered in these ways close to those rotation angles. The problem can be reproduced by rotating the map view to near 90 degrees when using the vector context of a tile layer, with visible discrepancies in the rendering of animated or styled vector features."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/render/canvas/Immediate.js",
+            "src/ol/layer/Tile.js",
+            "src/ol/renderer/canvas/TileLayer.js",
+            "src/ol/render/VectorContext.js",
+            "src/ol/layer/Vector.js",
+            "src/ol/renderer/canvas/VectorLayer.js"
+        ],
+        "explanation": "1. src/ol/render/canvas/Immediate.js: This file implements the Immediate vector context used for rendering vector features directly to a canvas. Bugs in transformation and scaling (e.g. view rotation support) would stem from here, especially for tile layers using the vector context for drawing animated or dynamic items.\n2. src/ol/renderer/canvas/TileLayer.js: This is the main renderer for canvas-based tile layers. It manages rendering features in a vector context within a tile layer, and is likely central to handling how transforms are applied and what context settings (scaling, rotation) are used that cause the visual bug reported.\n3. src/ol/layer/Tile.js: This file defines the Tile layer class, which would be responsible for creating, managing, and supplying the vector context for rendering overlays/animations on a tile layer. Any setup and management issues for these contexts would originate here.\n4. src/ol/render/VectorContext.js: The base/prototypal interface for immediate and other vector contexts; if there were inconsistencies or missing handling of transforms, this base might be affected.\n5. src/ol/layer/Vector.js and 6. src/ol/renderer/canvas/VectorLayer.js: These represent the vector layer and its renderer, included for comparison/contrasting with the tile layer, as the bug is that rendering is inconsistent between the two. Reviewing and potentially aligning the handling between these is likely needed to ensure parity as per the bug report. The main fix might live in Immediate.js and TileLayer.js (and how they apply transforms), but analysis of VectorLayer.js and Vector.js is critical to aligning the output and ensuring consistency.",
+        "bug_scenario": "The reported bug is about incorrect rendering of features when using the vector context from a tile layer, particularly when the map is rotated close to 90 or 270 degrees. This manifests as incorrect stroke widths, text scaling, and geometry precision errors that aren't present when using the vector context of a vector layer. The expectation is that rendering via a tile layer's vector context should visually match rendering via a vector layer's vector context, regardless of view rotation. The bug is reproducible with links provided and can be observed in the Flight Animation example as well as a provided demo."
+    }
+}

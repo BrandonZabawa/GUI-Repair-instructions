@@ -1,0 +1,33 @@
+diff --git a/src/ol/format/KML.js b/src/ol/format/KML.js
+index 11c1ec076c..f7b31712b4 100644
+--- a/src/ol/format/KML.js
++++ b/src/ol/format/KML.js
+@@ -407,6 +407,18 @@ function createStyleDefaults() {
+  *
+  * @api
+  */
++/**
++ * Decode HTML/XML entities in a string.
++ * @param {string} str
++ * @return {string}
++ */
++function decodeHTMLEntities(str) {
++  if (!str || typeof str !== 'string') return str;
++  const txt = document.createElement('textarea');
++  txt.innerHTML = str;
++  return txt.value;
++}
++
+ class KML extends XMLFeature {
+ 
+   /**
+@@ -691,7 +703,8 @@ class KML extends XMLFeature {
+     for (let n = node.firstElementChild; n; n = n.nextElementSibling) {
+       if (includes(NAMESPACE_URIS, n.namespaceURI) &&
+           n.localName == 'name') {
+-        return readString(n);
++        // Decode HTML/XML entities in the name
++        return decodeHTMLEntities(readString(n));
+       }
+     }
+     for (let n = node.firstElementChild; n; n = n.nextElementSibling) {

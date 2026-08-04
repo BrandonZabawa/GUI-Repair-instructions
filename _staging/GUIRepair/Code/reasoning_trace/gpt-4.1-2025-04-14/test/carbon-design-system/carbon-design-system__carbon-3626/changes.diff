@@ -1,0 +1,82 @@
+diff --git a/packages/react/src/components/UIShell/SideNav.js b/packages/react/src/components/UIShell/SideNav.js
+index e5ae895e..78ebe7dd 100644
+--- a/packages/react/src/components/UIShell/SideNav.js
++++ b/packages/react/src/components/UIShell/SideNav.js
+@@ -80,7 +80,14 @@ const SideNav = React.forwardRef(function SideNav(props, ref) {
+         onBlur={event => handleToggle(event, false)}
+         onMouseEnter={() => handleToggle(true)}
+         onMouseLeave={() => handleToggle(false)}>
+-        {children}
++        {React.Children.map(children, child =>
++          React.isValidElement(child)
++            ? React.cloneElement(child, {
++                sideNavExpanded: expanded,
++                onSideNavExpand: handleToggle,
++              })
++            : child
++        )}
+       </nav>
+     </>
+   );
+diff --git a/packages/react/src/components/UIShell/SideNavMenu.js b/packages/react/src/components/UIShell/SideNavMenu.js
+index aa5b25d4..72320815 100644
+--- a/packages/react/src/components/UIShell/SideNavMenu.js
++++ b/packages/react/src/components/UIShell/SideNavMenu.js
+@@ -50,6 +50,18 @@ export class SideNavMenu extends React.Component {
+     defaultExpanded: PropTypes.bool,
+   };
+ 
++  static propTypes = {
++    // ...existing propTypes
++    /**
++     * Whether the parent SideNav is expanded
++     */
++    sideNavExpanded: PropTypes.bool,
++    /**
++     * Callback to expand the parent SideNav
++     */
++    onSideNavExpand: PropTypes.func,
++  };
++
+   static defaultProps = {
+     defaultExpanded: false,
+     isActive: false,
+@@ -62,6 +74,17 @@ export class SideNavMenu extends React.Component {
+     };
+   }
+ 
++  static getDerivedStateFromProps(nextProps, prevState) {
++    // Collapse submenu if rail is collapsed
++    if (
++      nextProps.sideNavExpanded === false &&
++      prevState.isExpanded === true
++    ) {
++      return { isExpanded: false };
++    }
++    return null;
++  }
++
+   handleToggleExpand = () => {
+     this.setState(state => ({ isExpanded: !state.isExpanded }));
+   };
+@@ -113,7 +136,19 @@ export class SideNavMenu extends React.Component {
+             <ChevronDown20 />
+           </SideNavIcon>
+         </button>
+-        <ul className={`${prefix}--side-nav__menu`} role="menu">
++        <ul
++          className={`${prefix}--side-nav__menu`}
++          role="menu"
++          onFocus={e => {
++            // If rail is collapsed, expand it when a submenu item is focused
++            if (
++              this.props.sideNavExpanded === false &&
++              typeof this.props.onSideNavExpand === 'function'
++            ) {
++              this.props.onSideNavExpand(e, true);
++            }
++          }}
++        >
+           {children}
+         </ul>
+       </li>

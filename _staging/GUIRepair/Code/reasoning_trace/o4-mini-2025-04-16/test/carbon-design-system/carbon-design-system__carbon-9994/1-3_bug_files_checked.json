@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableBatchActions.js",
+            "packages/react/src/components/DataTable/TableActionList.js",
+            "packages/react/src/components/DataTable/TableToolbar.js"
+        ],
+        "explanation": "\u2022 TableBatchActions.js is the React wrapper that shows/hides the batch action bar and currently applies a translateX to slide it in; if the inner list can\u2019t scroll fully left, left\u2010hand buttons remain hidden.\n\u2022 TableActionList.js renders the <ul> of individual batch actions and should support full horizontal scrolling; it needs className or style tweaks to enable that on small viewports.\n\u2022 TableToolbar.js is the parent container that applies overflow\u2010hidden and positioning around TableBatchActions; it may need adjustments to allow its child to overflow/scroll correctly.\n\u2022 The SCSS partial _action.scss in styles/scss/components/data-table/action defines the CSS rules (overflow, white-space, flex) for the batch action list; it must be updated to permit horizontal scrolling and remove hard clipping on narrow screens.",
+        "bug_scenario": "When you select rows on a narrow viewport (mobile or small desktop) the batch\u2010action bar at the top of the DataTable slides in as expected but its leftmost buttons (e.g. \u201cDownload to\u201d or \u201cTest 1\u201d) are clipped off. The horizontal overflow container never scrolls far enough to expose those first actions, so you can\u2019t tap them on small screens."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/DataTable/TableBatchActions.js",
+            "packages/react/src/components/DataTable/TableActionList.js"
+        ],
+        "explanation": "\u2022 TableBatchActions.js: This is the React wrapper that shows or hides the batch-action bar and wires up the next/previous scroll controls. Any fix to enable scrolling or to change when those controls appear must start here.  \n\n\u2022 TableActionList.js: This component actually renders the list of actions inside the batch-actions bar. Its flexbox settings and prop-getter logic determine whether the items can shrink or overflow. Adjusting the item flex rules here (for example, adding `flex: 0 0 auto`) or modifying how the scroll buttons are triggered will be required.  \n\n\u2022 styles/scss/components/data-table/action/_action.scss: The core styles for batch actions in the `styles` package define the container\u2019s `overflow`, `white-space` and hidden-scroll behavior. They currently clip off items when the container width is smaller than the total button width. You\u2019ll need to amend these rules (for example, ensuring `overflow-x: auto` and visible scroll bars or adding a `min-width` to buttons) so that all items remain reachable.  \n\n\u2022 packages/carbon-react/src/scss/components/data-table/action/_action.scss: The Carbon React distribution also ships its own SCSS overrides for DataTable batch actions. Any end-user who relies on the SCSS in `carbon-react` will need the same adjustments here to match changes in the core `styles` layer.",
+        "bug_scenario": "When you select rows in a DataTable and switch to a smaller viewport (for example on mobile or narrow windows), the batch-action buttons (rendered by <TableBatchActions>) no longer fit: the first few actions are clipped off to the left and there is no way to scroll to them. In the screenshot you can see the \u201cDownload to\u201d button (the first item) partially hidden behind the left edge, while the rest of the actions remain accessible. The scrolling logic and/or CSS overflow settings in <TableBatchActions> and the underlying action-list container aren\u2019t kicking in on small screens, so the user can\u2019t reach those early buttons."
+    }
+}

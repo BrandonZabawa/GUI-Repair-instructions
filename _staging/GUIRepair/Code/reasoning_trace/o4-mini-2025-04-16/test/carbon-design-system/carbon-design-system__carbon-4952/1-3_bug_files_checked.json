@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ComboBox/tools/filter.js",
+            "packages/react/src/components/ListBox/ListBoxField.js",
+            "packages/react/src/components/Dropdown/Dropdown.js"
+        ],
+        "explanation": "• ComboBox.js is the top-level component that wires Downshift to the ListBoxField. It subscribes both onInputChange and onKeyDown and immediately applies filtering as composition happens, so it never pauses for an IME session to finish.\n• filter.js (ComboBox/tools/filter.js) is the default filtering algorithm that runs on every input change. Because ComboBox.js isn’t distinguishing between composition vs. committed text, you get filtering of partial IME symbols instead of the final characters.\n• ListBoxField.js defines the actual <input> used by ListBox/ComboBox. It installs its own onKeyDown handler (via getButtonProps/getInputProps) that listens for Enter/Arrow keys unconditionally. Those handlers interrupt a composition session and force the menu open/close or selection, blocking correct IME behavior.\n• Dropdown.js shows the pattern of capturing key events on composition (Enter, Arrow) for menu toggling that ComboBox inherits in places. It too doesn’t check for ongoing composition (compositionStart/compositionEnd), so IME events trigger it prematurely.\n\nTo restore correct Chinese IME support, these handlers all need to be updated to ignore keyDown events while the user is in a composition session (e.g. track compositionStart/compositionEnd and only run filter or toggle menu when composition is finished).",
+        "bug_scenario": "When you mount a ComboBox and try to type Chinese with an IME (e.g. Zhuyin), you get intermediary composition characters (ㄓㄨㄥ ㄨㄣˊㄘㄜˋㄕˋ) and the component immediately treats those as final input, filters the list, or toggles menu state, rather than waiting for composition to finish. In other words, the Drop-down’s keyDown and inputChange handlers fire on every key stroke—including IME composition keystrokes—so you never see “中文測試” composed and selected the way a normal text input does."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/ComboBox/ComboBox.js",
+            "packages/react/src/components/ComboBox/tools/filter.js",
+            "packages/react/src/components/ListBox/ListBoxField.js"
+        ],
+        "explanation": "\n• ComboBox.js is the React wrapper that wires Downshift into the ComboBox. It controls how key events, input events, and Downshift’s getInputProps or getButtonProps are applied. A recent change replaced getInputProps with getButtonProps and custom handlers, thereby preventing native composition events from reaching the underlying <input>.\n• filter.js (defaultFilterItems) is used to filter items on each input change. It hooks into onInputChange and lower-cases the incoming inputValue. Because in-flight composition characters arrive in multiple chunks (before compositionend), filtering fires too early and drops or corrupts the IME buffer.\n• ListBoxField.js renders the actual <input> element inside the ListBox. It currently only forwards onChange/onKeyDown (or uses a <button> wrapper), but does not forward compositionstart/compositionupdate/compositionend handlers, so the IME conversion cannot finalize and the React state never captures the committed text.",
+        "bug_scenario": "When a user types Chinese (or other IME) input into the ComboBox text field, the composition characters (e.g. Zhuyin input) do not commit correctly. Instead of seeing the converted characters (“中文測試”), the interim composition text (the phonetic markers) is inserted directly into the input. The IME conversion window may appear, but acceptance of the characters isn’t correctly propagated into the React component, so the final composed text never appears in the ComboBox input."
+    }
+}

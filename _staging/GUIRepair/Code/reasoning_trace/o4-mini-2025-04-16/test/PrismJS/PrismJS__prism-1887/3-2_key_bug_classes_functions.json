@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-c.js//Prism.languages.c",
+            "components/prism-clike.js//Prism.languages.clike"
+        ],
+        "bug_functions": [
+            "components/prism-c.js//'number' token regex",
+            "components/prism-clike.js//'number' token regex"
+        ],
+        "explanation": "Both Prism.languages.c (in prism-c.js) and Prism.languages.clike (in prism-clike.js) define a 'number' pattern that matches C-style numeric literals. These regular expressions do not allow C++14-style single-quote separators inside integer or floating-point literals, so when a quote appears the tokenizer breaks the match and treats the rest as a string. Updating these two 'number' regex patterns to permit apostrophes between digits will fix the erroneous string highlighting and correctly match literals like 1'000'000 or 1.23'45e+6.",
+        "bug_scenario": "In the screenshots you can see C++ integer and floating-point literals that use single-quote separators (e.g. 1'048'576, 1.602'176'565e-19) are being tokenized incorrectly. Portions of the literal after a quote are being highlighted as strings instead of as part of the number. This leads to broken syntax coloring for both hex and decimal literals with one or more apostrophes."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-c.js//Prism.languages.c",
+            "components/prism-clike.js//Prism.languages.clike"
+        ],
+        "bug_functions": [],
+        "explanation": "Both the C and C-style (clike) language definitions include a \u2018number\u2019 token regex that fails to allow single-quote separators inside integer and floating-point literals. To support C++\u2019s digit-separating quotes, the \u2018number\u2019 patterns in Prism.languages.c (in components/prism-c.js and its minified counterpart) and in Prism.languages.clike (components/prism-clike.js) must be updated to accept apostrophes wherever digits appear.",
+        "bug_scenario": "In C++ code snippets containing digit-separator single quotes (e.g. 1'048'576, 0x10'0000, 1.602'176'565e-19), Prism\u2019s current highlighter splits on the apostrophes and treats intervening digits as strings. The screenshots show on the left the broken highlighting (quotes and the digits between are colored as string literals), and on the right the correct behavior where the entire literal remains highlighted as a number despite internal single quotes."
+    }
+}

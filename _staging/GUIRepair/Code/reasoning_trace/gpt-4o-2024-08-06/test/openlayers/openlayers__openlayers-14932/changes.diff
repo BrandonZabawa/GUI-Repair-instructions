@@ -1,0 +1,63 @@
+diff --git a/src/ol/render/canvas/TextBuilder.js b/src/ol/render/canvas/TextBuilder.js
+index fe37971beb..cc7d9e25cc 100644
+--- a/src/ol/render/canvas/TextBuilder.js
++++ b/src/ol/render/canvas/TextBuilder.js
+@@ -85,7 +85,8 @@ class CanvasTextBuilder extends CanvasBuilder {
+      * @private
+      * @type {number}
+      */
+-    this.textRotation_ = 0;
++this.textRotation_ = 0;
++this.isRtl_ = false; // Default to false, can be set based on context
+ 
+     /**
+      * @private
+@@ -598,7 +599,14 @@ class CanvasTextBuilder extends CanvasBuilder {
+       textState.font = font;
+       textState.maxAngle = textStyle.getMaxAngle();
+       textState.placement = textStyle.getPlacement();
+-      textState.textAlign = textStyle.getTextAlign();
++const textAlign = textStyle.getTextAlign();
++if (textAlign === 'start') {
++textState.textAlign = this.isRtl_ ? 'right' : 'left';
++} else if (textAlign === 'end') {
++textState.textAlign = this.isRtl_ ? 'left' : 'right';
++} else {
++textState.textAlign = textAlign;
++}
+       textState.repeat = textStyle.getRepeat();
+       textState.justify = textStyle.getJustify();
+       textState.textBaseline =
+diff --git a/src/ol/style/Text.js b/src/ol/style/Text.js
+index fe88214ed7..8b45041059 100644
+--- a/src/ol/style/Text.js
++++ b/src/ol/style/Text.js
+@@ -116,7 +116,8 @@ class Text {
+      * @private
+      * @type {CanvasTextAlign|undefined}
+      */
+-    this.textAlign_ = options.textAlign;
++this.isRtl_ = options.isRtl || false;
++this.textAlign_ = options.textAlign;
+ 
+     /**
+      * @private
+@@ -555,9 +556,15 @@ class Text {
+    * @param {CanvasTextAlign|undefined} textAlign Text align.
+    * @api
+    */
+-  setTextAlign(textAlign) {
+-    this.textAlign_ = textAlign;
+-  }
++setTextAlign(textAlign) {
++if (textAlign === 'start') {
++this.textAlign_ = this.isRtl_ ? 'right' : 'left';
++} else if (textAlign === 'end') {
++this.textAlign_ = this.isRtl_ ? 'left' : 'right';
++} else {
++this.textAlign_ = textAlign;
++}
++}
+ 
+   /**
+    * Set the justification.

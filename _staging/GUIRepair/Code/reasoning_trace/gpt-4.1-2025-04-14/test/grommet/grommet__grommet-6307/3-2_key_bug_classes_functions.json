@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/js/components/DataTable/DataTable",
+            "src/js/components/DataTable/Header"
+        ],
+        "bug_functions": [
+            "src/js/components/DataTable/DataTable",
+            "src/js/components/DataTable/Header"
+        ],
+        "explanation": "The core of the bug is that the DataTable's sorting state (as reflected by the header arrow icons) is not updating when the URL changes due to browser navigation. This indicates that the DataTable component is not listening to or reacting to URL changes (such as changes in query parameters for sorting) that occur outside of direct table header clicks. The 'DataTable' class/function is responsible for overall state management of the table, including sorting state, and should synchronize its internal state with the URL. The 'Header' class/function is responsible for rendering the header and its sort icons based on the current sorting state. If the sorting state is not updated in response to URL changes, the Header will not reflect the correct sorting, causing the described bug. Therefore, both 'DataTable' and 'Header' are the key elements related to this bug.",
+        "bug_scenario": "The bug scenario involves a DataTable component where sorting parameters (such as the sorted column and sort direction) are stored in the URL. When the user interacts with the table headers to change sorting, the URL updates and the header arrows reflect the new state. However, when the user uses the browser's navigation (back/forward), the URL updates, but the table header arrows do not update accordingly, leading to inconsistency between the URL and the header display."
+    },
+    "2": {
+        "bug_classes": [
+            "src/js/components/DataTable/DataTable.js",
+            "src/js/components/DataTable/Header.js"
+        ],
+        "bug_functions": [
+            "src/js/components/DataTable/DataTable.js//DataTable"
+        ],
+        "explanation": "The core issue is a synchronization problem between the URL state (which holds the current sort property/direction) and the DataTable's internal sort state, which controls the header arrow icon. \n\n- src/js/components/DataTable/DataTable.js//DataTable: The DataTable component is responsible for receiving and managing sort state, likely as a prop or internal state. It must listen for changes in the sort parameters in the URL (possibly via props, context, or hooks like useEffect) and update its sort state accordingly. If it does not react to URL changes (such as those triggered by browser navigation), the UI (header arrows) will not update.\n\n- src/js/components/DataTable/Header.js: The Header component renders the sorting arrow based on the sort state passed from DataTable. If this prop does not update (due to the above), the icon does not change. However, the main logic for syncing on navigation should be in DataTable.js, not Header.js, as Header is a presentational component.\n\nIn summary, the most important fix is in DataTable.js, ensuring it observes URL changes (i.e., browser navigation) and updates the sort state, which then flows to the Header. Header.js is involved in rendering the UI but does not manage the state.",
+        "bug_scenario": "The bug scenario involves a DataTable component where sorting parameters are stored in the URL for shareability. When the user clicks the table header to sort, both the URL and the sorting arrow icon in the header update correctly. However, when the user uses the browser's back/forward navigation arrows to change the URL, the sorting parameters in the URL update, but the sorting arrow icon in the DataTable header does NOT change to reflect the new sorting state. This results in an inconsistency between the URL and the UI state of the table header."
+    }
+}

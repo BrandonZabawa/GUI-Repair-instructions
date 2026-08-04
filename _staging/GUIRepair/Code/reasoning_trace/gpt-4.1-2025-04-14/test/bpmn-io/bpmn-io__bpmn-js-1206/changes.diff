@@ -1,0 +1,63 @@
+diff --git a/lib/features/modeling/behavior/DetachEventBehavior.js b/lib/features/modeling/behavior/DetachEventBehavior.js
+index e8d359ea..4183ead4 100644
+--- a/lib/features/modeling/behavior/DetachEventBehavior.js
++++ b/lib/features/modeling/behavior/DetachEventBehavior.js
+@@ -25,36 +25,38 @@ export default function DetachEventBehavior(eventBus, bpmnReplace) {
+   this.preExecute('elements.move', function(context) {
+     var shapes = context.shapes,
+         host = context.newHost,
+-        shape,
+         eventDefinition,
+         intermediateEvent,
+-        newShape;
++        newShapes = [];
+ 
+-    if (shapes.length !== 1) {
+-      return;
+-    }
++    // Iterate over all shapes in the batch move
++    for (var i = 0; i < shapes.length; i++) {
++      var shape = shapes[i];
++
++      if (!isLabel(shape) && !host && is(shape, 'bpmn:BoundaryEvent')) {
+ 
+-    shape = shapes[0];
++        eventDefinition = getEventDefinition(shape);
+ 
+-    if (!isLabel(shape) && !host && is(shape, 'bpmn:BoundaryEvent')) {
++        if (eventDefinition) {
++          intermediateEvent = {
++            type: 'bpmn:IntermediateCatchEvent',
++            eventDefinitionType: eventDefinition.$type
++          };
++        } else {
++          intermediateEvent = {
++            type: 'bpmn:IntermediateThrowEvent'
++          };
++        }
+ 
+-      eventDefinition = getEventDefinition(shape);
++        var newShape = bpmnReplace.replaceElement(shape, intermediateEvent, { layoutConnection: false });
+ 
+-      if (eventDefinition) {
+-        intermediateEvent = {
+-          type: 'bpmn:IntermediateCatchEvent',
+-          eventDefinitionType: eventDefinition.$type
+-        };
++        newShapes.push(newShape);
+       } else {
+-        intermediateEvent = {
+-          type: 'bpmn:IntermediateThrowEvent'
+-        };
++        newShapes.push(shape);
+       }
+-
+-      newShape = bpmnReplace.replaceElement(shape, intermediateEvent, { layoutConnection: false });
+-
+-      context.shapes = [ newShape ];
+     }
++
++    context.shapes = newShapes;
+   }, true);
+ }
+ 

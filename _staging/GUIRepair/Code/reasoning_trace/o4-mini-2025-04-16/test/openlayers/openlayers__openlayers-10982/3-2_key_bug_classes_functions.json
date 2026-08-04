@@ -1,0 +1,34 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer",
+            "src/ol/VectorRenderTile.js//VectorRenderTile"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.renderFrame",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.renderTileImage_",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.tileImageNeedsRender_",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.updateExecutorGroup_",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.renderQueuedTileImages_",
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer.prepareFrame",
+            "src/ol/VectorRenderTile.js//VectorRenderTile.getContext",
+            "src/ol/VectorRenderTile.js//VectorRenderTile.getImage"
+        ],
+        "explanation": "All of the clipping and tile-canvas creation logic lives in CanvasVectorTileLayerRenderer. renderFrame constructs and applies the clip mask between tiles; renderTileImage_ and tileImageNeedsRender_ handle resizing and redrawing each vector-tile canvas; updateExecutorGroup_ configures the drawing commands (and whether clipping is needed); renderQueuedTileImages_ and prepareFrame control when and how tiles are rendered. Under browser zoom these routines miscalculate pixel dimensions and clipping boundaries, leading to tiny gaps. VectorRenderTile.getContext and getImage supply the per-tile canvases whose width/height and backing-store scaling must match the zoomed CSS size; any mismatch there cascades into the clipping logic, so those methods are also central to fixing the browser-zoom clipping issue.",
+        "bug_scenario": "When using a VectorTile layer with renderMode: 'image', zooming the browser (e.g. to 150%) causes individual tile canvases to be clipped along their edges, producing visible gaps between adjacent tiles. This only happens when the browser zoom is not at 100% and with image\u2010only mode (it does not occur in hybrid mode)."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/canvas/VectorTileLayer.js//CanvasVectorTileLayerRenderer",
+            "src/ol/VectorRenderTile.js//VectorRenderTile"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/canvas/VectorTileLayer.js//renderFrame",
+            "src/ol/renderer/canvas/VectorTileLayer.js//tileImageNeedsRender_",
+            "src/ol/renderer/canvas/VectorTileLayer.js//renderTileImage_",
+            "src/ol/renderer/canvas/VectorTileLayer.js//updateExecutorGroup_"
+        ],
+        "explanation": "All of the selected methods live in the CanvasVectorTileLayerRenderer (and its underlying VectorRenderTile) and participate in sizing, rendering and clipping of canvas\u2010based vector tiles. \u2022 renderFrame(): applies the tile\u2010clipping mask logic that determines which portions of a lower\u2010resolution tile should be hidden by higher\u2010resolution tiles\u2014if computed bounds are off by even one CSS pixel due to browser zoom, seams appear. \u2022 tileImageNeedsRender_(): decides when to re\u2010create a tile\u2019s canvas image based on pixelRatio, zoom and device resolution; if it doesn\u2019t detect the CSS zoom change, the canvas isn\u2019t resized correctly. \u2022 renderTileImage_(): actually sets up and draws into the tile\u2019s canvas; it contains code to enlarge tiles when overzooming but does not account for fractional CSS scaling. \u2022 updateExecutorGroup_(): computes the executor instructions and may skip clipping entirely when a rendered tile is fully covered by a source tile; incorrect source/tile size math here can leave unmasked borders. Adjusting these functions (in particular how pixelRatio and tile size are rounded and how the clip rings are generated) will eliminate the small gaps between tiles when the browser is zoomed.",
+        "bug_scenario": "When using a VectorTile layer with renderMode: 'image' and the browser zoomed above 100% (for example 150% via Ctrl-+), the individual tile canvases are generated at the wrong size or clipped incorrectly. In the attached animation you can see the circular features rendered in each tile\u2014but between tile boundaries there are small gaps (\u201cclip\u201d lines), so tiles do not seamlessly cover the view. This does not occur at 100% zoom or when imageMode is set to 'hybrid'."
+    }
+}

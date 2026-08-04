@@ -1,0 +1,36 @@
+diff --git a/src/language-markdown/printer-markdown.js b/src/language-markdown/printer-markdown.js
+index 22d2a4593..514b0163f 100644
+--- a/src/language-markdown/printer-markdown.js
++++ b/src/language-markdown/printer-markdown.js
+@@ -127,17 +127,22 @@ function genericPrint(path, options, print) {
+ 
+       return escapedValue;
+     }
+-    case "whitespace": {
+-      const { next } = path;
++case "whitespace": {
++  const { next } = path;
+ 
+-      const proseWrap =
+-        // leading char that may cause different syntax
+-        next && /^>|^(?:[*+-]|#{1,6}|\d+[).])$/.test(next.value)
+-          ? "never"
+-          : options.proseWrap;
++  const proseWrap =
++    // leading char that may cause different syntax
++    next && /^>|^(?:[*+-]|#{1,6}|\d+[).])$/.test(next.value)
++      ? "never"
++      : options.proseWrap;
+ 
+-      return printWhitespace(path, node.value, proseWrap);
+-    }
++  // Preserve empty lines
++  if (node.value.includes('\n\n')) {
++    return node.value;
++  }
++
++  return printWhitespace(path, node.value, proseWrap);
++}
+     case "emphasis": {
+       let style;
+       if (isAutolink(node.children[0])) {

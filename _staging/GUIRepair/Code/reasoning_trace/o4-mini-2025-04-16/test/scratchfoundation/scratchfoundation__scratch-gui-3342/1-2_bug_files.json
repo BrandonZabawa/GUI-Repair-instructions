@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "src/components/blocks/blocks.jsx",
+            "src/containers/blocks.jsx"
+        ],
+        "explanation": "All of the blocks-workspace UI is composed in components/blocks/blocks.jsx \u2014 this is where the Blockly instance, zoom buttons and workspace container live, so the watermark overlay and styling must be added here.  The data for which image to draw and how to fetch its thumbnail (sprite vs. backdrops, current costume index, VM asset URLs, RTL direction flag, etc.) flows in through the Redux connector in containers/blocks.jsx.  You\u2019ll need to pull the selected target\u2019s thumbnail URL in the container and pass it into the Blocks component, then render and position it in blocks.jsx next to the zoom controls with the correct size, opacity and RTL support.",
+        "bug_scenario": "When a user is editing code in the blocks workspace the faint \u201cghost\u201d of the currently selected sprite or backdrop (_the watermark_) is missing.  In earlier versions Scratch showed a 35%-opacity, right-aligned, 48\u00d748px thumbnail of the active costume behind the blocks UI (just above the zoom controls).  In today\u2019s GUI the workspace renders blank, so it\u2019s unclear which target is being edited.  The mocks show the little dino, bear or stage thumbnail in the top-right of the blocks pane, aligned to the zoom buttons, sizing at max 48\u00d748px, obeying RTL, opacity and z-index specs."
+    },
+    "2": {
+        "bug_files": [
+            "src/components/blocks/blocks.jsx",
+            "src/containers/blocks.jsx",
+            "src/components/controls/controls.jsx",
+            "src/lib/layout-constants.js",
+            "src/css/blocks.css"
+        ],
+        "explanation": "\u2022 src/components/blocks/blocks.jsx: This component renders the Blockly workspace and its surrounding UI (including the zoom controls). It\u2019s the natural place to insert the watermark <img> element, sized and positioned relative to the zoom buttons.\n\n\u2022 src/containers/blocks.jsx: This container wires the VM\u2019s selectedTarget and its current costume/backdrop thumbnail URL into the blocks pane. It needs to pass the asset URL and active state down so that the watermark updates when you pick a new sprite or switch to the stage.\n\n\u2022 src/components/controls/controls.jsx: Hosts the +/\u2013 zoom controls. We must ensure the watermark is right-aligned to this controls container (and flipped in RTL), so its CSS or wrapper markup here will need an RTL tag or a relative positioning context.\n\n\u2022 src/lib/layout-constants.js: Defines workspace margins, padding, and control offsets. We need a new constant for the watermark\u2019s 20px top margin and max 48px size, so it stays aligned to the pre-existing zoom control offsets.\n\n\u2022 src/css/blocks.css: The stylesheet that governs the Blocks pane. We\u2019ll add rules for the watermark class (.workspace-watermark) to set its max-height/width (3rem), 35% opacity, z-index (below the blocks), and RTL-aware right/left positioning.",
+        "bug_scenario": "When you select a sprite or backdrop in the Scratch 3.0 editor, there used to be a faint, oversized \u201cwatermark\u201d of the selected asset behind the blocks workspace (max 48\u00d748px, 35% opacity, right-aligned to the zoom controls). That watermark is completely missing in the current build\u2014the top-right corner of the blocks pane is blank, and when you swap between sprites or switch to the stage, there is never any translucent preview image shown. This makes it harder to know at a glance which target you\u2019re editing."
+    }
+}

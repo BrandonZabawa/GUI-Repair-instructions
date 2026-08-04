@@ -1,0 +1,27 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/Immediate.js//setStyle",
+            "src/ol/render/canvas/Immediate.js//setFillStrokeStyle",
+            "src/ol/render/canvas/Immediate.js//setContextStrokeState_"
+        ],
+        "explanation": "The core of the bug is that the CanvasImmediateRenderer (class in src/ol/render/canvas/Immediate.js) does not scale the lineDash array by pixelRatio when setting stroke styles. The functions setStyle and setFillStrokeStyle are responsible for applying the style (including stroke) to the canvas context, and setContextStrokeState_ is likely where the actual context properties (including lineDash) are set. The bug relates to how these methods handle the lineDash property of the stroke style: they should multiply the dash/gap values by pixelRatio when rendering to a high-DPI canvas. The class and these methods are thus the key bug-related elements as they control the translation of ol.style.Stroke into actual canvas drawing parameters.",
+        "bug_scenario": "When rendering dashed lines using CanvasImmediate rendering in OpenLayers, the 'lineDash' property (which defines the dash/gap pattern) is not scaled by the pixelRatio. As a result, on high-DPI screens (pixelRatio > 1.0), dashed lines appear with much shorter dashes and gaps, and may even appear as solid lines. This is different from map rendering, where lineDash is appropriately scaled by pixelRatio, producing visually consistent dashes regardless of device pixel density. The issue manifests when using ol.render.toContext() with a pixelRatio > 1.0, causing inconsistency between map and immediate canvas renderings."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/render/canvas/Immediate.js//CanvasImmediateRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/render/canvas/Immediate.js//setStyle",
+            "src/ol/render/canvas/Immediate.js//setFillStrokeStyle",
+            "src/ol/render/canvas/Immediate.js//drawLineString",
+            "src/ol/render/canvas/Immediate.js//setContextStrokeState_"
+        ],
+        "explanation": "The bug is related to how the dash pattern (lineDash) is rendered in Canvas Immediate when a custom pixelRatio is set. The class CanvasImmediateRenderer is responsible for rendering features directly to the canvas using immediate mode, and it manages the application of styles such as stroke, fill, and dash patterns. The setStyle method is used to apply the current style (including stroke) for subsequent drawings. setFillStrokeStyle is likely where the current stroke (and its lineDash) is applied to the context for drawing, and setContextStrokeState_ (private) is probably where the actual CanvasRenderingContext2D properties (like setLineDash) are set. drawLineString is directly responsible for actually rendering dashed lines onto the canvas, and so must use the correct, pixelRatio-scaled dash pattern. The bug is that, unlike in map rendering, the lineDash values are not scaled by pixelRatio in CanvasImmediateRenderer, so the issue must be addressed in one or more of these methods.",
+        "bug_scenario": "The bug scenario is that when rendering dashed lines with a custom pixelRatio using ol.render.toContext() (Canvas Immediate rendering), the dashes and gaps in the lineDash pattern are not properly scaled according to the pixel ratio. This causes the dashed lines to appear incorrectly (too short or blurred) on high-DPI displays, whereas map rendering scales the dash pattern correctly. The expected behavior is that the dash pattern should be consistently scaled, resulting in visually similar dashed lines across devices with different pixel ratios."
+    }
+}

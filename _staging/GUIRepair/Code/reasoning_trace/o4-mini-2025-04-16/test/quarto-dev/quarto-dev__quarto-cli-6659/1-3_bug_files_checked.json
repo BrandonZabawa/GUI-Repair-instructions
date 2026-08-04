@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_files": [
+            "src/resources/capabilities/knitr.R",
+            "src/core/knitr.ts",
+            "src/core/run/r.ts",
+            "src/resources/filters/common/figures.lua",
+            "src/resources/filters/quarto-post/fig-cleanup.lua"
+        ],
+        "explanation": "\u2022 resources/capabilities/knitr.R: Defines how quarto injects knitr options (including !expr for fig-cap) into the R engine. It must handle character(0) captions rather than dropping the entire figure.\n\u2022 src/core/lib/knitr.ts: Converts knitr chunk metadata into pandoc attributes; it must distinguish a zero-length character vector from NULL and still emit a placeholder so the figure remains.\n\u2022 src/core/run/r.ts: Orchestrates running the R engine and mapping evaluated chunk options back into the document. If it treats character(0) as missing, it won\u2019t pass through the fig-cap attribute and the figure is pruned.\n\u2022 resources/filters/common/figures.lua: During the pandoc filter phase it reads figure captions and constructs the rendered figure blocks. It currently skips figures when caption is absent; it needs to treat zero-length captions as empty strings instead of omitting the figure.\n\u2022 resources/filters/quarto-post/fig-cleanup.lua: A post-processing filter that removes unused or empty figure metadata; it is overzealous and removes any figure without a caption node, including those with a zero-length caption vector. Adjusting it to preserve figures even when captions are empty will fix the bug.",
+        "bug_scenario": "In the user\u2019s Quarto document, an R code block with a nonempty caption (caption = \"hello world\") correctly renders the figure in the HTML output, but if the caption is set to character(0) (a zero-length character vector), the figure is completely dropped and does not appear. The provided image shows the expected cartoon graphic (pony + Jigglypuff) in the first section but nothing in the second when the caption vector is empty."
+    },
+    "2": {
+        "bug_files": [
+            "src/resources/capabilities/knitr.R",
+            "src/core/run/r.ts",
+            "src/core/knitr.ts",
+            "src/resources/filters/quarto-pre/figures.lua",
+            "src/resources/filters/quarto-post/fig-cleanup.lua"
+        ],
+        "explanation": "All of these files sit in the pipeline that handles R code chunks, captures their outputs and turns them into Pandoc AST figures:\n\n\u2022 resources/capabilities/knitr.R   \n  \u2013 This R helper is injected into the knitr run and is responsible for assigning the chunk option \u2018fig.cap\u2019 at execution time. When fig.cap is a zero-length character vector it currently disappears rather than coalescing to an empty caption string.  \n\n\u2022 src/core/run/r.ts   \n  \u2013 This TypeScript module invokes knitr via the R helper, retrieves the rendered Markdown/HTML and hands it off to the next stage. It unpacks chunk results including the fig-cap metadata and currently drops any figure block whose caption metadata is missing or zero-length.  \n\n\u2022 src/core/knitr.ts   \n  \u2013 Once knitr has run, this module reads its output metadata and converts it into our internal representation of code blocks and figures. It filters out captions that have no content and so inadvertently filters away the entire figure.  \n\n\u2022 resources/filters/quarto-pre/figures.lua   \n  \u2013 In the Lua pre-filter stage, we interpret the fig-cap attribute in the Pandoc AST. The current code treats an empty caption array as \u201cno figure\u201d and doesn\u2019t generate the image node. It needs to be adjusted to render at least the <img> when the caption is empty.  \n\n\u2022 resources/filters/quarto-post/fig-cleanup.lua   \n  \u2013 In the post-filter stage we tidy up figure elements and remove stray caption containers when they\u2019re empty. Because the caption never made it through the pipeline, fig-cleanup.lua never sees the image node and so nothing survives into the final document.   \n\nTo fix the bug you need coordinated changes in the R helper (to coerce character(0) \u2192 \"\"), the TS run/knitr modules (to preserve zero-length captions rather than dropping figures), and the pre/post filters (so they don\u2019t prune empty-caption figures).",
+        "bug_scenario": "When you use an R code\u2010block in Quarto and set the figure caption via \u201c#| fig-cap: !expr caption\u201d, everything works if \u201ccaption\u201d is a normal string. But if at run\u2010time the R object \u201ccaption\u201d is a zero\u2010length character vector (e.g. caption <- character(0)), Quarto silently drops the entire figure. In other words, an empty caption should still render the image (just without a caption), but instead the chunk produces no output at all."
+    }
+}

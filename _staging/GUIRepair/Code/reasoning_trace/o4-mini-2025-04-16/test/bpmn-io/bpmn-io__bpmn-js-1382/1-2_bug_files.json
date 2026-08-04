@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/popup-menu/ReplaceMenuProvider.js",
+            "lib/features/replace-preview/BpmnReplacePreview.js"
+        ],
+        "explanation": "\n\n\u2022 lib/features/replace/ReplaceOptions.js  \n  This file declares the list of available replace targets for each BPMN element type (including DataObjectReference). It currently only lists the collection marker variant and omits the DataStoreReference type, so it must be updated to include DataStoreReference in the replace options.\n\n\u2022 lib/features/replace/BpmnReplace.js  \n  This core provider wires the replace options into the modeling commands. It initializes and registers the replace behavior for DataObjectReference/DataStoreReference types, so it needs to be aware of the new conversion path.\n\n\u2022 lib/features/popup-menu/ReplaceMenuProvider.js  \n  This file reads the replace options from BpmnReplace and populates the actual popup menu entries. Since the DataStoreReference entry is missing upstream, this provider never gets an option to render. It may also need adjustments to filter or sort the items correctly.\n\n\u2022 lib/features/replace-preview/BpmnReplacePreview.js  \n  This module is responsible for drawing the preview icons in the replace menu. To show the DataStoreReference icon and marker in the context menu preview, it must be extended to render the DataStoreReference shape alongside the existing collection marker option.\n\nBy updating these four files, the replace menu can be populated with both DataObjectReference \u2194 DataStoreReference conversion options, filling the menu and satisfying the feature request.",
+        "bug_scenario": "The user clicks the replace (wrench) icon on a DataObjectReference in the diagram. The popup replace menu only shows one option: converting to a DataObjectReference with a collection marker (three bars). The menu is otherwise empty and does not include an option to switch the element into a DataStoreReference (or vice versa), leaving the menu feeling sparse and missing the desired DataStoreReference conversion."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/replace/ReplaceOptions.js",
+            "lib/features/replace/BpmnReplace.js",
+            "lib/features/popup-menu/ReplaceMenuProvider.js"
+        ],
+        "explanation": "ReplaceOptions.js is where all of the candidate shapes/types for the replace menu are declared. We need to add entries for DataStoreReference under the DataObjectReference section (and vice-versa) so that both types appear as menu items. BpmnReplace.js is responsible for filtering and returning only those replace options that apply to the currently selected element; it may need a small tweak to recognize the new cross-references. ReplaceMenuProvider.js wires the replace service into the popup-menu system, so once the options exist and are returned by BpmnReplace, they\u2019ll be picked up and rendered in this provider. Together these three files control what users see in the replace context menu and must be updated to add the missing DataStoreReference\u21c4DataObjectReference entries.",
+        "bug_scenario": "When invoking the little \u201creplace\u201d wrench on a DataObjectReference nothing shows up except its collection marker. The menu feels empty. We want to let users switch any DataObjectReference \u2194 DataStoreReference so that the replace popup always offers at least one meaningful alternative."
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/ol/featureloader.js//xhr",
+            "src/ol/featureloader.js//loadFeaturesXhr"
+        ],
+        "explanation": "The bug stems from the order of operations in the XHR feature loader. In the xhr() function (src/ol/featureloader.js), the success callback is invoked before source.addFeatures(features). As a result, when the featuresloadend event fires and client code calls getExtent(), the source has not yet received the features. Reordering these calls\u2014adding features first, then invoking success\u2014ensures that getExtent() and other downstream logic operate on a populated source.",
+        "bug_scenario": "The user is loading KML features into a VectorSource via the default XHR loader (ol/featureloader.xhr). In the screenshot, the developer calls source.getExtent() inside the \u201cfeaturesloadend\u201d callback, but the returned extent is [Infinity, Infinity, -Infinity, -Infinity], indicating that the source has no features at that point. The code in featureloader.js calls the success callback before adding the loaded features to the source, so any operations (like getExtent) in that callback see an empty source."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/ol/featureloader.js//loadFeaturesXhr",
+            "src/ol/featureloader.js//xhr"
+        ],
+        "explanation": "The root of the problem is in featureloader.js. The exported xhr() function wraps loadFeaturesXhr and provides a callback that (1) calls success(features) before (2) calling source.addFeatures(features). Because the VectorSource only gets the features added after the success callback returns, any logic in the featuresloadend handler sees an empty source. Swapping the order\u2014adding features first, then calling success\u2014will ensure that getExtent() returns the correct bounds.",
+        "bug_scenario": "When using the default XHR loader (the `xhr` function in src/ol/featureloader.js) to load features into a VectorSource, the loader invokes the user-provided success callback before it actually adds the loaded features to the source. As a result, the VectorSource fires its featuresloadend event with no features. If you call getExtent() in that event handler, you get [Infinity, Infinity, -Infinity, -Infinity] because the source is still empty at that moment."
+    }
+}

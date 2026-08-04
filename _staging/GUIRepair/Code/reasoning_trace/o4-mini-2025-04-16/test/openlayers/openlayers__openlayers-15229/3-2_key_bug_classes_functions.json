@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer"
+        ],
+        "bug_functions": [
+            "src/ol/webgl/styleparser.js//parseLiteralStyle",
+            "src/ol/webgl/styleparser.js//parseIconProperties",
+            "src/ol/webgl/styleparser.js//parseCommonSymbolProperties"
+        ],
+        "explanation": "The distortion only happens when \u201crotate-with-view\u201d is true, so the bug lives in the code paths that handle icon rotation in the WebGL pipeline.  \n\n\u2022 In WebGLPointsLayerRenderer (src/ol/renderer/webgl/PointsLayer.js) the quads are built and the rotation uniforms/attributes are wired up, but the projection and per-icon scale are assumed to be uniform across X and Y.  When the viewport isn\u2019t square, the pixel-to-clip conversion differs on each axis, so rotating a uniformly scaled quad produces a stretch.  \n\n\u2022 parseLiteralStyle (in styleparser.js) is where the style object\u2019s icon properties\u2014including icon-rotate and icon-rotate-with-view\u2014get translated into shader uniforms/attributes.  It currently declares a single float scale/rotation uniform rather than a Vec2 or separate X/Y scales, so the viewport aspect ratio is lost.  \n\n\u2022 parseCommonSymbolProperties and parseIconProperties build the GLSL code that applies that rotation.  Because they use a scalar scale/rotation, they never correct for the non-square clip space, causing the skew.  \n\nFixing this requires updating parseLiteralStyle/parseIconProperties (and the shaders they generate) to pass a vec2 scale or factor in the viewport aspect ratio when computing the rotation matrix, and ensuring WebGLPointsLayerRenderer uses those per-axis scales when pushing vertex data.",
+        "bug_scenario": "When using a WebGLPointsLayer with icon-rotate-with-view set to true on a non-square viewport (e.g. 800\u00d7600), the little quads drawn for each icon get skewed\u2014icons become stretched rectangles instead of remaining square when the view is rotated.  In the screenshot you can see that rotating the map 90\u00b0 in a 4:3 aspect viewport distorts the icon shapes: their X/Y dimensions no longer match."
+    },
+    "2": {
+        "bug_classes": [
+            "src/ol/renderer/webgl/PointsLayer.js//WebGLPointsLayerRenderer",
+            "src/ol/webgl/Helper.js//WebGLHelper",
+            "src/ol/webgl/styleparser.js//(module)"
+        ],
+        "bug_functions": [
+            "src/ol/renderer/webgl/PointsLayer.js//rebuildBuffers_",
+            "src/ol/renderer/webgl/PointsLayer.js//renderFrame",
+            "src/ol/webgl/Helper.js//makeProjectionTransform",
+            "src/ol/webgl/styleparser.js//parseCommonSymbolProperties",
+            "src/ol/webgl/styleparser.js//parseIconProperties"
+        ],
+        "explanation": "\u2022 WebGLPointsLayerRenderer (rebuildBuffers_ and renderFrame): these methods compute and apply the world-to-screen and screen-to-world transforms used to position and rotate each icon quad. If the viewport aspect ratio isn\u2019t incorporated correctly when buffers are built or when transforms are updated per frame, rotated icons will scale unevenly in X/Y and appear distorted.  \n\u2022 WebGLHelper (makeProjectionTransform): this helper builds the projection matrix (u_projection) based on the current frameState and canvas size. A wrong assumption of square view (equal width and height scales) leads to non-uniform scaling in the shader, so icons don\u2019t maintain their true proportions when rotated.  \n\u2022 styleparser (parseCommonSymbolProperties and parseIconProperties): these functions generate the GLSL code to apply rotation, size, and texture coordinate transforms for icons in the vertex shader. If the rotation logic or normalization doesn\u2019t include the viewport aspect ratio or uses pixel coordinates without compensating for non-square viewports, the computed texture coordinates or offset will stretch the icon shapes.  \nTogether, these methods form the pipeline that positions, rotates, and draws the icon quads in WebGL. Fixing the distortion requires adjusting the projection transform to account for viewport aspect ratio and ensuring the rotation code in the shaders applies uniform scaling on both axes.",
+        "bug_scenario": "When rendering a WebGLPointsLayer with a non-square viewport (map container width \u2260 height) and the style property `icon-rotate-with-view: true`, the point icons become visually distorted (stretched or squashed) instead of preserving their correct aspect ratio. This distortion is only visible when the viewport aspect ratio is not 1:1 and rotation with the view is enabled."
+    }
+}

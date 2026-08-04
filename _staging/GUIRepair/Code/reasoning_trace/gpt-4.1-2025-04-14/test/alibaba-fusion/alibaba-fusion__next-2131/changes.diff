@@ -1,0 +1,51 @@
+diff --git a/src/tree/view/tree.jsx b/src/tree/view/tree.jsx
+index 6f2789e5c..e04e76288 100644
+--- a/src/tree/view/tree.jsx
++++ b/src/tree/view/tree.jsx
+@@ -148,31 +148,35 @@ const preHandleData = (dataSource, props) => {
+                 return item;
+             }
+ 
+-            const { children } = item;
++            // Create a shallow copy to avoid mutating the original item
++            const node = { ...item };
++            const { children } = node;
+             const pos = `${prefix}-${index}`;
+-            let { key } = item;
++            let { key } = node;
+ 
+-            item.pos = pos;
+-            item.level = level;
++            node.pos = pos;
++            node.level = level;
+ 
+             // 判断为叶子节点
+             // - 指定isLeaf属性
+             // - loadData模式下 没有指定isLeaf为true
+             // - 存在children元素
+-            if (!('isLeaf' in item)) {
+-                item.isLeaf = !((children && children.length) || props.loadData);
++            if (!('isLeaf' in node)) {
++                node.isLeaf = !((children && children.length) || props.loadData);
+             }
+-            item.isLastChild = parent ? [].concat(parent.isLastChild || [], index === data.length - 1) : [];
++            node.isLastChild = parent ? [].concat(parent.isLastChild || [], index === data.length - 1) : [];
+ 
+             if (key === undefined || key === null) {
+-                item.key = key = pos;
++                node.key = key = pos;
+             }
+ 
+-            !item.isLeaf && drill(children, level + 1, pos, item);
++            if (!node.isLeaf) {
++                node.children = drill(children, level + 1, pos, node);
++            }
+ 
+-            k2n[key] = p2n[pos] = { ...item };
++            k2n[key] = p2n[pos] = { ...node };
+ 
+-            return item;
++            return node;
+         });
+ 
+     return { dataSource: drill(dataSource), k2n, p2n };

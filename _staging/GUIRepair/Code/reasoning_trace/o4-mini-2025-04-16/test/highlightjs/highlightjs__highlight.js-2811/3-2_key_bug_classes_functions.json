@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [],
+        "bug_functions": [
+            "src/languages/python.js//default export function",
+            "src/languages/python.js//decorator meta rule (className: 'meta', begin: /^[\\t ]*@/, end: /$/)"
+        ],
+        "explanation": "The bug arises because the decorator rule ({ className: 'meta', begin: /^[\\t ]*@/, end: /$/ }) matches from the '@' at the start of the line all the way through the inline comment, preventing hljs.HASH_COMMENT_MODE from ever matching the comment text. To fix it you must adjust the decorator meta rule (for example by excluding '#' in its end pattern or adding hljs.HASH_COMMENT_MODE to its contains) so that the comment portion is handed off to the comment highlighter rather than swallowed as metadata.",
+        "bug_scenario": "In Python code with a decorator and an inline comment (e.g. @pytest.mark.asyncio  # note use of pytest-asyncio marker), the entire line is being highlighted as metadata (hljs-meta) instead of splitting out the \u2018# \u2026\u2019 as a comment (hljs-comment). The decorator rule in the highlighter is consuming the comment portion before the comment mode can match."
+    },
+    "2": {
+        "bug_classes": [
+            "src/languages/python.js//meta rule (className: 'meta', begin:/^[\\t ]*@/, end:/$/)"
+        ],
+        "bug_functions": [
+            "src/languages/python.js//export default function(hljs)"
+        ],
+        "explanation": "The offending rule lives in python.js: the anonymous export default function defines a \u2018meta\u2019 mode with begin:/^[\\t ]*@/ and end:/$/. That pattern eats the entire decorator line\u2014including any \u2018#\u2019 comments\u2014so the inline comment never matches hljs.HASH_COMMENT_MODE. To fix the bug, this meta rule must be adjusted (for example, end before a \u2018#\u2019 or exclude comment tokens) so that the comment segment can be recognized and highlighted as hljs-comment.",
+        "bug_scenario": "In Python code blocks, lines starting with a decorator (the \u201c@\u2026\u201d syntax) that also include an inline comment (\"# \u2026\") are being entirely marked with the hljs-meta class. As a result, the comment portion never receives the hljs-comment styling (greyed-out text) and instead is treated as part of the decorator. In the screenshot you can see \u201c# note use of pytest-asyncio marker\u201d remains blue (meta) instead of grey."
+    }
+}

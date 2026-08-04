@@ -1,0 +1,101 @@
+{
+    "1/1": {
+        "lighthouse-core/audits/uses-rel-preconnect.js": [
+            {
+                "SEARCH": [
+                    "requiredArtifacts: ['devtoolsLogs', 'URL'],"
+                ],
+                "REPLACE": [
+                    "      requiredArtifacts: ['devtoolsLogs', 'URL', 'LinkElements'],"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const [networkRecords, mainResource, loadSimulator] = await Promise.all([",
+                    "NetworkRecords.request(devtoolsLog, context),",
+                    "MainResource.request({devtoolsLog, URL}, context),",
+                    "LoadSimulator.request({devtoolsLog, settings}, context),",
+                    "]);",
+                    "",
+                    "const {rtt, additionalRttByOrigin} = loadSimulator.getOptions();",
+                    "",
+                    "/** @type {Map<string, LH.Artifacts.NetworkRequest[]>}  */",
+                    "const origins = new Map();"
+                ],
+                "REPLACE": [
+                    "    const [networkRecords, mainResource, loadSimulator] = await Promise.all([",
+                    "      NetworkRecords.request(devtoolsLog, context),",
+                    "      MainResource.request({devtoolsLog, URL}, context),",
+                    "      LoadSimulator.request({devtoolsLog, settings}, context),",
+                    "    ]);",
+                    "",
+                    "    const {rtt, additionalRttByOrigin} = loadSimulator.getOptions();",
+                    "",
+                    "    // Gather any <link rel=\"preconnect\"> or <link rel=\"dns-prefetch\"> hints from the HTML",
+                    "    const linkElements = artifacts.LinkElements || [];",
+                    "    const preconnectedOrigins = new Set(",
+                    "      linkElements",
+                    "        .filter(el =>",
+                    "          // el.rel might be a string or array of strings",
+                    "          el.rel === 'preconnect' ||",
+                    "          el.rel === 'dns-prefetch' ||",
+                    "          (Array.isArray(el.rel) &&",
+                    "            (el.rel.includes('preconnect') || el.rel.includes('dns-prefetch')))",
+                    "        )",
+                    "        .map(el => {",
+                    "          try {",
+                    "            return new URL(el.href).origin;",
+                    "          } catch (_) {",
+                    "            return null;",
+                    "          }",
+                    "        })",
+                    "        .filter(origin => origin)",
+                    "    );",
+                    "",
+                    "    /** @type {Map<string, LH.Artifacts.NetworkRequest[]>}  */",
+                    "    const origins = new Map();"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (",
+                    "// filter out all resources where timing info was invalid",
+                    "!UsesRelPreconnectAudit.hasValidTiming(record) ||",
+                    "// filter out all resources that are loaded by the document",
+                    "record.initiator.url === mainResource.url ||",
+                    "// filter out urls that do not have an origin (data, ...)",
+                    "!record.parsedURL || !record.parsedURL.securityOrigin ||",
+                    "// filter out all resources that have the same origin",
+                    "mainResource.parsedURL.securityOrigin === record.parsedURL.securityOrigin ||",
+                    "// filter out all resources where origins are already resolved",
+                    "UsesRelPreconnectAudit.hasAlreadyConnectedToOrigin(record) ||",
+                    "// make sure the requests are below the PRECONNECT_SOCKET_MAX_IDLE (15s) mark",
+                    "!UsesRelPreconnectAudit.socketStartTimeIsBelowThreshold(record, mainResource)",
+                    ") {",
+                    "return;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "        if (",
+                    "          // filter out all resources where timing info was invalid",
+                    "          !UsesRelPreconnectAudit.hasValidTiming(record) ||",
+                    "          // filter out all resources that are loaded by the document",
+                    "          record.initiator.url === mainResource.url ||",
+                    "          // filter out urls that do not have an origin (data, ...)",
+                    "          !record.parsedURL || !record.parsedURL.securityOrigin ||",
+                    "          // filter out all resources that have the same origin",
+                    "          mainResource.parsedURL.securityOrigin === record.parsedURL.securityOrigin ||",
+                    "          // filter out all resources where origins are already resolved",
+                    "          UsesRelPreconnectAudit.hasAlreadyConnectedToOrigin(record) ||",
+                    "          // make sure the requests are below the PRECONNECT_SOCKET_MAX_IDLE (15s) mark",
+                    "          !UsesRelPreconnectAudit.socketStartTimeIsBelowThreshold(record, mainResource) ||",
+                    "          // skip any origin the page already hinted via preconnect or dns-prefetch",
+                    "          preconnectedOrigins.has(record.parsedURL.securityOrigin)",
+                    "        ) {",
+                    "          return;",
+                    "        }"
+                ]
+            }
+        ]
+    }
+}

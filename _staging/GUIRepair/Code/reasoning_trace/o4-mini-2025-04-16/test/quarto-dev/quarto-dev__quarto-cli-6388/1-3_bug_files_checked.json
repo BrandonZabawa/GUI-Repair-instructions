@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/core/run/r.ts",
+            "src/format/markdown/format-markdown.ts",
+            "src/resources/filters/quarto-post/cellcleanup.lua"
+        ],
+        "explanation": "src/core/run/r.ts is where Quarto\u2019s R engine takes the plain text output of pander() and wraps it as a RawBlock(\"markdown\", \u2026). Because that RawBlock is later placed inside a Div cell-output-display, Pandoc indents every line by two spaces when it writes Markdown, turning what should be a flat list into a nested one. src/format/markdown/format-markdown.ts is Pandoc\u2019s Markdown writer; it governs how blocks (including RawBlocks inside Divs) are indented and emitted. Finally, resources/filters/quarto-post/cellcleanup.lua is the Lua filter that post-processes code-cell output and could strip or flatten the Div around the raw Markdown. A fix will involve changing r.ts so that raw Markdown list blocks are not wrapped in a container that triggers indenting, adjusting format-markdown.ts so that RawBlocks inside certain Pandoc Divs are not indented, or updating cellcleanup.lua to remove or flatten the enclosing Div before Pandoc writes out the Markdown.",
+        "bug_scenario": "When you call pander::pander(list(\"1\",\"2\",3,c(1,2))) inside a Quarto (.qmd) document, Quarto\u2019s R\u2010engine emits raw Markdown for the list but wraps it in a Div with class {.cell-output-display}. That wrapper causes Pandoc\u2019s Markdown writer to indent everything by two spaces, so only the first \"* 1\" is a top\u2010level bullet and the rest become nested bullets (sub-points) rather than all four items being at the same level."
+    },
+    "2": {
+        "bug_files": [
+            "src/execute/markdown.ts",
+            "src/execute/qmd.ts"
+        ],
+        "explanation": "In src/execute/markdown.ts you\u2019ll find the helper that formats cell output (cellOutputDisplay, cellOutputError, etc.), and it applies a two-space indent to every line of stdout. In src/execute/qmd.ts these helpers are used to wrap R chunk output in a ::: {.cell-output-display} block. The extra leading spaces turn pander\u2019s top-level '*' markers into nested list items. Removing or adjusting that indent logic will restore the correct flat bullet list.",
+        "bug_scenario": "When you run a little QMD document that calls pander::pander(list(\"1\",\"2\",3,c(1,2))) under Quarto\u2019s built-in engine, the intermediate Markdown comes out wrapped in a Div and every output line is prefixed by two spaces. A pander list that should render as four top-level bullets instead gets its second, third and fourth items indented and rendered as sub-bullets. Knit the same code with knitr::knit() and you see the correct flat list, so the culprit is Quarto\u2019s QMD\u2013execution boilerplate that wraps and indents output."
+    }
+}

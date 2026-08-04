@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/Heatmap.js",
+            "src/ol/renderer/canvas/Layer.js"
+        ],
+        "explanation": "1) src/ol/layer/Heatmap.js declares and stores the className option on the Heatmap layer but does not actually force the renderer to use it.  \n2) src/ol/renderer/canvas/Layer.js is where each canvas-based layer creates its wrapping <div> and <canvas> and currently hard-codes the CSS class to \u201col-layer\u201d (and skips setting any class on the <canvas>). Because the renderer never reads the layer\u2019s className property, the user\u2019s custom className option is ignored. These two files therefore need to be updated so that the renderer reads layer.getClassName() (falling back to the default) instead of using the literal \u201col-layer\u201d string.",
+        "bug_scenario": "In the user\u2019s sandbox they create a new Heatmap layer and pass in a custom className (e.g. \u201col-layer-heatMap\u201d) in the options, but when the map renders the layer\u2019s DOM still uses the hard-coded \u201col-layer\u201d class on the layer container <div> (and no class at all on the <canvas>), so the user\u2019s custom className never shows up in the page."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/Heatmap.js",
+            "src/ol/renderer/Map.js"
+        ],
+        "explanation": "1) src/ol/layer/Heatmap.js is the layer constructor where we accept `{className}` in the options but never actually declare a default class name (unlike other layer types) nor mark Heatmap as a standalone canvas\u2010renderer type.  2) src/ol/renderer/Map.js is where OL decides which container (and its classList) to create for each layer type. Heatmap currently falls into the generic \u201cvector\u201d bucket (sharing one canvas) and never picks up the layer\u2019s own `className` or default class. Both files must be updated so that Heatmap layers get their own container (or at least have their reserved default class) and so that any passed\u2010in `className` is forwarded to the DOM.",
+        "bug_scenario": "In the user\u2019s codesandbox screenshot we see that passing a `className` option to a new `HeatmapLayer({ className: 'ol-layer-heatMap', \u2026 })` has no effect \u2013 the DOM still only shows the single shared vector\u2010canvas inside a `<div class=\"ol-layer\">`, and neither the default nor the custom class name ever makes it onto the layer container or canvas. In other words, `className` is being dropped for Heatmap layers (and they never even get the default \u2018ol-layer-heatmap\u2019 class), so you cannot style them independently."
+    }
+}

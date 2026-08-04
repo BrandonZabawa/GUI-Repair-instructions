@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//UpdateLabelHandler"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//ensureInternalLabelDi",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//setText"
+        ],
+        "explanation": "The core of the bug is that after clearing a label, the 'di.label' property is set to null instead of being deleted. In the provided compressed files, the relevant logic is in UpdateLabelHandler.js. The method ensureInternalLabelDi is responsible for managing the di.label when labels are set or cleared. It explicitly sets di.label = null when the label is removed, which leaves the property present with a null value. The setText function calls ensureInternalLabelDi as part of updating the label. Therefore, both ensureInternalLabelDi and setText are directly related to the bug, and UpdateLabelHandler is the class/module containing this logic. The bug can be fixed by removing the 'label' property from di when no label is present, instead of setting it to null.",
+        "bug_scenario": "The bug scenario involves clearing the label of a BPMN Task. After removing the label, the diagram interchange (di) object still contains the property 'label' with a value of null, rather than removing the property entirely. This causes downstream issues, such as linting errors, because other tools expect the property to be absent if there is no label."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js"
+        ],
+        "bug_functions": [
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js//ensureInternalLabelDi"
+        ],
+        "explanation": "The core of the bug is in how the label property is handled when the text is cleared. In 'UpdateLabelHandler.js', the function 'ensureInternalLabelDi' checks if there is text; if not, it sets di.label to null (di.label = null). However, the expected behavior is that the 'label' property should be completely removed from the di object, not just set to null. This incorrect handling directly causes the bug. The logic for updating and reverting labels also calls this function, so its behavior propagates throughout label editing. The other files (LabelUtil.js, DiUtil.js, LabelBehavior.js) do not manipulate the di.label property for removal/cleanup, so the fix should focus on UpdateLabelHandler.js and specifically the ensureInternalLabelDi function.",
+        "bug_scenario": "The bug scenario is that after a user removes the label of a Task in the BPMN diagram, the diagram interchange (di) object still contains the property 'label', but set to null (di.label = null), instead of removing the property altogether. This causes issues with tools like BPMN linting, which expects the property to not exist when the label is cleared. The provided image shows a workflow where a label is being deleted from a task, and the developer console is likely being used to inspect the object state or observe issues related to linting."
+    }
+}

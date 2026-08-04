@@ -1,0 +1,16 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js"
+        ],
+        "explanation": "The file offscreen-images.js implements the logic that walks all images reported by the gatherer, checks their clientRect, and flags any with zero area (producing the \u201cInvalid image sizing information\u201d message). Because it doesn\u2019t discriminate by mimeType, it ends up flagging zero-sized <svg> images. To fix the bug we need to add a guard in this file (e.g. skip any image whose networkRecord.mimeType === 'image/svg+xml') so that SVGs are not included in the offscreen-images audit.",
+        "bug_scenario": "When the offscreen-images audit runs against an SVG resource whose reported clientWidth and clientHeight are zero, it treats the SVG as an offscreen image and emits the debugString \u201cInvalid image sizing information\u201d even though SVGs should be exempt from this check. In other words, zero-area SVGs are currently being flagged when they ought to be ignored."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/byte-efficiency/offscreen-images.js"
+        ],
+        "explanation": "The file offscreen-images.js implements the logic for marking images as offscreen based on clientWidth/clientHeight and clientRect. It doesn\u2019t exclude images with mimeType 'image/svg+xml', so any SVG with zero area trips the \"Invalid image sizing information\" branch. To fix this bug, offscreen-images.js needs a check to skip or ignore SVG resources before it evaluates their dimensions.",
+        "bug_scenario": "When running the \"Offscreen images\" audit against a page with an SVG that reports zero width and height, the audit emits the debugString \u201cInvalid image sizing information\u201d and flags that .svg as offscreen. In reality SVGs should be ignored by this audit since they\u2019re vector and their sizing can\u2019t be assessed the same way as raster images."
+    }
+}

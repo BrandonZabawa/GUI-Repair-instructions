@@ -1,0 +1,12 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/TextRenderer.js",
+            "lib/features/label-editing/LabelEditingProvider.js",
+            "lib/features/label-editing/cmd/UpdateLabelHandler.js"
+        ],
+        "explanation": "All of these files participate in computing and applying new bounds (width/height) to shapes and labels, and a recent change accidentally causes events and gateways to be resized to the minimal label box on click:  \n\n\u2022 TextRenderer.js:getExternalLabelBounds  \n  \u2013 Calculates the new box for an empty or external label, returning a tiny width/height when text is empty.  \n\n\u2022 UpdateLabelHandler.js:postExecute  \n  \u2013 Always attempts to resize the \u2018label\u2019 element after label changes, but uses getExternalLabelBounds when newBounds is undefined. If the label is missing or empty, it mistakenly resizes the element shape itself (e.g. an event circle or gateway diamond) down to the minimal label box.  \n\n\u2022 LabelEditingProvider.js:getEditingBBox  \n  \u2013 Handles positioning and auto\u2010resizing hints for external labels on various BPMN elements, but does not guard against selection\u2010only interactions. Because a residual direct\u2010edit or resize hint remains active on click, it triggers a bogus resize.  \n\n\u2022 BpmnRenderer.js  \n  \u2013 Renders shapes strictly according to element.width/height. Once the width/height have been clobbered to minimal values by the label/resize logic, events and gateways are drawn as dots or vanish.",
+        "bug_scenario": "When the user clicks (selects) on a BPMN start event, end event or gateway, the shape suddenly shrinks to its minimal bounds or even disappears entirely. In the demo you can see two circles and a diamond connected by sequence flows. As soon as you click the diamond (or any event/gateway), it collapses to a dot (or vanishes) and is no longer interactive. This same problem can be reproduced both when finishing a direct\u2010edit with an empty label (which reflows the label\u2019s bounding box) and when simply selecting events or gateways after loading a BPMN diagram."
+    }
+}

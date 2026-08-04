@@ -1,0 +1,54 @@
+diff --git a/packages/components/src/components/modal/modal.js b/packages/components/src/components/modal/modal.js
+index 712494a5..23ffa334 100644
+--- a/packages/components/src/components/modal/modal.js
++++ b/packages/components/src/components/modal/modal.js
+@@ -131,8 +131,10 @@ class Modal extends mixin(
+ 
+     if (state === 'hidden') {
+       this.element.classList.toggle(this.options.classVisible, false);
++      document.body.classList.remove(this.options.classNoScroll || 'bx--body--no-scroll');
+     } else if (state === 'shown') {
+       this.element.classList.toggle(this.options.classVisible, true);
++      document.body.classList.add(this.options.classNoScroll || 'bx--body--no-scroll');
+     }
+     handleTransitionEnd = this.manage(
+       on(this.element, 'transitionend', transitionEnd)
+@@ -233,6 +235,7 @@ class Modal extends mixin(
+         '.flatpickr-calendar',
+       ],
+       classVisible: 'is-visible',
++      classNoScroll: `${prefix}--body--no-scroll`,
+       attribInitTarget: 'data-modal-target',
+       initEventNames: ['click'],
+       eventBeforeShown: 'modal-beingshown',
+diff --git a/packages/react/src/components/Modal/Modal.js b/packages/react/src/components/Modal/Modal.js
+index 4a6864b4..0f25fdbc 100644
+--- a/packages/react/src/components/Modal/Modal.js
++++ b/packages/react/src/components/Modal/Modal.js
+@@ -197,10 +197,15 @@ export default class Modal extends Component {
+   componentDidUpdate(prevProps) {
+     if (!prevProps.open && this.props.open) {
+       this.beingOpen = true;
++      document.body.classList.add(`${prefix}--body--no-scroll`);
+     } else if (prevProps.open && !this.props.open) {
+       this.beingOpen = false;
++      document.body.classList.remove(`${prefix}--body--no-scroll`);
+     }
+   }
++    document.body.classList.remove(`${prefix}--body--no-scroll`);
++  }
++}
+ 
+   initialFocus = focusContainerElement => {
+     const primaryFocusElement = focusContainerElement
+@@ -220,8 +225,8 @@ export default class Modal extends Component {
+   };
+ 
+   componentDidMount() {
+-    if (!this.props.open) {
+-      return;
++    if (this.props.open) {
++      document.body.classList.add(`${prefix}--body--no-scroll`);
+     }
+     if (!this.props.focusTrap) {
+       this.focusButton(this.innerModal.current);

@@ -1,0 +1,71 @@
+diff --git a/src/language-markdown/printer-markdown.js b/src/language-markdown/printer-markdown.js
+index a45b03926..6dff32eac 100644
+--- a/src/language-markdown/printer-markdown.js
++++ b/src/language-markdown/printer-markdown.js
+@@ -461,6 +461,8 @@ function printTable(path, options, print) {
+     contents.push(rowContents);
+   }, "children");
+ 
++  // Set a maximum column width for pretty tables
++  const MAX_COLUMN_WIDTH = 30;
+   const columnMaxWidths = contents.reduce(
+     (currentWidths, rowContents) =>
+       currentWidths.map((width, columnIndex) =>
+@@ -469,6 +471,18 @@ function printTable(path, options, print) {
+     contents[0].map(() => 3) // minimum width = 3 (---, :--, :-:, --:)
+   );
+ 
++  // If any column is too wide, fall back to simple separator and no alignment
++  const hasWideColumn = columnMaxWidths.some(width => width > MAX_COLUMN_WIDTH);
++
++  if (hasWideColumn) {
++    // fallback: just print the table as-is, with :---: separator
++    return join(hardline, [
++      printSimpleRow(contents[0]),
++      printSimpleSeparator(),
++      join(hardline, contents.slice(1).map(printSimpleRow))
++    ]);
++  }
++
+   return join(hardline, [
+     printRow(contents[0]),
+     printSeparator(),
+@@ -517,6 +531,38 @@ function printTable(path, options, print) {
+     ]);
+   }
+ 
++  // Fallback: print row without alignment/padding
++  function printSimpleRow(rowContents) {
++    return concat([
++      "| ",
++      join(" | ", rowContents),
++      " |"
++    ]);
++  }
++
++  // Fallback: print simple separator (always :---: or --- etc)
++  function printSimpleSeparator() {
++    return concat([
++      "| ",
++      join(
++        " | ",
++        node.align.map(alignType => {
++          switch (alignType) {
++            case "left":
++              return ":---";
++            case "right":
++              return "---:";
++            case "center":
++              return ":---:";
++            default:
++              return "---";
++          }
++        })
++      ),
++      " |"
++    ]);
++  }
++
+   function alignLeft(text, width) {
+     return concat([text, " ".repeat(width - privateUtil.getStringWidth(text))]);
+   }

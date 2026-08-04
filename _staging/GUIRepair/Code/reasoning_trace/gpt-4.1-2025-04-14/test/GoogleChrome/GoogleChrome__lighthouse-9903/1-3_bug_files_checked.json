@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/uses-rel-preconnect.js",
+            "lighthouse-core/gather/gatherers/link-elements.js",
+            "lighthouse-core/computed/network-records.js",
+            "lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js"
+        ],
+        "explanation": "1. 'lighthouse-core/audits/uses-rel-preconnect.js': This is the main audit responsible for analyzing if critical preconnect or dns-prefetch hints are present and for recommending which origins benefit from preconnect. Any bug in logic or criteria here would directly cause false suggestions to persist even after hints are added.\n2. 'lighthouse-core/gather/gatherers/link-elements.js': This gatherer collects all <link rel> elements from the page. If it fails to recognize already-added <link rel=\"preconnect\"> as valid or misses certain forms, the audit will not detect them and will continue to suggest more origins unnecessarily.\n3. 'lighthouse-core/computed/network-records.js': Network records computation helps identify which origins are being hit early during page load, feeding into the preconnect audit. Issues here might cause misidentification or missed connections to preconnect origins.\n4. 'lighthouse-core/audits/byte-efficiency/byte-efficiency-audit.js': This abstract or helper audit is often reused and inherited for audits involving resource recommendations, including preconnect. Problems in base logic (like deduplication or handling edge cases) can manifest in derived audits like uses-rel-preconnect.\n\nThese files are closely related to the process of auditing, collecting, and suggesting preconnect links and are the most likely candidates for investigating and fixing this bug.",
+        "bug_scenario": "The bug scenario involves Lighthouse (LH) continuing to suggest 'Preconnect to required origins' even after the user has added the recommended <link rel=\"preconnect\"> tags to their HTML. The user expects that after adding these hints, the report would not suggest them again. However, running LH again shows a set of new origins, leading to confusion regarding which are the 'important third-party origins' and whether there is a limit on how many preconnect tags should be added. The bug may be related to how LH audits detect existing preconnect links, how the audit determines the importance of origins, or how it handles duplicates or cumulative recommendations."
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/uses-rel-preconnect.js",
+            "lighthouse-core/gather/gatherers/link-elements.js",
+            "lighthouse-core/computed/resource-summary.js",
+            "lighthouse-core/audits/resource-summary.js"
+        ],
+        "explanation": "These files are related to the detection and reporting of required preconnect origins:\n- 'lighthouse-core/audits/byte-efficiency/uses-rel-preconnect.js' is the main audit responsible for suggesting preconnect and detecting whether origins have preconnect hints.\n- 'lighthouse-core/gather/gatherers/link-elements.js' gathers <link> elements from the page, which lets the audit know whether preconnects are present for specific origins.\n- 'lighthouse-core/computed/resource-summary.js' and 'lighthouse-core/audits/resource-summary.js' are involved in summarizing network requests and resource use, which is likely important to determining which origins are 'important' for preconnect suggestions.\nIf there is a bug in detection, limitations, or logic about which/preconnects are counted or displayed, it will be expressed in the logic within these files.",
+        "bug_scenario": "The bug scenario involves Lighthouse continually suggesting to 'Preconnect to required origins' even after the user has already added preconnect hints for previously reported origins. The issue is that every time a Lighthouse report is run, it still lists new origins as candidates for preconnect, which confuses users about how many origins should be preconnected and why the suggestion persists. The screenshot shows the audit result with several third-party origins detected as missing preconnects, each with a potential savings estimate."
+    }
+}

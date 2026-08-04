@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "clients/devtools/devtools-entry.js",
+            "core/lib/emulation.js"
+        ],
+        "bug_functions": [
+            "clients/devtools/devtools-entry.js//createConfig",
+            "core/lib/emulation.js//emulate"
+        ],
+        "explanation": "\u2022 createConfig in devtools-entry.js sets screenEmulation.disabled = true for all DevTools runs. That flag is passed through to Lighthouse, causing getEmulationDescriptions to think no emulation was applied even though DevTools had already emulated the viewport.  \n\u2022 emulate in core/lib/emulation.js checks settings.screenEmulation.disabled and, when true, skips calling Emulation.setDeviceMetricsOverride and related commands. This reinforces the \u201cno emulation\u201d state internally.  \nTogether these two functions are responsible for both disabling real viewport emulation in the protocol and misreporting the emulation status in the DevTools UI.",
+        "bug_scenario": "When running Lighthouse from within DevTools on a mobile device emulation, the summary bar in the Lighthouse panel still reads \u201cNo emulation with Lighthouse\u201d (see screenshot). The root cause is that devtools-entry.js\u2019s createConfig call force-disables screenEmulation (so getEmulationDescriptions believes no emulation was applied) and the core emulation logic then skips viewport emulation entirely."
+    },
+    "2": {
+        "bug_classes": [
+            "clients/devtools/devtools-entry.js//createConfig",
+            "core/lib/emulation.js//emulate"
+        ],
+        "bug_functions": [
+            "clients/devtools/devtools-entry.js//createConfig",
+            "core/lib/emulation.js//emulate"
+        ],
+        "explanation": "The root cause is that DevTools\u2019 entry point (createConfig) forcibly sets settings.screenEmulation.disabled to true so that Lighthouse does not double-apply viewport emulation. But that flag also causes the UI helper getEmulationDescriptions (in core/ui) to report \u201cno emulation.\u201d In addition, the emulate() function in core/lib/emulation.js skips sending any Emulation.setDeviceMetricsOverride commands when screenEmulation.disabled is true. Although DevTools itself has already applied the viewport settings, the Lighthouse runtime and description logic see the flag and conclude there is no emulation. To fix this, we must adjust createConfig (or downstream description logic) to distinguish DevTools\u2010applied emulation from a true \u201cdisabled\u201d state, and/or update emulate() so that DevTools mode still reports and surfaces the correct mobile emulation in getEmulationDescriptions.",
+        "bug_scenario": "When running Lighthouse inside DevTools with a mobile device selected, the Status pane still shows \u201cNo emulation with Lighthouse\u201d even though DevTools has indeed applied viewport and user-agent emulation. In the screenshot, DevTools indicates \u201cNo emulation\u201d while the audit was run with Slow 4G throttling and device emulation active."
+    }
+}

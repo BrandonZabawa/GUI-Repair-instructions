@@ -1,0 +1,26 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/command/render/codetools.ts"
+        ],
+        "bug_functions": [
+            "src/command/render/codetools.ts//codeToolsPostprocessor",
+            "src/command/render/codetools.ts//resolveKeepSource",
+            "src/command/render/codetools.ts//resolveCodeTools"
+        ],
+        "explanation": "The bug is related to the logic that determines whether to show the code-tools menu and specifically its source button. In 'src/command/render/codetools.ts', the functions 'resolveKeepSource', 'codeToolsPostprocessor', and 'resolveCodeTools' are central for:\n\n- 'resolveKeepSource': This function decides if the document should embed the source code or keep a reference to it. It currently checks for 'source: true' but likely does not handle the case where 'source' is a string (URL), so it fails to activate the required UI.\n\n- 'resolveCodeTools': This function resolves the effective code-tools settings and whether 'source' (or a toggle) should be enabled. It appears to only enable the source button if 'format.render[kKeepSource]' is true, which is only true when the source is embedded, not when it's a URL.\n\n- 'codeToolsPostprocessor': This function is responsible for building the code-tools menu in the HTML output. It checks the resolved settings to determine if the button should be shown and sets data attributes (like the URL) on the button. If 'resolveCodeTools' is not correctly handling the URL case, the menu will not appear.\n\nThe bug is, therefore, caused by logic that only enables the menu for embedded source and does not activate it for an external source URL. The main file and functions to edit are in 'src/command/render/codetools.ts' as detailed above.",
+        "bug_scenario": "The bug scenario is that the 'code-tools' menu (e.g., the 'View Source' button) does not appear when the 'source' option is set to a URL (such as a GitHub link) in the document YAML front matter. The menu appears and works when 'source: true', but not with a URL. The screenshots confirm that the menu is missing with a URL but present with 'true'. This results in users being unable to provide external source links via the code-tools menu as intended."
+    },
+    "2": {
+        "bug_classes": [
+            "src/command/render/codetools.ts"
+        ],
+        "bug_functions": [
+            "src/command/render/codetools.ts//codeToolsPostprocessor",
+            "src/command/render/codetools.ts//resolveKeepSource",
+            "src/command/render/codetools.ts//resolveCodeTools"
+        ],
+        "explanation": "The problem is related to how the code tools menu is resolved and rendered in the HTML output when a URL is provided for the source. The relevant logic for this feature is in `src/command/render/codetools.ts`. Specifically: (1) `codeToolsPostprocessor` is the main function responsible for injecting the code tools UI into the HTML document; it checks the resolved code tools configuration and determines whether to show the menu and/or source button, and it handles whether a URL or embedded source code is used. (2) `resolveKeepSource` and (3) `resolveCodeTools` are used to determine if the source code should be kept/embedded and what kind of code tools UI should be shown (including handling the 'source' option as a boolean or a URL). If the code tools menu is not showing up when a URL is provided, the issue is likely in how these functions interpret and act upon the `source` value when it is a string (URL), potentially failing to recognize that the menu should still be rendered even if the source is external.",
+        "bug_scenario": "The bug scenario is that when the `code-tools` option is set in a Quarto document's YAML frontmatter and `source` is set to a URL (e.g., `source: https://github.com/...`), the code tools menu does not appear in the rendered HTML output. However, if `source: true` is used, the code tools menu appears as expected. The images illustrate: (1) correct display with `source: true` (code tools menu visible), and (2) the missing menu when using a URL for `source`. The expectation is that the code tools menu should appear in both cases, with the menu linking to the provided source URL when a URL is given."
+    }
+}

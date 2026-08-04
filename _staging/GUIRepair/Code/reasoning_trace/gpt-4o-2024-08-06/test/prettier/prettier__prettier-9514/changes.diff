@@ -1,0 +1,33 @@
+diff --git a/src/language-js/parser-babel.js b/src/language-js/parser-babel.js
+index 539571361..c7c122e33 100644
+--- a/src/language-js/parser-babel.js
++++ b/src/language-js/parser-babel.js
+@@ -252,6 +252,20 @@ function assertJsonNode(node, parent) {
+   }
+ }
+ 
++const cherow = require("cherow");
++
++function parseCherow(text, parsers, opts) {
++  try {
++    return cherow.parse(text, { module: true });
++  } catch (error) {
++    throw createError(error.message, {
++      start: { line: error.lineNumber, column: error.column + 1 },
++    });
++  }
++}
++
++const cherowParser = { parse: parseCherow, astFormat: "estree", locStart, locEnd };
++
+ const babel = { parse, astFormat: "estree", hasPragma, locStart, locEnd };
+ const babelFlow = { ...babel, parse: parseFlow };
+ const babelTypeScript = { ...babel, parse: parseTypeScript };
+@@ -263,6 +277,7 @@ module.exports = {
+     babel,
+     "babel-flow": babelFlow,
+     "babel-ts": babelTypeScript,
++    cherow: cherowParser,
+     json: {
+       ...babelExpression,
+       hasPragma() {

@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/driver.js",
+            "lighthouse-core/gather/gather-runner.js",
+            "lighthouse-core/computed/load-simulator.js"
+        ],
+        "explanation": "All three files participate in how Lighthouse captures and simulates the page load under throttlingMethod=simulate. \n\n\u2022 driver.js implements gotoURL and trace recording lifecycles (waitForLoad, network-quiet, CPU-quiet) and determines when to stop capturing DevTools events. In simulate mode the trace is ended on the real loadEventFired, too early to catch late shifts.\n\n\u2022 gather-runner.js orchestrates the passes and invokes driver.gotoURL with the default waitForLoad/idle settings. It doesn\u2019t special-case simulate throttling to extend the capture window for LayoutShift events.\n\n\u2022 load-simulator.js only computes the offline network/CPU slowdown parameters but has no hook for extending the simulation or trace capture to include later layout shifts. Fixing CLS under simulate will require updating these files so that when throttlingMethod=simulate Lighthouse holds the trace open (or waits for CPU idle) long enough to observe all late layout\u2010shift activity.",
+        "bug_scenario": "When running Lighthouse in \u201csimulate\u201d throttling mode (the Lantern\u2010based simulator), Lighthouse gathers an unthrottled trace of the page (including FCP and loadEventFired) and then stops capturing DevTools trace events as soon as the simulator believes the page load is complete. On pages like the PWA Venia bottoms page, additional images and overlays continue loading and shifting layout after the load event. Because the DevTools trace is cut off too early, no LayoutShift events are recorded and Cumulative Layout Shift reports as 0 (see screenshot), even though the live page exhibits significant late\u2010arriving shifts."
+    }
+}

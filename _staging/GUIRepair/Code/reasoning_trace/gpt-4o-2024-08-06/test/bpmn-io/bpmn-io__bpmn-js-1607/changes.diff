@@ -1,0 +1,40 @@
+diff --git a/lib/import/BpmnImporter.js b/lib/import/BpmnImporter.js
+index 029dd187..98ccbd87 100644
+--- a/lib/import/BpmnImporter.js
++++ b/lib/import/BpmnImporter.js
+@@ -128,19 +128,24 @@ BpmnImporter.prototype.add = function(semantic, di, parentElement) {
+     var collapsed = !isExpanded(semantic, di),
+         isFrame = isFrameElement(semantic);
+ 
+-    hidden = parentElement && (parentElement.hidden || parentElement.collapsed);
++hidden = parentElement && (parentElement.hidden || parentElement.collapsed);
+ 
+-    var bounds = di.bounds;
++var bounds = di.bounds;
+ 
+-    element = this._elementFactory.createShape(elementData(semantic, di, {
+-      collapsed: collapsed,
+-      hidden: hidden,
+-      x: Math.round(bounds.x),
+-      y: Math.round(bounds.y),
+-      width: Math.round(bounds.width),
+-      height: Math.round(bounds.height),
+-      isFrame: isFrame
+-    }));
++// Ensure groups inside collapsed sub-processes are correctly referenced
++if (is(semantic, 'bpmn:Group') && parentElement && parentElement.collapsed) {
++hidden = true;
++}
++
++element = this._elementFactory.createShape(elementData(semantic, di, {
++collapsed: collapsed,
++hidden: hidden,
++x: Math.round(bounds.x),
++y: Math.round(bounds.y),
++width: Math.round(bounds.width),
++height: Math.round(bounds.height),
++isFrame: isFrame
++}));
+ 
+     if (is(semantic, 'bpmn:BoundaryEvent')) {
+       this._attachBoundary(semantic, element);

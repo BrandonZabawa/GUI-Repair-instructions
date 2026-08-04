@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/cli.js",
+            "lib/eslint/eslint.js",
+            "lib/cli-engine/cli-engine.js"
+        ],
+        "explanation": "1. lib/cli.js (printResults): This function does \u201cconst output = formatter.format(results)\u201d and then immediately writes or logs output. To support async formatters, it must do \u201cconst output = await formatter.format(results)\u201d.  \n2. lib/eslint/eslint.js (ESLint.loadFormatter): The code that loads a formatter must normalize both sync and async format methods so that callers can always await formatter.format(results). That might mean wrapping a sync format function in a promise, or simply returning the formatter whose format is already async.  \n3. lib/cli-engine/cli-engine.js (CLIEngine.getFormatter): The legacy CLIEngine API currently returns formatters synchronously. It too would need to become async (returning a Promise) or otherwise hand off async formatters correctly, so that downstream code can await them.",
+        "bug_scenario": "The user is writing a custom ESLint formatter that uses an asynchronous highlighter (shiki). When ESLint loads this formatter and invokes its format method, it currently calls it synchronously (just formatter.format(results)) and treats the return value as a string. An async formatter\u2019s format method actually returns a Promise, so the CLI never awaits it and ends up writing out either \u201c[object Promise]\u201d or nothing at all. In short, ESLint only supports sync formatters today and will need to await async formatters."
+    }
+}

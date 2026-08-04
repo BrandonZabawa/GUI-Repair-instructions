@@ -1,0 +1,17 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/rules/BpmnRules.js"
+        ],
+        "explanation": "All connection\u2010permission logic lives in lib/features/rules/BpmnRules.js: it implements the ruleProvider that evaluates 'connection.create' and 'connection.reconnect' for bpmn:MessageFlow. Currently, the code only checks for typed boundary events (those with eventDefinitions) and rejects those, but it doesn\u2019t catch boundary events without definitions. To properly enforce BPMN semantics, the check in BpmnRules.js must be broadened to reject any element of type bpmn:BoundaryEvent, regardless of its eventDefinition. No other file handles this high-level connection rule, so BpmnRules.js is the sole place to fix the bug.",
+        "bug_scenario": "When working with BPMN diagrams in bpmn-js (v6.3.4), it is currently possible to draw a message flow from or to a boundary event that has no eventDefinition (i.e. an \u201cuntyped\u201d boundary event). By BPMN semantics, boundary events \u2013 whether typed (e.g. message, timer) or not \u2013 must never be the source or target of a message flow. In practice, the UI only forbids connecting a \u201ctyped\u201d boundary event, but allows untyped ones. A user can therefore drag a message flow from Participant B to the circular boundary event on Task A, which should be disallowed."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/rules/BpmnRules.js",
+            "lib/util/ModelUtil.js"
+        ],
+        "explanation": "All of the connection\u2010validation logic for message flows lives in BpmnRules.js (it decides what source/target pairs are allowed). That file currently only forbids message flows on boundary events when they have event definitions, so it needs to be changed to catch *all* boundary events. ModelUtil.js is where the helper functions detect 'bpmn:BoundaryEvent' and whether it has definitions \u2013 you\u2019ll need to update or introduce a check there so that the rule in BpmnRules.js can simply say \u201cno message flow if target is a BoundaryEvent,\u201d irrespective of its typed/ untyped state.",
+        "bug_scenario": "In the provided GIF and diagram the user tries to draw a message flow from Participant B over to the little circle attached (the boundary event) on the TASK inside Participant A. According to BPMN semantics you must never be able to start or end a message flow on a boundary event, yet right now only boundary events that carry an explicit event definition are blocked \u2013 plain/untyped boundary events still accept a message flow target and thus allow an illegal connection."
+    }
+}

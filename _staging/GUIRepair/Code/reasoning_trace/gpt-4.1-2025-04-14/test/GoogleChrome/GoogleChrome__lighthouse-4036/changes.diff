@@ -1,0 +1,38 @@
+diff --git a/lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js b/lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js
+index 296f94dc9..0361e50d8 100644
+--- a/lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js
++++ b/lighthouse-core/audits/dobetterweb/external-anchors-use-rel-noopener.js
+@@ -37,6 +37,10 @@ class ExternalAnchorsUseRelNoopenerAudit extends Audit {
+     // https://github.com/GoogleChrome/lighthouse/issues/1345
+     const failingAnchors = artifacts.AnchorsWithNoRelNoopener
+       .filter(anchor => {
++        // Ignore mailto: links
++        if (anchor.href && anchor.href.toLowerCase().startsWith('mailto:')) {
++          return false;
++        }
+         try {
+           return new URL(anchor.href).host !== pageHost;
+         } catch (err) {
+diff --git a/lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js b/lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js
+index 34b209f7f..3b2dc90ef 100644
+--- a/lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js
++++ b/lighthouse-core/gather/gatherers/dobetterweb/anchors-with-no-rel-noopener.js
+@@ -18,11 +18,13 @@ class AnchorsWithNoRelNoopener extends Gatherer {
+       ${DOMHelpers.getElementsInDocumentFnString}; // define function on page
+       const selector = 'a[target="_blank"]:not([rel~="noopener"])';
+       const elements = getElementsInDocument(selector);
+-      return elements.map(node => ({
+-        href: node.href,
+-        rel: node.getAttribute('rel'),
+-        target: node.getAttribute('target')
+-      }));
++      return elements
++        .filter(node => !(node.href && node.href.toLowerCase().startsWith('mailto:')))
++        .map(node => ({
++          href: node.href,
++          rel: node.getAttribute('rel'),
++          target: node.getAttribute('target')
++        }));
+     })()`;
+ 
+     return options.driver.evaluateAsync(expression);

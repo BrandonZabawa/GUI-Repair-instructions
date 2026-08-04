@@ -1,0 +1,42 @@
+diff --git a/src/ol/MapBrowserEventHandler.js b/src/ol/MapBrowserEventHandler.js
+index dd950f0488..3b7743d9b6 100644
+--- a/src/ol/MapBrowserEventHandler.js
++++ b/src/ol/MapBrowserEventHandler.js
+@@ -311,16 +311,32 @@ class MapBrowserEventHandler extends EventTarget {
+   /**
+    * Wrap and relay a pointer event.  Note that this requires that the type
+    * string for the MapBrowserEvent matches the PointerEvent type.
+-   * @param {PointerEvent} pointerEvent Pointer
+-   * event.
++   * We batch pointermove events via requestAnimationFrame to avoid
++   * flooding the map with one event per pixel.
++   * @param {PointerEvent} pointerEvent Pointer event.
+    * @private
+    */
+   relayEvent_(pointerEvent) {
+     this.originalPointerMoveEvent_ = pointerEvent;
+     const dragging = !!(this.down_ && this.isMoving_(pointerEvent));
+-    this.dispatchEvent(
+-      new MapBrowserEvent(pointerEvent.type, this.map_, pointerEvent, dragging)
+-    );
++
++    if (pointerEvent.type === PointerEventType.POINTERMOVE) {
++      if (!this.pointerMoveQueued_) {
++        this.pointerMoveQueued_ = true;
++        // schedule exactly one pointermove per frame
++        requestAnimationFrame(() => {
++          this.pointerMoveQueued_ = false;
++          this.dispatchEvent(
++            new MapBrowserEvent(pointerEvent.type, this.map_, pointerEvent, dragging)
++          );
++        });
++      }
++    } else {
++      // all other pointer events go through immediately
++      this.dispatchEvent(
++        new MapBrowserEvent(pointerEvent.type, this.map_, pointerEvent, dragging)
++      );
++    }
+   }
+ 
+   /**

@@ -1,0 +1,71 @@
+diff --git a/src/ol/reproj.js b/src/ol/reproj.js
+index 1e92b248f3..33cc3e1210 100644
+--- a/src/ol/reproj.js
++++ b/src/ol/reproj.js
+@@ -259,26 +259,40 @@ export function render(
+     stitchContext.imageSmoothingEnabled = false;
+   }
+ 
+-  const stitchScale = pixelRatio / sourceResolution;
+-
++  // Replace uniform stitchScale with per-tile X/Y scales so
++  // the total pixel count matches the source exactly.
+   sources.forEach(function (src, i, arr) {
+     const xPos = src.extent[0] - sourceDataExtent[0];
+     const yPos = -(src.extent[3] - sourceDataExtent[3]);
+     const srcWidth = getWidth(src.extent);
+     const srcHeight = getHeight(src.extent);
+ 
+-    // This test should never fail -- but it does. Need to find a fix the upstream condition
++    // Compute the number of source pixels in X/Y (excluding gutter)
++    const srcPixelWidth = src.image.width - 2 * gutter;
++    const srcPixelHeight = src.image.height - 2 * gutter;
++    if (srcPixelWidth <= 0 || srcPixelHeight <= 0) {
++      return;
++    }
++
++    // Map units per source pixel in X and Y
++    const resolutionX = srcWidth / srcPixelWidth;
++    const resolutionY = srcHeight / srcPixelHeight;
++    // Convert to screen pixels
++    const xScale = pixelRatio / resolutionX;
++    const yScale = pixelRatio / resolutionY;
++
++    // Draw the tile with independent X/Y scale
+     if (src.image.width > 0 && src.image.height > 0) {
+       stitchContext.drawImage(
+         src.image,
+         gutter,
+         gutter,
+-        src.image.width - 2 * gutter,
+-        src.image.height - 2 * gutter,
+-        xPos * stitchScale,
+-        yPos * stitchScale,
+-        srcWidth * stitchScale,
+-        srcHeight * stitchScale
++        srcPixelWidth,
++        srcPixelHeight,
++        xPos * xScale,
++        yPos * yScale,
++        srcPixelWidth * xScale,
++        srcPixelHeight * yScale
+       );
+     }
+   });
+@@ -399,9 +413,14 @@ export function render(
+       sourceDataExtent[3] - sourceNumericalShiftY
+     );
+ 
++    // Correct for non-square source pixels by computing X/Y resolution
++    const resolutionX = canvasWidthInUnits /
++      (stitchContext.canvas.width / pixelRatio);
++    const resolutionY = canvasHeightInUnits /
++      (stitchContext.canvas.height / pixelRatio);
+     context.scale(
+-      sourceResolution / pixelRatio,
+-      -sourceResolution / pixelRatio
++      resolutionX / pixelRatio,
++      -resolutionY / pixelRatio
+     );
+ 
+     context.drawImage(stitchContext.canvas, 0, 0);

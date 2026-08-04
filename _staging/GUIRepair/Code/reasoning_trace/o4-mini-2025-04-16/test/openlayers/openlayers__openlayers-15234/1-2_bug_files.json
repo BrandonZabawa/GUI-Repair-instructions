@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/layer/WebGLPoints.js",
+            "src/ol/renderer/webgl/PointsLayer.js",
+            "src/ol/render/webgl/VectorStyleRenderer.js"
+        ],
+        "explanation": "\u2022 src/ol/layer/WebGLPoints.js defines the WebGLPointsLayer and instantiates its renderer but does not pass along any projection transforms beyond the default.\n\u2022 src/ol/renderer/webgl/PointsLayer.js drives the frame composition for WebGLPointsLayer and delegates to VectorStyleRenderer without injecting feature\u2192view reprojection.\n\u2022 src/ol/render/webgl/VectorStyleRenderer.js is where feature geometries are read (getFlatCoordinates) and batched into GL buffers via a fixed coordinate\u2192GL matrix. It never reprojects the source geometry from its data/featureProjection into the current viewProjection (EPSG:4326 when useGeographic is on). \nAll three files must be updated so that before buffering, each feature\u2019s coordinates are transformed from the vector source\u2019s featureProjection into the viewProjection, respecting the same reprojection pipeline used by the regular VectorLayer.",
+        "bug_scenario": "When the global useGeographic() setting is enabled (so the map\u2019s view projection becomes EPSG:4326), WebGLPointsLayer still treats all feature coordinates as if they were in EPSG:3857. As a result it grabs flat coordinates directly from each feature\u2019s geometry (which remain in 4326) and feeds them through the EPSG:3857-based GL matrix. The points end up being plotted in the wrong place (e.g. near Africa) instead of at their true lon/lat positions."
+    },
+    "2": {
+        "bug_files": [
+            "src/ol/layer/WebGLPoints.js",
+            "src/ol/renderer/webgl/PointsLayer.js"
+        ],
+        "explanation": "The bug manifests because WebGLPointsLayer (defined in src/ol/layer/WebGLPoints.js) generates and uploads point attribute buffers without checking for geographic mode, and its renderer (src/ol/renderer/webgl/PointsLayer.js) applies only the standard EPSG:3857 view transform. Neither file inspects the global useGeographic() flag or reprojects coordinates from EPSG:4326, so features created with a geographic source end up rendered in the wrong spatial reference.",
+        "bug_scenario": "When useGeographic() is enabled, WebGLPointsLayer still treats incoming coordinates as if they were in Web Mercator (EPSG:3857), so all points are plotted at incorrect locations (e.g. clustered near Africa). Unlike the standard VectorLayer with WebGLVectorLayerRenderer, WebGLPointsLayer ignores the geographic flag and fails to reproject feature geometries from EPSG:4326 to the internal view projection."
+    }
+}

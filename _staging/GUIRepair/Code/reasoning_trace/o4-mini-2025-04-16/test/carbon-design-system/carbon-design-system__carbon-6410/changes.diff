@@ -1,0 +1,101 @@
+diff --git a/packages/react/src/components/Tabs/Tabs.js b/packages/react/src/components/Tabs/Tabs.js
+index 7c3774e2..ec02fd8d 100644
+--- a/packages/react/src/components/Tabs/Tabs.js
++++ b/packages/react/src/components/Tabs/Tabs.js
+@@ -8,7 +8,6 @@
+ import PropTypes from 'prop-types';
+ import React from 'react';
+ import classNames from 'classnames';
+-import { ChevronDown16 } from '@carbon/icons-react';
+ import { settings } from 'carbon-components';
+ import { keys, match, matches } from '../../internal/keyboard';
+ 
+@@ -242,21 +241,21 @@ export default class Tabs extends React.Component {
+      *
+      * We set the tab index based on the different states so the browser will treat
+      * the whole tab panel as a single focus component when it looks like a tab
+-     * panel and separate components when it looks like a select list.
+-     */
+-    const tabsWithProps = this.getTabs().map((tab, index) => {
+-      const tabPanelIndex = index === this.state.selected ? 0 : -1;
+-      const tabIndex = !this.state.dropdownHidden ? 0 : tabPanelIndex;
+-      const newTab = React.cloneElement(tab, {
+-        index,
+-        selected: index === this.state.selected,
+-        handleTabClick: this.handleTabClick(onSelectionChange),
+-        tabIndex,
+-        ref: (e) => {
+-          this.setTabAt(index, e);
+-        },
+-        handleTabKeyDown: this.handleTabKeyDown(onSelectionChange),
+-      });
++const tabsWithProps = this.getTabs().map((tab, index) => {
++  const tabPanelIndex = index === this.state.selected ? 0 : -1;
++  const tabIndex = tabPanelIndex;
++  const newTab = React.cloneElement(tab, {
++    index,
++    selected: index === this.state.selected,
++    handleTabClick: this.handleTabClick(onSelectionChange),
++    tabIndex,
++    ref: (e) => {
++      this.setTabAt(index, e);
++    },
++    handleTabKeyDown: this.handleTabKeyDown(onSelectionChange),
++  });
++  return newTab;
++});
+ 
+       return newTab;
+     });
+@@ -282,14 +281,12 @@ export default class Tabs extends React.Component {
+       );
+     });
+ 
+-    const classes = {
+-      tabs: classNames(`${prefix}--tabs`, className, {
+-        [`${prefix}--tabs--container`]: type === 'container',
+-      }),
+-      tablist: classNames(`${prefix}--tabs__nav`, {
+-        [`${prefix}--tabs__nav--hidden`]: this.state.dropdownHidden,
+-      }),
+-    };
++const classes = {
++  tabs: classNames(`${prefix}--tabs`, className, {
++    [`${prefix}--tabs--container`]: type === 'container',
++  }),
++  tablist: `${prefix}--tabs__nav`,
++};
+ 
+     const selectedTab = this.getTabAt(this.state.selected, true);
+     const selectedLabel = selectedTab ? selectedTab.props.label : '';
+@@ -297,27 +294,9 @@ export default class Tabs extends React.Component {
+     return (
+       <>
+         <div {...other} className={classes.tabs} role={role}>
+-          <div
+-            role="listbox"
+-            aria-label={ariaLabel}
+-            tabIndex={0}
+-            className={`${prefix}--tabs-trigger`}
+-            onClick={this.handleDropdownClick}
+-            onKeyPress={this.handleDropdownClick}>
+-            <a
+-              tabIndex={-1}
+-              className={`${prefix}--tabs-trigger-text`}
+-              href={triggerHref}
+-              onClick={this.handleDropdownClick}>
+-              {selectedLabel}
+-            </a>
+-            <ChevronDown16 aria-hidden="true">
+-              {iconDescription && <title>{iconDescription}</title>}
+-            </ChevronDown16>
+-          </div>
+-          <ul role="tablist" className={classes.tablist}>
+-            {tabsWithProps}
+-          </ul>
++        <ul role="tablist" className={classes.tablist}>
++          {tabsWithProps}
++        </ul>
+         </div>
+         {tabContentWithProps}
+       </>

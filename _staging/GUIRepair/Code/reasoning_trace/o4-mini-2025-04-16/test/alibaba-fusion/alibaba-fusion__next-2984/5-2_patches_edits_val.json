@@ -1,0 +1,612 @@
+{
+    "1/9": {
+        "src/cascader/cascader.jsx": [
+            {
+                "SEARCH": [
+                    "constructor(props, context) {",
+                    "super(props, context);",
+                    "",
+                    "const {",
+                    "defaultValue,",
+                    "value,",
+                    "defaultExpandedValue,",
+                    "expandedValue,",
+                    "dataSource,",
+                    "multiple,",
+                    "checkStrictly,",
+                    "canOnlyCheckLeaf,",
+                    "loadData,",
+                    "} = props;",
+                    "",
+                    "const { v2n, p2n } = flatDataSource(dataSource);"
+                ],
+                "REPLACE": [
+                    "constructor(props, context) {",
+                    "    super(props, context);",
+                    "",
+                    "    const {",
+                    "        defaultValue,",
+                    "        value,",
+                    "        defaultExpandedValue,",
+                    "        expandedValue,",
+                    "        dataSource,",
+                    "        multiple,",
+                    "        checkStrictly,",
+                    "        canOnlyCheckLeaf,",
+                    "        loadData,",
+                    "    } = props;",
+                    "",
+                    "    // clone dataSource so downstream flatDataSource/setCache can safely annotate",
+                    "    const dataSourceClone = JSON.parse(JSON.stringify(dataSource));",
+                    "    const { v2n, p2n } = flatDataSource(dataSourceClone);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "static getDerivedStateFromProps(props, state) {",
+                    "const { v2n, p2n } = flatDataSource(props.dataSource);",
+                    "const states = {};"
+                ],
+                "REPLACE": [
+                    "static getDerivedStateFromProps(props, state) {",
+                    "    // clone props.dataSource to avoid mutating frozen data coming from immer",
+                    "    const dataSourceClone = JSON.parse(JSON.stringify(props.dataSource));",
+                    "    const { v2n, p2n } = flatDataSource(dataSourceClone);",
+                    "    const states = {};"
+                ]
+            }
+        ]
+    },
+    "2/9": {
+        "src/cascader/cascader.jsx": [
+            {
+                "SEARCH": [
+                    "import { flatDataSource } from './utils';"
+                ],
+                "REPLACE": [
+                    "import { flatDataSource } from './utils';",
+                    "",
+                    "// Prevent mutating the original dataSource.",
+                    "// We deep-clone each node so that flatDataSource can safely add `pos` without touching props.",
+                    "function cloneTree(list) {",
+                    "    if (!Array.isArray(list)) {",
+                    "        return [];",
+                    "    }",
+                    "    return list.map(item => {",
+                    "        const { children, ...rest } = item;",
+                    "        return Array.isArray(children)",
+                    "            ? { ...rest, children: cloneTree(children) }",
+                    "            : { ...rest };",
+                    "    });",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const {",
+                    "defaultValue,",
+                    "value,",
+                    "defaultExpandedValue,",
+                    "expandedValue,",
+                    "dataSource,",
+                    "multiple,",
+                    "checkStrictly,",
+                    "canOnlyCheckLeaf,",
+                    "loadData,",
+                    "} = props;",
+                    "",
+                    "const { v2n, p2n } = flatDataSource(dataSource);"
+                ],
+                "REPLACE": [
+                    "        const {",
+                    "            defaultValue,",
+                    "            value,",
+                    "            defaultExpandedValue,",
+                    "            expandedValue,",
+                    "            dataSource,",
+                    "            multiple,",
+                    "            checkStrictly,",
+                    "            canOnlyCheckLeaf,",
+                    "            loadData,",
+                    "        } = props;",
+                    "",
+                    "        // clone the dataSource so flatDataSource won't mutate the original objects",
+                    "        const clonedData = cloneTree(dataSource);",
+                    "        const { v2n, p2n } = flatDataSource(clonedData);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "static getDerivedStateFromProps(props, state) {",
+                    "-       const { v2n, p2n } = flatDataSource(props.dataSource);",
+                    "+       // clone props.dataSource to avoid mutating frozen objects",
+                    "+       const clonedData = cloneTree(props.dataSource);",
+                    "+       const { v2n, p2n } = flatDataSource(clonedData);",
+                    "const states = {};",
+                    "...",
+                    "return {",
+                    "...states,",
+                    "_v2n: v2n,",
+                    "_p2n: p2n,",
+                    "};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    static getDerivedStateFromProps(props, state) {",
+                    "        // clone props.dataSource to avoid mutating frozen objects",
+                    "        const clonedData = cloneTree(props.dataSource);",
+                    "        const { v2n, p2n } = flatDataSource(clonedData);",
+                    "        const states = {};",
+                    "        ...",
+                    "        return {",
+                    "            ...states,",
+                    "            _v2n: v2n,",
+                    "            _p2n: p2n,",
+                    "        };",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "3/9": {
+        "src/cascader-select/cascader-select.jsx": [
+            {
+                "SEARCH": [
+                    "renderCascader() {",
+                    "const { dataSource } = this.props;",
+                    "if (dataSource.length === 0) {",
+                    "return this.renderNotFound();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    renderCascader() {",
+                    "        const { dataSource: rawDataSource } = this.props;",
+                    "        // Clone the entire tree so that Cascader can add its own fields",
+                    "        // without mutating user\u2010supplied (possibly frozen) objects.",
+                    "        const cloneData = items =>",
+                    "            items.map(item => {",
+                    "                const copy = { ...item };",
+                    "                if (Array.isArray(copy.children)) {",
+                    "                    copy.children = cloneData(copy.children);",
+                    "                }",
+                    "                return copy;",
+                    "            });",
+                    "        const dataSource = cloneData(rawDataSource);",
+                    "        if (dataSource.length === 0) {",
+                    "            return this.renderNotFound();",
+                    "        }"
+                ]
+            }
+        ]
+    },
+    "4/9": {
+        "src/cascader/cascader.jsx": [
+            {
+                "SEARCH": [
+                    "constructor(props, context) {",
+                    "super(props, context);",
+                    "",
+                    "const {",
+                    "defaultValue,",
+                    "value,",
+                    "defaultExpandedValue,",
+                    "expandedValue,",
+                    "dataSource,",
+                    "multiple,",
+                    "checkStrictly,",
+                    "canOnlyCheckLeaf,",
+                    "loadData,",
+                    "} = props;",
+                    "",
+                    "const { v2n, p2n } = flatDataSource(dataSource);"
+                ],
+                "REPLACE": [
+                    "    constructor(props, context) {",
+                    "        super(props, context);",
+                    "",
+                    "        const {",
+                    "            defaultValue,",
+                    "            value,",
+                    "            defaultExpandedValue,",
+                    "            expandedValue,",
+                    "            dataSource,",
+                    "            multiple,",
+                    "            checkStrictly,",
+                    "            canOnlyCheckLeaf,",
+                    "            loadData,",
+                    "        } = props;",
+                    "",
+                    "        // clone dataSource to avoid mutating frozen props",
+                    "        const dataCopy = JSON.parse(JSON.stringify(dataSource));",
+                    "        const { v2n, p2n } = flatDataSource(dataCopy);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "static getDerivedStateFromProps(props, state) {",
+                    "const { v2n, p2n } = flatDataSource(props.dataSource);"
+                ],
+                "REPLACE": [
+                    "    static getDerivedStateFromProps(props, state) {",
+                    "        // clone dataSource to avoid mutating frozen props",
+                    "        const dataCopy = JSON.parse(JSON.stringify(props.dataSource));",
+                    "        const { v2n, p2n } = flatDataSource(dataCopy);"
+                ]
+            }
+        ]
+    },
+    "5/9": {
+        "src/cascader/cascader.jsx": [
+            {
+                "SEARCH": [
+                    "constructor(props, context) {",
+                    "super(props, context);",
+                    "",
+                    "const {",
+                    "defaultValue,",
+                    "value,",
+                    "defaultExpandedValue,",
+                    "expandedValue,",
+                    "dataSource,",
+                    "multiple,",
+                    "checkStrictly,",
+                    "canOnlyCheckLeaf,",
+                    "loadData,",
+                    "} = props;",
+                    "",
+                    "const { v2n, p2n } = flatDataSource(dataSource);",
+                    "\u2026"
+                ],
+                "REPLACE": [
+                    "    constructor(props, context) {",
+                    "        super(props, context);",
+                    "",
+                    "        const {",
+                    "            defaultValue,",
+                    "            value,",
+                    "            defaultExpandedValue,",
+                    "            expandedValue,",
+                    "            dataSource,",
+                    "            multiple,",
+                    "            checkStrictly,",
+                    "            canOnlyCheckLeaf,",
+                    "            loadData,",
+                    "        } = props;",
+                    "",
+                    "        // avoid ever touching the user\u2019s frozen data",
+                    "        const _data = JSON.parse(JSON.stringify(dataSource || []));",
+                    "        const { v2n, p2n } = flatDataSource(_data);",
+                    "        \u2026"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "static getDerivedStateFromProps(props, state) {",
+                    "const { v2n, p2n } = flatDataSource(props.dataSource);",
+                    "const states = {};",
+                    "\u2026",
+                    "return {",
+                    "...states,",
+                    "_v2n: v2n,",
+                    "_p2n: p2n,",
+                    "};",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    static getDerivedStateFromProps(props, state) {",
+                    "        // clone dataSource to prevent mutations on a frozen object",
+                    "        const _data = JSON.parse(JSON.stringify(props.dataSource || []));",
+                    "        const { v2n, p2n } = flatDataSource(_data);",
+                    "        const states = {};",
+                    "        \u2026",
+                    "        return {",
+                    "            ...states,",
+                    "            _v2n: v2n,",
+                    "            _p2n: p2n,",
+                    "        };",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "6/9": {
+        "src/cascader/cascader.jsx": [
+            {
+                "SEARCH": [
+                    "import bindCtx from '../utils/bindCtx';",
+                    "import { getStyle, setStyle, addClass, removeClass, getElementOffset } from '../utils/dom';",
+                    "import { flatDataSource } from '../utils';"
+                ],
+                "REPLACE": [
+                    "import bindCtx from '../utils/bindCtx';",
+                    "import { getStyle, setStyle, addClass, removeClass, getElementOffset } from '../utils/dom';",
+                    "import { flatDataSource } from '../utils';",
+                    "",
+                    "// Deep\u2010clone the tree so we never mutate the frozen input",
+                    "function deepClone(data) {",
+                    "    return data.map(item => {",
+                    "        const { children, ...rest } = item;",
+                    "        const newItem = { ...rest };",
+                    "        if (children) {",
+                    "            newItem.children = deepClone(children);",
+                    "        }",
+                    "        return newItem;",
+                    "    });",
+                    "}"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "const {",
+                    "defaultValue,",
+                    "value,",
+                    "defaultExpandedValue,",
+                    "expandedValue,",
+                    "dataSource,",
+                    "multiple,",
+                    "checkStrictly,",
+                    "canOnlyCheckLeaf,",
+                    "loadData,",
+                    "} = props;",
+                    "",
+                    "const { v2n, p2n } = flatDataSource(dataSource);"
+                ],
+                "REPLACE": [
+                    "        const { ",
+                    "            defaultValue,",
+                    "            value,",
+                    "            defaultExpandedValue,",
+                    "            expandedValue,",
+                    "            dataSource,",
+                    "            multiple,",
+                    "            checkStrictly,",
+                    "            canOnlyCheckLeaf,",
+                    "            loadData,",
+                    "        } = props;",
+                    "",
+                    "        // use a deep clone to avoid mutating props.dataSource",
+                    "        const { v2n, p2n } = flatDataSource(deepClone(dataSource));"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "static getDerivedStateFromProps(props, state) {",
+                    "const { v2n, p2n } = flatDataSource(props.dataSource);",
+                    "const states = {};",
+                    "..."
+                ],
+                "REPLACE": [
+                    "    static getDerivedStateFromProps(props, state) {",
+                    "        // clone again before re-flattening, so we never write into props.dataSource",
+                    "        const { v2n, p2n } = flatDataSource(deepClone(props.dataSource));",
+                    "        const states = {};",
+                    "        ..."
+                ]
+            }
+        ]
+    },
+    "7/9": {
+        "src/cascader/cascader.jsx": [
+            {
+                "SEARCH": [
+                    "// --------------------------------------------------------------------",
+                    "// Build a quick lookup cache by mutating each item:",
+                    "setCache(dataSource) {",
+                    "this._v2n = {};",
+                    "this._p2n = {};",
+                    "const loop = (items, prefix = '0') => {",
+                    "items.forEach((item, index) => {",
+                    "const pos = `${prefix}-${index}`;",
+                    "// <-- mutating the original prop!",
+                    "item.pos = pos;",
+                    "this._v2n[item.value] = item;",
+                    "this._p2n[pos] = item;",
+                    "if (item.children) {",
+                    "loop(item.children, pos);",
+                    "}",
+                    "});",
+                    "};",
+                    "loop(dataSource);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    // --------------------------------------------------------------------",
+                    "    // Build a quick lookup cache on cloned nodes only:",
+                    "    setCache(dataSource) {",
+                    "        this._v2n = {};",
+                    "        this._p2n = {};",
+                    "        const loop = (items, prefix = '0') => {",
+                    "            items.forEach((item, index) => {",
+                    "                const pos = `${prefix}-${index}`;",
+                    "                // work on a shallow clone instead of the frozen original:",
+                    "                const node = { ...item, pos, children: item.children };",
+                    "                this._v2n[node.value] = node;",
+                    "                this._p2n[pos] = node;",
+                    "                if (item.children) {",
+                    "                    loop(item.children, pos);",
+                    "                }",
+                    "            });",
+                    "        };",
+                    "        loop(dataSource);",
+                    "    }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "// Re\u2013cache when props.dataSource changes (also does an in\u2010place mutation today):",
+                    "updateCache(dataSource) {",
+                    "this._v2n = {};",
+                    "this._p2n = {};",
+                    "const loop = (items, prefix = '0') =>",
+                    "items.forEach((item, index) => {",
+                    "const pos = `${prefix}-${index}`;",
+                    "item.pos = pos;",
+                    "this._v2n[item.value] = item;",
+                    "this._p2n[pos] = item;",
+                    "if (item.children) {",
+                    "loop(item.children, pos);",
+                    "}",
+                    "});",
+                    "loop(dataSource);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    // Re\u2013cache when props.dataSource changes (now works on clones only):",
+                    "    updateCache(dataSource) {",
+                    "        this._v2n = {};",
+                    "        this._p2n = {};",
+                    "        const loop = (items, prefix = '0') =>",
+                    "            items.forEach((item, index) => {",
+                    "                const pos = `${prefix}-${index}`;",
+                    "                const node = { ...item, pos, children: item.children };",
+                    "                this._v2n[node.value] = node;",
+                    "                this._p2n[pos] = node;",
+                    "                if (item.children) {",
+                    "                    loop(item.children, pos);",
+                    "                }",
+                    "            });",
+                    "        loop(dataSource);",
+                    "    }"
+                ]
+            }
+        ]
+    },
+    "8/9": {
+        "src/cascader-select/cascader-select.jsx": [
+            {
+                "SEARCH": [
+                    "renderCascader() {",
+                    "const { dataSource } = this.props;",
+                    "if (dataSource.length === 0) {",
+                    "return this.renderNotFound();",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    renderCascader() {",
+                    "        const { dataSource: originalDataSource } = this.props;",
+                    "        // Deep\u2010clone the dataSource to avoid mutating frozen user data",
+                    "        const cloneData = items => items.map(item => ({",
+                    "            ...item,",
+                    "            children: item.children",
+                    "                ? cloneData(item.children)",
+                    "                : item.children,",
+                    "        }));",
+                    "        const dataSource = cloneData(originalDataSource);",
+                    "        if (dataSource.length === 0) {",
+                    "            return this.renderNotFound();",
+                    "        }"
+                ]
+            }
+        ]
+    },
+    "9/9": {
+        "src/cascader/cascader.jsx": [
+            {
+                "SEARCH": [
+                    "constructor(props, context) {",
+                    "super(props, context);",
+                    "",
+                    "const {",
+                    "defaultValue,",
+                    "value,",
+                    "defaultExpandedValue,",
+                    "expandedValue,",
+                    "dataSource,",
+                    "multiple,",
+                    "checkStrictly,",
+                    "canOnlyCheckLeaf,",
+                    "loadData,",
+                    "} = props;",
+                    "",
+                    "const { v2n, p2n } = flatDataSource(dataSource);"
+                ],
+                "REPLACE": [
+                    "constructor(props, context) {",
+                    "    super(props, context);",
+                    "",
+                    "    const {",
+                    "        defaultValue,",
+                    "        value,",
+                    "        defaultExpandedValue,",
+                    "        expandedValue,",
+                    "        dataSource: _origDataSource,",
+                    "        multiple,",
+                    "        checkStrictly,",
+                    "        canOnlyCheckLeaf,",
+                    "        loadData,",
+                    "    } = props;",
+                    "",
+                    "    // clone user data so we never write on a frozen object",
+                    "    const dataSource = _origDataSource.map(item => ({",
+                    "        ...item,",
+                    "        children: item.children ? [...item.children] : item.children",
+                    "    }));",
+                    "    const { v2n, p2n } = flatDataSource(dataSource);"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "static getDerivedStateFromProps(props, state) {",
+                    "const { v2n, p2n } = flatDataSource(props.dataSource);",
+                    "const states = {};"
+                ],
+                "REPLACE": [
+                    "static getDerivedStateFromProps(props, state) {",
+                    "    // clone incoming array so we don't end up mutating the frozen props",
+                    "    const _cloned = props.dataSource.map(item => ({",
+                    "        ...item,",
+                    "        children: item.children ? [...item.children] : item.children",
+                    "    }));",
+                    "    const { v2n, p2n } = flatDataSource(_cloned);",
+                    "    const states = {};"
+                ]
+            }
+        ],
+        "src/cascader-select/cascader-select.jsx": [
+            {
+                "SEARCH": [
+                    "updateCache(dataSource) {",
+                    "this._v2n = {};",
+                    "this._p2n = {};",
+                    "const loop = (data, prefix = '0') =>",
+                    "data.forEach((item, index) => {",
+                    "const { value, children } = item;",
+                    "const pos = `${prefix}-${index}`;",
+                    "this._v2n[value] = this._p2n[pos] = { ...item, pos: pos };",
+                    "",
+                    "if (children && children.length) {",
+                    "loop(children, pos);",
+                    "}",
+                    "});",
+                    "",
+                    "loop(dataSource);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "updateCache(dataSource) {",
+                    "    this._v2n = {};",
+                    "    this._p2n = {};",
+                    "    const loop = (data, prefix = '0') =>",
+                    "        data.forEach((item, index) => {",
+                    "            const { value, children } = item;",
+                    "            const pos = `${prefix}-${index}`;",
+                    "            // clone the item (and its children array) so we never write back",
+                    "            const clonedItem = {",
+                    "                ...item,",
+                    "                pos,",
+                    "                children: children ? [...children] : children",
+                    "            };",
+                    "            this._v2n[value] = this._p2n[pos] = clonedItem;",
+                    "",
+                    "            if (clonedItem.children && clonedItem.children.length) {",
+                    "                loop(clonedItem.children, pos);",
+                    "            }",
+                    "        });",
+                    "",
+                    "    loop(dataSource);",
+                    "}"
+                ]
+            }
+        ]
+    }
+}

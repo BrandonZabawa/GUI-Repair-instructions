@@ -1,0 +1,23 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/Dropdown/index.js",
+            "packages/react/src/components/MultiSelect/MultiSelect.js",
+            "packages/react/src/components/MultiSelect/index.js",
+            "packages/react/src/tools/mergeRefs.js"
+        ],
+        "explanation": "These files define and expose the React wrappers for Dropdown and MultiSelect.  \n\n\u2022 packages/react/src/components/Dropdown/Dropdown.js: The component implementation must accept a forwarded ref and pass it to the root DOM element (or underlying component). If it\u2019s declared as a plain function/class without React.forwardRef, refs will be dropped.  \n\n\u2022 packages/react/src/components/Dropdown/index.js: This module exports the Dropdown but doesn\u2019t wrap it in React.forwardRef before exposing it to consumers.  \n\n\u2022 packages/react/src/components/MultiSelect/MultiSelect.js & index.js: Same issue as Dropdown: the ref argument is neither accepted nor forwarded to the root element, so binding a ref results in undefined.  \n\n\u2022 packages/react/src/tools/mergeRefs.js: The utility used when combining multiple refs (e.g. internal ref + forwarded ref) may be mis-merging or swallowing the forwarded ref. If mergeRefs fails to call the user\u2019s ref callback or assign to ref.current, the ref remains unset.\n\nTo fix the bug, each component must be wrapped in React.forwardRef at export time, accept the ref parameter in the component signature, and attach it to the desired DOM node (and ensure mergeRefs correctly invokes all passed refs).",
+        "bug_scenario": "In both Dropdown and MultiSelect React components, attaching a ref via forwardRef always yields null or undefined. In the reproduction (Codesandbox) the user does:\n\n  const dropdownRef = useRef();\n  <Dropdown ref={dropdownRef} ... />\n  useEffect(() => console.log(dropdownRef.current));\n\nbut dropdownRef.current is undefined. The same occurs for MultiSelect. The underlying DOM or component instance is never assigned to the forwarded ref."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/Dropdown/Dropdown.js",
+            "packages/react/src/components/Dropdown/index.js",
+            "packages/react/src/components/MultiSelect/MultiSelect.js",
+            "packages/react/src/components/MultiSelect/index.js"
+        ],
+        "explanation": "All of the files listed define or export the top-level Dropdown and MultiSelect components. Currently they do not wrap their components in React.forwardRef (or merge the incoming ref into the inner DOM node), so when a consumer passes a ref it never reaches the rendered element. To fix the bug, these module entry points (& their implementations) need to be updated to accept a ref parameter and forward it to the actual UI element.",
+        "bug_scenario": "When you attach a React ref to the Carbon Dropdown or Multiselect components, the ref.current always ends up undefined. In the screenshot you can see a ref on Button yields a valid DOM node, but the same pattern on Dropdown yields {current: undefined}. That tells us that neither Dropdown nor MultiSelect is forwarding the ref through to their inner DOM node or wrapper component."
+    }
+}

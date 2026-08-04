@@ -1,0 +1,24 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/computed/critical-request-chains.js//isCritical",
+            "lighthouse-core/gather/computed/critical-request-chains.js//extractChain"
+        ],
+        "explanation": "All the logic that determines which network records get included in the CRC tree lives in CriticalRequestChains. The static isCritical() method currently treats any High/VeryHigh/Medium priority resource as critical (except images and XHR), but it doesn\u2019t exclude resourceType \u2018iframe\u2019 or data-URI URLs. As a result, extractChain() builds a tree that includes iframes and their children. To fix the bug, isCritical() must be updated to explicitly filter out iframe documents (and data-URI requests) before extractChain constructs the chain.",
+        "bug_scenario": "The screenshots show that when you run CriticalRequestChains.extractChain on a page with an <iframe> (e.g. the YouTube embed on paulirish.com) and its sub-resources (CSS/JS), the iframe and all of its children appear in the \u201ccritical\u201d request chain\u2014even though iframes are not render-blocking. A second image shows a data-URI (font-woff) being treated as a critical network request leaf when it shouldn\u2019t be part of the network request chains at all."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains"
+        ],
+        "bug_functions": [
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains.isCritical",
+            "lighthouse-core/gather/computed/critical-request-chains.js//CriticalRequestChains.extractChain"
+        ],
+        "explanation": "The heart of the bug is in the static isCritical(request) method of the CriticalRequestChains class. It currently only excludes Images and XHRs but treats any High-priority Document (including iframes) as critical. Because extractChain builds the CRC tree solely from requests for which isCritical returns true, the iframe and its child stylesheet end up in the critical chain. To fix this, isCritical should also return false for resourceTypeCategory === 'iframe' (and for data: URLs), preventing iframes and their descendants from ever being marked critical. extractChain then naturally will omit those requests from the CRC output.",
+        "bug_scenario": "When Lighthouse\u2019s CriticalRequestChains.extractChain runs on a page with an <iframe> and its sub\u2010resources, it treats the iframe and its CSS/JS children as \u201ccritical\u201d simply because they have High network priority. The CRC tree in the report then shows the iframe and its descendants as part of the critical path, even though iframes do not block rendering. The PaulIrish.com screenshot reproduced in the report and the WashingtonPost data URI example demonstrate that neither iframes nor data: URLs should be considered critical."
+    }
+}

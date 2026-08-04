@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-ruby.js//Prism.languages.ruby"
+        ],
+        "bug_functions": [
+            "components/prism-ruby.js//Prism.languages.insertBefore('ruby','keyword',{regex:[\u2026, {pattern:/\u2026\\/[gim]{0,3}(?=\u2026)/, lookbehind:true, greedy:true}]})"
+        ],
+        "explanation": "The core of the problem lives in the object array passed to `Prism.languages.insertBefore('ruby','keyword',\u2026)`. The first entry (for `%r{\u2026}`) includes an `inside: { interpolation: interpolation }` definition so that `#{\u2026}` is tokenized correctly. The second entry \u2014 the slash-delimited regex matcher \u2014 omits any `inside` property, so interpolations in `/\u2026/` never get their own token. To fix the bug, the slash pattern must be extended with the same `inside: { interpolation: interpolation }` block used by the `%r` matcher.",
+        "bug_scenario": "On the Prism.js test page with Ruby selected, slash-delimited regex literals that contain interpolation \u2014 e.g. `/foo#{bar}/` \u2014 render as a single token and do not highlight the `#{bar}` portion, whereas the equivalent `%r[...]` form correctly highlights the interpolation."
+    },
+    "2": {
+        "bug_classes": [],
+        "bug_functions": [
+            "components/prism-ruby.js//interpolation",
+            "components/prism-ruby.js//regex (second slash-pattern)"
+        ],
+        "explanation": "The variable interpolation defines the rules for #{\u2026} interpolation and is wired up correctly in the %r{\u2026} regex pattern (the first object in the regex array). However, the second pattern\u2014matching slash-delimited regex\u2014has no \u201cinside: { interpolation }\u201d property, so interpolation is never applied there. To fix the bug, the slash-pattern object in the Prism.languages.insertBefore('ruby','keyword',{ regex: [...] }) call must be extended to include the interpolation token in its inside map, just like the %r pattern does.",
+        "bug_scenario": "On the PrismJS Ruby test page, interpolation inside a percent-style regex (e.g. %r[foo#{bar}]) is highlighted correctly, but interpolation inside a slash-delimited regex (e.g. /foo#{bar}/) is not. The screenshot shows that in the slash form, \u201c#{bar}\u201d is treated as plain text, whereas in the %r form it is tokenized as interpolation."
+    }
+}

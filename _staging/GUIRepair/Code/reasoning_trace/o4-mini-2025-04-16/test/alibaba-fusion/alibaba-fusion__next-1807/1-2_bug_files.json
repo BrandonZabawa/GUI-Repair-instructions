@@ -1,0 +1,39 @@
+{
+    "1": {
+        "bug_files": [
+            "src/menu/view/util.js",
+            "src/menu/view/item.jsx",
+            "src/menu/view/popup-item.jsx",
+            "src/menu/view/checkable-item.jsx",
+            "src/menu/view/checkbox-item.jsx",
+            "src/menu/view/radio-item.jsx",
+            "src/menu/view/selectable-item.jsx",
+            "types/menu/index.d.ts"
+        ],
+        "explanation": "These files implement the Menu.Item API and the helper that decides whether to set the title attribute. util.js contains the core title\u2010generation logic. item.jsx and popup-item.jsx render the <li> elements and currently always pick up a title prop. checkable-item.jsx (and its specializations checkbox-item.jsx, radio-item.jsx) wrap Menu.Item for those variants. selectable-item.jsx handles other cases. Finally types/menu/index.d.ts describes the title prop in TypeScript. By updating util.js to check that children is a pure string and only then return a title, and by adjusting the render files to respect that, we ensure only simple, string-only items get a title, thus removing duplicate tooltips for custom content or identical innerText.",
+        "bug_scenario": "Currently every Menu.Item (and its variants) unconditionally gets a title attribute set to its children text, so even when the innerText is not truncated or when the item contains non\u2010string children (icons, custom nodes), users see duplicate tooltips on hover and screen readers announce the same text twice. In the screenshots above you can see:\n1. A nested menu where hovering over a non-truncated item still shows a browser tooltip identical to the label.\n2. A Select dropdown (which under the hood uses Menu.Item) showing the long value in a tooltip even when the user doesn\u2019t want it.\n3. After the proposed change, short labels (\u201cFrank\u201d) no longer display a redundant tooltip, while truncated labels still get a title for accessibility and hover preview.\n\nWe need to change the auto-title logic so it only adds title when the item\u2019s children are a pure string (and presumably longer than its container), and skip title for any custom ReactNode children."
+    },
+    "2": {
+        "bug_files": [
+            "src/config-provider/get-context-props.jsx",
+            "src/config-provider/config.jsx",
+            "src/config-provider/index.jsx",
+            "src/menu/index.jsx",
+            "src/menu/view/util.js",
+            "src/menu/view/item.jsx",
+            "src/menu/view/selectable-item.jsx",
+            "src/menu/view/checkbox-item.jsx",
+            "src/menu/view/radio-item.jsx",
+            "src/menu/view/popup-item.jsx",
+            "src/menu/view/sub-menu.jsx",
+            "src/select/option.jsx",
+            "src/cascader/item.jsx",
+            "src/cascader/menu.jsx",
+            "src/cascader-select/index.jsx",
+            "src/transfer/view/transfer-item.jsx",
+            "src/menu-button/index.jsx"
+        ],
+        "explanation": "All of these files participate in automatically adding, deriving or propagating the HTML \u201ctitle\u201d attribute onto menu-style items across the library. To implement the requested behavior (only auto-add title when the children is a simple string and needs truncation hint, or when the new ConfigProvider.showTitle flag is true), you would need to:\n\n\u2022 Extend the ConfigProvider (`config.jsx`, `get-context-props.jsx`, `index.jsx`) to accept and broadcast a `showTitle` boolean.\n\u2022 In the core Menu entry point (`src/menu/index.jsx`) consume the new `showTitle` context and pass it down.\n\u2022 Change the title\u2010computing helper (`src/menu/view/util.js`) so it only returns a string when `showTitle` is enabled and the node is a pure text child.\n\u2022 Update every Menu\u2010derived item component (`item.jsx`, `selectable-item.jsx`, `checkbox-item.jsx`, `radio-item.jsx`, `popup-item.jsx`, `sub-menu.jsx`) to use the revised util and respect the `showTitle` flag.\n\u2022 Likewise, update other dropdown\u2010style components that currently set title unconditionally: the Select Option rendering (`src/select/option.jsx`), the Cascader menu items (`src/cascader/item.jsx` and `src/cascader/menu.jsx`), the CascaderSelect wrapper (`src/cascader-select/index.jsx`), the Transfer panel items (`src/transfer/view/transfer-item.jsx`), and the MenuButton entry (`src/menu-button/index.jsx`).\n\nEach of these is responsible for injecting or propagating the `title` attribute and must be changed to implement the new conditional logic.",
+        "bug_scenario": "In the current implementation every Menu-Item (and Menu-like component such as Select, Cascader, CascaderSelect, Transfer, MenuButton) automatically gets a title attribute equal to its rendered children. In practice this causes two UX and accessibility issues:\n\n1. When the visible label and the title attribute are identical the screen reader re-reads the same text and, per WCAG, duplicate text should be avoided.\n2. Some business users do not want the little hover tooltip to appear when the label is not actually truncated or is a custom node.\n\nThe screenshots illustrate:\n- A nested menu whose long labels show a hover tooltip (title) even when the text is fully visible.\n- A Select dropdown whose Option items always show a HTML tooltip, even when the label is not truncated or is a custom node.\n- A modified example where the title is removed in some cases, showing the desired behavior."
+    }
+}

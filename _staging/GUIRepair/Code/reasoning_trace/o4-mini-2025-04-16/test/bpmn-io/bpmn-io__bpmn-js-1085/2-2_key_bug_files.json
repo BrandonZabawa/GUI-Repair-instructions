@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/Modeling.js",
+            "lib/features/modeling/behavior/ReplaceConnectionBehavior.js",
+            "lib/features/modeling/BpmnUpdater.js"
+        ],
+        "explanation": "\u2022 lib/features/modeling/Modeling.js: its connect() method takes all attrs (including waypoints) and hands them directly to moddle, so a SequenceFlow businessObject ends up with a .waypoints property. That turns into an illegal XML attribute on export.\n\u2022 lib/features/modeling/behavior/ReplaceConnectionBehavior.js: this behavior explicitly does modeling.connect(..., { type:\u2026, waypoints: connection.waypoints.slice() }). Passing waypoints here into the semantic create call is the root cause of JS objects landing on the BPMN element.\n\u2022 lib/features/modeling/BpmnUpdater.js: this is responsible for moving geometry into the BPMNDI layer, but it never strips a .waypoints array off the businessObject. We should remove or ignore businessObject.waypoints in BpmnUpdater.updateConnectionWaypoints (or earlier) so it isn\u2019t serialized on the BPMN element.",
+        "bug_scenario": "When you use the auto-place append (green rectangle drag) to create a new task off of an existing one, bpmn-js wires them together automatically. Because the connector has a 90\u00b0 \u201celbow\u201d in the middle, the internal model ends up carrying a raw JS\u2010object array of waypoints on the BPMN businessObject. When you export, those objects are stringified into \u201c[object Object],\u2026\u201d and written as an illegal waypoints attribute on the <sequenceFlow> element instead of as BPMNDI <di:waypoint> children."
+    }
+}

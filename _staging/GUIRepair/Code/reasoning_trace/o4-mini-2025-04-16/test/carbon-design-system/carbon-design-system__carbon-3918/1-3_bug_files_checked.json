@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js",
+            "packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js",
+            "packages/react/src/internal/FloatingMenu.js"
+        ],
+        "explanation": "All of the logic and styles for keyboard focus in the overflow menu live in these files. OverflowMenu.js is responsible for wiring up the open state and for automatically assigning the \u201cprimaryFocus\u201d prop to the first child. OverflowMenuItem.js applies the focus classes to each item (the class names the SCSS file targets to draw your focus ring or background). FloatingMenu.js contains the underlying focus\u2010management and keyboard handlers that move focus from option to option. And the overflow-menu.scss file contains the actual CSS rules for the focus state (outline, background, hover, etc.). Because the focus classes are never applied or the CSS selectors are too narrow in this context, you don\u2019t see the highlight. Fixing this requires changes in the components that set or forward focus props and in the SCSS so that the focus style appears when the menu is inside a table cell.",
+        "bug_scenario": "When you render an OverflowMenu inside of a DataTable and open it with the keyboard, you can move through the menu items with the arrow keys, but there is no visible focus indicator on any of the items. In the standalone OverflowMenu example you see a blue outline or background on the currently\u2010focused item; inside a DataTable that style never shows up. This makes keyboard navigation impossible to follow visually."
+    },
+    "2": {
+        "bug_files": [
+            "packages/react/src/components/OverflowMenu/OverflowMenu.js",
+            "packages/react/src/components/OverflowMenuItem/OverflowMenuItem.js"
+        ],
+        "explanation": "\u2022 data-table.scss: Because the overflow menu is being dropped into the table\u2019s cell, the DataTable stylesheet may be inadvertently overriding or missing the selectors that would normally style a focused or highlighted OverflowMenuItem (for example, by clearing background colors or outlines on nested `.bx--overflow-menu-options__option`).\n\n\u2022 overflow-menu.scss: This is the primary place Carbon defines focus, hover, and highlighted states for the options inside an OverflowMenu. A missing or incorrect selector here (for `:focus`, `:hover`, or the Downshift-managed `--highlighted` modifier class) will prevent any visible highlight on keyboard navigation.\n\n\u2022 OverflowMenu.js: The React wrapper around the floating menu is responsible for setting the initial focus (via the `primaryFocus` prop on the first item) and wiring up keyboard handlers. If it\u2019s not propagating `primaryFocus` correctly or if the menu\u2019s `focusTrap` is configured in a way that skips styling, visual feedback won\u2019t show.\n\n\u2022 OverflowMenuItem.js: Each menu item renders the ARIA and CSS classes needed to reflect selection and focus states. If the component isn\u2019t applying the `--highlighted` modifier or forwarding the right `className` or `ref`, then even if the CSS exists, no class will trigger the style.",
+        "bug_scenario": "When you render an OverflowMenu inside of a DataTable (for example, as an inline action in the last TableCell), you can open the menu and use the arrow keys to move through the list items, but there is no visible focus or \u201chighlight\u201d state on the currently active list item. In other words, keyboard navigation works under the hood, but the CSS or component logic that should render a contrasting background, outline, or other visual indicator on the highlighted OverflowMenuItem is missing or being overridden."
+    }
+}

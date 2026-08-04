@@ -1,0 +1,179 @@
+{
+    "bug_classes": {
+        "1": {
+            "class_name": "LighthouseError",
+            "file_path": "lighthouse-core/lib/lh-error.js",
+            "class_details": [
+                {
+                    "name": "LighthouseError",
+                    "start_line": 59,
+                    "end_line": 99,
+                    "methods": [
+                        {
+                            "name": "constructor",
+                            "start_line": 64,
+                            "end_line": 74
+                        },
+                        {
+                            "name": "fromProtocolMessage",
+                            "start_line": 81,
+                            "end_line": 98
+                        }
+                    ],
+                    "isExported": false
+                }
+            ],
+            "class_code": [
+                "class LighthouseError extends Error {",
+                "  /**",
+                "   * @param {LighthouseErrorDefinition} errorDefinition",
+                "   * @param {Record<string, string|boolean|undefined>=} properties",
+                "   */",
+                "  constructor(errorDefinition, properties) {",
+                "    super(errorDefinition.code);",
+                "    this.name = 'LHError';",
+                "    this.code = errorDefinition.code;",
+                "    // Insert the i18n reference with errorCode and all additional ICU replacement properties.",
+                "    this.friendlyMessage = str_(errorDefinition.message, {errorCode: this.code, ...properties});",
+                "    this.lhrRuntimeError = !!errorDefinition.lhrRuntimeError;",
+                "    if (properties) Object.assign(this, properties);",
+                "",
+                "    Error.captureStackTrace(this, LighthouseError);",
+                "  }",
+                "",
+                "  /**",
+                "   * @param {string} method",
+                "   * @param {{message: string, data?: string|undefined}} protocolError",
+                "   * @return {Error|LighthouseError}",
+                "   */",
+                "  static fromProtocolMessage(method, protocolError) {",
+                "    // extract all errors with a regex pattern to match against.",
+                "    const protocolErrors = Object.values(LighthouseError.errors).filter(e => e.pattern);",
+                "    // if we find one, use the friendly LighthouseError definition",
+                "    const matchedErrorDefinition = protocolErrors.find(e => e.pattern.test(protocolError.message));",
+                "    if (matchedErrorDefinition) {",
+                "      return new LighthouseError(matchedErrorDefinition, {",
+                "        protocolMethod: method,",
+                "        protocolError: protocolError.message,",
+                "      });",
+                "    }",
+                "",
+                "    // otherwise fallback to building a generic Error",
+                "    let errMsg = `(${method}): ${protocolError.message}`;",
+                "    if (protocolError.data) errMsg += ` (${protocolError.data})`;",
+                "    const error = new Error(`Protocol error ${errMsg}`);",
+                "    return Object.assign(error, {protocolMethod: method, protocolError: protocolError.message});",
+                "  }",
+                "}"
+            ]
+        }
+    },
+    "bug_functions": {
+        "2": {
+            "function_name": "printRuntimeErrorAndExit",
+            "file_path": "lighthouse-cli/run.js",
+            "function_details": [
+                {
+                    "name": "printRuntimeErrorAndExit",
+                    "start_line": 81,
+                    "end_line": 87
+                }
+            ],
+            "function_code": [
+                "function printRuntimeErrorAndExit(err) {",
+                "  console.error('Runtime error encountered:', err.friendlyMessage || err.message);",
+                "  if (err.stack) {",
+                "    console.error(err.stack);",
+                "  }",
+                "  return process.exit(_RUNTIME_ERROR_CODE);",
+                "}"
+            ]
+        },
+        "3": {
+            "function_name": "printErrorAndExit",
+            "file_path": "lighthouse-cli/run.js",
+            "function_details": [
+                {
+                    "name": "printErrorAndExit",
+                    "start_line": 93,
+                    "end_line": 101
+                }
+            ],
+            "function_code": [
+                "function printErrorAndExit(err) {",
+                "  if (err.code === 'ECONNREFUSED') {",
+                "    return printConnectionErrorAndExit();",
+                "  } else if (err.code === 'CRI_TIMEOUT') {",
+                "    return printProtocolTimeoutErrorAndExit();",
+                "  } else {",
+                "    return printRuntimeErrorAndExit(err);",
+                "  }",
+                "}"
+            ]
+        },
+        "4": {
+            "function_name": "runLighthouse",
+            "file_path": "lighthouse-cli/run.js",
+            "function_details": [
+                {
+                    "name": "runLighthouse",
+                    "start_line": 172,
+                    "end_line": 222
+                }
+            ],
+            "function_code": [
+                "async function runLighthouse(url, flags, config) {",
+                "  /** @param {any} reason */",
+                "  async function handleTheUnhandled(reason) {",
+                "    process.stderr.write(`Unhandled Rejection. Reason: ${reason}\\n`);",
+                "    await potentiallyKillChrome(launchedChrome).catch(() => {});",
+                "    setTimeout(_ => {",
+                "      process.exit(1);",
+                "    }, 100);",
+                "  }",
+                "  process.on('unhandledRejection', handleTheUnhandled);",
+                "",
+                "  /** @type {ChromeLauncher.LaunchedChrome|undefined} */",
+                "  let launchedChrome;",
+                "",
+                "  try {",
+                "    const shouldGather = flags.gatherMode || flags.gatherMode === flags.auditMode;",
+                "    if (shouldGather) {",
+                "      launchedChrome = await getDebuggableChrome(flags);",
+                "      flags.port = launchedChrome.port;",
+                "    }",
+                "",
+                "    const runnerResult = await lighthouse(url, flags, config);",
+                "",
+                "    // If in gatherMode only, there will be no runnerResult.",
+                "    if (runnerResult) {",
+                "      await saveResults(runnerResult, flags);",
+                "    }",
+                "",
+                "    await potentiallyKillChrome(launchedChrome);",
+                "    process.removeListener('unhandledRejection', handleTheUnhandled);",
+                "",
+                "    // Runtime errors indicate something was *very* wrong with the page result.",
+                "    // We don't want the user to have to parse the report to figure it out, so we'll still exit",
+                "    // with an error code after we saved the results.",
+                "    if (runnerResult && runnerResult.lhr.runtimeError) {",
+                "      const {runtimeError} = runnerResult.lhr;",
+                "      return printErrorAndExit({",
+                "        name: 'LHError',",
+                "        friendlyMessage: runtimeError.message,",
+                "        lhrRuntimeError: true,",
+                "        code: runtimeError.code,",
+                "        message: runtimeError.message,",
+                "      });",
+                "    }",
+                "",
+                "    return runnerResult;",
+                "  } catch (err) {",
+                "    await potentiallyKillChrome(launchedChrome).catch(() => {});",
+                "    return printErrorAndExit(err);",
+                "  }",
+                "}"
+            ]
+        }
+    }
+}

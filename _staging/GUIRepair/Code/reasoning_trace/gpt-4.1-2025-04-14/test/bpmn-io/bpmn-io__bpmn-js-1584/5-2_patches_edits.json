@@ -1,0 +1,107 @@
+{
+    "1/1": {
+        "lib/features/modeling/behavior/RemoveParticipantBehavior.js": [
+            {
+                "SEARCH": [
+                    "this.postExecute('shape.delete', function(context) {",
+                    "",
+                    "var collaborationRoot = context.collaborationRoot;",
+                    "",
+                    "if (collaborationRoot && !collaborationRoot.businessObject.participants.length) {",
+                    "",
+                    "// replace empty collaboration with process diagram",
+                    "modeling.makeProcess();",
+                    "}",
+                    "}, true);"
+                ],
+                "REPLACE": [
+                    "  this.postExecute('shape.delete', function(context) {",
+                    "",
+                    "    var collaborationRoot = context.collaborationRoot;",
+                    "",
+                    "    if (collaborationRoot && !collaborationRoot.businessObject.participants.length) {",
+                    "",
+                    "      // replace empty collaboration with process diagram",
+                    "      // Reuse the original process if possible to keep the same ID",
+                    "      var processRef;",
+                    "      if (collaborationRoot.businessObject.$parent && collaborationRoot.businessObject.$parent.rootElements) {",
+                    "        // Try to find the processRef that was used by the last participant",
+                    "        var lastParticipant = collaborationRoot.businessObject.participants && collaborationRoot.businessObject.participants[0];",
+                    "        if (lastParticipant && lastParticipant.processRef) {",
+                    "          processRef = lastParticipant.processRef;",
+                    "        }",
+                    "      }",
+                    "      modeling.makeProcess(processRef);",
+                    "    }",
+                    "  }, true);"
+                ]
+            }
+        ],
+        "lib/features/modeling/behavior/CreateParticipantBehavior.js": [
+            {
+                "SEARCH": [
+                    "// re-use process when creating first participant",
+                    "context.process = parent;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "      // re-use process when creating first participant",
+                    "      context.process = parent;",
+                    "      // Store the original process ID for redo/undo consistency",
+                    "      context.originalProcessId = parent.businessObject.id;",
+                    "    }"
+                ]
+            },
+            {
+                "SEARCH": [
+                    "if (process) {",
+                    "context.oldProcessRef = shape.businessObject.processRef;",
+                    "",
+                    "// re-use process when creating first participant",
+                    "shape.businessObject.processRef = process.businessObject;",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    if (process) {",
+                    "      context.oldProcessRef = shape.businessObject.processRef;",
+                    "",
+                    "      // re-use process when creating first participant",
+                    "      // If the processRef is missing or has a different ID, restore the original processRef",
+                    "      if (!shape.businessObject.processRef || (context.originalProcessId && shape.businessObject.processRef.id !== context.originalProcessId)) {",
+                    "        shape.businessObject.processRef = process.businessObject;",
+                    "      }",
+                    "    }"
+                ]
+            }
+        ],
+        "lib/features/copy-paste/BpmnCopyPaste.js": [
+            {
+                "SEARCH": [
+                    "if (",
+                    "propertyName === 'processRef' &&",
+                    "is(parent, 'bpmn:Participant') &&",
+                    "is(property, 'bpmn:Process')",
+                    ") {",
+                    "bpmnProcess = bpmnFactory.create('bpmn:Process');",
+                    "",
+                    "// return copy of process",
+                    "return moddleCopy.copyElement(property, bpmnProcess);",
+                    "}"
+                ],
+                "REPLACE": [
+                    "    if (",
+                    "      propertyName === 'processRef' &&",
+                    "      is(parent, 'bpmn:Participant') &&",
+                    "      is(property, 'bpmn:Process')",
+                    "    ) {",
+                    "      // Always create a new process with a new ID for the pasted participant",
+                    "      bpmnProcess = bpmnFactory.create('bpmn:Process');",
+                    "      // Ensure the new process has a unique ID (do not copy the old one)",
+                    "      // return copy of process",
+                    "      return moddleCopy.copyElement(property, bpmnProcess, { id: undefined });",
+                    "    }"
+                ]
+            }
+        ]
+    }
+}

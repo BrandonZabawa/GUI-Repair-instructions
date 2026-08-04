@@ -1,0 +1,22 @@
+{
+    "1": {
+        "bug_classes": [
+            "lighthouse-core/audits/user-timings.js//UserTimings"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/user-timings.js//filterTrace"
+        ],
+        "explanation": "All of the logic that collects and filters user-timing events lives in the static filterTrace method of the UserTimings audit class. This is the spot where events are whitelisted by category and phase. To prevent ad_* and goog_* events from showing up, filterTrace needs to be extended to drop names with those prefixes. No other class or function in the compressed files is responsible for excluding user-timing entries\u2014formatters merely render whatever events filterTrace produces, and the audit method simply calls filterTrace and reports the results.",
+        "bug_scenario": "The screenshot shows the Lighthouse \u201cUser Timing marks and measures\u201d report cluttered with a long list of ad-injected and goog_ prefixed marks (e.g. \u201cad_slots_defined\u201d, \u201cgoog_123_3_1_start\u201d, \u201cgoog_123_3_1_end\u201d, etc.). These irrelevant user-timing events are coming from Google Ads scripts and should be filtered out, but currently they all appear in the audit."
+    },
+    "2": {
+        "bug_classes": [
+            "lighthouse-core/audits/user-timings.js//UserTimings"
+        ],
+        "bug_functions": [
+            "lighthouse-core/audits/user-timings.js//UserTimings.filterTrace"
+        ],
+        "explanation": "The static method filterTrace in the UserTimings audit is responsible for selecting which user-timing events to include. It currently filters by category and excludes known internal events (e.g. requestStart, navigationStart), but does not exclude ad-injected marks or measures (those prefixed with \u201cad_\u201d or \u201cgoog_\u201d). To fix the cluttering issue, filterTrace must be extended to drop events whose names match those unwanted prefixes. No other classes or formatter functions perform filtering, so UserTimings.filterTrace is the key bug-related element.",
+        "bug_scenario": "When running the Lighthouse \u201cuser-timings\u201d audit on pages that load Google Ads, ad-injected marks and measures (e.g. \u201cad_slots_defined\u201d, \u201cgoog_123_3_1_start\u201d/\u201cend\u201d) are not being filtered out by the audit and appear en masse in the report, cluttering the \u201cUser Timing marks and measures\u201d section (as shown in the provided screenshot)."
+    }
+}

@@ -1,0 +1,33 @@
+diff --git a/src/resources/filters/crossref/theorems.lua b/src/resources/filters/crossref/theorems.lua
+index 5b3707c7d..e3c41e51f 100644
+--- a/src/resources/filters/crossref/theorems.lua
++++ b/src/resources/filters/crossref/theorems.lua
+@@ -82,14 +82,20 @@ function theorems()
+             el.content[1] = pandoc.Para({})
+           end
+ 
+-          -- prepend the prefix
+-          local caption = el.content[1]
+-          tprepend(caption.content, { 
+-            pandoc.Span(
+-              pandoc.Strong(prefix), 
+-              pandoc.Attr("", { "theorem-title" })
+-            )
+-          })
++          -- prepend the prefix, inserting as its own paragraph
++          local span = pandoc.Span(
++            pandoc.Strong(prefix),
++            pandoc.Attr("", { "theorem-title" })
++          )
++          local first = el.content[1]
++          if first.t == "Para" then
++            -- normal case: paragraph caption, inject at front
++            tprepend(first.content, { span })
++          else
++            -- special case: first block is a list (BulletList/OrderedList),
++            -- so insert the caption paragraph before the list
++            el.content:insert(1, pandoc.Para({ span }))
++          end
+         end
+ 
+       else

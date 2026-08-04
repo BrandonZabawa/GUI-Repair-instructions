@@ -1,0 +1,28 @@
+{
+    "1": {
+        "bug_classes": [
+            "lib/cli.js",
+            "lib/cli-engine/cli-engine.js"
+        ],
+        "bug_functions": [
+            "lib/cli.js//execute",
+            "lib/cli.js//countErrors",
+            "lib/cli.js//printResults",
+            "lib/cli-engine/cli-engine.js//CLIEngine.getErrorResults"
+        ],
+        "explanation": "The core of the bug lives in lib/cli.js: the async execute() method applies the quiet filter (via ESLint.getErrorResults) before counting warnings, so countErrors() always sees zero warnings when quiet=true. printResults() outputs nothing (no warnings), and the subsequent tooManyWarnings check (warningCount>maxWarnings) never triggers. The filtering logic in CLIEngine.getErrorResults and the order of operations in execute() therefore prevent --max-warnings from ever taking effect when --quiet is set.",
+        "bug_scenario": "The user runs ESLint with \u201c--max-warnings 3 --quiet\u201d on a project that produces more than 3 warnings. In the first run (without --quiet) ESLint reports 26 warnings and exits with code 1 (because warnings exceed max-warnings). In the second run (with --quiet), ESLint suppresses all warnings (quiet mode) and then checks max-warnings against a filtered result (zero warnings), so it reports nothing and exits with code 0. The screenshot shows that using --quiet effectively disables max-warnings."
+    },
+    "2": {
+        "bug_classes": [
+            "lib/cli.js"
+        ],
+        "bug_functions": [
+            "lib/cli.js//execute",
+            "lib/cli.js//countErrors",
+            "lib/cli.js//ESLint.getErrorResults"
+        ],
+        "explanation": "The core of the bug lives in lib/cli.js in the execute function. After linting, execute applies the --quiet filter via ESLint.getErrorResults, removing all warnings. Only then does it call countErrors and compare warningCount against options.maxWarnings \u2014 by that point warningCount is zero so the threshold logic never triggers. To fix, the code in execute needs to check maxWarnings (and potentially log warnings or return exit code 1) before or irrespective of the quiet filter. The functions execute, countErrors (which computes the warningCount), and ESLint.getErrorResults (which strips out warnings) are the ones directly involved in this broken flow.",
+        "bug_scenario": "When running ESLint with both --max-warnings and --quiet, any warnings beyond the threshold are filtered out by quiet mode before the max-warnings check, causing ESLint to return exit code 0 and never report \u201ctoo many warnings\u201d. In the provided screenshot, the first run without --quiet returns exit code 1 (as expected), while the second run with --quiet still produces warnings internally but filters them out and returns code 0."
+    }
+}

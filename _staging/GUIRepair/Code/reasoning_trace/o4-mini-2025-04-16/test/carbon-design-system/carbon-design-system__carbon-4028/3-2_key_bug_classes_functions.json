@@ -1,0 +1,30 @@
+{
+    "1": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField",
+            "packages/react/src/components/ListBox/ListBoxMenu.js//ListBoxMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox.render",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField (JSX wrapper)",
+            "packages/react/src/components/ListBox/ListBoxMenu.js//ListBoxMenu (JSX wrapper)"
+        ],
+        "explanation": "All of the ARIA attributes and IDs that produce the invalid references are composed in these three places. ComboBox.render is where getRootProps, getInputProps and getButtonProps are combined to set aria-owns/aria-controls and aria-label on the <input> and wrapper. ListBoxField is generating the combobox role, aria-expanded, aria-owns, aria-controls and is injecting an aria-label for open/close, which conflicts with the visible <label>. And ListBoxMenu is the component that actually stamps the menu\u2019s ID (`${id}__menu`) and role=listbox. Because these three generate the mismatched or duplicated IDs and override the label linkage, they are the right spots to update: \u2022 Ensure the menu ID is unique and matches exactly what the input/owner reference expects \u2022 Switch from aria-label to aria-labelledby (or conditionally suppress aria-label when a <label> exists) \u2022 Remove or reconcile duplicate aria-owns/controls so that DAP sees a valid ID on the referenced element.",
+        "bug_scenario": "When running the React ComboBox examples under DAP (IBM\u2019s accessibility testing tool), several WAI-ARIA violations appear. The menu container and the input both use aria-owns/aria-controls pointing at an ID that isn\u2019t correctly registered on the target element, so DAP complains that \u201cThe id carbon-combobox-example__menu specified for WAI-ARIA property aria-owns, aria-controls\u2026is not valid.\u201d In addition, the combobox widget is given an aria-label that conflicts with its <label> element, so interactive elements are flagged as missing an accessible name, and the visible label isn\u2019t exposed correctly."
+    },
+    "2": {
+        "bug_classes": [
+            "packages/react/src/components/ComboBox/ComboBox.js//ComboBox",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField",
+            "packages/react/src/components/ListBox/ListBoxMenu.js//ListBoxMenu"
+        ],
+        "bug_functions": [
+            "packages/react/src/components/ComboBox/ComboBox.js//render",
+            "packages/react/src/components/ListBox/ListBoxField.js//ListBoxField",
+            "packages/react/src/components/ListBox/ListBoxMenu.js//ListBoxMenu"
+        ],
+        "explanation": "\u2022 ComboBox (ComboBox.js) is where the input and listbox get their ARIA attributes (aria-label, aria-controls, aria-owns). The render() method currently sets these IDs unconditionally and doesn\u2019t always match an existing element, leading to invalid IDREFs.\n\u2022 ListBoxField (ListBoxField.js) is responsible for the combobox container\u2019s role, aria-owns and aria-controls. Its logic builds the menu ID as `${id}__menu`, but because it relies on the \u2018aria-expanded\u2019 prop coming from Downshift, the timing and naming sometimes misalign.\n\u2022 ListBoxMenu (ListBoxMenu.js) constructs the actual menu\u2019s id as `${id}__menu`. If ComboBox or Field ever passes the wrong `id` prop or the menu isn\u2019t rendered yet, aria-owns/controls point at nothing.\nTo fix the DAP violations you\u2019ll need to:\n1. In ComboBox.render(), only emit aria-controls on the input when the menu is actually present, and ensure the `id` prop passed to ListBox.Menu matches exactly the input\u2019s id.\n2. In ListBoxField, consolidate or remove duplicate aria-owns/controls so there\u2019s a single source of truth for the relationship, and optionally switch to aria-labelledby pointing at the visible label.\n3. Confirm in ListBoxMenu that the computed `id` matches the value used by both Field and input. Adjust string concatenation if double-underscore usage conflicts with ID validation rules.",
+        "bug_scenario": "When the React ComboBox is rendered and opened, its ARIA attributes point at an invalid menu ID, and the hidden off-screen input has no proper accessible name. In the screenshot you can see DAP complaining \u201cThe id carbon-combobox-example__menu specified for WAI-ARIA property aria-owns, aria-controls on element div is not valid,\u201d and \u201cAn interactive element/widget must have an accessible name.\u201d The combo\u2019s input and its list container aren\u2019t correctly wired up for ARIA, so assistive tools flag IDREF and naming errors."
+    }
+}

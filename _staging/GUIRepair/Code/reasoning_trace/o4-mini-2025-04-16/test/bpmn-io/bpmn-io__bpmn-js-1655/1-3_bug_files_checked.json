@@ -1,0 +1,25 @@
+{
+    "1": {
+        "bug_files": [
+            "lib/features/modeling/cmd/SetColorHandler.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js",
+            "lib/draw/TextRenderer.js",
+            "lib/util/LabelUtil.js"
+        ],
+        "explanation": "\u2022 lib/modeling/cmd/SetColorHandler.js: This handler applies both fillColor and strokeColor to selected elements. It doesn\u2019t distinguish external label shapes, so it applies the fill color to their text DI. Adjustments here are needed to detect external labels and apply strokeColor instead.  \n\u2022 lib/modeling/BpmnUpdater.js: Responsible for persisting color changes into the BPMN DI. It currently writes fillColor for label text elements uniformly. It needs logic to write strokeColor for external labels.  \n\u2022 lib/draw/BpmnRenderer.js: In its drawLabel() routine it picks up style.fill for rendering label text. External labels should be rendered using style.stroke. This file requires a conditional branch for external labels.  \n\u2022 lib/draw/BpmnRenderUtil.js: Extracts shape style from DI and maps fillColor\u2192fill and strokeColor\u2192stroke. For external labels the mapping of strokeColor should drive the text fill style. The style computation must be updated accordingly.  \n\u2022 lib/draw/TextRenderer.js: Always uses the computed style.fill for the <text> element\u2019s fill attribute. It needs to fall back to style.stroke when rendering external labels.  \n\u2022 lib/util/LabelUtil.js: Contains utilities to detect whether a shape is an external label. This helper is needed in the above modules to conditionally apply strokeColor instead of fillColor when rendering and updating external label text.",
+        "bug_scenario": "When the user invokes modeling.setColor on an external label shape, the label\u2019s text is being rendered in the \u201cfill\u201d color (a very light shade) instead of the \u201cstroke\u201d color (the darker border color). Embedded labels continue to use the stroke color for their text, so this inconsistent behavior on external labels leads to poor text readability."
+    },
+    "2": {
+        "bug_files": [
+            "lib/features/modeling/cmd/SetColorHandler.js",
+            "lib/features/modeling/BpmnUpdater.js",
+            "lib/draw/TextRenderer.js",
+            "lib/draw/BpmnRenderer.js",
+            "lib/draw/BpmnRenderUtil.js"
+        ],
+        "explanation": "\u2022 lib/features/modeling/cmd/SetColorHandler.js is the command handler for modeling.setColor and is responsible for writing both fill and stroke attributes onto the SVG elements. It doesn\u2019t special-case external labels, and so applies fillColor to text nodes where it should apply strokeColor.  \n\u2022 lib/features/modeling/BpmnUpdater.js persists the color changes into the BPMN DI model. It currently handles stroke/fill on shapes but does not distinguish label elements, so DI updates for label strokes may also be missing or inverted.  \n\u2022 lib/draw/TextRenderer.js is used by the renderer to actually create and update <text> elements. By default it sets text \u2018fill\u2019 attributes; it needs to map the stroke color into the text fill for external labels.  \n\u2022 lib/draw/BpmnRenderer.js sits on top of TextRenderer and contains the logic to render embedded vs. external labels. It must be taught to use strokeColor (not fillColor) when rendering label text outside of shapes.  \n\u2022 lib/draw/BpmnRenderUtil.js defines the default style constants for labels (e.g. using fillColor by default). The external-label style there should be adjusted to reference stroke color so that setColor consistently uses the darker stroke color for all labels.",
+        "bug_scenario": "When you select an external label (e.g. the \u201cfoo\u201d or \u201cbar\u201d text under a circle) and call modeling.setColor on that label, the label\u2019s text is being colored with the \u201cfill\u201d color (a very light yellow) instead of the \u201cstroke\u201d color (the darker orange). Embedded labels (text inside a shape) correctly pick up the stroke color, but external labels do not \u2013 leading to poor contrast in the UI."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "1": {
+        "bug_files": [
+            "src/js/components/NameValueList/NameValueList.js",
+            "src/js/components/NameValuePair/NameValuePair.js"
+        ],
+        "explanation": "NameValueList.js is responsible for laying out each NameValuePair in a grid and for applying valueProps (including the align prop) to the value cell.  Currently, valueProps.align is being passed straight through to the inner Box around the value, causing that Box to align its contents to the start of the cell rather than centering them.  NameValuePair.js defines the pair\u2019s two cells and how they inherit alignment context from the list \u2013 it does not coordinate the name and value cells\u2019 vertical alignment.  These two files must be updated so that the NameValueList\u2019s align/valueProps.align setting controls the CSS grid\u2019s align-items or each cell\u2019s alignSelf in a consistent way, ensuring name and value lines up on the same horizontal axis.",
+        "bug_scenario": "The user is using the NameValueList/NameValuePair components in \u201ccolumn mode\u201d and has passed valueProps={{ width: 'auto', align: 'start' }}.  As a result the name (a Text element) and the value (a Select) do not sit on the same horizontal line in each row \u2013 the Text is centered vertically in its cell but the Select is aligned to the top of its cell.  The red and green guide-lines in the screenshot show the two baselines do not match.  The expectation is that both name and value cells should share the same vertical centering."
+    },
+    "2": {
+        "bug_files": [
+            "src/js/components/NameValueList/NameValueList.js",
+            "src/js/components/NameValueList/NameValueListContext.js",
+            "src/js/components/NameValuePair/NameValuePair.js"
+        ],
+        "explanation": "These three files together implement and coordinate the layout of name/value pairs. NameValueList.js reads the valueProps.align setting and provides it via NameValueListContext (in NameValueListContext.js). NameValuePair.js consumes that context and renders a Box wrapping the label (a Text) and the value (the Select). The misalignment occurs because NameValuePair.js does not correctly apply the alignment prop from valueProps (or falls back to a different default), so the Text and Select end up on different vertical baselines. Fixing the Box align prop in NameValuePair.js (using context.valueProps.align) will correct the vertical centering.",
+        "bug_scenario": "The user is trying to horizontally center-align the label (\u201cFile log level\u201d) and the value control (the Select dropdown) within each NameValuePair when using <NameValueList valueProps={{ align: 'center' }}>. In the screenshot you can see the text sits higher (green baseline) than the Select component (red baseline). The NameValuePair wrapper should align both children on the same vertical center line, but the align prop passed via valueProps is not being applied or honored, causing the misalignment."
+    }
+}

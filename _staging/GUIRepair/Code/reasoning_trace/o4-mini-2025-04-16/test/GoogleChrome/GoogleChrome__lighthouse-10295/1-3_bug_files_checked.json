@@ -1,0 +1,18 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/audits/dobetterweb/no-vulnerable-libraries.js",
+            "lighthouse-core/audits/dobetterweb/js-libraries.js"
+        ],
+        "explanation": "\u2022 no-vulnerable-libraries.js: This is the audit implementation that calls normalizeVersion(version) and immediately does version.match(...). Because version can be a Number or object, calling .match() blows up here. This file needs to coerce or guard the version value before using .match.\n\n\u2022 js-libraries.js: This audit gathers detected libraries into a Stacks array that is passed to the no-vulnerable-libraries audit. It currently doesn\u2019t enforce version to be a string, so non-string values propagate here and crash the matcher. Sanitizing or stringifying the version in js-libraries.js would prevent the downstream error.",
+        "bug_scenario": "When running the \u201cAvoids front-end JavaScript libraries with known security vulnerabilities\u201d audit (no-vulnerable-libraries) on pages that use RequireJS bundling (for example Magento 2 sites), the Chrome Library Detector may report a library\u2019s version as a non-string (e.g. a Number). The audit\u2019s normalizeVersion() helper blindly calls version.match(...), triggering a \u201cTypeError: version.match is not a function.\u201d"
+    },
+    "2": {
+        "bug_files": [
+            "lighthouse-core/audits/dobetterweb/no-vulnerable-libraries.js",
+            "lighthouse-core/computed/js-bundles.js"
+        ],
+        "explanation": "The root of the error is in no-vulnerable-libraries.js, which normalizes the library version by calling version.match without guarding against non-string types. Because the computed artifact js-bundles.js passes through whatever version the detector produces (including numbers), the audit breaks when version isn\u2019t a string. Both files are tied to how versions are collected (js-bundles.js) and then checked for vulnerabilities (no-vulnerable-libraries.js), so they must be updated to either coerce version to a string or otherwise guard before calling .match.",
+        "bug_scenario": "When Lighthouse\u2019s \u201cAvoids front-end JavaScript libraries with known security vulnerabilities\u201d audit runs, it blindly calls version.match(...) on every detected library version. On some sites (for example Magento 2 pages using require.js bundling), the Chrome Library Detector may report a non-string version (for example a number), so version.match is undefined and you get \u201cTypeError: version.match is not a function.\u201d"
+    }
+}

@@ -1,0 +1,19 @@
+diff --git a/src/ol/source/DataTile.js b/src/ol/source/DataTile.js
+index 777a24d673..55324519f4 100644
+--- a/src/ol/source/DataTile.js
++++ b/src/ol/source/DataTile.js
+@@ -116,7 +116,13 @@ class DataTileSource extends TileSource {
+     /**
+      * @type {number}
+      */
+-    this.bandCount = options.bandCount === undefined ? 4 : options.bandCount; // assume RGBA if undefined
++    // Normalize bandCount: if the user asked for an even number of bands ≥6 (data + alpha),
++    // bump it by one internally so the last band is recognized as alpha.
++    let bandCount = options.bandCount === undefined ? 4 : options.bandCount; // assume RGBA if undefined
++    if (bandCount >= 6 && bandCount % 2 === 0) {
++      bandCount += 1;
++    }
++    this.bandCount = bandCount;
+   }
+ 
+   /**

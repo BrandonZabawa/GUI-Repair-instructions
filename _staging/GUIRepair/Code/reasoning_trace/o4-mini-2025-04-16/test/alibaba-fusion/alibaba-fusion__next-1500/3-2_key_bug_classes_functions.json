@@ -1,0 +1,31 @@
+{
+    "1": {
+        "bug_classes": [
+            "src/table/base/header.jsx//Header",
+            "src/table/base/filter.jsx//Filter",
+            "src/table/fixed/header.jsx//FixedHeader"
+        ],
+        "bug_functions": [
+            "src/table/base/header.jsx//render",
+            "src/table/base/filter.jsx//onFilterConfirm",
+            "src/table/base/filter.jsx//render",
+            "src/table/fixed/header.jsx//render"
+        ],
+        "explanation": "\u2022 src/table/base/header.jsx (Header): its render() method builds the header rows and injects the filter, sort, and resize icons. When resizable is true, Header adds extra nodes for the resize handles. Under fixedHeader, this duplicated header lives inside a separate wrapper (FixedHeader), so any change in the column count or colSpan in Header.render can throw off the fixed\u2010layout table structure.  \n\n\u2022 src/table/base/filter.jsx (Filter): both its render() method and onFilterConfirm() manage the filter dropdown and then call onFilter with updated filterParams. After confirming a single\u2010select filter, Filter sets the selectedKeys in state but does not reset or restore the original title prop. As a result, Header picks up the filterParams and inadvertently uses the filter label in place of the title string, causing the header cell content to change (\"Id\" \u2192 \"11\"). Moreover, its container={node=>node.parentNode} logic for Dropdown doesn\u2019t account for the additional wrapping in FixedHeader, positioning the menu incorrectly and breaking the cell alignment.  \n\n\u2022 src/table/fixed/header.jsx (FixedHeader): its render() wraps the base Header inside a fixed\u2010position DIV and inner TABLE. It does not adjust for the extra resize cells introduced by resizable columns nor for the filter dropdown\u2019s container. This mismatch between the number of <th> in base Header.render and the wrapping <table> colGroup leads to blank header cells and misaligned widths under fixedHeader.  \n\nTogether, these elements\u2014Header.render, Filter.onFilterConfirm/render, and FixedHeader.render\u2014must be updated to keep the original title unchanged on filter confirm, recalculate colSpan correctly when resizable is on, and adjust the dropdown container target so the fixed\u2010header layout remains consistent.",
+        "bug_scenario": "In a Table with both fixedHeader and resizable enabled, when you click the filter icon on the Id column, select a filter option (e.g. \u201c11\u201d) and confirm, the header cell\u2019s content and layout become garbled. The filter label (\u201c11\u201d) replaces the column title (\u201cId\u201d), blank cells appear in the header row, and the column widths shift unexpectedly under the fixed\u2010header wrapper."
+    },
+    "2": {
+        "bug_classes": [
+            "src/table/base/filter.jsx//Filter",
+            "src/table/base/header.jsx//Header",
+            "src/table/fixed/header.jsx//FixedHeader"
+        ],
+        "bug_functions": [
+            "src/table/base/filter.jsx//render (Dropdown container prop)",
+            "src/table/base/filter.jsx//onFilterVisible",
+            "src/table/fixed/header.jsx//render"
+        ],
+        "explanation": "The Filter class in base/filter.jsx hard-codes the Dropdown's container to the header cell\u2019s parent node (`container={node => node.parentNode}`), which places the filter panel inside the fixedHeader scroll wrapper (overflow hidden) and causes clipping. The Header component (base/header.jsx) constructs and injects that Filter element into the fixed header DOM, and the FixedHeader component (fixed/header.jsx) wraps the header in an inner scroll container. To fix this, the Filter.render method\u2019s container logic needs to be changed (for example, to append to document.body or a higher parent) so the dropdown is not clipped by the fixed header wrapper.",
+        "bug_scenario": "When Table is rendered with both fixedHeader and resizable columns enabled, opening the column filter menu causes the dropdown to be rendered inside the fixed header\u2019s scroll container (which has overflow hidden). As a result the filter panel is clipped, mis-positioned or partially hidden, as shown in the screenshot."
+    }
+}

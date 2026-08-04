@@ -1,0 +1,10 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/gather/gatherers/css-usage.js",
+            "lighthouse-core/gather/driver.js"
+        ],
+        "explanation": "\u2022 lighthouse-core/gather/gatherers/css-usage.js: This is the gatherer that hooks CSS.styleSheetAdded and kicks off rule usage tracking. It currently only listens on the main session, so any stylesheets added by iframes (oopifs) never get recorded in artifacts.CSSUsage.stylesheets. \n\n\u2022 lighthouse-core/gather/driver.js: The driver currently enables CSS.startRuleUsageTracking and CSS.enable on the root session only. It doesn\u2019t propagate those commands or listen for CSS.styleSheetAdded on auto-attached iframe sessions. As a result, CSSUsage never sees the iframe stylesheets. You need to update Driver\u2019s target attachment and sendCommand logic to support CSS domains in subtargets so that CSSUsage can collect all the @font-face blocks and correctly detect font-display declarations in iframe contexts.",
+        "bug_scenario": "When running the font-display audit against a page that contains out-of-process iframes, Lighthouse shows a long list of \u201cLighthouse was unable to automatically check the font-display value for the following URL: \u2026woff2\u201d warnings. The screenshot shows several woff2 font URLs coming from fonts.gstatic.com and disquscdn.com. What\u2019s happening is that those fonts are being loaded inside iframes, but our CSSUsage gatherer only tracks stylesheets on the main frame, so none of the @font-face declarations inside the iframe stylesheets ever make it into the artifacts. The audit therefore has no stylesheet content to parse for font-display properties and falls back to warning the user for every font record seen at network time."
+    }
+}

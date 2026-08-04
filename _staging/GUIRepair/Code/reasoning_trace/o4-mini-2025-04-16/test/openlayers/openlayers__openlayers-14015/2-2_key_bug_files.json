@@ -1,0 +1,11 @@
+{
+    "1": {
+        "bug_files": [
+            "src/ol/renderer/webgl/TileLayer.js",
+            "src/ol/renderer/webgl/Layer.js",
+            "src/ol/layer/WebGLTile.js"
+        ],
+        "explanation": "\u2022 src/ol/renderer/webgl/TileLayer.js  \n  This class owns the LRUCache of WebGLTileTexture objects. Its `getCacheKey(source, tileCoord)` key ties textures to a specific source object, but nothing in this file ever clears or resets that cache when `setSource()` is called or when the projection changes. As a result, old textures remain and are reused later.\n\n\u2022 src/ol/renderer/webgl/Layer.js  \n  The base WebGL renderer builds a `canvasCacheKey` in `prepareFrame()` using only the map ID and layer grouping. It never incorporates projection (or source) information, so the same WebGLHelper (and its underlying texture and render\u2010target caches) is reused across projection changes. The helper needs to be torn down or keyed by projection ID to force a fresh cache.\n\n\u2022 src/ol/layer/WebGLTile.js  \n  This high\u2010level layer listens for source\u2010change events (`handleSourceUpdate_`), but it does not trigger a cache reset on the renderer side. The layer should, on `setSource()`, call into the renderer (or clear the tile\u2010texture cache) so that stale textures aren\u2019t reused after the source swap.",
+        "bug_scenario": "When you switch the WebGL tile layer\u2019s source at runtime (via `layer.setSource(...)`) or you switch the map view to a different projection, tiles already rendered into WebGL textures are never invalidated. In practice you\u2019ll see the new source\u2019s tiles (or the re-projected tiles) correctly load as you pan/zoom, but as soon as you pan back into areas you visited before the switch the old textures (from the old source or old projection) reappear. This is because neither the tile\u2010texture cache nor the rendering helper is ever flushed or recreated when the source or projection changes."
+    }
+}

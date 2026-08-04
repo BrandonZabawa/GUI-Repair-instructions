@@ -1,0 +1,36 @@
+diff --git a/src/ol/renderer/canvas/VectorLayer.js b/src/ol/renderer/canvas/VectorLayer.js
+index c83441b5f3..423c1880be 100644
+--- a/src/ol/renderer/canvas/VectorLayer.js
++++ b/src/ol/renderer/canvas/VectorLayer.js
+@@ -233,11 +233,11 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+ 
+     const canvasTransform = transformToString(this.pixelTransform);
+ 
++    // do not use a CSS background on the container (that would obscure lower layers)
+     this.useContainer(
+       target,
+       canvasTransform,
+-      layerState.opacity,
+-      this.getBackground(frameState)
++      layerState.opacity
+     );
+     const context = this.context;
+     const canvas = context.canvas;
+@@ -264,6 +264,17 @@ class CanvasVectorLayerRenderer extends CanvasLayerRenderer {
+       context.clearRect(0, 0, width, height);
+     }
+ 
++    // fill the canvas background (so it doesn't obscure lower layers)
++    const background = this.getBackground(frameState);
++    if (background !== undefined) {
++      context.save();
++      // reset any transforms so fillRect covers the entire canvas
++      context.setTransform(1, 0, 0, 1, 0, 0);
++      context.fillStyle = background;
++      context.fillRect(0, 0, width, height);
++      context.restore();
++    }
++
+     this.preRender(context, frameState);
+ 
+     const viewState = frameState.viewState;

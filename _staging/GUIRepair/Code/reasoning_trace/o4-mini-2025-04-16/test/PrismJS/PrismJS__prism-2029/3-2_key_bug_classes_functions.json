@@ -1,0 +1,21 @@
+{
+    "1": {
+        "bug_classes": [
+            "components/prism-d.js"
+        ],
+        "bug_functions": [],
+        "explanation": "All of the D-language syntax rules live in components/prism-d.js, in particular the array of regexes under the 'string' key. Those patterns are responsible for matching both single\u2010quoted chars and double/backtick\u2010quoted strings. The final regex (/(['`])(?:\\\\[\\s\\S]|(?!\\1)[^\\\\])*\\1[cwd]?/) is intended to match double\u2010quoted and backtick\u2010quoted strings but fails when a single\u2010quote appears inside a double\u2010quoted string, so the highlighter terminates the string too early. Adjusting this regex (or introducing a more precise pattern for embedded quotes) in prism-d.js is required to fix the bug.",
+        "bug_scenario": "When highlighting D-language source, embedding a single\u2010quote character inside a normal double\u2010quoted string (e.g. \"It\u2019s\") causes Prism to break out of the string token early, leaving the closing quote and rest of the text un-highlighted or mis-colored. Backtick\u2010quoted (WYSIWYG) strings work correctly, but normal double-quoted strings do not tolerate an apostrophe."
+    },
+    "2": {
+        "bug_classes": [
+            "components/prism-d.js//Prism.languages.d"
+        ],
+        "bug_functions": [
+            "components/prism-d.js//Prism.languages.d.string (the character-literal regex /'(?:\\\\'|\\\\?[^']+)'/ )",
+            "components/prism-d.js//Prism.languages.d.string (the fallback string regex /([\"`])(?:\\\\[\\s\\S]|(?!\\1)[^\\\\])*\\1[cwd]?/ )"
+        ],
+        "explanation": "In the D grammar (components/prism-d.js) the 'string' token is defined as an array of regexes. The character-literal regex /'(?:\\\\'|\\\\?[^']+)'/ is too broad (it can match more than one character and doesn\u2019t guard against embedded single quotes inside a double-quoted context), and the final fallback regex for quoted strings/backtick strings also doesn\u2019t stop at a single quote when inside double quotes. As a result, \"It\u2019s\" is split into \"It\" (string), s\" (extra), breaking the intended syntax highlighting. Adjusting these two patterns so that only valid single-character literals match the char rule and so that single quotes don\u2019t terminate a double-quoted string will restore correct highlighting.",
+        "bug_scenario": "On the PrismJS test page with D-language highlighting, putting a single quote inside a double-quoted string (e.g. \"It\u2019s\") causes the highlighter to think the string ends at the single quote. Everything after that point is mis-colored. Backtick-quoted strings work correctly, but the D grammar\u2019s own string/character rules are too permissive and don\u2019t prevent that premature closure."
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "1": {
+        "bug_files": [
+            "lighthouse-core/report/v2/report-generator.js"
+        ],
+        "explanation": "In report-generator.js (v2), the code in generateReportHtml does\n\n    const sanitizedJavascript = REPORT_JAVASCRIPT.replace(/<\\//g, '\\\\u003c/');\n    return REPORT_TEMPLATE\n      .replace(/%%LIGHTHOUSE_JSON%%/, sanitizedJson)\n      .replace(/%%LIGHTHOUSE_JAVASCRIPT%%/, sanitizedJavascript);\n\nUsing String.replace(regex, replacementString) treats `$` in the replacement as special tokens (e.g. `$'`). When REPORT_JAVASCRIPT contains `$'`, replace will inject the post-match text instead of the literal `$'`, mangling the HTML. To fix this, every `$` in sanitizedJavascript must be escaped (e.g. `sanitizedJavascript.replace(/\\$/g, '$$$$')`) or the code should use the callback form of replace so that the script is inserted unparsed.",
+        "bug_scenario": "The user has a simple HTML template with a placeholder comment inside a <script> tag. They read in another JS file\u2019s contents (which may include the sequence `$'`) and do a plain String.replace(placeholder, scriptString) to inject it. In JavaScript\u2019s replace API, `$'` in the replacement string is interpreted as \u201ceverything after the match,\u201d so any occurrence of `$'` in the injected script causes the remainder of the template (including the closing <\\/script> tag) to be swallowed or injected incorrectly. In the browser\u2019s devtools you see the injected code escaping the script block, the rest of the page missing, and a truncated HTML structure."
+    }
+}
