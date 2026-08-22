@@ -505,7 +505,9 @@ def checkout_all_repo_scenario(split_dataset):
                 run_command(f"cd {CLONE_DIR} && git clone {REPO_URL} && cd {CLONE_REPO_DIR} && git checkout {BASE_COMMIT}")
             except:
                 pass 
-
+        
+        # This is a test commit message to be used for testing the GitHub API integration. 
+        # It does not affect the functionality of the code and can be removed or modified as needed.
         if 'scratchfoundation' in project_id:
             # Configuring Code Repository Information
             REPO_URL = "https://github.com/scratchfoundation/scratch-gui.git"  # GitHub Repo
