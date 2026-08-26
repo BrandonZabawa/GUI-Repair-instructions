@@ -7,7 +7,28 @@ import requests
 import time
 import re
 
-github_token = ""  # Replace with your GitHub token
+REPO_TABLE = {
+    "Automattic":           ("https://github.com/Automattic/wp-calypso.git", "wp-calypso"),
+    "chartjs":              ("https://github.com/chartjs/Chart.js.git", "Chart.js"),
+    "diegomura":            ("https://github.com/diegomura/react-pdf.git", "react-pdf"),
+    "processing":           ("https://github.com/processing/p5.js.git", "p5.js"),
+    "markedjs":             ("https://github.com/markedjs/marked.git", "marked"),
+    "GoogleChrome":         ("https://github.com/GoogleChrome/lighthouse.git", "lighthouse"),
+    "alibaba-fusion":       ("https://github.com/alibaba-fusion/next.git", "next"),
+    "bpmn-io":              ("https://github.com/bpmn-io/bpmn-js.git", "bpmn-js"),
+    "carbon-design-system": ("https://github.com/carbon-design-system/carbon.git", "carbon"),
+    "eslint":               ("https://github.com/eslint/eslint.git", "eslint"),
+    "grommet":              ("https://github.com/grommet/grommet.git", "grommet"),
+    "highlightjs":          ("https://github.com/highlightjs/highlight.js.git", "highlight.js"),
+    "openlayers":           ("https://github.com/openlayers/openlayers.git", "openlayers"),
+    "prettier":             ("https://github.com/prettier/prettier.git", "prettier"),
+    "PrismJS":              ("https://github.com/PrismJS/prism.git", "prism"),
+    "quarto-dev":           ("https://github.com/quarto-dev/quarto-cli.git", "quarto-cli"),
+    "scratchfoundation":    ("https://github.com/scratchfoundation/scratch-gui.git", "scratch-gui"),
+    "ONSdigital":           ("https://github.com/ONSdigital/design-system.git", "design-system"),
+}
+
+github_token = os.environ.get("GITHUB_TOKEN")  # Replace with your GitHub token
 
 def run_command(command, cwd=None):
     result = subprocess.run(command, cwd=cwd, shell=True, capture_output=True, text=True)
@@ -505,7 +526,9 @@ def checkout_all_repo_scenario(split_dataset):
                 run_command(f"cd {CLONE_DIR} && git clone {REPO_URL} && cd {CLONE_REPO_DIR} && git checkout {BASE_COMMIT}")
             except:
                 pass 
-
+        
+        # This is a test commit message to be used for testing the GitHub API integration. 
+        # It does not affect the functionality of the code and can be removed or modified as needed.
         if 'scratchfoundation' in project_id:
             # Configuring Code Repository Information
             REPO_URL = "https://github.com/scratchfoundation/scratch-gui.git"  # GitHub Repo
